@@ -271,6 +271,11 @@ Test connection reports how many products in a line actually have videos.
 
 ## Changelog
 
+### 1.6.1
+- Test connection always reports video status (present / empty / no field /
+  unrecognised format), shows the plugin version and the product's fields.
+- Videos are read from any of videos, video, video_url(s).
+
 ### 1.6.0
 - Cleaner product page: options as swatches/pills/dropdowns, collapsible
   description / stone details / specifications, sticky gallery.

@@ -484,7 +484,7 @@ class OM_Settings {
 			$rows[] = array( false, 'Login to Overnight Mountings failed: ' . $token->get_error_message() );
 			return $rows;
 		}
-		$rows[] = array( true, 'Logged in to Overnight Mountings (access token received).' );
+		$rows[] = array( true, 'Logged in to Overnight Mountings (access token received). Plugin version ' . OM_CATALOG_VERSION . '.' );
 
 		delete_transient( OM_API_Client::LINES_TRANSIENT );
 		$lines = OM_API_Client::get_product_lines_map( true );
@@ -502,23 +502,54 @@ class OM_Settings {
 		}
 		$product = $list['products'][0];
 
-		// How many designs carry videos (the API lists a videos[] field on
-		// every product; this shows whether it's actually filled in).
+		// Videos: the API guide lists a videos field on every product. Report
+		// what the data actually holds, never skip silently.
 		$sample = OM_API_Client::get_products( $line, array( 'limit' => 100 ) );
-		if ( ! is_wp_error( $sample ) && ! empty( $sample['products'] ) ) {
-			$with  = 0;
-			$first = '';
-			foreach ( $sample['products'] as $item ) {
-				$videos = array_filter( array_map( 'om_video_url', (array) ( $item['videos'] ?? array() ) ) );
+		if ( is_wp_error( $sample ) ) {
+			$rows[] = array( false, 'Videos: could not check (' . $sample->get_error_message() . ').' );
+		} elseif ( empty( $sample['products'] ) ) {
+			$rows[] = array( false, 'Videos: could not check (the sample listing came back empty).' );
+		} else {
+			$items   = (array) $sample['products'];
+			$with    = 0;
+			$has_key = 0;
+			$first   = '';
+			foreach ( $items as $item ) {
+				foreach ( om_video_keys() as $key ) {
+					if ( array_key_exists( $key, (array) $item ) ) {
+						$has_key++;
+						break;
+					}
+				}
+				$videos = om_product_videos( $item );
 				if ( $videos ) {
 					$with++;
-					$first = $first ? $first : reset( $videos );
+					$first = $first ? $first : $videos[0];
 				}
 			}
-			$rows[] = $with
-				? array( true, sprintf( 'Videos: %d of the first %d products have one (they show as a play tile in the gallery). Example: %s', $with, count( $sample['products'] ), $first ) )
-				: array( false, sprintf( 'Videos: none of the first %d products in this line have a video.', count( $sample['products'] ) ) );
+			if ( $with ) {
+				$rows[] = array( true, sprintf( 'Videos: %d of the first %d products have a video (shown as a play tile in the gallery). Example: %s', $with, count( $items ), $first ) );
+			} elseif ( $has_key ) {
+				$raw    = null;
+				foreach ( $items as $item ) {
+					foreach ( om_video_keys() as $key ) {
+						if ( ! empty( $item[ $key ] ) ) {
+							$raw = $item[ $key ];
+							break 2;
+						}
+					}
+				}
+				$rows[] = null === $raw
+					? array( false, sprintf( 'Videos: the video field is present but empty on all of the first %d products — Overnight Mountings has no videos for these designs yet.', count( $items ) ) )
+					: array( false, 'Videos: the field has data in a format the plugin does not recognise yet: ' . mb_substr( wp_json_encode( $raw ), 0, 300 ) );
+			} else {
+				$rows[] = array( false, sprintf( 'Videos: the products have no video field at all (checked the first %d).', count( $items ) ) );
+			}
 		}
+
+		// The fields each product actually carries, to diagnose data questions.
+		$rows[] = array( true, 'Product fields from OM: ' . implode( ', ', array_keys( (array) $product ) ) );
+
 		$rows[]  = array( true, sprintf( 'Listing "%s": %s products. First: %s (style %s).', $line, number_format_i18n( (int) ( $list['total_count'] ?? 0 ) ), $product['title'] ?? '?', $product['style_number'] ?? '?' ) );
 
 		$quote = OM_API_Client::get_quotation(

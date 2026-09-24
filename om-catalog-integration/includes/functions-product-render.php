@@ -423,7 +423,7 @@ function om_video_url( $video ) {
  */
 function om_render_gallery( $product, $title ) {
 	$images = array_values( array_filter( array_map( 'om_image_url', array_slice( (array) ( $product['images'] ?? array() ), 0, 12 ) ) ) );
-	$videos = array_values( array_filter( array_map( 'om_video_url', array_slice( (array) ( $product['videos'] ?? array() ), 0, 4 ) ) ) );
+	$videos = array_slice( om_product_videos( $product ), 0, 4 );
 	if ( ! $images && ! $videos ) {
 		return '';
 	}
@@ -627,4 +627,34 @@ function om_print_size_guide() {
 		</div>
 	</dialog>
 	<?php
+}
+
+
+/** Product fields that may hold video links. */
+function om_video_keys() {
+	return array( 'videos', 'video', 'video_url', 'video_urls', 'videoUrl', 'videoUrls' );
+}
+
+/**
+ * Every video URL a product carries, whatever the field is called and
+ * whether it holds a string, a list of strings or a list of objects.
+ *
+ * @return string[]
+ */
+function om_product_videos( $product ) {
+	$urls = array();
+	foreach ( om_video_keys() as $key ) {
+		if ( empty( $product[ $key ] ) ) {
+			continue;
+		}
+		$value = $product[ $key ];
+		$list  = ( is_array( $value ) && ! isset( $value['url'] ) && ! isset( $value['video_url'] ) && ! isset( $value['src'] ) ) ? $value : array( $value );
+		foreach ( $list as $entry ) {
+			$url = om_video_url( $entry );
+			if ( '' !== $url && preg_match( '#^https?://#i', $url ) ) {
+				$urls[] = $url;
+			}
+		}
+	}
+	return array_values( array_unique( $urls ) );
 }
