@@ -19,6 +19,8 @@ use Elementor\Group_Control_Border;
  */
 class OM_Elementor_Catalog_Widget extends Widget_Base {
 
+	use OM_Elementor_Card_Controls;
+
 	public function get_name() {
 		return 'om_catalog_widget';
 	}
@@ -320,26 +322,6 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
-			'quick_view',
-			array(
-				'label'       => __( 'Quick view button', 'om-catalog' ),
-				'type'        => Controls_Manager::SWITCHER,
-				'default'     => 'yes',
-				'description' => __( 'Opens photos, price and options in a pop-up without leaving the grid.', 'om-catalog' ),
-			)
-		);
-
-		$this->add_control(
-			'card_video',
-			array(
-				'label'       => __( 'Video previews on cards', 'om-catalog' ),
-				'type'        => Controls_Manager::SWITCHER,
-				'default'     => 'yes',
-				'description' => __( 'Designs with a video get a play badge and play it on hover (desktop) or when centred on screen (phones).', 'om-catalog' ),
-			)
-		);
-
-		$this->add_control(
 			'badges_heading',
 			array(
 				'label'     => __( 'Badges', 'om-catalog' ),
@@ -523,6 +505,9 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->end_controls_section();
+
+		$this->register_quick_view_content();
+		$this->register_card_video_content();
 
 		/* ---------- Style: Grid ---------- */
 
@@ -1079,7 +1064,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		$this->start_controls_section(
 			'section_style_badges',
 			array(
-				'label' => __( 'Badges & Quick View', 'om-catalog' ),
+				'label' => __( 'Badges', 'om-catalog' ),
 				'tab'   => Controls_Manager::TAB_STYLE,
 			)
 		);
@@ -1122,31 +1107,141 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			)
 		);
 
-		$this->add_control(
-			'qv_bg',
+		$this->end_controls_section();
+
+		$this->register_card_extras_style();
+
+		/* ---------- Style: card price ---------- */
+		$this->start_controls_section(
+			'section_style_price',
 			array(
-				'label'     => __( 'Quick view background', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'separator' => 'before',
-				'selectors' => array( '{{WRAPPER}} .om-qv-btn' => 'background-color: {{VALUE}};' ),
+				'label'     => __( 'Card Price', 'om-catalog' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'show_prices' => 'yes' ),
 			)
 		);
 
 		$this->add_control(
-			'qv_color',
+			'card_price_color',
 			array(
-				'label'     => __( 'Quick view text', 'om-catalog' ),
+				'label'     => __( 'Color', 'om-catalog' ),
 				'type'      => Controls_Manager::COLOR,
-				'selectors' => array( '{{WRAPPER}} .om-qv-btn' => 'color: {{VALUE}};' ),
+				'selectors' => array( '{{WRAPPER}} .om-card-price' => 'color: {{VALUE}};' ),
 			)
 		);
 
 		$this->add_group_control(
 			Group_Control_Typography::get_type(),
 			array(
-				'name'     => 'qv_typography',
-				'label'    => __( 'Quick view typography', 'om-catalog' ),
-				'selector' => '{{WRAPPER}} .om-qv-btn',
+				'name'     => 'card_price_typography',
+				'selector' => '{{WRAPPER}} .om-card-price',
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_price_spacing',
+			array(
+				'label'      => __( 'Space above', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-card-price' => 'margin-top: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Style: search & sort ---------- */
+		$this->start_controls_section(
+			'section_style_search',
+			array(
+				'label' => __( 'Search & Sort', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'search_typography',
+				'label'    => __( 'Search box text', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-search-input',
+			)
+		);
+
+		$this->add_control(
+			'search_bg',
+			array(
+				'label'     => __( 'Search box background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-search-input' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'search_text',
+			array(
+				'label'     => __( 'Search box text colour', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-search-input, {{WRAPPER}} .om-search-icon' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'search_border',
+			array(
+				'label'     => __( 'Search box border', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-search-input' => 'border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'search_radius',
+			array(
+				'label'      => __( 'Search box corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-search-input' => 'border-radius: {{SIZE}}{{UNIT}};', '{{WRAPPER}} .om-search-submit' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'search_btn_bg',
+			array(
+				'label'     => __( 'Search button background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array( '{{WRAPPER}} .om-search-submit' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'search_btn_color',
+			array(
+				'label'     => __( 'Search button text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-search-submit' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'sort_color',
+			array(
+				'label'     => __( 'Sort & result count text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array( '{{WRAPPER}} .om-sort, {{WRAPPER}} .om-sort-select, {{WRAPPER}} .om-result-count' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'sort_border',
+			array(
+				'label'     => __( 'Sort dropdown border', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-sort-select' => 'border-color: {{VALUE}};' ),
 			)
 		);
 
@@ -1295,8 +1390,6 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'show_sort'       => (string) ( $settings['show_sort'] ?? 'yes' ),
 			'sort'            => (string) ( $settings['default_sort'] ?? '' ),
 			'show_prices'     => (string) ( $settings['show_prices'] ?? '' ),
-			'quick_view'      => (string) ( $settings['quick_view'] ?? 'yes' ),
-			'card_video'      => (string) ( $settings['card_video'] ?? 'yes' ),
 			'badges'          => (string) ( $settings['badges'] ?? '' ),
 			'badge_new_days'  => (int) ( $settings['badge_new_days'] ?? 0 ),
 			'badge_shape'     => (string) ( $settings['badge_shape'] ?? '' ),
@@ -1309,7 +1402,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'exclude'         => trim( preg_replace( '/\s+/', ' ', (string) $settings['exclude_styles'] ) ),
 			// The responsive Columns control owns the column count via CSS.
 			'inline_columns'  => 'no',
-		);
+		) + $this->card_extras_atts( $settings );
 
 		echo OM_Shortcodes::instance()->render_grid( $atts, OM_Shortcodes::request_from_globals() ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 	}

@@ -156,6 +156,26 @@ class OM_Elementor_Diamond_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'show_origin',
+			array(
+				'label'     => __( 'Lab-grown / natural switch', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array( 'origin' => '' ),
+			)
+		);
+
+		$this->add_control(
+			'default_shape',
+			array(
+				'label'   => __( 'Shape selected at first', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => '',
+				'options' => array( '' => __( 'None (all shapes)', 'om-catalog' ) ) + array_combine( OM_Diamonds::SHAPES, OM_Diamonds::SHAPES ),
+			)
+		);
+
+		$this->add_control(
 			'show_select',
 			array(
 				'label'       => __( '"Select this diamond" (ring builder)', 'om-catalog' ),
@@ -177,6 +197,52 @@ class OM_Elementor_Diamond_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		$this->register_common_style( '{{WRAPPER}} .om-diamonds', '{{WRAPPER}} .om-dd-title, {{WRAPPER}} .om-dd-price' );
+
+		$this->start_controls_section( 'section_style_dfilters', array( 'label' => __( 'Filters', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+		$this->add_control( 'df_bg', array( 'label' => __( 'Panel background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-diamond-filters' => 'background-color: {{VALUE}};' ) ) );
+		$this->add_control( 'df_label', array( 'label' => __( 'Group labels', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-df-group legend, {{WRAPPER}} .om-df-group > p, {{WRAPPER}} .om-df-group label' => 'color: {{VALUE}};' ) ) );
+		$this->add_control( 'df_chip_border', array( 'label' => __( 'Shape & grade buttons border', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-df-chip, {{WRAPPER}} .om-df-shape' => 'border-color: {{VALUE}};' ) ) );
+		$this->add_control( 'df_chip_active_bg', array( 'label' => __( 'Selected background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-df-chip.is-checked, {{WRAPPER}} .om-df-shape.is-checked' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ) ) );
+		$this->add_control( 'df_chip_active_text', array( 'label' => __( 'Selected text', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-df-chip.is-checked, {{WRAPPER}} .om-df-shape.is-checked' => 'color: {{VALUE}};' ) ) );
+		$this->add_control(
+			'df_chip_radius',
+			array(
+				'label'      => __( 'Button corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 30 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-df-chip, {{WRAPPER}} .om-df-shape' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_style_dresults', array( 'label' => __( 'Results', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+		$this->add_control( 'dt_head_color', array( 'label' => __( 'Column headings', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-dt-head' => 'color: {{VALUE}};' ) ) );
+		$this->add_control( 'dt_row_color', array( 'label' => __( 'Row text', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-dt-row' => 'color: {{VALUE}};' ) ) );
+		$this->add_control( 'dt_row_border', array( 'label' => __( 'Row dividers', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-diamond, {{WRAPPER}} .om-dt-head' => 'border-color: {{VALUE}};' ) ) );
+		$this->add_control( 'dt_row_hover', array( 'label' => __( 'Row hover / open background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-dt-row:hover, {{WRAPPER}} .om-diamond[open] > .om-dt-row' => 'background-color: {{VALUE}};' ) ) );
+		$this->add_control( 'dt_price_color', array( 'label' => __( 'Price', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-dt-price, {{WRAPPER}} .om-dd-price' => 'color: {{VALUE}};' ) ) );
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'dt_row_typography',
+				'label'    => __( 'Row text', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-dt-row',
+			)
+		);
+		$this->add_control( 'dd_btn_bg', array( 'label' => __( 'Main button background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'separator' => 'before', 'selectors' => array( '{{WRAPPER}} .om-diamonds .om-btn--solid' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ) ) );
+		$this->add_control( 'dd_btn_text', array( 'label' => __( 'Main button text', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-diamonds .om-btn--solid' => 'color: {{VALUE}};' ) ) );
+		$this->add_control(
+			'dd_btn_radius',
+			array(
+				'label'      => __( 'Button corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-diamonds .om-btn' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+		$this->end_controls_section();
 	}
 
 	protected function render() {
@@ -187,8 +253,10 @@ class OM_Elementor_Diamond_Widget extends Widget_Base {
 				'shapes'       => implode( ',', (array) $s['shapes'] ),
 				'per_page'     => (int) $s['per_page'],
 				'default_sort' => (string) $s['default_sort'],
-				'show_select'  => (string) $s['show_select'],
-				'show_inquiry' => (string) $s['show_inquiry'],
+				'show_select'   => (string) $s['show_select'],
+				'show_inquiry'  => (string) $s['show_inquiry'],
+				'show_origin'   => 'yes' === ( $s['show_origin'] ?? 'yes' ) ? 'yes' : 'no',
+				'default_shape' => (string) ( $s['default_shape'] ?? '' ),
 			),
 			OM_Diamonds::request_from_globals()
 		);
@@ -292,6 +360,7 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 
 /** "OM Related Products" widget: related / recently viewed / hand-picked. */
 class OM_Elementor_Related_Widget extends Widget_Base {
+	use OM_Elementor_Card_Controls;
 
 	public function get_name() {
 		return 'om_related_widget';
@@ -535,6 +604,9 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 
 		/* ---------- Style: section & title ---------- */
 
+		$this->register_quick_view_content( '' );
+		$this->register_card_video_content();
+
 		$this->start_controls_section( 'section_style_head', array( 'label' => __( 'Section & Title', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
 
 		$this->dimensions( 'section_margin', __( 'Section margin', 'om-catalog' ), '{{WRAPPER}} .om-related', 'margin' );
@@ -683,6 +755,8 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 
 		/* ---------- Style: arrows ---------- */
 
+		$this->register_card_extras_style();
+
 		$this->start_controls_section(
 			'section_style_arrows',
 			array(
@@ -726,7 +800,7 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 				'show_arrows'  => (string) ( $s['show_arrows'] ?? 'yes' ),
 				'autoplay'     => (int) ( $s['autoplay'] ?? 0 ),
 				'show_prices'  => (string) ( $s['show_prices'] ?? '' ),
-			)
+			) + $this->card_extras_atts( $s )
 		);
 		// Title tag.
 		$tag = in_array( $s['title_tag'] ?? 'h2', array( 'h2', 'h3', 'h4', 'p' ), true ) ? $s['title_tag'] : 'h2';

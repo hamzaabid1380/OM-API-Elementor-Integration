@@ -148,20 +148,6 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
-			'video_mode',
-			array(
-				'label'       => __( 'Product videos', 'om-catalog' ),
-				'type'        => Controls_Manager::SELECT,
-				'default'     => 'first',
-				'options'     => array(
-					'first' => __( 'Video first (plays silently on a loop)', 'om-catalog' ),
-					'thumb' => __( 'Photos first + "Watch video" button', 'om-catalog' ),
-				),
-				'description' => __( 'For products that have a video.', 'om-catalog' ),
-			)
-		);
-
-		$this->add_control(
 			'details_style',
 			array(
 				'label'   => __( 'Description & details', 'om-catalog' ),
@@ -220,6 +206,130 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 				'type'        => Controls_Manager::SWITCHER,
 				'default'     => 'yes',
 				'description' => __( 'Price and the main button stay at the bottom of the screen once the visitor scrolls past them.', 'om-catalog' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_gallery',
+			array(
+				'label' => __( 'Gallery & Video', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'video_mode',
+			array(
+				'label'       => __( 'Product videos', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'first',
+				'options'     => array(
+					'first' => __( 'Video first (the main view)', 'om-catalog' ),
+					'thumb' => __( 'Photos first + "Watch video" button', 'om-catalog' ),
+				),
+				'description' => __( 'For products that have a video.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'video_autoplay',
+			array(
+				'label'       => __( 'Autoplay (muted, looping)', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Off: the video waits for a click, with player controls.', 'om-catalog' ),
+				'condition'   => array( 'video_mode' => 'first' ),
+			)
+		);
+
+		$this->add_control(
+			'video_sound',
+			array(
+				'label'   => __( 'Sound on/off button', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'video_fullscreen',
+			array(
+				'label'   => __( 'Full screen button', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'watch_button',
+			array(
+				'label'       => __( '"Watch video" button on photos', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'watch_text',
+			array(
+				'label'       => __( '"Watch video" text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Watch video', 'om-catalog' ),
+				'condition'   => array( 'watch_button' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'video_label',
+			array(
+				'label'       => __( 'Video thumbnail label', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Video', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'thumbs_position',
+			array(
+				'label'     => __( 'Thumbnails', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'left',
+				'separator' => 'before',
+				'options'   => array(
+					'left'   => __( 'Left of the photo', 'om-catalog' ),
+					'bottom' => __( 'Under the photo', 'om-catalog' ),
+					'none'   => __( 'Hidden', 'om-catalog' ),
+				),
+				'description' => __( 'Phones always show them under the photo.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'image_zoom',
+			array(
+				'label'   => __( 'Zoom on hover', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'image_lightbox',
+			array(
+				'label'   => __( 'Click to open full screen', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'media_follow',
+			array(
+				'label'       => __( 'Photos follow the metal colour', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Picking a colour shows that colour\'s photos/video, when Overnight Mountings\' photos are told apart by colour (Settings > OM Catalog > Tools > Test connection says).', 'om-catalog' ),
 			)
 		);
 
@@ -679,6 +789,224 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		/* ---------- Style ---------- */
+
+		/* ---------- Style: gallery ---------- */
+		$this->start_controls_section(
+			'section_style_gallery',
+			array(
+				'label' => __( 'Gallery', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'gallery_bg',
+			array(
+				'label'     => __( 'Photo background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-product-gallery .om-zoom, {{WRAPPER}} .om-main-image, {{WRAPPER}} .om-main-video' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'gallery_radius',
+			array(
+				'label'      => __( 'Photo corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-product-gallery' => '--om-media-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'thumb_size',
+			array(
+				'label'      => __( 'Thumbnail size', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 40, 'max' => 140 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-product-gallery'              => '--om-thumb-size: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .om-product-gallery .om-thumb-btn' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'thumb_gap',
+			array(
+				'label'      => __( 'Space between thumbnails', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-thumbs' => 'gap: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'gallery_gap',
+			array(
+				'label'      => __( 'Space between photo and thumbnails', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 60 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-product-gallery' => 'gap: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'thumb_radius',
+			array(
+				'label'      => __( 'Thumbnail corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 30 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-product-gallery' => '--om-thumb-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'thumb_border',
+			array(
+				'label'     => __( 'Thumbnail border', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-product-gallery .om-thumb-btn' => 'border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'thumb_active_border',
+			array(
+				'label'     => __( 'Selected thumbnail border', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-product-gallery .om-thumb-btn.is-active' => 'border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Style: video controls ---------- */
+		$this->start_controls_section(
+			'section_style_video',
+			array(
+				'label' => __( 'Video Buttons', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'watch_heading',
+			array(
+				'label' => __( '"Watch video" button', 'om-catalog' ),
+				'type'  => Controls_Manager::HEADING,
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'watch_typography',
+				'selector' => '{{WRAPPER}} .om-watch-video',
+			)
+		);
+
+		$this->add_control(
+			'watch_bg',
+			array(
+				'label'     => __( 'Background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-product-gallery .om-watch-video' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'watch_color',
+			array(
+				'label'     => __( 'Text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-product-gallery .om-watch-video' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'watch_icon_bg',
+			array(
+				'label'     => __( 'Play circle', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-watch-icon' => 'background-color: {{VALUE}};', '{{WRAPPER}} .om-watch-icon::before' => 'border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'watch_radius',
+			array(
+				'label'      => __( 'Corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-product-gallery .om-watch-video' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'round_heading',
+			array(
+				'label'     => __( 'Sound & full screen buttons', 'om-catalog' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'round_bg',
+			array(
+				'label'     => __( 'Background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-product-gallery .om-media-expand, {{WRAPPER}} .om-main-video .om-sound' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'round_color',
+			array(
+				'label'     => __( 'Icon', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-product-gallery .om-media-expand, {{WRAPPER}} .om-main-video .om-sound' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'round_size',
+			array(
+				'label'      => __( 'Size', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 28, 'max' => 64 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-product-gallery .om-media-expand, {{WRAPPER}} .om-main-video .om-sound' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'thumb_label_color',
+			array(
+				'label'     => __( 'Video thumbnail label', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array( '{{WRAPPER}} .om-thumb-label' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'thumb_play_bg',
+			array(
+				'label'     => __( 'Video thumbnail play circle', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-play' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->end_controls_section();
 
 		$this->start_controls_section(
 			'section_style_title',
@@ -1440,6 +1768,18 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['options_style']    = in_array( $settings['options_style'] ?? 'swatches', array( 'swatches', 'pills', 'dropdowns' ), true ) ? $settings['options_style'] : 'swatches';
 		$args['details_style']    = 'open' === ( $settings['details_style'] ?? 'accordion' ) ? 'open' : 'accordion';
 		$args['video_mode']       = 'thumb' === ( $settings['video_mode'] ?? 'first' ) ? 'thumb' : 'first';
+		$args['gallery']          = array(
+			'autoplay'     => 'yes' === ( $settings['video_autoplay'] ?? 'yes' ),
+			'sound'        => 'yes' === ( $settings['video_sound'] ?? 'yes' ),
+			'fullscreen'   => 'yes' === ( $settings['video_fullscreen'] ?? 'yes' ),
+			'watch_button' => 'yes' === ( $settings['watch_button'] ?? 'yes' ),
+			'watch_text'   => (string) ( $settings['watch_text'] ?? '' ),
+			'video_label'  => (string) ( $settings['video_label'] ?? '' ),
+			'thumbs'       => (string) ( $settings['thumbs_position'] ?? 'left' ),
+			'zoom'         => 'yes' === ( $settings['image_zoom'] ?? 'yes' ),
+			'lightbox'     => 'yes' === ( $settings['image_lightbox'] ?? 'yes' ),
+			'follow'       => 'yes' === ( $settings['media_follow'] ?? 'yes' ),
+		);
 		foreach ( array( 'show_specs', 'show_size', 'show_size_guide', 'sticky_gallery', 'sticky_bar' ) as $flag ) {
 			$args[ $flag ] = 'yes' === ( $settings[ $flag ] ?? 'yes' );
 		}

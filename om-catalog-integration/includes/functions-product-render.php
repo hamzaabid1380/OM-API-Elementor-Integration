@@ -78,6 +78,15 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			// Product videos: thumb (a tile in the gallery + "Watch
 			// video" button) or first (the video leads, playing muted).
 			'video_mode'          => 'first',
+			// More gallery options, see om_render_gallery() (autoplay,
+			// sound, fullscreen, watch_button, watch_text, video_label,
+			// thumbs, zoom, lightbox, follow).
+			'gallery'             => array(),
+			// Quick view: the link to the full page.
+			'full_link_text'      => '',
+			// Open with the options in the URL (?om_metal=18 KT&om_color=Rose),
+			// which is how a carat switch keeps the visitor's choices.
+			'read_selection'      => true,
 		)
 	);
 
@@ -85,6 +94,17 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 	$default_color   = $product['default_color'] ?? '';
 	$default_level   = $product['default_level'] ?? '';
 	$default_quality = $product['default_quality'] ?? '';
+	if ( $args['read_selection'] ) {
+		foreach ( array( 'metal' => 'metals', 'color' => 'colors', 'level' => 'levels', 'quality' => 'qualities' ) as $opt => $list ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only; checked against the product's own options.
+			$wanted = isset( $_GET[ 'om_' . $opt ] ) ? sanitize_text_field( wp_unslash( $_GET[ 'om_' . $opt ] ) ) : '';
+			if ( '' !== $wanted && in_array( $wanted, array_map( 'strval', (array) ( $product[ $list ] ?? array() ) ), true ) ) {
+				${'default_' . $opt} = $wanted;
+			}
+		}
+	}
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
+	$selected_size = $args['read_selection'] && isset( $_GET['om_size'] ) && is_numeric( $_GET['om_size'] ) ? (float) $_GET['om_size'] : 0;
 	$title           = (string) ( $product['title'] ?? $style_number );
 
 	// ---- Price ----
@@ -162,7 +182,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 
 		<?php
 		if ( $args['show_gallery'] ) {
-			echo om_render_gallery( $product, $title, $args['video_mode'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+			echo om_render_gallery( $product, $title, array( 'video_mode' => $args['video_mode'], 'color' => $default_color ) + (array) $args['gallery'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 		}
 		?>
 
@@ -258,7 +278,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 									}
 									$is_current = ( $variant['style_number'] === $style_number );
 									?>
-									<a class="om-variant-link<?php echo $is_current ? ' is-current' : ''; ?>"
+									<a class="om-variant-link<?php echo $is_current ? ' is-current' : ''; ?>" data-om-keep-options
 										<?php echo $is_current ? 'aria-current="page"' : ''; ?>
 										href="<?php echo esc_url( om_product_url( $product_line, $variant['style_number'] ) ); ?>">
 										<?php echo esc_html( ! empty( $variant['variant_name'] ) ? $variant['variant_name'] : $variant['style_number'] ); ?>
@@ -278,7 +298,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 							<select id="om-size-<?php echo esc_attr( sanitize_title( $style_number ) ); ?>" name="finger_size" class="om-option">
 								<option value=""><?php esc_html_e( 'Select your size', 'om-catalog' ); ?></option>
 								<?php for ( $size = 3; $size <= 13; $size += 0.5 ) : ?>
-									<option value="<?php echo esc_attr( $size ); ?>"><?php echo esc_html( $size ); ?></option>
+									<option value="<?php echo esc_attr( $size ); ?>"<?php selected( $selected_size, $size ); ?>><?php echo esc_html( $size ); ?></option>
 								<?php endfor; ?>
 								<option value="unsure"><?php esc_html_e( 'Not sure — help me find it', 'om-catalog' ); ?></option>
 							</select>
@@ -358,7 +378,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			?>
 
 			<?php if ( $args['compact'] ) : ?>
-				<a class="om-qv-full" href="<?php echo esc_url( om_product_url( $product_line, $style_number ) ); ?>"><?php esc_html_e( 'View full details', 'om-catalog' ); ?> &rarr;</a>
+				<a class="om-qv-full" data-om-keep-options href="<?php echo esc_url( om_product_url( $product_line, $style_number ) ); ?>"><?php echo esc_html( '' !== trim( (string) $args['full_link_text'] ) ? $args['full_link_text'] : __( 'View full details', 'om-catalog' ) ); ?> &rarr;</a>
 			<?php endif; ?>
 
 			<?php
@@ -418,65 +438,285 @@ function om_video_url( $video ) {
 	return '';
 }
 
+/** array_is_list() for PHP < 8.1. */
+function om_is_list( $value ) {
+	return is_array( $value ) && array_keys( $value ) === range( 0, count( $value ) - 1 ) || array() === $value;
+}
+
+/**
+ * Words that mark a photo/video file as showing one metal colour, e.g.
+ * 83295-P-YG-1.jpg or ring_rose_side.png. Colours OM adds later are
+ * matched by their own name.
+ *
+ * @return array colour => tokens.
+ */
+function om_color_tokens( $colors ) {
+	$known = array(
+		'white'  => array( 'white', 'wht', 'wg', 'w', 'platinum', 'plat', 'pt' ),
+		'yellow' => array( 'yellow', 'yel', 'yg', 'y' ),
+		'rose'   => array( 'rose', 'pink', 'rg', 'pg', 'r' ),
+	);
+	$out = array();
+	foreach ( (array) $colors as $color ) {
+		$color = (string) $color;
+		$key   = strtolower( trim( $color ) );
+		if ( '' === $key ) {
+			continue;
+		}
+		$out[ $color ] = $known[ $key ] ?? array_filter( preg_split( '/[^a-z0-9]+/', $key ) );
+	}
+	return $out;
+}
+
+/** Which of $colors a photo/video entry shows ('' = not colour-specific). */
+function om_media_entry_color( $entry, $url, $tokens ) {
+	// An explicit colour on the entry wins.
+	if ( is_array( $entry ) ) {
+		foreach ( array( 'color', 'colour', 'metal_color', 'metalColor', 'metal_colour' ) as $key ) {
+			if ( ! empty( $entry[ $key ] ) && is_string( $entry[ $key ] ) ) {
+				foreach ( array_keys( $tokens ) as $color ) {
+					if ( 0 === strcasecmp( $color, trim( $entry[ $key ] ) ) ) {
+						return $color;
+					}
+				}
+			}
+		}
+	}
+	$name  = strtolower( (string) pathinfo( (string) wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_FILENAME ) );
+	$words = array_filter( preg_split( '/[^a-z0-9]+/', $name ) );
+	$found = array();
+	foreach ( $tokens as $color => $list ) {
+		if ( array_intersect( $list, $words ) ) {
+			$found[] = $color;
+		}
+	}
+	// One colour only; a name matching several says nothing reliable.
+	return 1 === count( $found ) ? $found[0] : '';
+}
+
+/**
+ * A product's photos and videos, each tagged with the metal colour it
+ * shows when OM's data makes that clear: an explicit color on the entry,
+ * images grouped by colour ({"White": [...], "Yellow": [...]}), or file
+ * names (…-YG-1.jpg). Tags are kept only when at least two colours are
+ * told apart; otherwise everything is treated as neutral.
+ *
+ * @return array [ 'images' => [ [url, color] ], 'videos' => [ [url, color] ], 'by_color' => bool ]
+ */
+function om_product_media( $product ) {
+	$colors = (array) ( $product['colors'] ?? array() );
+	$tokens = om_color_tokens( $colors );
+	$images = array();
+
+	$raw = $product['images'] ?? array();
+	foreach ( array( 'images_by_color', 'imagesByColor', 'color_images', 'colorImages' ) as $key ) {
+		if ( empty( $raw ) && ! empty( $product[ $key ] ) && is_array( $product[ $key ] ) ) {
+			$raw = $product[ $key ];
+		}
+	}
+	$raw = (array) $raw;
+	if ( $raw && ! om_is_list( $raw ) ) {
+		// Grouped by colour.
+		foreach ( $raw as $group => $list ) {
+			$match = '';
+			foreach ( array_keys( $tokens ) as $color ) {
+				if ( 0 === strcasecmp( $color, trim( (string) $group ) ) ) {
+					$match = $color;
+				}
+			}
+			foreach ( (array) ( is_array( $list ) && om_is_list( $list ) ? $list : array( $list ) ) as $entry ) {
+				$url = om_image_url( $entry );
+				if ( '' !== $url ) {
+					$images[] = array( 'url' => $url, 'color' => $match );
+				}
+			}
+		}
+	} else {
+		foreach ( $raw as $entry ) {
+			$url = om_image_url( $entry );
+			if ( '' !== $url ) {
+				$images[] = array( 'url' => $url, 'color' => $tokens ? om_media_entry_color( $entry, $url, $tokens ) : '' );
+			}
+		}
+	}
+
+	$videos = array();
+	foreach ( om_product_videos( $product ) as $url ) {
+		$videos[] = array( 'url' => $url, 'color' => $tokens ? om_media_entry_color( $url, $url, $tokens ) : '' );
+	}
+
+	$seen = array_unique( array_filter( wp_list_pluck( $images, 'color' ) ) );
+	$by_color = count( $seen ) >= 2;
+	if ( ! $by_color ) {
+		foreach ( $images as &$image ) {
+			$image['color'] = '';
+		}
+		unset( $image );
+	}
+	if ( count( array_unique( array_filter( wp_list_pluck( $videos, 'color' ) ) ) ) < 2 ) {
+		foreach ( $videos as &$video ) {
+			$video['color'] = '';
+		}
+		unset( $video );
+	}
+
+	return array(
+		'images'   => array_slice( $images, 0, 24 ),
+		'videos'   => array_slice( $videos, 0, 6 ),
+		'by_color' => $by_color,
+	);
+}
+
+/** Media entries for one colour: that colour's plus the neutral ones, colour first. */
+function om_media_for_color( $entries, $color ) {
+	if ( '' === (string) $color ) {
+		return $entries;
+	}
+	$own     = array_filter( $entries, static function ( $e ) use ( $color ) { return 0 === strcasecmp( $e['color'], $color ); } );
+	$neutral = array_filter( $entries, static function ( $e ) { return '' === $e['color']; } );
+	return $own ? array_values( array_merge( $own, $neutral ) ) : $entries;
+}
+
+/**
+ * The two photos a listing card shows (main + hover), in the colour the
+ * visitor filtered by, else the product's default colour.
+ *
+ * @return string[] [ main, hover ]
+ */
+function om_card_images( $product, $color = '' ) {
+	$media = om_product_media( $product );
+	$list  = $media['images'];
+	if ( $media['by_color'] ) {
+		$want = '' !== (string) $color ? $color : (string) ( $product['default_color'] ?? '' );
+		// A filter like "White,Yellow": the first that has photos.
+		foreach ( array_map( 'trim', explode( ',', $want ) ) as $one ) {
+			$picked = om_media_for_color( $list, $one );
+			if ( $picked !== $list || '' === $one ) {
+				$list = $picked;
+				break;
+			}
+		}
+	}
+	return array( $list[0]['url'] ?? '', $list[1]['url'] ?? '' );
+}
+
 /**
  * Product gallery: large image (click to open the lightbox, hover to zoom
  * on desktop), a filmstrip of angles and any videos. Videos play in place:
  * files (mp4/webm/mov) in a <video>, anything else (YouTube, Vimeo, a
  * 360° viewer) in an iframe.
+ *
+ * @param array        $product
+ * @param string       $title
+ * @param array|string $opts    Options (or, as before, just the video mode):
+ *   video_mode   first|thumb     autoplay   bool (video first: play on load)
+ *   sound        bool (toggle)   fullscreen bool (expand button)
+ *   watch_button bool            watch_text string
+ *   video_label  string (thumb)  thumbs     left|bottom|none
+ *   zoom         bool            lightbox   bool
+ *   follow       bool (photos follow the selected metal colour)
+ *   color        string (colour selected when the page opens)
  */
-function om_render_gallery( $product, $title, $video_mode = 'thumb' ) {
-	$images = array_values( array_filter( array_map( 'om_image_url', array_slice( (array) ( $product['images'] ?? array() ), 0, 12 ) ) ) );
-	$videos = array_slice( om_product_videos( $product ), 0, 4 );
-	if ( ! $images && ! $videos ) {
+function om_render_gallery( $product, $title, $opts = array() ) {
+	if ( is_string( $opts ) ) {
+		$opts = array( 'video_mode' => $opts );
+	}
+	$o = wp_parse_args(
+		$opts,
+		array(
+			'video_mode'   => 'thumb',
+			'autoplay'     => true,
+			'sound'        => true,
+			'fullscreen'   => true,
+			'watch_button' => true,
+			'watch_text'   => '',
+			'video_label'  => '',
+			'thumbs'       => 'left',
+			'zoom'         => true,
+			'lightbox'     => true,
+			'follow'       => true,
+			'color'        => '',
+		)
+	);
+
+	$media  = om_product_media( $product );
+	$follow = $o['follow'] && $media['by_color'];
+	$color  = $follow ? (string) ( '' !== $o['color'] ? $o['color'] : ( $product['default_color'] ?? '' ) ) : '';
+
+	if ( ! $media['images'] && ! $media['videos'] ) {
 		return '';
 	}
 
-	// "first": the video leads the gallery and plays (muted, looping) as
-	// soon as the page opens; photos follow. Without photos, same thing.
-	$video_first = $videos && ( 'first' === $video_mode || ! $images );
-	$poster      = $images ? $images[0] : '';
+	// What shows first: the selected colour's photos/videos (others are
+	// in the filmstrip, hidden until their colour is picked).
+	$vis_images = $color ? om_media_for_color( $media['images'], $color ) : $media['images'];
+	$vis_videos = $color ? om_media_for_color( $media['videos'], $color ) : $media['videos'];
+	$shown      = static function ( $entry ) use ( $color ) {
+		return '' === $color || '' === $entry['color'] || 0 === strcasecmp( $entry['color'], $color );
+	};
+	$main_image  = $vis_images[0]['url'] ?? '';
+	$main_video  = $vis_videos[0]['url'] ?? '';
+	$video_first = '' !== $main_video && ( 'first' === $o['video_mode'] || '' === $main_image );
+	$poster      = $main_image;
+	$watch_text  = '' !== trim( (string) $o['watch_text'] ) ? $o['watch_text'] : __( 'Watch video', 'om-catalog' );
+	$video_label = '' !== trim( (string) $o['video_label'] ) ? $o['video_label'] : __( 'Video', 'om-catalog' );
+	$thumbs_pos  = in_array( $o['thumbs'], array( 'left', 'bottom', 'none' ), true ) ? $o['thumbs'] : 'left';
+
+	$classes = 'om-product-gallery om-thumbs-' . $thumbs_pos
+		. ( $media['videos'] ? ' has-video' : '' )
+		. ( $video_first ? ' is-video-first' : '' )
+		. ( $o['zoom'] ? '' : ' om-no-zoom' );
+	$data    = ( $o['lightbox'] ? '' : ' data-om-no-lightbox' )
+		. ( $o['sound'] ? '' : ' data-om-no-sound' )
+		. ( $o['autoplay'] ? '' : ' data-om-no-autoplay' )
+		. ( $follow ? ' data-om-follow' : '' );
 
 	ob_start();
 	?>
-	<div class="om-product-gallery<?php echo $videos ? ' has-video' : ''; ?><?php echo $video_first ? ' is-video-first' : ''; ?>" data-om-gallery>
+	<div class="<?php echo esc_attr( $classes ); ?>" data-om-gallery<?php echo $data; // phpcs:ignore WordPress.Security.EscapeOutput -- fixed strings. ?>>
 		<div class="om-main-media">
-			<?php if ( $images ) : ?>
+			<?php if ( '' !== $main_image ) : ?>
 				<button type="button" class="om-zoom" aria-label="<?php esc_attr_e( 'Enlarge image', 'om-catalog' ); ?>"<?php echo $video_first ? ' hidden' : ''; ?>>
-					<img class="om-main-image" src="<?php echo esc_url( $images[0] ); ?>" alt="<?php echo esc_attr( $title ); ?>" fetchpriority="high" />
+					<img class="om-main-image" src="<?php echo esc_url( $main_image ); ?>" alt="<?php echo esc_attr( $title ); ?>" fetchpriority="high" />
 				</button>
 			<?php endif; ?>
 			<div class="om-main-video"<?php echo $video_first ? '' : ' hidden'; ?>>
 				<?php if ( $video_first ) : ?>
-					<?php echo om_video_embed( $videos[0], $title, true, $poster ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer. ?>
+					<?php echo om_video_embed( $main_video, $title, (bool) $o['autoplay'], $poster ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer. ?>
 				<?php endif; ?>
 			</div>
-			<?php if ( $videos ) : ?>
+			<?php if ( $media['videos'] && $o['fullscreen'] && $o['lightbox'] ) : ?>
 				<button type="button" class="om-media-expand" aria-label="<?php esc_attr_e( 'Full screen', 'om-catalog' ); ?>"<?php echo $video_first ? '' : ' hidden'; ?>><span aria-hidden="true"></span></button>
 			<?php endif; ?>
-			<?php if ( $videos && $images ) : ?>
-				<button type="button" class="om-watch-video"<?php echo $video_first ? ' hidden' : ''; ?>><span class="om-watch-icon" aria-hidden="true"></span><?php esc_html_e( 'Watch video', 'om-catalog' ); ?></button>
+			<?php if ( $media['videos'] && $media['images'] && $o['watch_button'] ) : ?>
+				<button type="button" class="om-watch-video"<?php echo $video_first ? ' hidden' : ''; ?>><span class="om-watch-icon" aria-hidden="true"></span><span class="om-watch-text"><?php echo esc_html( $watch_text ); ?></span></button>
 			<?php endif; ?>
 		</div>
-		<?php if ( count( $images ) + count( $videos ) > 1 ) : ?>
-			<div class="om-thumbs" role="list">
+		<?php if ( count( $media['images'] ) + count( $media['videos'] ) > 1 ) : ?>
+			<div class="om-thumbs" role="list"<?php echo 'none' === $thumbs_pos ? ' hidden' : ''; ?>>
 				<?php
 				$video_thumbs = '';
-				foreach ( $videos as $i => $url ) {
+				foreach ( $media['videos'] as $entry ) {
 					$video_thumbs .= sprintf(
-						'<button type="button" role="listitem" class="om-thumb-btn om-thumb--video%1$s" data-video="%2$s" aria-label="%3$s">%4$s<span class="om-play" aria-hidden="true"></span><span class="om-thumb-label">%5$s</span></button>',
-						( $video_first && 0 === $i ) ? ' is-active' : '',
-						esc_attr( om_video_embed( $url, $title, true, $poster ) ),
+						'<button type="button" role="listitem" class="om-thumb-btn om-thumb--video%1$s" data-video="%2$s"%6$s%7$s aria-label="%3$s">%4$s<span class="om-play" aria-hidden="true"></span><span class="om-thumb-label">%5$s</span></button>',
+						( $video_first && $entry['url'] === $main_video ) ? ' is-active' : '',
+						esc_attr( om_video_embed( $entry['url'], $title, true, $poster ) ),
 						esc_attr__( 'Play video', 'om-catalog' ),
 						$poster ? '<img class="om-thumb" src="' . esc_url( $poster ) . '" alt="" loading="lazy" decoding="async" />' : '',
-						esc_html__( 'Video', 'om-catalog' )
+						esc_html( $video_label ),
+						'' !== $entry['color'] ? ' data-om-color="' . esc_attr( $entry['color'] ) . '"' : '',
+						$shown( $entry ) ? '' : ' hidden'
 					);
 				}
 				if ( $video_first ) {
 					echo $video_thumbs; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 				}
-				foreach ( $images as $i => $url ) :
+				$n = 0;
+				foreach ( $media['images'] as $entry ) :
+					$n++;
+					$url = $entry['url'];
 					?>
-					<button type="button" role="listitem" class="om-thumb-btn<?php echo ( ! $video_first && 0 === $i ) ? ' is-active' : ''; ?>" data-full="<?php echo esc_url( $url ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: image number. */ __( 'View image %d', 'om-catalog' ), $i + 1 ) ); ?>">
+					<button type="button" role="listitem" class="om-thumb-btn<?php echo ( ! $video_first && $url === $main_image ) ? ' is-active' : ''; ?>" data-full="<?php echo esc_url( $url ); ?>"<?php echo '' !== $entry['color'] ? ' data-om-color="' . esc_attr( $entry['color'] ) . '"' : ''; ?><?php echo $shown( $entry ) ? '' : ' hidden'; ?> aria-label="<?php echo esc_attr( sprintf( /* translators: %d: image number. */ __( 'View image %d', 'om-catalog' ), $n ) ); ?>">
 						<img class="om-thumb" src="<?php echo esc_url( $url ); ?>" alt="" loading="lazy" decoding="async" />
 					</button>
 					<?php
@@ -727,4 +967,116 @@ function om_product_videos( $product ) {
 		}
 	}
 	return array_values( array_unique( $urls ) );
+}
+
+/**
+ * Card display options shared by the listing grid and the related rows,
+ * from shortcode / widget attributes. Unknown values fall back.
+ *
+ * @return array
+ */
+function om_card_options( $atts ) {
+	$pick = static function ( $value, $allowed, $default ) {
+		return in_array( (string) $value, $allowed, true ) ? (string) $value : $default;
+	};
+	return array(
+		'quick_view'       => 'yes' === ( $atts['quick_view'] ?? '' ),
+		'qv_text'          => trim( (string) ( $atts['qv_text'] ?? '' ) ),
+		'qv_style'         => $pick( $atts['qv_style'] ?? '', array( 'bar', 'button', 'icon' ), 'bar' ),
+		'qv_mobile'        => 'yes' === ( $atts['qv_mobile'] ?? '' ),
+		'video_badge'      => $pick( $atts['video_badge'] ?? '', array( 'icon', 'label', 'none' ), 'icon' ),
+		'video_badge_text' => trim( (string) ( $atts['video_badge_text'] ?? '' ) ),
+		'video_badge_pos'  => $pick( $atts['video_badge_pos'] ?? '', array( 'tr', 'tl', 'br', 'bl' ), 'tr' ),
+		'video_preview'    => 'no' !== ( $atts['card_video'] ?? 'yes' ),
+	);
+}
+
+/**
+ * Quick view pop-up settings, as the data-om-qv-opts attribute the script
+ * sends along when a card's Quick view is opened.
+ */
+function om_quick_view_attr( $atts ) {
+	$parts = array_filter( array_map( 'trim', explode( ',', (string) ( $atts['qv_parts'] ?? 'price,options,description,meta,builder' ) ) ) );
+	$opts  = array(
+		'parts' => implode( ',', $parts ),
+		'video' => 'thumb' === ( $atts['qv_video'] ?? '' ) ? 'thumb' : 'first',
+		'link'  => mb_substr( trim( (string) ( $atts['qv_link_text'] ?? '' ) ), 0, 60 ),
+	);
+	return ' data-om-qv-opts="' . esc_attr( wp_json_encode( $opts ) ) . '"';
+}
+
+/**
+ * One product card for a grid or row.
+ *
+ * @param array  $product Listing record.
+ * @param string $line    Product line code.
+ * @param array  $o       link, prices (bool), badges (string[]), color
+ *                        (photos in this metal colour), plus
+ *                        om_card_options().
+ * @return string HTML.
+ */
+function om_render_card( $product, $line, $o ) {
+	$o = wp_parse_args(
+		$o,
+		om_card_options( array() ) + array(
+			'link'   => '',
+			'prices' => false,
+			'badges' => array(),
+			'color'  => '',
+		)
+	);
+	$style_number = (string) ( $product['style_number'] ?? '' );
+	$title        = (string) ( $product['title'] ?? $style_number );
+	list( $image, $hover ) = om_card_images( $product, $o['color'] );
+	$link = '' !== $o['link'] ? $o['link'] : om_product_url( $line, $style_number );
+
+	$video_class = '';
+	$video_attr  = '';
+	if ( 'none' !== $o['video_badge'] || $o['video_preview'] ) {
+		list( $video_class, $video_attr ) = om_card_video_attrs( $product );
+		if ( ! $o['video_preview'] ) {
+			$video_attr = '';
+		}
+	}
+	$badge_text = '' !== $o['video_badge_text'] ? $o['video_badge_text'] : __( 'Video', 'om-catalog' );
+
+	ob_start();
+	?>
+	<div class="om-card-cell<?php echo $o['qv_mobile'] ? ' om-qv-mobile' : ''; ?>">
+		<a class="om-card" href="<?php echo esc_url( $link ); ?>">
+			<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?><?php echo esc_attr( $video_class ); ?>"<?php echo $video_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_card_video_attrs(). ?>>
+				<?php if ( $video_class && 'none' !== $o['video_badge'] ) : ?>
+					<span class="om-card-play om-card-play--<?php echo esc_attr( $o['video_badge'] ); ?> om-card-play--<?php echo esc_attr( $o['video_badge_pos'] ); ?>"<?php echo 'icon' === $o['video_badge'] ? ' role="img" aria-label="' . esc_attr( $badge_text ) . '"' : ''; ?>><?php echo 'label' === $o['video_badge'] ? '<span class="om-card-play-text">' . esc_html( $badge_text ) . '</span>' : ''; ?></span>
+				<?php endif; ?>
+				<?php if ( $o['badges'] ) : ?>
+					<span class="om-badges">
+						<?php foreach ( $o['badges'] as $badge ) : ?>
+							<span class="om-badge om-badge--<?php echo esc_attr( sanitize_title( $badge ) ); ?>"><?php echo esc_html( $badge ); ?></span>
+						<?php endforeach; ?>
+					</span>
+				<?php endif; ?>
+				<?php if ( $image ) : ?>
+					<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>" loading="lazy" decoding="async" />
+				<?php endif; ?>
+				<?php if ( $hover ) : ?>
+					<img class="om-card-hover" src="<?php echo esc_url( $hover ); ?>" alt="" loading="lazy" decoding="async" aria-hidden="true" />
+				<?php endif; ?>
+			</div>
+			<div class="om-card-body">
+				<h3 class="om-card-title"><?php echo esc_html( $title ); ?></h3>
+				<?php if ( ! empty( $product['variant_name'] ) ) : ?>
+					<p class="om-card-variant"><?php echo esc_html( $product['variant_name'] ); ?></p>
+				<?php endif; ?>
+				<?php if ( $o['prices'] ) : ?>
+					<p class="om-card-price" data-om-style="<?php echo esc_attr( $style_number ); ?>"><span class="om-card-price-skeleton" aria-hidden="true"></span></p>
+				<?php endif; ?>
+			</div>
+		</a>
+		<?php if ( $o['quick_view'] ) : ?>
+			<?php $qv_text = '' !== $o['qv_text'] ? $o['qv_text'] : __( 'Quick view', 'om-catalog' ); ?>
+			<span class="om-qv-slot om-qv-slot--<?php echo esc_attr( $o['qv_style'] ); ?>"><button type="button" class="om-qv-btn om-qv-btn--<?php echo esc_attr( $o['qv_style'] ); ?>" data-om-qv-line="<?php echo esc_attr( $line ); ?>" data-om-qv-style="<?php echo esc_attr( $style_number ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: 1: button text, 2: product. */ __( '%1$s: %2$s', 'om-catalog' ), $qv_text, $title ) ); ?>"><?php echo 'icon' === $o['qv_style'] ? '<span class="om-qv-icon" aria-hidden="true"></span>' : esc_html( $qv_text ); ?></button></span>
+		<?php endif; ?>
+	</div>
+	<?php
+	return ob_get_clean();
 }

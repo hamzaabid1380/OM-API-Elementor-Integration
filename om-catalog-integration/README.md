@@ -295,7 +295,71 @@ Most OM products carry a video, and the plugin makes it the centrepiece:
 Settings > OM Catalog > Tools > Test connection reports how many products in
 a line have videos.
 
+## Widget controls for quick view, videos and the gallery (1.8)
+
+**OM Product Catalog** and **OM Related Products** widgets:
+
+- **Content › Quick View** — on/off, button text, look (bar across the
+  photo, centred button, or eye icon), show on phones & tablets, what the
+  pop-up shows (price, options, description, carat & style number, ring
+  builder button), whether it opens on the video or the photo, and the
+  "full details" link text.
+- **Content › Videos on Cards** — video badge (play icon, play icon + text,
+  or none), its text and corner, and video previews on/off.
+- **Style › Quick View Button / Quick View Pop-up / Video Badge** — colours
+  (normal + hover), borders, radius, padding, sizes; pop-up background,
+  page overlay, width, radius, spacing and close button.
+- Catalog widget also gets **Style › Card Price** and **Style › Search &
+  Sort**.
+
+**OM Single Product** widget, **Content › Gallery & Video**: video first or
+photos first, autoplay, sound button, full screen button, "Watch video"
+button and its text, video thumbnail label, thumbnails left / under / hidden,
+zoom on hover, click to open full screen, and photos following the metal
+colour. **Style › Gallery** (photo background and radius, thumbnail size,
+spacing, radius, borders) and **Style › Video Buttons**.
+
+**OM Diamond Search** widget: lab-grown/natural switch, shape selected at
+first, and **Style › Filters / Results** (chips, selected state, table
+headings, rows, hover, price, buttons).
+
+Shortcode equivalents on `[om_catalog]` and `[om_related]`: `quick_view`,
+`qv_text`, `qv_style` (bar|button|icon), `qv_mobile`, `qv_parts`
+(price,options,description,meta,builder), `qv_video` (first|thumb),
+`qv_link_text`, `video_badge` (icon|label|none), `video_badge_text`,
+`video_badge_pos` (tr|tl|br|bl), `card_video` (yes|no).
+
+## Photos that follow the selected options (1.8)
+
+- **Metal colour:** picking a colour switches the gallery to that colour's
+  photos (and video, when videos are per colour) and brings the first one
+  up; Platinum shows the white photos. Photos that aren't colour-specific
+  stay in every colour. This works when Overnight Mountings' data tells the
+  photos apart: a colour on each image, images grouped by colour, or file
+  names such as `…-YG-1.jpg` / `…_rose_…`. Settings › OM Catalog › Tools ›
+  Test connection reports whether your catalog does. Turn it off under
+  Settings › OM Catalog › Product page or in the widget.
+- **Listings filtered by a metal colour** show each card in that colour and
+  open the product in it.
+- **Carat sizes** are separate designs (their own style numbers and photos)
+  in OM's catalog, so choosing one opens that design's page — now keeping
+  the metal, colour, setting, quality and ring size already picked. The same
+  goes for "View full details" in quick view. Links can do this too:
+  `?om_metal=18 KT&om_color=Rose&om_size=7`.
+
 ## Changelog
+
+### 1.8.0
+- Every quick view and video-badge option is now a widget control, with
+  full styling (catalog and related widgets); related rows get quick view.
+- Single Product widget: Gallery & Video section (autoplay, sound, full
+  screen, watch button text, thumbnail position, zoom, lightbox) and
+  Gallery / Video Buttons style sections.
+- Photos follow the selected metal colour; colour-filtered listings show
+  cards in that colour; carat switches keep the chosen options.
+- Catalog widget: Card Price and Search & Sort styles. Diamond widget:
+  origin switch, default shape, Filters and Results styles.
+- Test connection reports whether photos are told apart by colour.
 
 ### 1.7.0
 - Product video experience: video-first gallery that autoplays muted on a

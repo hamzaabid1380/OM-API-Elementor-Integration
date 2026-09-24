@@ -228,6 +228,19 @@ class OM_Shortcodes {
 				// "yes": cards with a video show a play badge and preview it
 				// on hover (desktop) / when centred on screen (phones).
 				'card_video'      => 'yes',
+				// Video badge on cards: icon, label (play icon + text) or
+				// none; its text and corner (tr, tl, br, bl).
+				'video_badge'      => 'icon',
+				'video_badge_text' => '',
+				'video_badge_pos'  => 'tr',
+				// Quick view button: text, look (bar, button, icon), shown
+				// on phones/tablets too, and what the pop-up includes.
+				'qv_text'         => '',
+				'qv_style'        => 'bar',
+				'qv_mobile'       => '',
+				'qv_parts'        => 'price,options,description,meta,builder',
+				'qv_video'        => 'first',
+				'qv_link_text'    => '',
 			),
 			$atts,
 			'om_catalog'
@@ -807,57 +820,32 @@ class OM_Shortcodes {
 		$prices     = 'yes' === $atts['show_prices'] && om_markup_is_configured();
 
 		$style_attr = 'no' === $atts['inline_columns'] ? '' : ' style="--om-columns: ' . esc_attr( $columns ) . ';"';
-		echo '<div class="om-catalog-grid om-layout-' . esc_attr( $layout ) . '"' . $style_attr . ( $prices ? ' data-om-prices="' . esc_attr( $active_line ) . '"' : '' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput -- built from an int.
+		echo '<div class="om-catalog-grid om-layout-' . esc_attr( $layout ) . '"' . $style_attr . ( $prices ? ' data-om-prices="' . esc_attr( $active_line ) . '"' : '' ) . ( 'yes' === $atts['quick_view'] ? om_quick_view_attr( $atts ) : '' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput -- built from an int / escaped in om_quick_view_attr().
+		$card_opts = om_card_options( $atts );
 		foreach ( $products as $product ) {
 			$style_number = (string) ( $product['style_number'] ?? '' );
 			if ( '' === $style_number ) {
 				continue;
 			}
-			$title = (string) ( $product['title'] ?? $style_number );
-			$image = ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '';
-			$hover = ! empty( $product['images'][1] ) ? om_image_url( $product['images'][1] ) : '';
-			$link  = om_product_url( $active_line, $style_number );
+			$link = om_product_url( $active_line, $style_number );
 			if ( $card_query ) {
 				$link = add_query_arg( $card_query, $link );
 			}
-			$badges = om_card_badges( $product, (string) $atts['badges'], (int) $atts['badge_new_days'], 'yes' === $atts['badge_shape'] );
-			?>
-			<div class="om-card-cell">
-			<a class="om-card" href="<?php echo esc_url( $link ); ?>">
-				<?php list( $video_class, $video_attr ) = om_card_video_attrs( $product, 'yes' === $atts['card_video'] ); ?>
-				<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?><?php echo esc_attr( $video_class ); ?>"<?php echo $video_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_card_video_attrs(). ?>>
-					<?php if ( $video_class ) : ?>
-						<span class="om-card-play" aria-label="<?php esc_attr_e( 'Has video', 'om-catalog' ); ?>"></span>
-					<?php endif; ?>
-					<?php if ( $badges ) : ?>
-						<span class="om-badges">
-							<?php foreach ( $badges as $badge ) : ?>
-								<span class="om-badge om-badge--<?php echo esc_attr( sanitize_title( $badge ) ); ?>"><?php echo esc_html( $badge ); ?></span>
-							<?php endforeach; ?>
-						</span>
-					<?php endif; ?>
-					<?php if ( $image ) : ?>
-						<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>" loading="lazy" decoding="async" />
-					<?php endif; ?>
-					<?php if ( $hover ) : ?>
-						<img class="om-card-hover" src="<?php echo esc_url( $hover ); ?>" alt="" loading="lazy" decoding="async" aria-hidden="true" />
-					<?php endif; ?>
-				</div>
-				<div class="om-card-body">
-					<h3 class="om-card-title"><?php echo esc_html( $title ); ?></h3>
-					<?php if ( ! empty( $product['variant_name'] ) ) : ?>
-						<p class="om-card-variant"><?php echo esc_html( $product['variant_name'] ); ?></p>
-					<?php endif; ?>
-					<?php if ( $prices ) : ?>
-						<p class="om-card-price" data-om-style="<?php echo esc_attr( $style_number ); ?>"><span class="om-card-price-skeleton" aria-hidden="true"></span></p>
-					<?php endif; ?>
-				</div>
-			</a>
-			<?php if ( 'yes' === $atts['quick_view'] ) : ?>
-				<span class="om-qv-slot"><button type="button" class="om-qv-btn" data-om-qv-line="<?php echo esc_attr( $active_line ); ?>" data-om-qv-style="<?php echo esc_attr( $style_number ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: product. */ __( 'Quick view: %s', 'om-catalog' ), $title ) ); ?>"><?php esc_html_e( 'Quick view', 'om-catalog' ); ?></button></span>
-			<?php endif; ?>
-			</div>
-			<?php
+			// Filtered to one metal colour: open the product in it too.
+			if ( '' !== (string) $state['metal'] && false === strpos( (string) $state['metal'], ',' ) ) {
+				$link = add_query_arg( 'om_color', rawurlencode( (string) $state['metal'] ), $link );
+			}
+			echo om_render_card( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+				$product,
+				$active_line,
+				array(
+					'link'   => $link,
+					'prices' => $prices,
+					'badges' => om_card_badges( $product, (string) $atts['badges'], (int) $atts['badge_new_days'], 'yes' === $atts['badge_shape'] ),
+					// Filtered by metal colour: show photos in that colour.
+					'color'  => (string) $state['metal'],
+				) + $card_opts
+			);
 		}
 		echo '</div>';
 

@@ -47,6 +47,11 @@ class OM_Ajax {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing -- public read-only endpoint, see class doc.
 		$line  = isset( $_POST['line'] ) ? sanitize_title( wp_unslash( $_POST['line'] ) ) : '';
 		$style = isset( $_POST['style'] ) ? sanitize_text_field( wp_unslash( $_POST['style'] ) ) : '';
+		// What the pop-up shows (the widget's Quick view settings). Plain
+		// display switches, so there is nothing to sign.
+		$parts = isset( $_POST['parts'] ) ? array_map( 'trim', explode( ',', sanitize_text_field( wp_unslash( $_POST['parts'] ) ) ) ) : array( 'price', 'options', 'description', 'meta', 'builder' );
+		$video = isset( $_POST['video'] ) && 'thumb' === $_POST['video'] ? 'thumb' : 'first';
+		$link  = isset( $_POST['link'] ) ? mb_substr( sanitize_text_field( wp_unslash( $_POST['link'] ) ), 0, 60 ) : '';
 		// phpcs:enable
 		if ( '' === $line || '' === $style ) {
 			wp_send_json_error( array( 'message' => 'Missing product.' ), 400 );
@@ -56,6 +61,9 @@ class OM_Ajax {
 			wp_send_json_error( array( 'message' => om_public_error_message( $product ) ) );
 		}
 		require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
+		$has = static function ( $part ) use ( $parts ) {
+			return in_array( $part, $parts, true );
+		};
 		wp_send_json_success(
 			array(
 				'html' => '<div class="om-single-product om-single-product--widget om-single-product--qv">' . om_render_product_detail(
@@ -63,16 +71,24 @@ class OM_Ajax {
 					$line,
 					$style,
 					array(
-						'compact'        => true,
-						'show_meta'      => true,
-						'show_stones'    => false,
-						'show_specs'     => false,
-						'show_inquiry'   => false,
-						'sticky_bar'     => false,
-						'sticky_gallery' => false,
-						'show_size'      => false,
-						'options_style'  => (string) get_option( 'om_options_style', 'swatches' ),
-						'video_mode'     => 'first',
+						'compact'          => true,
+						'show_meta'        => $has( 'meta' ),
+						'show_price'       => $has( 'price' ),
+						'show_options'     => $has( 'options' ),
+						'show_variants'    => $has( 'options' ),
+						'show_description' => $has( 'description' ),
+						'show_builder'     => $has( 'builder' ),
+						'show_stones'      => false,
+						'show_specs'       => false,
+						'show_inquiry'     => false,
+						'sticky_bar'       => false,
+						'sticky_gallery'   => false,
+						'show_size'        => false,
+						'read_selection'   => false,
+						'options_style'    => (string) get_option( 'om_options_style', 'swatches' ),
+						'video_mode'       => $video,
+						'full_link_text'   => $link,
+						'gallery'          => array( 'follow' => '0' !== get_option( 'om_media_follow', '1' ) ),
 					)
 				) . '</div>',
 			)

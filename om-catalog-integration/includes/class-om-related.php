@@ -58,6 +58,18 @@ class OM_Related {
 				'show_arrows' => 'yes',
 				// Carousel autoplay interval in seconds (0 = off).
 				'autoplay'    => 0,
+				// Card extras, as on the listing grid (see om_card_options()).
+				'quick_view'       => '',
+				'qv_text'          => '',
+				'qv_style'         => 'bar',
+				'qv_mobile'        => '',
+				'qv_parts'         => 'price,options,description,meta,builder',
+				'qv_video'         => 'first',
+				'qv_link_text'     => '',
+				'card_video'       => 'yes',
+				'video_badge'      => 'icon',
+				'video_badge_text' => '',
+				'video_badge_pos'  => 'tr',
 			),
 			$atts,
 			'om_related'
@@ -122,9 +134,10 @@ class OM_Related {
 		ob_start();
 		printf( '<section class="%s"%s>', esc_attr( $classes ), $attrs ); // phpcs:ignore WordPress.Security.EscapeOutput -- built from ints.
 		echo $this->heading( $title, $arrows ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in heading().
-		echo '<div class="om-related-track om-catalog-grid om-layout-' . esc_attr( $card_layout ) . '"' . ( $prices ? ' data-om-prices="' . esc_attr( $line ) . '"' : '' ) . '>';
+		$card_opts = om_card_options( $atts );
+		echo '<div class="om-related-track om-catalog-grid om-layout-' . esc_attr( $card_layout ) . '"' . ( $prices ? ' data-om-prices="' . esc_attr( $line ) . '"' : '' ) . ( $card_opts['quick_view'] ? om_quick_view_attr( $atts ) : '' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped here / in om_quick_view_attr().
 		foreach ( $products as $product ) {
-			$this->card( $product, $line, $prices );
+			echo om_render_card( $product, $line, array( 'prices' => $prices ) + $card_opts ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 		}
 		echo '</div></section>';
 		return ob_get_clean();
@@ -136,38 +149,6 @@ class OM_Related {
 			$html .= '<div class="om-related-nav"><button type="button" class="om-related-prev" aria-label="' . esc_attr__( 'Previous', 'om-catalog' ) . '">&lsaquo;</button><button type="button" class="om-related-next" aria-label="' . esc_attr__( 'Next', 'om-catalog' ) . '">&rsaquo;</button></div>';
 		}
 		return $html . '</div>';
-	}
-
-	private function card( $product, $line, $prices ) {
-		$style_number = (string) ( $product['style_number'] ?? '' );
-		$title        = (string) ( $product['title'] ?? $style_number );
-		$image        = ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '';
-		$hover        = ! empty( $product['images'][1] ) ? om_image_url( $product['images'][1] ) : '';
-		?>
-		<a class="om-card" href="<?php echo esc_url( om_product_url( $line, $style_number ) ); ?>">
-			<?php list( $video_class, $video_attr ) = om_card_video_attrs( $product ); ?>
-			<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?><?php echo esc_attr( $video_class ); ?>"<?php echo $video_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_card_video_attrs(). ?>>
-				<?php if ( $video_class ) : ?>
-					<span class="om-card-play" aria-label="<?php esc_attr_e( 'Has video', 'om-catalog' ); ?>"></span>
-				<?php endif; ?>
-				<?php if ( $image ) : ?>
-					<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>" loading="lazy" decoding="async" />
-				<?php endif; ?>
-				<?php if ( $hover ) : ?>
-					<img class="om-card-hover" src="<?php echo esc_url( $hover ); ?>" alt="" loading="lazy" decoding="async" aria-hidden="true" />
-				<?php endif; ?>
-			</div>
-			<div class="om-card-body">
-				<h3 class="om-card-title"><?php echo esc_html( $title ); ?></h3>
-				<?php if ( ! empty( $product['variant_name'] ) ) : ?>
-					<p class="om-card-variant"><?php echo esc_html( $product['variant_name'] ); ?></p>
-				<?php endif; ?>
-				<?php if ( $prices ) : ?>
-					<p class="om-card-price" data-om-style="<?php echo esc_attr( $style_number ); ?>"><span class="om-card-price-skeleton" aria-hidden="true"></span></p>
-				<?php endif; ?>
-			</div>
-		</a>
-		<?php
 	}
 
 	/** Cached product listing call. */

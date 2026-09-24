@@ -96,6 +96,7 @@
 				$.each(response.data.config || {}, function (name, value) {
 					if (value) { setOpt($wrap, name, value); }
 				});
+				applyMediaColor($wrap);
 			} else {
 				setPriceState($wrap, '');
 			}
@@ -159,7 +160,11 @@
 		// A file the browser can't play: fall back to the photos.
 		video.addEventListener('error', function () { videoFailed($gallery); });
 		if (video.error) { videoFailed($gallery); return; }
-		if (reduceMotion || saveData) {
+		var initial = !$gallery.data('omDecorated');
+		$gallery.data('omDecorated', true);
+		// "Autoplay" off in the widget: the first video waits for a click
+		// (later ones start because the visitor clicked their thumbnail).
+		if (reduceMotion || saveData || (initial && $gallery.is('[data-om-no-autoplay]'))) {
 			video.removeAttribute('autoplay');
 			video.pause();
 			video.controls = true;
@@ -167,14 +172,17 @@
 		}
 		var play = video.play && video.play();
 		if (play && play.catch) { play.catch(function () { video.controls = true; }); }
-		$('<button type="button" class="om-sound" aria-pressed="false"></button>')
-			.attr('aria-label', t('unmute', 'Turn sound on'))
-			.on('click', function () {
-				video.muted = !video.muted;
-				$(this).toggleClass('is-on', !video.muted).attr('aria-pressed', String(!video.muted))
-					.attr('aria-label', video.muted ? t('unmute', 'Turn sound on') : t('mute', 'Turn sound off'));
-			})
-			.appendTo($box);
+		// Sound toggle (unless the widget turns it off).
+		if (!$gallery.is('[data-om-no-sound]')) {
+			$('<button type="button" class="om-sound" aria-pressed="false"></button>')
+				.attr('aria-label', t('unmute', 'Turn sound on'))
+				.on('click', function () {
+					video.muted = !video.muted;
+					$(this).toggleClass('is-on', !video.muted).attr('aria-pressed', String(!video.muted))
+						.attr('aria-label', video.muted ? t('unmute', 'Turn sound on') : t('mute', 'Turn sound off'));
+				})
+				.appendTo($box);
+		}
 		// Pause while scrolled out of view.
 		if (window.IntersectionObserver) {
 			new IntersectionObserver(function (entries) {
@@ -185,7 +193,7 @@
 	}
 
 	function videoFailed($gallery) {
-		var $photo = $gallery.find('.om-thumb-btn:not(.om-thumb--video)').first();
+		var $photo = $gallery.find('.om-thumb-btn:not(.om-thumb--video):not([hidden])').first();
 		$gallery.find('.om-thumb--video, .om-watch-video, .om-media-expand').remove();
 		$gallery.removeClass('has-video is-video-first');
 		$gallery.find('.om-main-video').prop('hidden', true).empty();
@@ -220,6 +228,53 @@
 		}
 	});
 
+	// Photos follow the metal colour: show the picked colour's photos and
+	// videos (plus the ones that aren't colour-specific), and bring its
+	// first one up in the main view.
+	function applyMediaColor($wrap) {
+		var $gallery = $wrap.find('.om-product-gallery[data-om-follow]').first();
+		if (!$gallery.length) { return; }
+		var color = optVal($wrap, 'color');
+		if (!color && /platinum/i.test(optVal($wrap, 'metal'))) { color = 'White'; }
+		var $thumbs = $gallery.find('.om-thumb-btn');
+		var same = function (el) { return (el.getAttribute('data-om-color') || '').toLowerCase() === color.toLowerCase(); };
+		var $own = $thumbs.filter(function () { return same(this); });
+		if (!color || !$own.length) { return; } // Nothing for this colour: leave the gallery be.
+		$thumbs.each(function () {
+			this.hidden = !!this.getAttribute('data-om-color') && !same(this);
+		});
+		// Video thumbnails show the colour's first photo as their cover.
+		var cover = $own.filter(':not(.om-thumb--video)').first().attr('data-full');
+		if (cover) { $gallery.find('.om-thumb--video .om-thumb').attr('src', cover); }
+		var $active = $thumbs.filter('.is-active');
+		if ($active.length && same($active[0])) { return; }
+		// Same kind as what was showing: a video for a video, else a photo.
+		var wantVideo = $active.hasClass('om-thumb--video') || (!$active.length && $gallery.hasClass('is-video-first'));
+		var $next = $own.filter(wantVideo ? '.om-thumb--video' : ':not(.om-thumb--video)').first();
+		if (!$next.length) { $next = $own.first(); }
+		$next.trigger('click');
+	}
+
+	$(document).on('change', '.om-option[name="color"], .om-option[name="metal"]', function () {
+		applyMediaColor($(this).closest('.om-product-wrap'));
+	});
+
+	// Switching carat (another style number) or opening the full page from
+	// quick view keeps the metal, colour, setting, quality and size chosen.
+	$(document).on('click', '[data-om-keep-options]', function () {
+		var $wrap = $(this).closest('.om-product-wrap');
+		try {
+			var url = new URL(this.href, window.location.href);
+			['metal', 'color', 'level', 'quality'].forEach(function (name) {
+				var value = optVal($wrap, name);
+				if (value) { url.searchParams.set('om_' + name, value); } else { url.searchParams.delete('om_' + name); }
+			});
+			var size = optVal($wrap, 'finger_size');
+			if (/^[\d.]+$/.test(size)) { url.searchParams.set('om_size', size); }
+			this.href = url.toString();
+		} catch (err) { /* keep the plain link */ }
+	});
+
 	$(document).on('click', '.om-watch-video', function () {
 		var $gallery = $(this).closest('.om-product-gallery');
 		var $thumb = $gallery.find('.om-thumb--video').first();
@@ -231,7 +286,7 @@
 		var $gallery = $(this).closest('.om-product-gallery');
 		var slides = lightboxSlides($gallery);
 		var $active = $gallery.find('.om-thumb-btn.is-active');
-		var index = $active.length ? $gallery.find('.om-thumb-btn').index($active) : 0;
+		var index = $active.length ? $gallery.find('.om-thumb-btn:not([hidden])').index($active) : 0;
 		// Stop the inline copy; the lightbox plays its own.
 		$gallery.find('.om-main-video video').each(function () { this.pause(); });
 		openLightbox(slides, Math.max(0, index), this);
@@ -240,7 +295,7 @@
 	// Hover zoom on devices with a precise pointer.
 	var fineHover = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 	if (fineHover) {
-		$(document).on('mousemove', '.om-zoom', function (e) {
+		$(document).on('mousemove', '.om-product-gallery:not(.om-no-zoom) .om-zoom', function (e) {
 			var rect = this.getBoundingClientRect();
 			var x = ((e.clientX - rect.left) / rect.width) * 100;
 			var y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -254,7 +309,7 @@
 
 	// Every photo and video of a gallery, in thumbnail order.
 	function lightboxSlides($gallery) {
-		var list = $gallery.find('.om-thumb-btn').map(function () {
+		var list = $gallery.find('.om-thumb-btn:not([hidden])').map(function () {
 			return $(this).attr('data-video') ? { video: $(this).attr('data-video') } : { img: $(this).attr('data-full') };
 		}).get();
 		if (!list.length) {
@@ -354,6 +409,7 @@
 		// underneath it; the hover zoom is enough there.
 		if ($(this).closest('.om-quick-view').length) { return; }
 		var $gallery = $(this).closest('.om-product-gallery');
+		if ($gallery.is('[data-om-no-lightbox]')) { return; }
 		var slides = lightboxSlides($gallery);
 		var current = $(this).find('.om-main-image').attr('src');
 		var index = 0;
@@ -707,12 +763,13 @@
 			var items = list.filter(function (x) { return x && x.u && x.s !== exclude; }).slice(0, max);
 			var $track = $box.find('.om-related-track').empty();
 			items.forEach(function (x) {
+				var $cell = $('<div class="om-card-cell"></div>');
 				var $card = $('<a class="om-card"></a>').attr('href', x.u);
 				var $img = $('<div class="om-card-image"></div>');
 				if (x.i) { $img.append($('<img loading="lazy" decoding="async" />').attr({ src: x.i, alt: x.t || '' })); }
 				var $body = $('<div class="om-card-body"></div>').append($('<h3 class="om-card-title"></h3>').text(x.t || x.s));
 				if (x.v) { $body.append($('<p class="om-card-variant"></p>').text(x.v)); }
-				$track.append($card.append($img, $body));
+				$track.append($cell.append($card.append($img, $body)));
 			});
 			$box.prop('hidden', items.length === 0);
 		});
@@ -904,6 +961,10 @@
 	var qv = null;
 	var qvReturn = null;
 
+	// Pop-up look set on the widget (CSS variables on the grid), carried
+	// over to the dialog, which lives at the end of the page.
+	var QV_VARS = ['--om-qv-modal-bg', '--om-qv-backdrop', '--om-qv-width', '--om-qv-radius', '--om-qv-pad', '--om-qv-close'];
+
 	function openQuickView(line, style, trigger) {
 		if (!qv) {
 			qv = $('<dialog class="om-quick-view" aria-label="' + t('quickView', 'Quick view') + '"><div class="om-qv-inner"><button type="button" class="om-qv-close" aria-label="' + t('close', 'Close') + '">&times;</button><div class="om-qv-body"></div></div></dialog>').appendTo(document.body);
@@ -915,10 +976,21 @@
 			});
 		}
 		qvReturn = trigger;
+		var computed = trigger && window.getComputedStyle ? window.getComputedStyle(trigger) : null;
+		QV_VARS.forEach(function (name) {
+			var value = computed ? computed.getPropertyValue(name).trim() : '';
+			if (value) { qv[0].style.setProperty(name, value); } else { qv[0].style.removeProperty(name); }
+		});
+		var opts = {};
+		try { opts = JSON.parse($(trigger).closest('[data-om-qv-opts]').attr('data-om-qv-opts') || '{}') || {}; } catch (err) { opts = {}; }
 		var $body = qv.find('.om-qv-body').html('<div class="om-qv-loading"><span class="om-qv-skel om-qv-skel--img"></span><span class="om-qv-skel"></span><span class="om-qv-skel om-qv-skel--short"></span></div>');
 		if (qv[0].showModal) { qv[0].showModal(); } else { qv.attr('open', ''); }
 		$('html').addClass('om-lb-open');
-		$.post(cfg.ajaxUrl, { action: 'om_quick_view', line: line, style: style }).done(function (response) {
+		var data = { action: 'om_quick_view', line: line, style: style };
+		if (typeof opts.parts === 'string') { data.parts = opts.parts; }
+		if (opts.video) { data.video = opts.video; }
+		if (opts.link) { data.link = opts.link; }
+		$.post(cfg.ajaxUrl, data).done(function (response) {
 			if (response && response.success && response.data.html) {
 				$body.html(response.data.html);
 				rememberFrom($body);

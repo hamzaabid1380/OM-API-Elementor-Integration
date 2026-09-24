@@ -28,6 +28,7 @@ class OM_Elementor_Widgets {
 		if ( ! did_action( 'elementor/loaded' ) ) {
 			return;
 		}
+		require_once OM_CATALOG_DIR . 'includes/trait-om-elementor-card-controls.php';
 		require_once OM_CATALOG_DIR . 'includes/class-om-elementor-catalog-widget.php';
 		require_once OM_CATALOG_DIR . 'includes/class-om-elementor-product-widget.php';
 		$widgets_manager->register( new OM_Elementor_Catalog_Widget() );

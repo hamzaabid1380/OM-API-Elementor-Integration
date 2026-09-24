@@ -60,6 +60,7 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_options_style', array( 'sanitize_callback' => array( $this, 'sanitize_options_style' ) ) );
 		register_setting( 'om_catalog_settings', 'om_details_style', array( 'sanitize_callback' => array( $this, 'sanitize_details_style' ) ) );
 		register_setting( 'om_catalog_settings', 'om_video_mode', array( 'sanitize_callback' => array( $this, 'sanitize_video_mode' ) ) );
+		register_setting( 'om_catalog_settings', 'om_media_follow', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_size_lines', array( 'sanitize_callback' => array( $this, 'sanitize_lines' ) ) );
 		register_setting( 'om_catalog_settings', 'om_size_guide_note', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'om_catalog_settings', 'om_warm_cache', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -350,6 +351,11 @@ class OM_Settings {
 						</select></td>
 					</tr>
 					<tr>
+						<th>Photos follow metal colour</th>
+						<td><input type="hidden" name="om_media_follow" value="0" /><label><input type="checkbox" name="om_media_follow" value="1" <?php checked( get_option( 'om_media_follow', '1' ), '1' ); ?> /> When a visitor picks a metal colour, show that colour's photos and videos</label>
+						<p class="description">Works when Overnight Mountings' photos are told apart by colour (a colour on the image, or file names like …-YG-1.jpg). Settings &gt; OM Catalog &gt; Tools &gt; Test connection shows whether they are. Otherwise the gallery simply stays as it is.</p></td>
+					</tr>
+					<tr>
 						<th><label for="om_details_style">Description &amp; details</label></th>
 						<td><select id="om_details_style" name="om_details_style">
 							<?php $dstyle = get_option( 'om_details_style', 'accordion' ); ?>
@@ -541,7 +547,7 @@ class OM_Settings {
 				}
 			}
 			if ( $with ) {
-				$rows[] = array( true, sprintf( 'Videos: %d of the first %d products have a video (shown as a play tile in the gallery). Example: %s', $with, count( $items ), $first ) );
+				$rows[] = array( true, sprintf( 'Videos: %d of the first %d products have a video (played in the gallery and as card previews). Example: %s', $with, count( $items ), $first ) );
 			} elseif ( $has_key ) {
 				$raw    = null;
 				foreach ( $items as $item ) {
@@ -557,6 +563,38 @@ class OM_Settings {
 					: array( false, 'Videos: the field has data in a format the plugin does not recognise yet: ' . mb_substr( wp_json_encode( $raw ), 0, 300 ) );
 			} else {
 				$rows[] = array( false, sprintf( 'Videos: the products have no video field at all (checked the first %d).', count( $items ) ) );
+			}
+		}
+
+		// Photos per metal colour: can the gallery switch with the colour?
+		if ( ! is_wp_error( $sample ) && ! empty( $sample['products'] ) ) {
+			require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
+			$by_color = 0;
+			$example  = '';
+			foreach ( (array) $sample['products'] as $item ) {
+				$media = om_product_media( $item );
+				if ( $media['by_color'] ) {
+					$by_color++;
+					if ( '' === $example ) {
+						$counts = array_count_values( array_filter( wp_list_pluck( $media['images'], 'color' ) ) );
+						$parts  = array();
+						foreach ( $counts as $color => $n ) {
+							$parts[] = $color . ' ' . $n;
+						}
+						$example = sprintf( '%s: %s', $item['style_number'] ?? '?', implode( ', ', $parts ) );
+					}
+				}
+			}
+			$first_images = array_slice( (array) ( $product['images'] ?? array() ), 0, 3 );
+			$names        = array();
+			foreach ( $first_images as $img ) {
+				$names[] = is_array( $img ) ? wp_json_encode( $img ) : basename( (string) wp_parse_url( (string) $img, PHP_URL_PATH ) );
+			}
+			$rows[] = $by_color
+				? array( true, sprintf( 'Photos by metal colour: %d of the first %d products have photos told apart by colour, so the gallery switches with the colour picked (e.g. %s).', $by_color, count( $sample['products'] ), $example ) )
+				: array( false, sprintf( 'Photos by metal colour: not detected on the first %d products — the gallery keeps the same photos whatever colour is picked. Image names look like: %s', count( $sample['products'] ), implode( ' | ', $names ) ) );
+			if ( ! empty( $product['product_variants'][0] ) && is_array( $product['product_variants'][0] ) ) {
+				$rows[] = array( true, 'Variant fields from OM: ' . implode( ', ', array_keys( $product['product_variants'][0] ) ) );
 			}
 		}
 
