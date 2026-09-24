@@ -176,6 +176,28 @@ inquiry is emailed to the address in **Settings > OM Catalog > Inquiries**
 with the piece, chosen options, price shown and page link. Spam is filtered
 with a hidden field, a minimum fill time and a per-visitor hourly limit.
 
+Customise it in the OM Single Product widget (**Ring Builder & Inquiry**):
+title, intro, button text, which fields show, phone required, field labels,
+and a Style-tab **Inquiry Form** section. Or choose **My own form
+(shortcode)** to use an Elementor Pro form (via `[elementor-template id=".."]`),
+Contact Form 7, Gravity Forms or WPForms: give the form hidden fields with
+the IDs/names `om_product`, `om_style`, `om_price`, `om_options`, `om_url`
+(and `om_diamond`) and they are filled with the piece being viewed. Those
+leads then land wherever that form sends them (e.g. Elementor > Submissions).
+
+## Related & recently viewed products
+
+The **OM Related Products** widget (or `[om_related source="related|recent|picked"]`)
+shows a grid or swipeable carousel below the product:
+- **You might also like** — same line, same collection or centre shape where
+  known, never the product itself or its size variants;
+- **Recently viewed** — remembered in the visitor's own browser; hidden until
+  they have viewed other pieces;
+- **Hand-picked** style numbers.
+
+The built-in product page shows "You might also like" and "Recently viewed"
+automatically (toggle under Settings > OM Catalog > Built-in product page rows).
+
 ## Filtering & curating what shows (Elementor or shortcode)
 
 The widget's Content tab (and matching shortcode attributes) control what
@@ -209,6 +231,14 @@ untouched inherits the site-wide defaults from Settings > OM Catalog, so
 per-widget styling is opt-in.
 
 ## Changelog
+
+### 1.4.0
+- Inquiry form fully customisable in the Single Product widget (texts,
+  fields, labels, styling), or replaced by any form shortcode with the
+  product details passed into its hidden fields.
+- New OM Related Products widget / [om_related]: related designs, recently
+  viewed, or hand-picked, as a grid or carousel; also on the built-in
+  product page.
 
 ### 1.3.0
 - Search box with as-you-type suggestions on every catalog grid; Sort by

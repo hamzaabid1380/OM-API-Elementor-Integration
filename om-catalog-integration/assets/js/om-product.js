@@ -539,6 +539,92 @@
 		});
 	}
 
+	/* ---------- Recently viewed ---------- */
+
+	var RECENT_KEY = 'omRecentlyViewed';
+
+	function readRecent() {
+		try {
+			var list = JSON.parse(window.localStorage.getItem(RECENT_KEY) || '[]');
+			return Array.isArray(list) ? list : [];
+		} catch (err) {
+			return [];
+		}
+	}
+
+	function rememberProduct() {
+		var el = document.querySelector('.om-product-wrap[data-om-recent-item]');
+		if (!el || document.body.classList.contains('elementor-editor-active')) { return; }
+		try {
+			var item = JSON.parse(el.getAttribute('data-om-recent-item'));
+			if (!item || !item.s) { return; }
+			var list = readRecent().filter(function (x) { return x && x.s !== item.s; });
+			list.unshift(item);
+			window.localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 20)));
+		} catch (err) { /* storage unavailable: nothing to remember */ }
+	}
+
+	function renderRecent(root) {
+		var list = readRecent();
+		$(root || document).find('[data-om-recent]').each(function () {
+			var $box = $(this);
+			var max = parseInt($box.attr('data-om-recent'), 10) || 4;
+			var exclude = $box.attr('data-om-exclude') || '';
+			var items = list.filter(function (x) { return x && x.u && x.s !== exclude; }).slice(0, max);
+			var $track = $box.find('.om-related-track').empty();
+			items.forEach(function (x) {
+				var $card = $('<a class="om-card"></a>').attr('href', x.u);
+				var $img = $('<div class="om-card-image"></div>');
+				if (x.i) { $img.append($('<img loading="lazy" decoding="async" />').attr({ src: x.i, alt: x.t || '' })); }
+				var $body = $('<div class="om-card-body"></div>').append($('<h3 class="om-card-title"></h3>').text(x.t || x.s));
+				if (x.v) { $body.append($('<p class="om-card-variant"></p>').text(x.v)); }
+				$track.append($card.append($img, $body));
+			});
+			$box.prop('hidden', items.length === 0);
+		});
+	}
+
+	/* ---------- Carousel arrows ---------- */
+
+	$(document).on('click', '.om-related-prev, .om-related-next', function () {
+		var track = $(this).closest('.om-related').find('.om-related-track')[0];
+		if (!track) { return; }
+		var dir = $(this).hasClass('om-related-next') ? 1 : -1;
+		track.scrollBy({ left: dir * track.clientWidth * 0.9, behavior: 'smooth' });
+	});
+
+	/* ---------- Custom inquiry forms: pass the product along ---------- */
+
+	// A site's own form (Elementor Pro, Contact Form 7, Gravity Forms...)
+	// gets the piece's details in hidden fields named om_product, om_style,
+	// om_price, om_options, om_url, om_diamond or om_summary.
+	function fillCustomForms(root) {
+		$(root || document).find('.om-inquiry-custom[data-om-product]').each(function () {
+			var $box = $(this);
+			var data = {};
+			try { data = JSON.parse($box.attr('data-om-product')) || {}; } catch (err) { return; }
+			var $wrap = $box.closest('.om-product-wrap');
+			var options = $wrap.find('.om-options-form select').map(function () {
+				return $.trim($(this).closest('label').contents().first().text()) + ': ' + $(this).val();
+			}).get().join(', ');
+			var price = $.trim($wrap.find('.om-price-amount:not([hidden])').text()) || data.price || '';
+			var values = { product: data.product, style: data.style, price: price, options: options, url: data.url || window.location.href, diamond: data.diamond, summary: data.summary };
+			$.each(values, function (key, value) {
+				// Matches name="om_product" as well as Elementor's
+				// name="form_fields[om_product]".
+				$box.find('input[name="om_' + key + '"], input[name="form_fields[om_' + key + ']"], input[name$="[om_' + key + ']"]').val(value || '');
+			});
+		});
+	}
+
+	// Keep the chosen options current right before a custom form submits.
+	$(document).on('submit', '.om-inquiry-custom form', function () {
+		fillCustomForms($(this).closest('.om-product-wrap').length ? $(this).closest('.om-product-wrap') : document);
+	});
+	$(document).on('change', '.om-option', function () {
+		setTimeout(function () { fillCustomForms(document); }, 800);
+	});
+
 	/* ---------- Boot ---------- */
 
 	function initBlock(root) {
@@ -556,6 +642,9 @@
 
 	$(function () {
 		initBlock(document);
+		rememberProduct();
+		renderRecent(document);
+		fillCustomForms(document);
 		if (mobileQuery) {
 			var onChange = function () { syncPanels(document); };
 			if (mobileQuery.addEventListener) {

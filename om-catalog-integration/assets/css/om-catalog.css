@@ -2654,3 +2654,112 @@ html.om-lb-open {
 		grid-template-columns: minmax(0, 1fr);
 	}
 }
+
+/* ---------- Related / recently viewed rows ---------- */
+
+.om-related {
+	--om-related-gap: 28px;
+	margin: 72px 0 0;
+	font-family: var(--om-font-body, Inter, sans-serif);
+}
+
+.om-related[hidden] {
+	display: none;
+}
+
+.om-single-product > .om-related {
+	padding-top: 48px;
+	border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.om-related + .om-related {
+	margin-top: 56px;
+}
+
+.om-related-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin: 0 0 28px;
+}
+
+.om-related-title {
+	margin: 0;
+	font-family: var(--om-font-heading, Arapey, Georgia, serif);
+	font-size: 30px;
+	font-weight: 400;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-related .om-related-track {
+	grid-template-columns: repeat(var(--om-related-columns, 4), minmax(0, 1fr));
+	gap: var(--om-related-gap);
+	margin: 0;
+}
+
+.om-related-nav {
+	display: flex;
+	gap: 8px;
+}
+
+.om-related-nav button {
+	width: 40px;
+	height: 40px;
+	margin: 0;
+	padding: 0;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	border-radius: 50%;
+	background: transparent;
+	color: var(--om-color-primary, #00111C);
+	font-size: 22px;
+	line-height: 1;
+	cursor: pointer;
+	transition: border-color 0.2s ease;
+}
+
+.om-related-nav button:hover {
+	border-color: var(--om-color-primary, #00111C);
+}
+
+/* Carousel: a swipeable row that snaps card by card. */
+.om-related--carousel .om-related-track {
+	display: flex;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scroll-behavior: smooth;
+	scrollbar-width: none;
+	-webkit-overflow-scrolling: touch;
+}
+
+.om-related--carousel .om-related-track::-webkit-scrollbar {
+	display: none;
+}
+
+.om-related--carousel .om-card {
+	flex: 0 0 calc((100% - (var(--om-related-columns, 4) - 1) * var(--om-related-gap)) / var(--om-related-columns, 4));
+	scroll-snap-align: start;
+}
+
+@media (max-width: 1024px) {
+	.om-related {
+		--om-related-columns: 3;
+	}
+}
+
+@media (max-width: 700px) {
+	.om-related {
+		--om-related-columns: 2;
+		--om-related-gap: 16px;
+		margin-top: 48px;
+	}
+
+	.om-related-title {
+		font-size: 24px;
+	}
+
+	/* Show a peek of the next card so the row reads as swipeable. */
+	.om-related--carousel .om-card {
+		flex-basis: 44%;
+	}
+}

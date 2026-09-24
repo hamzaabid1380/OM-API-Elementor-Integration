@@ -55,6 +55,8 @@ class OM_Settings {
 
 		// Product page layout (0 = built-in template, else an Elementor page ID).
 		register_setting( 'om_catalog_settings', 'om_product_layout_page', array( 'sanitize_callback' => 'absint' ) );
+		register_setting( 'om_catalog_settings', 'om_show_related', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_show_recent', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 
 		// Loose diamonds: own markup (falls back to the jewelry markup).
 		register_setting( 'om_catalog_settings', 'om_diamond_markup_type', array( 'sanitize_callback' => 'sanitize_key' ) );
@@ -96,6 +98,10 @@ class OM_Settings {
 	/** Allow tel:, mailto: and normal URLs (esc_url_raw keeps those protocols). */
 	public function sanitize_link( $value ) {
 		return esc_url_raw( trim( (string) $value ) );
+	}
+
+	public function sanitize_flag( $value ) {
+		return $value ? '1' : '0';
 	}
 
 	public function sanitize_lines( $value ) {
@@ -276,6 +282,20 @@ class OM_Settings {
 								<?php endforeach; ?>
 							</select>
 							<p class="description">To design product pages visually: create a page in Elementor, drop in the <strong>OM Single Product</strong> widget (plus anything else you want around it), then pick that page here. Every <code>/catalog/...</code> product URL renders through it. The layout page itself is never linked publicly.</p>
+						</td>
+					</tr>
+				</table>
+
+				<h2>Built-in product page rows</h2>
+				<p class="description">Rows shown below the product on the built-in product page. With an Elementor product layout, add the <strong>OM Related Products</strong> widget where you want them instead.</p>
+				<table class="form-table">
+					<tr>
+						<th>Show</th>
+						<td>
+							<input type="hidden" name="om_show_related" value="0" />
+							<label><input type="checkbox" name="om_show_related" value="1" <?php checked( get_option( 'om_show_related', '1' ), '1' ); ?> /> "You might also like"</label><br />
+							<input type="hidden" name="om_show_recent" value="0" />
+							<label><input type="checkbox" name="om_show_recent" value="1" <?php checked( get_option( 'om_show_recent', '1' ), '1' ); ?> /> "Recently viewed"</label>
 						</td>
 					</tr>
 				</table>

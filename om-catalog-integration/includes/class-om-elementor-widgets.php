@@ -35,5 +35,6 @@ class OM_Elementor_Widgets {
 		require_once OM_CATALOG_DIR . 'includes/class-om-elementor-extra-widgets.php';
 		$widgets_manager->register( new OM_Elementor_Diamond_Widget() );
 		$widgets_manager->register( new OM_Elementor_Builder_Widget() );
+		$widgets_manager->register( new OM_Elementor_Related_Widget() );
 	}
 }

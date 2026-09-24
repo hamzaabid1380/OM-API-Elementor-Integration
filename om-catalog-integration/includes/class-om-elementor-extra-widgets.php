@@ -289,3 +289,232 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 		);
 	}
 }
+
+/** "OM Related Products" widget: related / recently viewed / hand-picked. */
+class OM_Elementor_Related_Widget extends Widget_Base {
+
+	public function get_name() {
+		return 'om_related_widget';
+	}
+
+	public function get_title() {
+		return __( 'OM Related Products', 'om-catalog' );
+	}
+
+	public function get_icon() {
+		return 'eicon-posts-carousel';
+	}
+
+	public function get_categories() {
+		return array( 'general' );
+	}
+
+	public function get_keywords() {
+		return array( 'related', 'recently viewed', 'also like', 'upsell', 'products', 'carousel' );
+	}
+
+	public function get_style_depends() {
+		return array( 'om-catalog-css', 'om-catalog-fonts' );
+	}
+
+	public function get_script_depends() {
+		return array( 'om-catalog-js' );
+	}
+
+	protected function register_controls() {
+		$this->start_controls_section( 'section_content', array( 'label' => __( 'Products', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'source',
+			array(
+				'label'   => __( 'Show', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'related',
+				'options' => array(
+					'related' => __( 'You might also like (related designs)', 'om-catalog' ),
+					'recent'  => __( 'Recently viewed by this visitor', 'om-catalog' ),
+					'picked'  => __( 'Hand-picked style numbers', 'om-catalog' ),
+				),
+				'description' => __( 'On a product page, "related" follows the product being viewed. Recently viewed stays hidden until the visitor has looked at other pieces.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'title',
+			array(
+				'label'       => __( 'Title', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'You might also like', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'line',
+			array(
+				'label'       => __( 'Product line', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'engagement-rings',
+				'options'     => OM_Shortcodes::line_labels( is_admin() ),
+				'description' => __( 'Used for hand-picked products, and for related products outside a product page.', 'om-catalog' ),
+				'condition'   => array( 'source!' => 'recent' ),
+			)
+		);
+
+		$this->add_control(
+			'styles',
+			array(
+				'label'       => __( 'Style numbers', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 2,
+				'placeholder' => '85121-2, 84842-2',
+				'condition'   => array( 'source' => 'picked' ),
+			)
+		);
+
+		$this->add_control(
+			'count',
+			array(
+				'label'   => __( 'Number of products', 'om-catalog' ),
+				'type'    => Controls_Manager::NUMBER,
+				'default' => 4,
+				'min'     => 1,
+				'max'     => 12,
+			)
+		);
+
+		$this->add_control(
+			'layout',
+			array(
+				'label'   => __( 'Layout', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'grid',
+				'options' => array(
+					'grid'     => __( 'Grid', 'om-catalog' ),
+					'carousel' => __( 'Carousel (swipe / arrows)', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'columns',
+			array(
+				'label'           => __( 'Columns', 'om-catalog' ),
+				'type'            => Controls_Manager::SELECT,
+				'default'         => '4',
+				'tablet_default'  => '3',
+				'mobile_default'  => '2',
+				'options'         => array( '1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5', '6' => '6' ),
+				'selectors'       => array(
+					'{{WRAPPER}} .om-related' => '--om-related-columns: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'show_prices',
+			array(
+				'label'     => __( '"From $X" prices', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => '',
+				'condition' => array( 'source!' => 'recent' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style',
+			array(
+				'label' => __( 'Style', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'title_color',
+			array(
+				'label'     => __( 'Title color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-related-title' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'title_typography',
+				'label'    => __( 'Title typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-related-title',
+			)
+		);
+
+		$this->add_responsive_control(
+			'title_align',
+			array(
+				'label'     => __( 'Title alignment', 'om-catalog' ),
+				'type'      => Controls_Manager::CHOOSE,
+				'options'   => array(
+					'flex-start' => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
+					'center'     => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
+				),
+				'selectors' => array( '{{WRAPPER}} .om-related-head' => 'justify-content: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'card_title_color',
+			array(
+				'label'     => __( 'Product name color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array( '{{WRAPPER}} .om-card-title' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'card_title_typography',
+				'label'    => __( 'Product name typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-card-title',
+			)
+		);
+
+		$this->add_responsive_control(
+			'gap',
+			array(
+				'label'      => __( 'Gap', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 60 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-related' => '--om-related-gap: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'image_bg',
+			array(
+				'label'     => __( 'Image background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-card-image' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	protected function render() {
+		$s = $this->get_settings_for_display();
+		echo OM_Related::instance()->render( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+			array(
+				'source'      => (string) $s['source'],
+				'title'       => (string) $s['title'],
+				'line'        => (string) ( $s['line'] ?? '' ),
+				'styles'      => (string) ( $s['styles'] ?? '' ),
+				'count'       => (int) $s['count'],
+				'layout'      => (string) $s['layout'],
+				'show_prices' => (string) ( $s['show_prices'] ?? '' ),
+			)
+		);
+	}
+}

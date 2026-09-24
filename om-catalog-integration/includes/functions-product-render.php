@@ -56,6 +56,9 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			'show_inquiry'        => true,
 			'inquiry_heading'     => '',
 			'inquiry_open'        => false,
+			// Extra OM_Inquiry::render_form() options (intro, button, field
+			// toggles, labels, custom_form...).
+			'inquiry_options'     => array(),
 		)
 	);
 
@@ -135,7 +138,8 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 	<div class="om-product-wrap"
 		data-line="<?php echo esc_attr( $product_line ); ?>"
 		data-style="<?php echo esc_attr( $style_number ); ?>"
-		data-priced="<?php echo $can_requote ? '1' : '0'; ?>">
+		data-priced="<?php echo $can_requote ? '1' : '0'; ?>"
+		data-om-recent-item="<?php echo esc_attr( wp_json_encode( array( 'u' => om_product_url( $product_line, $style_number ), 't' => $title, 'v' => (string) ( $product['variant_name'] ?? '' ), 's' => $style_number, 'i' => ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '' ) ) ); ?>">
 
 		<?php
 		if ( $args['show_gallery'] ) {
@@ -298,7 +302,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			if ( $args['show_inquiry'] ) {
 				echo '<div id="om-inquiry" class="om-product-inquiry">';
 				echo OM_Inquiry::render_form( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
-					array(
+					(array) $args['inquiry_options'] + array(
 						'title'   => $title,
 						'style'   => $style_number,
 						'line'    => $product_line,

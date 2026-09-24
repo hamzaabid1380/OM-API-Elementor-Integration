@@ -123,6 +123,28 @@ class OM_Inquiry {
 				'button'      => __( 'Send inquiry', 'om-catalog' ),
 				'collapsible' => true,
 				'open'        => false,
+				// Which optional fields show, and their labels.
+				'show_phone'     => true,
+				'phone_required' => false,
+				'show_contact'   => true,
+				'show_message'   => true,
+				'labels'         => array(),
+				// Any form shortcode (Elementor Pro Form template, Contact
+				// Form 7, Gravity Forms, WPForms...) to use instead of the
+				// built-in form. The script copies the product details into
+				// that form's hidden fields named om_product, om_style,
+				// om_price, om_options, om_url, om_diamond or om_summary.
+				'custom_form'    => '',
+			)
+		);
+		$labels = wp_parse_args(
+			array_filter( (array) $context['labels'], 'strlen' ),
+			array(
+				'name'    => __( 'Name', 'om-catalog' ),
+				'email'   => __( 'Email', 'om-catalog' ),
+				'phone'   => __( 'Phone', 'om-catalog' ),
+				'contact' => __( 'Preferred contact', 'om-catalog' ),
+				'message' => __( 'Message', 'om-catalog' ),
 			)
 		);
 
@@ -146,6 +168,11 @@ class OM_Inquiry {
 			<?php if ( '' !== $context['intro'] ) : ?>
 				<p class="om-inquiry-intro"><?php echo esc_html( $context['intro'] ); ?></p>
 			<?php endif; ?>
+			<?php if ( '' !== trim( (string) $context['custom_form'] ) ) : ?>
+				<div class="om-inquiry-custom" data-om-product="<?php echo esc_attr( wp_json_encode( array( 'product' => $context['title'], 'style' => $context['style'], 'price' => $context['price'], 'url' => $context['url'], 'diamond' => $context['diamond'], 'summary' => $context['summary'] ) ) ); ?>">
+					<?php echo do_shortcode( $context['custom_form'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- the site's own form plugin output. ?>
+				</div>
+			<?php else : ?>
 			<form class="om-inquiry-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" novalidate>
 				<input type="hidden" name="action" value="om_inquiry" />
 				<input type="hidden" name="om_t" value="<?php echo esc_attr( self::stamp() ); ?>" />
@@ -153,40 +180,52 @@ class OM_Inquiry {
 					<input type="hidden" name="om_ctx_<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $context[ $field ] ); ?>" />
 				<?php endforeach; ?>
 				<input type="hidden" name="om_config" value="" class="om-inquiry-config" />
+				<?php if ( $context['show_phone'] && $context['phone_required'] ) : ?>
+					<input type="hidden" name="om_req_phone" value="1" />
+				<?php endif; ?>
 				<div class="om-hp" aria-hidden="true">
 					<label><?php esc_html_e( 'Leave this empty', 'om-catalog' ); ?><input type="text" name="om_website" value="" tabindex="-1" autocomplete="off" /></label>
 				</div>
 				<div class="om-field-row">
 					<p class="om-field">
-						<label for="<?php echo esc_attr( $id ); ?>-name"><?php esc_html_e( 'Name', 'om-catalog' ); ?> <span aria-hidden="true">*</span></label>
+						<label for="<?php echo esc_attr( $id ); ?>-name"><?php echo esc_html( $labels['name'] ); ?> <span aria-hidden="true">*</span></label>
 						<input id="<?php echo esc_attr( $id ); ?>-name" type="text" name="om_name" required autocomplete="name" />
 					</p>
 					<p class="om-field">
-						<label for="<?php echo esc_attr( $id ); ?>-email"><?php esc_html_e( 'Email', 'om-catalog' ); ?> <span aria-hidden="true">*</span></label>
+						<label for="<?php echo esc_attr( $id ); ?>-email"><?php echo esc_html( $labels['email'] ); ?> <span aria-hidden="true">*</span></label>
 						<input id="<?php echo esc_attr( $id ); ?>-email" type="email" name="om_email" required autocomplete="email" inputmode="email" />
 					</p>
 				</div>
-				<div class="om-field-row">
+				<?php if ( $context['show_phone'] || $context['show_contact'] ) : ?>
+					<div class="om-field-row">
+						<?php if ( $context['show_phone'] ) : ?>
+							<p class="om-field">
+								<label for="<?php echo esc_attr( $id ); ?>-phone"><?php echo esc_html( $labels['phone'] ); ?><?php echo $context['phone_required'] ? ' <span aria-hidden="true">*</span>' : ''; ?></label>
+								<input id="<?php echo esc_attr( $id ); ?>-phone" type="tel" name="om_phone" autocomplete="tel" inputmode="tel"<?php echo $context['phone_required'] ? ' required' : ''; ?> />
+							</p>
+						<?php endif; ?>
+						<?php if ( $context['show_contact'] ) : ?>
+							<p class="om-field">
+								<label for="<?php echo esc_attr( $id ); ?>-contact"><?php echo esc_html( $labels['contact'] ); ?></label>
+								<select id="<?php echo esc_attr( $id ); ?>-contact" name="om_contact">
+									<option value="email"><?php esc_html_e( 'Email', 'om-catalog' ); ?></option>
+									<option value="phone"><?php esc_html_e( 'Phone call', 'om-catalog' ); ?></option>
+									<option value="text"><?php esc_html_e( 'Text message', 'om-catalog' ); ?></option>
+								</select>
+							</p>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
+				<?php if ( $context['show_message'] ) : ?>
 					<p class="om-field">
-						<label for="<?php echo esc_attr( $id ); ?>-phone"><?php esc_html_e( 'Phone', 'om-catalog' ); ?></label>
-						<input id="<?php echo esc_attr( $id ); ?>-phone" type="tel" name="om_phone" autocomplete="tel" inputmode="tel" />
+						<label for="<?php echo esc_attr( $id ); ?>-msg"><?php echo esc_html( $labels['message'] ); ?></label>
+						<textarea id="<?php echo esc_attr( $id ); ?>-msg" name="om_message" rows="4"></textarea>
 					</p>
-					<p class="om-field">
-						<label for="<?php echo esc_attr( $id ); ?>-contact"><?php esc_html_e( 'Preferred contact', 'om-catalog' ); ?></label>
-						<select id="<?php echo esc_attr( $id ); ?>-contact" name="om_contact">
-							<option value="email"><?php esc_html_e( 'Email', 'om-catalog' ); ?></option>
-							<option value="phone"><?php esc_html_e( 'Phone call', 'om-catalog' ); ?></option>
-							<option value="text"><?php esc_html_e( 'Text message', 'om-catalog' ); ?></option>
-						</select>
-					</p>
-				</div>
-				<p class="om-field">
-					<label for="<?php echo esc_attr( $id ); ?>-msg"><?php esc_html_e( 'Message', 'om-catalog' ); ?></label>
-					<textarea id="<?php echo esc_attr( $id ); ?>-msg" name="om_message" rows="4"></textarea>
-				</p>
+				<?php endif; ?>
 				<p class="om-inquiry-status" role="status" aria-live="polite" hidden></p>
 				<button type="submit" class="om-inquiry-submit"><?php echo esc_html( $context['button'] ); ?></button>
 			</form>
+			<?php endif; ?>
 		</div>
 		<?php
 		echo $context['collapsible'] ? '</details>' : '</div>';
@@ -230,6 +269,9 @@ class OM_Inquiry {
 		$email = sanitize_email( $f( 'om_email' ) );
 		if ( '' === $name || ! is_email( $email ) ) {
 			$this->fail( __( 'Please enter your name and a valid email address.', 'om-catalog' ), $ajax );
+		}
+		if ( '' !== $f( 'om_req_phone' ) && '' === $f( 'om_phone' ) ) {
+			$this->fail( __( 'Please enter your phone number.', 'om-catalog' ), $ajax );
 		}
 
 		$ip       = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';

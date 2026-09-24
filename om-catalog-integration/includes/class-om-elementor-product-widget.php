@@ -416,6 +416,90 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'inquiry_source',
+			array(
+				'label'     => __( 'Form', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'builtin',
+				'options'   => array(
+					'builtin' => __( 'Built-in form (leads in wp-admin > Inquiries + email)', 'om-catalog' ),
+					'custom'  => __( 'My own form (shortcode)', 'om-catalog' ),
+				),
+				'condition' => array( 'show_inquiry' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'inquiry_shortcode',
+			array(
+				'label'       => __( 'Form shortcode', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 2,
+				'placeholder' => '[elementor-template id="123"]  or  [contact-form-7 id="45"]',
+				'description' => __( 'Add hidden fields named om_product, om_style, om_price, om_options, om_url (and om_diamond) to your form; they are filled with the piece the customer is viewing. With an Elementor Pro form, use those as the hidden fields\' IDs — submissions then appear under Elementor > Submissions.', 'om-catalog' ),
+				'condition'   => array( 'show_inquiry' => 'yes', 'inquiry_source' => 'custom' ),
+			)
+		);
+
+		$this->add_control(
+			'inquiry_intro',
+			array(
+				'label'       => __( 'Intro text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 2,
+				'placeholder' => __( 'Questions about sizing, timing or pricing? Send us a note and we will get back to you shortly.', 'om-catalog' ),
+				'description' => __( 'Type a single space to hide it.', 'om-catalog' ),
+				'condition'   => array( 'show_inquiry' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'inquiry_button',
+			array(
+				'label'       => __( 'Button text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Send inquiry', 'om-catalog' ),
+				'condition'   => array( 'show_inquiry' => 'yes', 'inquiry_source' => 'builtin' ),
+			)
+		);
+
+		foreach ( array(
+			'inquiry_phone'   => array( __( 'Phone field', 'om-catalog' ), 'yes' ),
+			'inquiry_phone_required' => array( __( 'Phone required', 'om-catalog' ), '' ),
+			'inquiry_contact' => array( __( 'Preferred contact field', 'om-catalog' ), 'yes' ),
+			'inquiry_message' => array( __( 'Message field', 'om-catalog' ), 'yes' ),
+		) as $key => $def ) {
+			$this->add_control(
+				$key,
+				array(
+					'label'     => $def[0],
+					'type'      => Controls_Manager::SWITCHER,
+					'default'   => $def[1],
+					'condition' => array( 'show_inquiry' => 'yes', 'inquiry_source' => 'builtin' ) + ( 'inquiry_phone_required' === $key ? array( 'inquiry_phone' => 'yes' ) : array() ),
+				)
+			);
+		}
+
+		foreach ( array(
+			'name'    => __( 'Name', 'om-catalog' ),
+			'email'   => __( 'Email', 'om-catalog' ),
+			'phone'   => __( 'Phone', 'om-catalog' ),
+			'contact' => __( 'Preferred contact', 'om-catalog' ),
+			'message' => __( 'Message', 'om-catalog' ),
+		) as $key => $label ) {
+			$this->add_control(
+				'inquiry_label_' . $key,
+				array(
+					/* translators: %s: field name. */
+					'label'       => sprintf( __( '"%s" label', 'om-catalog' ), $label ),
+					'type'        => Controls_Manager::TEXT,
+					'placeholder' => $label,
+					'condition'   => array( 'show_inquiry' => 'yes', 'inquiry_source' => 'builtin' ),
+				)
+			);
+		}
+
 		$this->end_controls_section();
 
 		/* ---------- Style ---------- */
@@ -653,6 +737,153 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		$this->start_controls_section(
+			'section_style_inquiry',
+			array(
+				'label' => __( 'Inquiry Form', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'inq_title_color',
+			array(
+				'label'     => __( 'Title color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-inquiry-toggle, {{WRAPPER}} .om-inquiry-heading' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'inq_title_typography',
+				'label'    => __( 'Title typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-inquiry-toggle, {{WRAPPER}} .om-inquiry-heading',
+			)
+		);
+
+		$this->add_control(
+			'inq_text_color',
+			array(
+				'label'     => __( 'Intro & label color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-inquiry-intro, {{WRAPPER}} .om-field label' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'inq_label_typography',
+				'label'    => __( 'Label typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-field label',
+			)
+		);
+
+		$this->add_control(
+			'inq_input_bg',
+			array(
+				'label'     => __( 'Field background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array( '{{WRAPPER}} .om-inquiry .om-field input, {{WRAPPER}} .om-inquiry .om-field select, {{WRAPPER}} .om-inquiry .om-field textarea' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'inq_input_border',
+			array(
+				'label'     => __( 'Field border', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-inquiry .om-field input, {{WRAPPER}} .om-inquiry .om-field select, {{WRAPPER}} .om-inquiry .om-field textarea' => 'border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'inq_input_text',
+			array(
+				'label'     => __( 'Field text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-inquiry .om-field input, {{WRAPPER}} .om-inquiry .om-field select, {{WRAPPER}} .om-inquiry .om-field textarea' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'inq_input_radius',
+			array(
+				'label'      => __( 'Field corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 24 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-inquiry .om-field input, {{WRAPPER}} .om-inquiry .om-field select, {{WRAPPER}} .om-inquiry .om-field textarea' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'inq_btn_bg',
+			array(
+				'label'     => __( 'Button background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array( '{{WRAPPER}} .om-inquiry .om-inquiry-submit' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'inq_btn_color',
+			array(
+				'label'     => __( 'Button text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-inquiry .om-inquiry-submit' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'inq_btn_hover_bg',
+			array(
+				'label'     => __( 'Button hover background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-inquiry .om-inquiry-submit:hover' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'inq_btn_radius',
+			array(
+				'label'      => __( 'Button corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-inquiry .om-inquiry-submit' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'inq_btn_width',
+			array(
+				'label'   => __( 'Button width', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => '',
+				'options' => array(
+					''     => __( 'Auto', 'om-catalog' ),
+					'100%' => __( 'Full width', 'om-catalog' ),
+				),
+				'selectors' => array( '{{WRAPPER}} .om-inquiry .om-inquiry-submit' => 'width: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'inq_btn_typography',
+				'label'    => __( 'Button typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-inquiry .om-inquiry-submit',
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
 			'section_style_fallback',
 			array(
 				'label' => __( 'No-price Text', 'om-catalog' ),
@@ -843,6 +1074,26 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['show_inquiry']     = 'yes' === ( $settings['show_inquiry'] ?? 'yes' );
 		$args['inquiry_heading']  = (string) ( $settings['inquiry_heading'] ?? '' );
 		$args['inquiry_open']     = 'yes' === ( $settings['inquiry_open'] ?? '' );
+		$inquiry                  = array(
+			'show_phone'     => 'yes' === ( $settings['inquiry_phone'] ?? 'yes' ),
+			'phone_required' => 'yes' === ( $settings['inquiry_phone_required'] ?? '' ),
+			'show_contact'   => 'yes' === ( $settings['inquiry_contact'] ?? 'yes' ),
+			'show_message'   => 'yes' === ( $settings['inquiry_message'] ?? 'yes' ),
+			'labels'         => array(),
+		);
+		foreach ( array( 'name', 'email', 'phone', 'contact', 'message' ) as $key ) {
+			$inquiry['labels'][ $key ] = (string) ( $settings[ 'inquiry_label_' . $key ] ?? '' );
+		}
+		if ( '' !== (string) ( $settings['inquiry_intro'] ?? '' ) ) {
+			$inquiry['intro'] = trim( (string) $settings['inquiry_intro'] );
+		}
+		if ( '' !== trim( (string) ( $settings['inquiry_button'] ?? '' ) ) ) {
+			$inquiry['button'] = (string) $settings['inquiry_button'];
+		}
+		if ( 'custom' === ( $settings['inquiry_source'] ?? 'builtin' ) ) {
+			$inquiry['custom_form'] = (string) ( $settings['inquiry_shortcode'] ?? '' );
+		}
+		$args['inquiry_options'] = $inquiry;
 
 		// The extra class neutralizes the container geometry of
 		// .om-single-product (the Elementor section owns spacing here) while
