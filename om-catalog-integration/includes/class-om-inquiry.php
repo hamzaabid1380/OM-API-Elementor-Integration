@@ -80,9 +80,17 @@ class OM_Inquiry {
 		if ( 'om_contact' === $column ) {
 			echo esc_html( trim( get_post_meta( $post_id, '_om_email', true ) . ' ' . get_post_meta( $post_id, '_om_phone', true ) ) );
 		} elseif ( 'om_product' === $column ) {
-			$url = get_post_meta( $post_id, '_om_url', true );
-			$sku = get_post_meta( $post_id, '_om_style', true );
-			echo $url ? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' . esc_html( $sku ? $sku : $url ) . '</a>' : esc_html( $sku );
+			$url   = get_post_meta( $post_id, '_om_link', true );
+			$url   = $url ? $url : get_post_meta( $post_id, '_om_url', true );
+			$sku   = (string) get_post_meta( $post_id, '_om_style', true );
+			$title = (string) get_post_meta( $post_id, '_om_title', true );
+			$img   = (string) get_post_meta( $post_id, '_om_image', true );
+			echo '<div style="display:flex;gap:10px;align-items:center;">';
+			if ( $img ) {
+				echo '<img src="' . esc_url( $img ) . '" alt="" width="44" height="44" style="object-fit:cover;border:1px solid #ddd;background:#fff;" />';
+			}
+			$label = trim( $title . ( $sku ? ' · ' . $sku : '' ) );
+			echo '<span>' . ( $url ? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' . esc_html( $label ? $label : $url ) . '</a>' : esc_html( $label ) ) . '</span></div>';
 		}
 	}
 
@@ -259,6 +267,10 @@ class OM_Inquiry {
 				'price'       => '',
 				'diamond'     => '',
 				'summary'     => '',
+				// Filled by the script at send time: the page URL with the
+				// options chosen, and the metal colour (for the right photo).
+				'link'        => '',
+				'color'       => '',
 				'heading'     => __( 'Inquire about this piece', 'om-catalog' ),
 				'intro'       => __( 'Questions about sizing, timing or pricing? Send us a note and we will get back to you shortly.', 'om-catalog' ),
 				'button'      => __( 'Send inquiry', 'om-catalog' ),
@@ -306,7 +318,7 @@ class OM_Inquiry {
 			<form class="om-inquiry-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" novalidate>
 				<input type="hidden" name="action" value="om_inquiry" />
 				<input type="hidden" name="om_t" value="<?php echo esc_attr( self::stamp() ); ?>" />
-				<?php foreach ( array( 'title', 'style', 'line', 'url', 'price', 'diamond', 'summary' ) as $field ) : ?>
+				<?php foreach ( array( 'title', 'style', 'line', 'url', 'price', 'diamond', 'summary', 'link', 'color' ) as $field ) : ?>
 					<input type="hidden" name="om_ctx_<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $context[ $field ] ); ?>" />
 				<?php endforeach; ?>
 				<input type="hidden" name="om_config" value="" class="om-inquiry-config" />
@@ -457,14 +469,45 @@ class OM_Inquiry {
 		);
 		// phpcs:enable
 
+		// The piece as Overnight Mountings has it (cached lookup), rather
+		// than what the browser sent: the real title, page and photo, which
+		// a spammer can't swap for their own text or links.
+		$data['image'] = '';
+		$data['link']  = $data['url'];
+		if ( '' !== $data['line'] && '' !== $data['style'] ) {
+			$product = OM_API_Client::get_product_by_style( $data['line'], $data['style'] );
+			if ( is_array( $product ) && ! is_wp_error( $product ) ) {
+				require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
+				$data['image'] = om_card_images( $product, mb_substr( $f( 'om_ctx_color' ), 0, 30 ) )[0];
+				// A plain product inquiry: OM's title and product page. (Ring
+				// builder / diamond inquiries keep their own title and link.)
+				if ( '' === $data['diamond'] && '' === $data['summary'] ) {
+					$data['url']  = om_product_url( $data['line'], $data['style'] );
+					$data['link'] = $data['url'];
+					if ( ! empty( $product['title'] ) ) {
+						$data['title'] = mb_substr( (string) $product['title'], 0, 200 );
+					}
+				}
+			}
+		}
+		// The page with the customer's options (?om_metal=…), when it is
+		// that same page on this site.
+		$link = isset( $_POST['om_ctx_link'] ) && is_scalar( $_POST['om_ctx_link'] ) ? esc_url_raw( wp_unslash( $_POST['om_ctx_link'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( '' !== $link && '' !== $data['url']
+			&& wp_parse_url( $link, PHP_URL_HOST ) === wp_parse_url( home_url(), PHP_URL_HOST )
+			&& untrailingslashit( (string) wp_parse_url( $link, PHP_URL_PATH ) ) === untrailingslashit( (string) wp_parse_url( $data['url'], PHP_URL_PATH ) ) ) {
+			$data['link'] = $link;
+		}
+
 		$lines = array_filter(
 			array(
-				__( 'Piece', 'om-catalog' )          => trim( $data['title'] . ( $data['style'] ? ' (style ' . $data['style'] . ')' : '' ) ),
+				__( 'Piece', 'om-catalog' )          => $data['title'],
+				__( 'Style number', 'om-catalog' )   => $data['style'],
 				__( 'Options chosen', 'om-catalog' ) => $data['config'],
 				__( 'Price shown', 'om-catalog' )    => $data['price'],
 				__( 'Diamond', 'om-catalog' )        => $data['diamond'],
 				__( 'Ring builder', 'om-catalog' )   => $data['summary'],
-				__( 'Page', 'om-catalog' )           => $data['url'],
+				__( 'Page', 'om-catalog' )           => $data['link'],
 			),
 			'strlen'
 		);
@@ -480,8 +523,16 @@ class OM_Inquiry {
 			$body .= false !== strpos( $pair[1], "\n" ) ? $pair[0] . ":\n" . $pair[1] . "\n" : $pair[0] . ': ' . $pair[1] . "\n";
 		}
 
-		/* translators: 1: customer name, 2: piece. */
-		$subject = sprintf( __( 'Inquiry from %1$s: %2$s', 'om-catalog' ), $data['name'], '' !== $data['title'] ? $data['title'] : __( 'general', 'om-catalog' ) );
+		$piece = '' !== $data['title'] ? $data['title'] . ( '' !== $data['style'] ? ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['style'] ) . ')' : '' ) : __( 'General question', 'om-catalog' );
+		/* translators: 1: piece and style number, 2: customer name. */
+		$subject = sprintf( __( 'New inquiry: %1$s — %2$s', 'om-catalog' ), $piece, $data['name'] );
+		/**
+		 * Filters the inquiry email subject.
+		 *
+		 * @param string $subject
+		 * @param array  $data    title, style, url, link, price, name, email…
+		 */
+		$subject = (string) apply_filters( 'om_inquiry_subject', $subject, $data );
 
 		$post_id = wp_insert_post(
 			array(
@@ -492,17 +543,22 @@ class OM_Inquiry {
 			)
 		);
 		if ( $post_id && ! is_wp_error( $post_id ) ) {
-			foreach ( array( 'email', 'phone', 'style', 'url', 'diamond' ) as $key ) {
+			foreach ( array( 'email', 'phone', 'style', 'url', 'link', 'image', 'title', 'diamond' ) as $key ) {
 				update_post_meta( $post_id, '_om_' . $key, $data[ $key ] );
 			}
 		}
 
-		$to = sanitize_email( (string) get_option( 'om_inquiry_email', '' ) );
-		wp_mail(
+		$to      = sanitize_email( (string) get_option( 'om_inquiry_email', '' ) );
+		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+		if ( is_email( $data['email'] ) ) {
+			$headers[] = 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $data['name'] ) . ' <' . $data['email'] . '>';
+		}
+		self::send_html(
 			is_email( $to ) ? $to : get_option( 'admin_email' ),
 			wp_specialchars_decode( $subject, ENT_QUOTES ),
+			self::email_html( $data, $values, false ),
 			$body,
-			is_email( $data['email'] ) ? array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>' ), '', $data['name'] ) . ' <' . $data['email'] . '>' ) : array()
+			$headers
 		);
 
 		// Optional confirmation to the customer.
@@ -512,12 +568,137 @@ class OM_Inquiry {
 				/* translators: %s: site name. */
 				$reply = sprintf( __( "Thank you for your inquiry. We have received your message and will be in touch shortly.\n\n%s", 'om-catalog' ), get_bloginfo( 'name' ) );
 			}
-			$reply .= "\n\n---\n" . implode( "\n", array_map( function ( $label, $value ) { return $label . ': ' . $value; }, array_keys( $lines ), $lines ) );
-			/* translators: %s: site name. */
-			wp_mail( $data['email'], wp_specialchars_decode( sprintf( __( 'We received your inquiry — %s', 'om-catalog' ), get_bloginfo( 'name' ) ), ENT_QUOTES ), $reply );
+			$reply_text = $reply . "\n\n---\n" . implode( "\n", array_map( function ( $label, $value ) { return $label . ': ' . $value; }, array_keys( $lines ), $lines ) );
+			self::send_html(
+				$data['email'],
+				/* translators: %s: site name. */
+				wp_specialchars_decode( sprintf( __( 'We received your inquiry — %s', 'om-catalog' ), get_bloginfo( 'name' ) ), ENT_QUOTES ),
+				self::email_html( $data, array(), true, $reply ),
+				$reply_text,
+				array( 'Content-Type: text/html; charset=UTF-8' )
+			);
 		}
 
 		$this->done( $ajax, $data['url'] );
+	}
+
+	/** Send an HTML email with a plain-text alternative. */
+	private static function send_html( $to, $subject, $html, $text, $headers ) {
+		$alt = static function ( $mailer ) use ( $text ) {
+			$mailer->AltBody = $text; // phpcs:ignore WordPress.NamingConventions.ValidVariableName -- PHPMailer property.
+		};
+		add_action( 'phpmailer_init', $alt );
+		$sent = wp_mail( $to, $subject, $html, $headers );
+		remove_action( 'phpmailer_init', $alt );
+		return $sent;
+	}
+
+	/**
+	 * The inquiry as an email: the piece (photo, title, style number,
+	 * options, price, a button to the exact configuration) and the
+	 * customer's answers. Tables and inline styles, so it looks right in
+	 * Gmail, Outlook and Apple Mail alike.
+	 *
+	 * @param array  $data     See handle_submit().
+	 * @param array  $values   Form answers: key => [ label, value ].
+	 * @param bool   $customer Copy for the customer (no answers table).
+	 * @param string $message  Text above the piece (customer copy).
+	 */
+	public static function email_html( $data, $values, $customer = false, $message = '' ) {
+		$primary = sanitize_hex_color( (string) get_option( 'om_color_primary', '' ) );
+		$primary = $primary ? $primary : '#00111C';
+		$site    = get_bloginfo( 'name' );
+		$font    = 'font-family:Helvetica,Arial,sans-serif;';
+		$serif   = 'font-family:Georgia,"Times New Roman",serif;';
+		$muted   = 'color:#8a8a8a;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;';
+
+		$details = array_filter(
+			array(
+				__( 'Options', 'om-catalog' )      => $data['config'] ?? '',
+				__( 'Price shown', 'om-catalog' )  => $data['price'] ?? '',
+				__( 'Diamond', 'om-catalog' )      => $data['diamond'] ?? '',
+				__( 'Ring builder', 'om-catalog' ) => $data['summary'] ?? '',
+			),
+			'strlen'
+		);
+
+		ob_start();
+		?>
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title><?php echo esc_html( $site ); ?></title></head>
+<body style="margin:0;padding:0;background:#f4f3f1;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3f1;"><tr><td align="center" style="padding:32px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;<?php echo $font; // phpcs:ignore WordPress.Security.EscapeOutput -- fixed string. ?>color:#464646;">
+	<tr><td style="padding:28px 32px 18px;border-bottom:1px solid #eeeeee;">
+		<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>"><?php echo esc_html( $site ); ?></div>
+		<div style="<?php echo $serif; // phpcs:ignore WordPress.Security.EscapeOutput ?>font-size:24px;color:<?php echo esc_attr( $primary ); ?>;margin-top:6px;">
+			<?php echo esc_html( $customer ? __( 'Thank you for your inquiry', 'om-catalog' ) : __( 'New inquiry', 'om-catalog' ) ); ?>
+		</div>
+		<?php if ( ! $customer ) : ?>
+			<div style="font-size:14px;margin-top:6px;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'From %s', 'om-catalog' ), $data['name'] ) ); ?><?php echo '' !== $data['email'] ? ' &middot; <a href="mailto:' . esc_attr( $data['email'] ) . '" style="color:' . esc_attr( $primary ) . ';">' . esc_html( $data['email'] ) . '</a>' : ''; ?><?php echo '' !== $data['phone'] ? ' &middot; <a href="tel:' . esc_attr( preg_replace( '/[^0-9+]/', '', $data['phone'] ) ) . '" style="color:' . esc_attr( $primary ) . ';">' . esc_html( $data['phone'] ) . '</a>' : ''; ?></div>
+		<?php endif; ?>
+	</td></tr>
+	<?php if ( $customer && '' !== trim( $message ) ) : ?>
+		<tr><td style="padding:24px 32px 0;font-size:15px;line-height:1.6;"><?php echo nl2br( esc_html( $message ) ); ?></td></tr>
+	<?php endif; ?>
+	<?php if ( '' !== $data['title'] ) : ?>
+	<tr><td style="padding:24px 32px;">
+		<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eeeeee;">
+			<?php if ( '' !== $data['image'] ) : ?>
+				<tr><td align="center" style="padding:20px;background:#fafafa;">
+					<a href="<?php echo esc_url( $data['link'] ); ?>"><img src="<?php echo esc_url( $data['image'] ); ?>" width="260" alt="<?php echo esc_attr( $data['title'] ); ?>" style="display:block;width:100%;max-width:260px;height:auto;border:0;"></a>
+				</td></tr>
+			<?php endif; ?>
+			<tr><td valign="top" style="padding:20px 22px;">
+				<?php if ( '' !== $data['style'] ) : ?>
+					<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>"><?php echo esc_html( sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['style'] ) ); ?></div>
+				<?php endif; ?>
+				<div style="<?php echo $serif; // phpcs:ignore WordPress.Security.EscapeOutput ?>font-size:20px;line-height:1.3;color:<?php echo esc_attr( $primary ); ?>;margin:6px 0 12px;"><?php echo esc_html( $data['title'] ); ?></div>
+				<?php foreach ( $details as $label => $value ) : ?>
+					<div style="font-size:13px;line-height:1.5;margin:0 0 4px;"><span style="color:#8a8a8a;"><?php echo esc_html( $label ); ?>:</span> <?php echo nl2br( esc_html( $value ) ); ?></div>
+				<?php endforeach; ?>
+				<?php if ( '' !== $data['link'] ) : ?>
+					<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr><td style="background:<?php echo esc_attr( $primary ); ?>;">
+						<a href="<?php echo esc_url( $data['link'] ); ?>" style="display:inline-block;padding:11px 20px;color:#ffffff;text-decoration:none;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;"><?php esc_html_e( 'View this piece', 'om-catalog' ); ?></a>
+					</td></tr></table>
+					<div style="font-size:11px;color:#8a8a8a;margin-top:8px;word-break:break-all;"><a href="<?php echo esc_url( $data['link'] ); ?>" style="color:#8a8a8a;"><?php echo esc_html( $data['link'] ); ?></a></div>
+				<?php endif; ?>
+			</td></tr>
+		</table>
+	</td></tr>
+	<?php endif; ?>
+	<?php if ( ! $customer && $values ) : ?>
+	<tr><td style="padding:<?php echo '' !== $data['title'] ? '0' : '24px'; ?> 32px 24px;">
+		<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>margin-bottom:8px;"><?php esc_html_e( 'Their message', 'om-catalog' ); ?></div>
+		<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.5;">
+			<?php foreach ( $values as $pair ) : ?>
+				<?php if ( '' === $pair[1] ) { continue; } ?>
+				<tr>
+					<td valign="top" style="padding:8px 12px 8px 0;border-top:1px solid #f0f0f0;color:#8a8a8a;width:34%;"><?php echo esc_html( $pair[0] ); ?></td>
+					<td valign="top" style="padding:8px 0;border-top:1px solid #f0f0f0;color:#222222;"><?php echo nl2br( esc_html( $pair[1] ) ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+		</table>
+	</td></tr>
+	<?php endif; ?>
+	<tr><td style="padding:16px 32px 26px;border-top:1px solid #eeeeee;font-size:12px;color:#8a8a8a;line-height:1.5;">
+		<?php
+		echo esc_html(
+			$customer
+				/* translators: %s: site name. */
+				? sprintf( __( '%s — we will be in touch shortly.', 'om-catalog' ), $site )
+				: ( '' !== $data['email']
+					/* translators: %s: customer name. */
+					? sprintf( __( 'Reply to this email to answer %s directly. Saved under Inquiries in your dashboard.', 'om-catalog' ), $data['name'] )
+					: __( 'Saved under Inquiries in your dashboard.', 'om-catalog' ) )
+		);
+		?>
+	</td></tr>
+</table>
+</td></tr></table>
+</body></html>
+		<?php
+		return (string) ob_get_clean();
 	}
 
 	private function done( $ajax, $return_url ) {

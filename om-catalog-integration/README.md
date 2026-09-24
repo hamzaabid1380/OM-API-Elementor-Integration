@@ -189,7 +189,8 @@ an **Inquiry Form** section. Or choose **My own form
 (shortcode)** to use an Elementor Pro form (via `[elementor-template id=".."]`),
 Contact Form 7, Gravity Forms or WPForms: give the form hidden fields with
 the IDs/names `om_product`, `om_style`, `om_price`, `om_options`, `om_url`
-(and `om_diamond`) and they are filled with the piece being viewed. Those
+(the page with the chosen options), `om_image` (and `om_diamond`) and they
+are filled with the piece being viewed. Those
 leads then land wherever that form sends them (e.g. Elementor > Submissions).
 
 ## Related & recently viewed products
@@ -347,7 +348,48 @@ Shortcode equivalents on `[om_catalog]` and `[om_related]`: `quick_view`,
   goes for "View full details" in quick view. Links can do this too:
   `?om_metal=18 KT&om_color=Rose&om_size=7`.
 
+## Inquiry emails (1.9)
+
+The built-in form sends an HTML email (with a plain-text copy for mail apps
+that prefer it):
+
+- **Subject:** `New inquiry: {title} (Style {style number}) — {name}`
+  (change it with the `om_inquiry_subject` filter).
+- **Product card:** photo (in the metal colour chosen), title, style number,
+  options, price shown, a **View this piece** button and the page URL. The
+  link reopens the exact configuration (`?om_metal=…&om_color=…`).
+- **Their answers** from the form, and a footer reminding you that
+  replying goes straight to the customer (Reply-To).
+- The title, style number, photo and page come from Overnight Mountings'
+  own data (a cached lookup), not from the browser, so spam can't inject
+  its own text or links.
+- The optional customer auto-reply shows the same product card.
+- **Inquiries** in wp-admin lists each lead with the photo, title, style
+  number and a link to the configured piece.
+
+## Consistent hover states (1.9)
+
+Themes such as Hello Elementor, and Elementor's global kit, restyle every
+button and link (a pink or kit-coloured hover background, purple link hover,
+16px text, 3px corners). Every plugin button and link now sets its own
+colours for rest, hover and focus, and its own size and shape, strongly
+enough to beat the theme but not the widgets' style controls. One hover
+language throughout: solid buttons invert, outline buttons fill, text links
+fade, icon buttons tint, and keyboard focus shows a ring in your brand
+colour.
+
 ## Changelog
+
+### 1.9.0
+- Buttons, links, pills and icon buttons keep their own colours and shape
+  on hover and focus under any theme or Elementor kit (no more pink/purple
+  flashes on quick view, gallery, thumbnails, close buttons, arrows,
+  pagination, filters); unified hover language and focus ring.
+- Inquiry emails: HTML with the product photo, title, style number,
+  options, price and a link to the exact configuration; style number in
+  the subject; details verified against OM's data; customer auto-reply
+  with the same card; admin list shows photo, title and style.
+- Custom forms also receive `om_image` and a configured `om_url`.
 
 ### 1.8.0
 - Every quick view and video-badge option is now a widget control, with

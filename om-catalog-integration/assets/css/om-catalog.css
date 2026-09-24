@@ -117,7 +117,7 @@
 	font-family: var(--om-font-body, Inter, sans-serif);
 }
 
-.om-filter-pill {
+.om-catalog-wrap .om-filter-pill {
 	padding: 9px 16px;
 	border: 1px solid #d8d8d8;
 	text-decoration: none;
@@ -129,12 +129,12 @@
 	transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
-.om-filter-pill:hover {
+.om-catalog-wrap .om-filter-pill:hover {
 	border-color: var(--om-color-primary, #00111C);
 	color: var(--om-color-primary, #00111C);
 }
 
-.om-filter-pill.is-active {
+.om-catalog-wrap .om-filter-pill.is-active {
 	background: var(--om-color-primary, #00111C);
 	border-color: var(--om-color-primary, #00111C);
 	color: #fff;
@@ -282,7 +282,7 @@
 	font-size: 13px;
 }
 
-.om-pagination a,
+.om-pagination a.page-numbers,
 .om-pagination span {
 	min-width: 40px;
 	padding: 10px 12px;
@@ -294,7 +294,8 @@
 	transition: border-color 0.2s ease;
 }
 
-.om-pagination a:hover {
+.om-pagination a.page-numbers:hover,
+.om-pagination a.page-numbers:focus-visible {
 	border-color: var(--om-color-primary, #00111C);
 	color: var(--om-color-primary, #00111C);
 }
@@ -993,7 +994,7 @@
 	margin-bottom: 8px;
 }
 
-.om-variant-link {
+.om-product-wrap .om-variant-link {
 	padding: 9px 15px;
 	border: 1px solid #d8d8d8;
 	text-decoration: none;
@@ -1005,12 +1006,12 @@
 	transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
-.om-variant-link:hover {
+.om-product-wrap .om-variant-link:hover {
 	border-color: var(--om-color-primary, #00111C);
 	color: var(--om-color-primary, #00111C);
 }
 
-.om-variant-link.is-current {
+.om-product-wrap .om-variant-link.is-current {
 	background: var(--om-color-primary, #00111C);
 	border-color: var(--om-color-primary, #00111C);
 	color: #fff;
@@ -3758,7 +3759,7 @@ details.om-acc[open] > .om-acc-title::after {
 	font-size: 28px;
 }
 
-.om-qv-full {
+.om-product-wrap .om-qv-full {
 	display: inline-block;
 	margin-top: 18px;
 	font-size: 12px;
@@ -4151,4 +4152,359 @@ details.om-acc[open] > .om-acc-title::after {
 	.om-qv-mobile:has(.om-qv-slot--icon) .om-card-play--br {
 		bottom: 64px;
 	}
+}
+
+/* =========================================================
+   1.9 Interaction states: consistent, and safe from the theme
+   =========================================================
+   Themes (Hello Elementor's reset) and Elementor's global kit style every
+   <button> and <a> on hover/focus: a filled pink or kit-coloured
+   background, white text, a purple link hover. Anything here that didn't
+   set all of its own states showed those through. Each element below sets
+   background, text and border for rest, hover and focus, with selectors
+   one step stronger than the theme/kit (2 classes at rest, 3 on hover)
+   but weaker than the widgets' style controls, which still win.
+
+   One hover language everywhere:
+   - solid buttons invert (fill → outline), outline buttons fill;
+   - text links fade; icon buttons get a soft tint;
+   - pills, chips and cards darken their border/text. */
+
+/* Solid (main) buttons. */
+.om-catalog-wrap .om-search-submit.om-search-submit,
+.om-inquiry .om-inquiry-submit.om-inquiry-submit,
+.om-single-product .om-btn--solid.om-btn--solid,
+.om-diamonds .om-btn--solid.om-btn--solid,
+.om-builder .om-btn--solid.om-btn--solid,
+.om-size-guide .om-sg-print.om-sg-print,
+.om-product-wrap .om-sticky-cta.om-sticky-cta {
+	background-color: var(--om-color-primary, #00111C);
+	border-color: var(--om-color-primary, #00111C);
+	color: #fff;
+	text-decoration: none;
+	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.om-catalog-wrap .om-search-submit.om-search-submit:is(:hover, :focus-visible),
+.om-inquiry .om-inquiry-submit.om-inquiry-submit:is(:hover, :focus-visible),
+.om-single-product .om-btn--solid.om-btn--solid:is(:hover, :focus-visible),
+.om-diamonds .om-btn--solid.om-btn--solid:is(:hover, :focus-visible),
+.om-builder .om-btn--solid.om-btn--solid:is(:hover, :focus-visible),
+.om-size-guide .om-sg-print.om-sg-print:is(:hover, :focus-visible) {
+	background-color: transparent;
+	border-color: var(--om-color-primary, #00111C);
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-product-wrap .om-sticky-cta.om-sticky-cta:is(:hover, :focus-visible) {
+	background-color: var(--om-color-primary, #00111C);
+	color: #fff;
+	opacity: 0.88;
+}
+
+/* Outline buttons. */
+.om-single-product .om-btn--outline.om-btn--outline,
+.om-diamonds .om-btn--outline.om-btn--outline,
+.om-builder .om-btn--outline.om-btn--outline {
+	background-color: transparent;
+	border-color: var(--om-color-primary, #00111C);
+	color: var(--om-color-primary, #00111C);
+	text-decoration: none;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.om-single-product .om-btn--outline.om-btn--outline:is(:hover, :focus-visible),
+.om-diamonds .om-btn--outline.om-btn--outline:is(:hover, :focus-visible),
+.om-builder .om-btn--outline.om-btn--outline:is(:hover, :focus-visible) {
+	background-color: var(--om-color-primary, #00111C);
+	border-color: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+/* Text links and link-style buttons: same colour, fade on hover. */
+.om-single-product .om-btn--text.om-btn--text,
+.om-product-wrap .om-size-guide-link.om-size-guide-link,
+.om-product-wrap .om-qv-full.om-qv-full,
+.om-product-wrap .om-price-link.om-price-link,
+.om-catalog-wrap .om-filter-more-btn.om-filter-more-btn,
+.om-catalog-wrap .om-suggest-all.om-suggest-all,
+.om-diamonds .om-dd-video-link.om-dd-video-link {
+	background-color: transparent;
+	border-color: transparent;
+	color: var(--om-color-primary, #00111C);
+	transition: opacity 0.2s ease;
+}
+
+.om-catalog-wrap .om-clear-filters.om-clear-filters,
+.om-diamonds .om-df-reset.om-df-reset,
+.om-builder .om-review-change.om-review-change,
+.om-builder .om-review-restart.om-review-restart {
+	background-color: transparent;
+	border-color: transparent;
+	color: var(--om-color-text, #464646);
+	transition: opacity 0.2s ease;
+}
+
+.om-single-product .om-btn--text.om-btn--text:is(:hover, :focus-visible),
+.om-product-wrap .om-size-guide-link.om-size-guide-link:is(:hover, :focus-visible),
+.om-product-wrap .om-qv-full.om-qv-full:is(:hover, :focus-visible),
+.om-product-wrap .om-price-link.om-price-link:is(:hover, :focus-visible),
+.om-catalog-wrap .om-filter-more-btn.om-filter-more-btn:is(:hover, :focus-visible),
+.om-diamonds .om-dd-video-link.om-dd-video-link:is(:hover, :focus-visible) {
+	background-color: transparent;
+	border-color: transparent;
+	color: var(--om-color-primary, #00111C);
+	opacity: 0.65;
+}
+
+.om-catalog-wrap .om-suggest-all.om-suggest-all:is(:hover, :focus-visible) {
+	background-color: #f7f6f4;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-catalog-wrap .om-clear-filters.om-clear-filters:is(:hover, :focus-visible),
+.om-diamonds .om-df-reset.om-df-reset:is(:hover, :focus-visible),
+.om-builder .om-review-change.om-review-change:is(:hover, :focus-visible),
+.om-builder .om-review-restart.om-review-restart:is(:hover, :focus-visible) {
+	background-color: transparent;
+	color: var(--om-color-primary, #00111C);
+}
+
+/* Price shown as a link ("Call for pricing" with a link set). */
+.om-product-wrap .om-price-link.om-price-link {
+	text-decoration: underline;
+	text-underline-offset: 5px;
+	text-decoration-thickness: 1px;
+}
+
+/* Round icon buttons on photos: sound, full screen. */
+.om-product-gallery .om-media-expand.om-media-expand,
+.om-main-video .om-sound.om-sound {
+	background-color: rgba(255, 255, 255, 0.9);
+	border-color: transparent;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-product-gallery .om-media-expand.om-media-expand:is(:hover, :focus-visible),
+.om-main-video .om-sound.om-sound:is(:hover, :focus-visible) {
+	background-color: #fff;
+	color: var(--om-color-primary, #00111C);
+}
+
+/* Close / arrow buttons in pop-ups and the lightbox. */
+.om-quick-view .om-qv-close.om-qv-close,
+.om-size-guide .om-sg-close.om-sg-close,
+.om-lightbox .om-lb-close.om-lb-close,
+.om-lightbox .om-lb-prev.om-lb-prev,
+.om-lightbox .om-lb-next.om-lb-next {
+	background-color: transparent;
+	border-color: transparent;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-quick-view .om-qv-close.om-qv-close {
+	color: var(--om-qv-close, var(--om-color-primary, #00111C));
+}
+
+.om-quick-view .om-qv-close.om-qv-close:is(:hover, :focus-visible),
+.om-size-guide .om-sg-close.om-sg-close:is(:hover, :focus-visible),
+.om-lightbox .om-lb-close.om-lb-close:is(:hover, :focus-visible),
+.om-lightbox .om-lb-prev.om-lb-prev:is(:hover, :focus-visible),
+.om-lightbox .om-lb-next.om-lb-next:is(:hover, :focus-visible) {
+	background-color: rgba(0, 0, 0, 0.06);
+	border-color: transparent;
+}
+
+.om-quick-view .om-qv-close.om-qv-close:is(:hover, :focus-visible) {
+	color: var(--om-qv-close, var(--om-color-primary, #00111C));
+}
+
+.om-size-guide .om-sg-close.om-sg-close:is(:hover, :focus-visible),
+.om-lightbox .om-lb-close.om-lb-close:is(:hover, :focus-visible),
+.om-lightbox .om-lb-prev.om-lb-prev:is(:hover, :focus-visible),
+.om-lightbox .om-lb-next.om-lb-next:is(:hover, :focus-visible) {
+	color: var(--om-color-primary, #00111C);
+}
+
+/* Carousel arrows. */
+.om-related .om-related-prev.om-related-prev,
+.om-related .om-related-next.om-related-next {
+	background-color: transparent;
+	border-color: rgba(0, 0, 0, 0.15);
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-related .om-related-prev.om-related-prev:is(:hover, :focus-visible),
+.om-related .om-related-next.om-related-next:is(:hover, :focus-visible) {
+	background-color: var(--om-color-primary, #00111C);
+	border-color: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+/* Gallery: main photo, thumbnails, "Watch video". */
+.om-product-gallery .om-zoom.om-zoom,
+.om-product-gallery .om-zoom.om-zoom:is(:hover, :focus) {
+	background-color: #fff;
+	border-color: transparent;
+	color: inherit;
+}
+
+.om-product-gallery .om-thumb-btn.om-thumb-btn {
+	background-color: #fff;
+	border-color: rgba(0, 0, 0, 0.08);
+	color: inherit;
+}
+
+.om-product-gallery .om-thumb-btn.om-thumb-btn:is(:hover, :focus-visible) {
+	background-color: #fff;
+	border-color: rgba(0, 0, 0, 0.35);
+	color: inherit;
+}
+
+.om-product-gallery .om-thumb-btn.om-thumb-btn.om-thumb--video,
+.om-product-gallery .om-thumb-btn.om-thumb-btn.om-thumb--video:is(:hover, :focus-visible) {
+	background-color: #f4f3f1;
+}
+
+.om-product-gallery .om-thumb-btn.om-thumb-btn.is-active,
+.om-product-gallery .om-thumb-btn.om-thumb-btn.is-active:is(:hover, :focus-visible) {
+	border-color: var(--om-color-primary, #00111C);
+}
+
+.om-product-gallery .om-watch-video.om-watch-video {
+	background-color: rgba(255, 255, 255, 0.92);
+	border-color: transparent;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-product-gallery .om-watch-video.om-watch-video:is(:hover, :focus-visible) {
+	background-color: #fff;
+	color: var(--om-color-primary, #00111C);
+}
+
+/* Quick view button on cards: white at rest, fills on hover. */
+.om-card-cell .om-qv-btn.om-qv-btn {
+	background-color: rgba(255, 255, 255, 0.94);
+	border-color: transparent;
+	color: var(--om-color-primary, #00111C);
+	transition: opacity 0.25s ease, transform 0.25s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.om-card-cell .om-qv-btn.om-qv-btn:is(:hover, :focus-visible) {
+	background-color: var(--om-color-primary, #00111C);
+	border-color: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+/* Cards and link-style pills: never the theme's link colours. */
+.om-catalog-grid .om-card,
+.om-catalog-grid .om-card:is(:hover, :focus, :visited) {
+	color: inherit;
+	text-decoration: none;
+}
+
+.om-catalog-wrap .om-chip.om-chip,
+.om-catalog-wrap .om-chip.om-chip:is(:hover, :focus-visible) {
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-builder .om-builder-choice.om-builder-choice:is(:hover, :focus-visible) {
+	color: var(--om-color-text, #464646);
+}
+
+.om-catalog-wrap .om-suggest-item.om-suggest-item,
+.om-catalog-wrap .om-suggest-item.om-suggest-item:is(:hover, :focus-visible) {
+	color: var(--om-color-text, #464646);
+}
+
+/* Section toggles (accordion, inquiry, filters on phones). */
+.om-product-details .om-acc-title.om-acc-title:hover,
+.om-product-inquiry .om-inquiry-toggle.om-inquiry-toggle:hover {
+	color: var(--om-color-primary, #00111C);
+	opacity: 0.75;
+}
+
+/* One focus ring for keyboard users, in the brand colour. */
+:is(.om-catalog-wrap, .om-single-product, .om-product-wrap, .om-related, .om-quick-view, .om-lightbox, .om-size-guide, .om-diamonds, .om-builder) :is(a, button, summary, [tabindex]):focus-visible {
+	outline: 2px solid var(--om-color-primary, #00111C);
+	outline-offset: 2px;
+	box-shadow: none;
+}
+
+/* Shape: themes also restyle every button's size (Hello: 16px text,
+   padding, 1px border, 3px corners, no wrapping). Pin ours. */
+.om-card-cell .om-qv-btn.om-qv-btn {
+	padding: 11px 12px;
+	border-width: 0;
+	border-style: solid;
+	border-radius: 0;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.2;
+	white-space: normal;
+}
+
+.om-card-cell .om-qv-btn.om-qv-btn--button {
+	padding: 10px 22px;
+	border-radius: 999px;
+}
+
+.om-card-cell .om-qv-btn.om-qv-btn--icon {
+	width: 42px;
+	height: 42px;
+	padding: 0;
+	border-radius: 50%;
+}
+
+.om-quick-view .om-qv-close.om-qv-close,
+.om-size-guide .om-sg-close.om-sg-close {
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	font-size: 30px;
+	font-weight: 300;
+	line-height: 1;
+	white-space: normal;
+}
+
+.om-lightbox .om-lb-close.om-lb-close,
+.om-lightbox .om-lb-prev.om-lb-prev,
+.om-lightbox .om-lb-next.om-lb-next {
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	line-height: 1;
+}
+
+.om-related .om-related-prev.om-related-prev,
+.om-related .om-related-next.om-related-next {
+	padding: 0;
+	border-width: 1px;
+	border-style: solid;
+	border-radius: 50%;
+	font-size: 22px;
+	line-height: 1;
+}
+
+.om-product-gallery .om-zoom.om-zoom,
+.om-product-wrap .om-size-guide-link.om-size-guide-link,
+.om-catalog-wrap .om-filter-more-btn.om-filter-more-btn,
+.om-product-wrap .om-sticky-cta.om-sticky-cta,
+.om-size-guide .om-sg-print.om-sg-print,
+.om-diamonds .om-df-apply.om-df-apply {
+	border-radius: 0;
+}
+
+.om-product-gallery .om-zoom.om-zoom {
+	padding: 0;
+	border: 0;
+}
+
+.om-inquiry .om-inquiry-submit.om-inquiry-submit,
+.om-product-wrap .om-sticky-cta.om-sticky-cta,
+.om-size-guide .om-sg-print.om-sg-print {
+	white-space: normal;
+	line-height: 1.3;
 }

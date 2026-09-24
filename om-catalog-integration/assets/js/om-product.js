@@ -259,20 +259,25 @@
 		applyMediaColor($(this).closest('.om-product-wrap'));
 	});
 
-	// Switching carat (another style number) or opening the full page from
-	// quick view keeps the metal, colour, setting, quality and size chosen.
-	$(document).on('click', '[data-om-keep-options]', function () {
-		var $wrap = $(this).closest('.om-product-wrap');
+	// The product page URL with the chosen options, so a link reopens the
+	// exact configuration (used by inquiries and carat switches).
+	function configuredUrl($wrap, href) {
 		try {
-			var url = new URL(this.href, window.location.href);
+			var url = new URL(href || window.location.href, window.location.href);
 			['metal', 'color', 'level', 'quality'].forEach(function (name) {
 				var value = optVal($wrap, name);
 				if (value) { url.searchParams.set('om_' + name, value); } else { url.searchParams.delete('om_' + name); }
 			});
 			var size = optVal($wrap, 'finger_size');
-			if (/^[\d.]+$/.test(size)) { url.searchParams.set('om_size', size); }
-			this.href = url.toString();
-		} catch (err) { /* keep the plain link */ }
+			if (/^[\d.]+$/.test(size)) { url.searchParams.set('om_size', size); } else { url.searchParams.delete('om_size'); }
+			return url.toString();
+		} catch (err) { return href || ''; }
+	}
+
+	// Switching carat (another style number) or opening the full page from
+	// quick view keeps the metal, colour, setting, quality and size chosen.
+	$(document).on('click', '[data-om-keep-options]', function () {
+		this.href = configuredUrl($(this).closest('.om-product-wrap'), this.href);
 	});
 
 	$(document).on('click', '.om-watch-video', function () {
@@ -440,6 +445,8 @@
 		var $wrap = $form.closest('.om-product-wrap');
 		if ($wrap.length) {
 			$form.find('.om-inquiry-config').val(optionsSummary($wrap));
+			$form.find('[name="om_ctx_link"]').val(configuredUrl($wrap, $form.find('[name="om_ctx_url"]').val()));
+			$form.find('[name="om_ctx_color"]').val(optVal($wrap, 'color'));
 		}
 
 		var data = new FormData(form);
@@ -817,7 +824,8 @@
 
 	// A site's own form (Elementor Pro, Contact Form 7, Gravity Forms...)
 	// gets the piece's details in hidden fields named om_product, om_style,
-	// om_price, om_options, om_url, om_diamond or om_summary.
+	// om_price, om_options, om_url (with the options chosen), om_image,
+	// om_diamond or om_summary.
 	function fillCustomForms(root) {
 		$(root || document).find('.om-inquiry-custom[data-om-product]').each(function () {
 			var $box = $(this);
@@ -826,7 +834,13 @@
 			var $wrap = $box.closest('.om-product-wrap');
 			var options = $wrap.length ? optionsSummary($wrap) : '';
 			var price = $.trim($wrap.find('.om-price-amount:not([hidden])').text()) || data.price || '';
-			var values = { product: data.product, style: data.style, price: price, options: options, url: data.url || window.location.href, diamond: data.diamond, summary: data.summary };
+			var url = data.url || window.location.href;
+			var values = {
+				product: data.product, style: data.style, price: price, options: options,
+				url: $wrap.length ? configuredUrl($wrap, url) : url,
+				image: $wrap.find('.om-main-image').attr('src') || '',
+				diamond: data.diamond, summary: data.summary
+			};
 			$.each(values, function (key, value) {
 				// Matches name="om_product" as well as Elementor's
 				// name="form_fields[om_product]".
