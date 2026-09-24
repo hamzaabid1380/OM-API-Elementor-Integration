@@ -330,6 +330,16 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'card_video',
+			array(
+				'label'       => __( 'Video previews on cards', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Designs with a video get a play badge and play it on hover (desktop) or when centred on screen (phones).', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
 			'badges_heading',
 			array(
 				'label'     => __( 'Badges', 'om-catalog' ),
@@ -1286,6 +1296,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'sort'            => (string) ( $settings['default_sort'] ?? '' ),
 			'show_prices'     => (string) ( $settings['show_prices'] ?? '' ),
 			'quick_view'      => (string) ( $settings['quick_view'] ?? 'yes' ),
+			'card_video'      => (string) ( $settings['card_video'] ?? 'yes' ),
 			'badges'          => (string) ( $settings['badges'] ?? '' ),
 			'badge_new_days'  => (int) ( $settings['badge_new_days'] ?? 0 ),
 			'badge_shape'     => (string) ( $settings['badge_shape'] ?? '' ),

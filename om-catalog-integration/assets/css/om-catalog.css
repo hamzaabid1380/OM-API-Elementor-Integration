@@ -459,6 +459,229 @@
 	border-color: transparent transparent transparent #fff;
 }
 
+/* ---------- Product video experience (1.7) ---------- */
+
+.om-main-video {
+	position: relative;
+	overflow: hidden;
+}
+
+.om-main-video[hidden] {
+	display: none;
+}
+
+.om-main-video video.om-video {
+	animation: om-video-in 0.5s ease both;
+}
+
+@keyframes om-video-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+/* "Watch video" pill over the photo. */
+.om-product-gallery .om-watch-video {
+	position: absolute;
+	left: 16px;
+	bottom: 16px;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+	padding: 8px 16px 8px 8px;
+	border: 0;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.92);
+	box-shadow: 0 4px 18px rgba(0, 17, 28, 0.14);
+	-webkit-backdrop-filter: blur(6px);
+	backdrop-filter: blur(6px);
+	color: var(--om-color-primary, #00111C);
+	font-family: var(--om-font-body, inherit);
+	font-size: 13px;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+	line-height: 1;
+	cursor: pointer;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.om-product-gallery .om-watch-video[hidden] {
+	display: none;
+}
+
+.om-product-gallery .om-watch-video:hover,
+.om-product-gallery .om-watch-video:focus-visible {
+	transform: translateY(-1px);
+	box-shadow: 0 6px 22px rgba(0, 17, 28, 0.2);
+	outline: none;
+}
+
+.om-watch-icon {
+	position: relative;
+	flex: 0 0 auto;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background: var(--om-color-primary, #00111C);
+}
+
+.om-watch-icon::before {
+	content: "";
+	position: absolute;
+	inset: -4px;
+	border-radius: 50%;
+	border: 2px solid var(--om-color-primary, #00111C);
+	opacity: 0;
+	animation: om-pulse 2.4s ease-out infinite;
+}
+
+.om-watch-icon::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 55%;
+	transform: translate(-50%, -50%);
+	border-style: solid;
+	border-width: 5px 0 5px 8px;
+	border-color: transparent transparent transparent #fff;
+}
+
+@keyframes om-pulse {
+	0% { transform: scale(0.85); opacity: 0.55; }
+	70%, 100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* Round corner buttons on the playing video: full screen + sound. */
+.om-product-gallery .om-media-expand,
+.om-main-video .om-sound {
+	position: absolute;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.9);
+	box-shadow: 0 2px 10px rgba(0, 17, 28, 0.14);
+	color: var(--om-color-primary, #00111C);
+	cursor: pointer;
+	transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.om-product-gallery .om-media-expand[hidden] {
+	display: none;
+}
+
+.om-product-gallery .om-media-expand:hover,
+.om-main-video .om-sound:hover,
+.om-product-gallery .om-media-expand:focus-visible,
+.om-main-video .om-sound:focus-visible {
+	background: #fff;
+	transform: scale(1.06);
+	outline: none;
+}
+
+.om-product-gallery .om-media-expand {
+	top: 14px;
+	right: 14px;
+}
+
+.om-main-video .om-sound {
+	right: 14px;
+	bottom: 14px;
+}
+
+/* Expand icon: four corners. */
+.om-media-expand span {
+	position: relative;
+	width: 14px;
+	height: 14px;
+	background:
+		linear-gradient(currentColor, currentColor) 0 0 / 5px 1.5px,
+		linear-gradient(currentColor, currentColor) 0 0 / 1.5px 5px,
+		linear-gradient(currentColor, currentColor) 100% 0 / 5px 1.5px,
+		linear-gradient(currentColor, currentColor) 100% 0 / 1.5px 5px,
+		linear-gradient(currentColor, currentColor) 0 100% / 5px 1.5px,
+		linear-gradient(currentColor, currentColor) 0 100% / 1.5px 5px,
+		linear-gradient(currentColor, currentColor) 100% 100% / 5px 1.5px,
+		linear-gradient(currentColor, currentColor) 100% 100% / 1.5px 5px;
+	background-repeat: no-repeat;
+}
+
+/* Speaker icon (muted: with a slash; .is-on: with sound waves). */
+.om-main-video .om-sound::before {
+	content: "";
+	width: 18px;
+	height: 18px;
+	background-color: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 5 6 9H2v6h4l5 4V5z' fill='black'/%3E%3Cpath d='m23 9-6 6M17 9l6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 5 6 9H2v6h4l5 4V5z' fill='black'/%3E%3Cpath d='m23 9-6 6M17 9l6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.om-main-video .om-sound.is-on::before {
+	-webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 5 6 9H2v6h4l5 4V5z' fill='black'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14'/%3E%3C/svg%3E");
+	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 5 6 9H2v6h4l5 4V5z' fill='black'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14'/%3E%3C/svg%3E");
+}
+
+/* Video thumbnail: dimmed poster, play badge, "Video" label. */
+.om-thumb--video .om-thumb {
+	filter: brightness(0.82);
+}
+
+.om-thumb--video .om-play {
+	width: 26px;
+	height: 26px;
+	bottom: 14px;
+}
+
+.om-thumb-label {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 5px;
+	color: #fff;
+	font-family: var(--om-font-body, inherit);
+	font-size: 9px;
+	font-weight: 600;
+	letter-spacing: 0.14em;
+	line-height: 1;
+	text-align: center;
+	text-transform: uppercase;
+	text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.om-thumb--video:not(:has(.om-thumb)) .om-thumb-label {
+	color: var(--om-color-primary, #00111C);
+	text-shadow: none;
+}
+
+@media (max-width: 600px) {
+	.om-product-gallery .om-watch-video {
+		left: 10px;
+		bottom: 10px;
+		padding: 6px 14px 6px 6px;
+		font-size: 12px;
+	}
+
+	.om-product-gallery .om-media-expand,
+	.om-main-video .om-sound {
+		width: 36px;
+		height: 36px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-watch-icon::before,
+	.om-main-video video.om-video {
+		animation: none;
+	}
+}
+
 @media (max-width: 800px) {
 	.om-product-gallery {
 		grid-template-columns: minmax(0, 1fr);
@@ -1526,6 +1749,41 @@ html.om-lb-open {
 	max-height: 100%;
 	object-fit: contain;
 	user-select: none;
+}
+
+.om-lb-img[hidden],
+.om-lb-video[hidden] {
+	display: none;
+}
+
+.om-lb-video {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+}
+
+.om-lb-video video,
+.om-lb-video iframe {
+	display: block;
+	max-width: 100%;
+	max-height: 100%;
+	border: 0;
+	background: #000;
+}
+
+.om-lb-video video {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	background: transparent;
+}
+
+.om-lb-video iframe {
+	width: min(100%, calc((100vh - 128px) * 16 / 9));
+	aspect-ratio: 16 / 9;
+	height: auto;
 }
 
 .om-lightbox button {
@@ -3440,6 +3698,7 @@ details.om-acc[open] > .om-acc-title::after {
 	align-items: flex-end;
 	padding: 12px;
 	pointer-events: none;
+	z-index: 4;
 }
 
 .om-layout-boxed .om-qv-slot {
@@ -3550,7 +3809,7 @@ details.om-acc[open] > .om-acc-title::after {
 	position: absolute;
 	top: 10px;
 	left: 10px;
-	z-index: 2;
+	z-index: 3;
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
@@ -3659,4 +3918,60 @@ details.om-acc[open] > .om-acc-title::after {
 .om-single-product--qv {
 	padding: 0;
 	max-width: none;
+}
+
+/* ---------- Card video previews (1.7) ---------- */
+
+.om-card-image.has-video {
+	position: relative;
+}
+
+.om-card-play {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	z-index: 3;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.92);
+	box-shadow: 0 2px 8px rgba(0, 17, 28, 0.12);
+	pointer-events: none;
+	transition: opacity 0.3s ease;
+}
+
+.om-card-play::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 55%;
+	transform: translate(-50%, -50%);
+	border-style: solid;
+	border-width: 5px 0 5px 8px;
+	border-color: transparent transparent transparent var(--om-color-primary, #00111C);
+}
+
+.om-card-image .om-card-video {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	background: #fff;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.35s ease;
+}
+
+.om-card-image.is-playing .om-card-video {
+	opacity: 1;
+}
+
+.om-card-image.is-playing .om-card-play {
+	opacity: 0;
+}
+
+.om-card-cell.is-skeleton .om-card-play {
+	display: none;
 }

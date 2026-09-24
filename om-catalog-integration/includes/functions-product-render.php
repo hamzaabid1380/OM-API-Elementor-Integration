@@ -75,6 +75,9 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			'sticky_gallery'      => true,
 			// Quick view: compact version (no inquiry, links to the page).
 			'compact'             => false,
+			// Product videos: thumb (a tile in the gallery + "Watch
+			// video" button) or first (the video leads, playing muted).
+			'video_mode'          => 'first',
 		)
 	);
 
@@ -159,7 +162,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 
 		<?php
 		if ( $args['show_gallery'] ) {
-			echo om_render_gallery( $product, $title ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+			echo om_render_gallery( $product, $title, $args['video_mode'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 		}
 		?>
 
@@ -421,41 +424,67 @@ function om_video_url( $video ) {
  * files (mp4/webm/mov) in a <video>, anything else (YouTube, Vimeo, a
  * 360° viewer) in an iframe.
  */
-function om_render_gallery( $product, $title ) {
+function om_render_gallery( $product, $title, $video_mode = 'thumb' ) {
 	$images = array_values( array_filter( array_map( 'om_image_url', array_slice( (array) ( $product['images'] ?? array() ), 0, 12 ) ) ) );
 	$videos = array_slice( om_product_videos( $product ), 0, 4 );
 	if ( ! $images && ! $videos ) {
 		return '';
 	}
 
+	// "first": the video leads the gallery and plays (muted, looping) as
+	// soon as the page opens; photos follow. Without photos, same thing.
+	$video_first = $videos && ( 'first' === $video_mode || ! $images );
+	$poster      = $images ? $images[0] : '';
+
 	ob_start();
 	?>
-	<div class="om-product-gallery" data-om-gallery>
+	<div class="om-product-gallery<?php echo $videos ? ' has-video' : ''; ?><?php echo $video_first ? ' is-video-first' : ''; ?>" data-om-gallery>
 		<div class="om-main-media">
 			<?php if ( $images ) : ?>
-				<button type="button" class="om-zoom" aria-label="<?php esc_attr_e( 'Enlarge image', 'om-catalog' ); ?>">
+				<button type="button" class="om-zoom" aria-label="<?php esc_attr_e( 'Enlarge image', 'om-catalog' ); ?>"<?php echo $video_first ? ' hidden' : ''; ?>>
 					<img class="om-main-image" src="<?php echo esc_url( $images[0] ); ?>" alt="<?php echo esc_attr( $title ); ?>" fetchpriority="high" />
 				</button>
 			<?php endif; ?>
-			<div class="om-main-video"<?php echo $images ? ' hidden' : ''; ?>>
-				<?php if ( ! $images ) : ?>
-					<?php echo om_video_embed( $videos[0], $title ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer. ?>
+			<div class="om-main-video"<?php echo $video_first ? '' : ' hidden'; ?>>
+				<?php if ( $video_first ) : ?>
+					<?php echo om_video_embed( $videos[0], $title, true, $poster ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer. ?>
 				<?php endif; ?>
 			</div>
+			<?php if ( $videos ) : ?>
+				<button type="button" class="om-media-expand" aria-label="<?php esc_attr_e( 'Full screen', 'om-catalog' ); ?>"<?php echo $video_first ? '' : ' hidden'; ?>><span aria-hidden="true"></span></button>
+			<?php endif; ?>
+			<?php if ( $videos && $images ) : ?>
+				<button type="button" class="om-watch-video"<?php echo $video_first ? ' hidden' : ''; ?>><span class="om-watch-icon" aria-hidden="true"></span><?php esc_html_e( 'Watch video', 'om-catalog' ); ?></button>
+			<?php endif; ?>
 		</div>
 		<?php if ( count( $images ) + count( $videos ) > 1 ) : ?>
 			<div class="om-thumbs" role="list">
-				<?php foreach ( $images as $i => $url ) : ?>
-					<button type="button" role="listitem" class="om-thumb-btn<?php echo 0 === $i ? ' is-active' : ''; ?>" data-full="<?php echo esc_url( $url ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: image number. */ __( 'View image %d', 'om-catalog' ), $i + 1 ) ); ?>">
+				<?php
+				$video_thumbs = '';
+				foreach ( $videos as $i => $url ) {
+					$video_thumbs .= sprintf(
+						'<button type="button" role="listitem" class="om-thumb-btn om-thumb--video%1$s" data-video="%2$s" aria-label="%3$s">%4$s<span class="om-play" aria-hidden="true"></span><span class="om-thumb-label">%5$s</span></button>',
+						( $video_first && 0 === $i ) ? ' is-active' : '',
+						esc_attr( om_video_embed( $url, $title, true, $poster ) ),
+						esc_attr__( 'Play video', 'om-catalog' ),
+						$poster ? '<img class="om-thumb" src="' . esc_url( $poster ) . '" alt="" loading="lazy" decoding="async" />' : '',
+						esc_html__( 'Video', 'om-catalog' )
+					);
+				}
+				if ( $video_first ) {
+					echo $video_thumbs; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+				}
+				foreach ( $images as $i => $url ) :
+					?>
+					<button type="button" role="listitem" class="om-thumb-btn<?php echo ( ! $video_first && 0 === $i ) ? ' is-active' : ''; ?>" data-full="<?php echo esc_url( $url ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: image number. */ __( 'View image %d', 'om-catalog' ), $i + 1 ) ); ?>">
 						<img class="om-thumb" src="<?php echo esc_url( $url ); ?>" alt="" loading="lazy" decoding="async" />
 					</button>
-				<?php endforeach; ?>
-				<?php foreach ( $videos as $i => $url ) : ?>
-					<button type="button" role="listitem" class="om-thumb-btn om-thumb--video<?php echo ( ! $images && 0 === $i ) ? ' is-active' : ''; ?>" data-video="<?php echo esc_attr( om_video_embed( $url, $title ) ); ?>" aria-label="<?php esc_attr_e( 'Play video', 'om-catalog' ); ?>">
-						<?php if ( $images ) : ?><img class="om-thumb" src="<?php echo esc_url( $images[0] ); ?>" alt="" loading="lazy" decoding="async" /><?php endif; ?>
-						<span class="om-play" aria-hidden="true"></span>
-					</button>
-				<?php endforeach; ?>
+					<?php
+				endforeach;
+				if ( ! $video_first ) {
+					echo $video_thumbs; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+				}
+				?>
 			</div>
 		<?php endif; ?>
 	</div>
@@ -463,17 +492,58 @@ function om_render_gallery( $product, $title ) {
 	return ob_get_clean();
 }
 
-/** Player markup for one video URL. */
-function om_video_embed( $url, $title = '' ) {
-	$path = strtolower( (string) wp_parse_url( $url, PHP_URL_PATH ) );
-	if ( preg_match( '/\.(mp4|webm|mov|m4v)$/', $path ) ) {
-		return '<video class="om-video" src="' . esc_url( $url ) . '" controls playsinline muted loop autoplay preload="metadata"></video>';
+/**
+ * Card media attributes for a product's video: the file to preview on
+ * hover / when centred on screen, and a class for the play badge.
+ *
+ * @return array [ extra class, extra attributes ] for .om-card-image.
+ */
+function om_card_video_attrs( $product, $enabled = true ) {
+	if ( ! $enabled ) {
+		return array( '', '' );
 	}
-	// YouTube / Vimeo page links become their embed players.
-	if ( preg_match( '#(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]{6,})#', $url, $m ) ) {
-		$url = 'https://www.youtube-nocookie.com/embed/' . $m[1];
-	} elseif ( preg_match( '#vimeo\.com/(\d+)#', $url, $m ) ) {
-		$url = 'https://player.vimeo.com/video/' . $m[1];
+	$videos = om_product_videos( $product );
+	if ( ! $videos ) {
+		return array( '', '' );
+	}
+	foreach ( $videos as $url ) {
+		if ( om_is_video_file( $url ) ) {
+			return array( ' has-video', ' data-om-video="' . esc_url( $url ) . '"' );
+		}
+	}
+	// Only an embed (YouTube, 360 viewer...): badge it, no inline preview.
+	return array( ' has-video', '' );
+}
+
+/** Is this a video file the browser can play itself (vs. an embed page)? */
+function om_is_video_file( $url ) {
+	return (bool) preg_match( '/\.(mp4|webm|mov|m4v)$/', strtolower( (string) wp_parse_url( $url, PHP_URL_PATH ) ) );
+}
+
+/**
+ * Player markup for one video URL.
+ *
+ * Files (mp4/webm/mov) play in a <video>: with $autoplay, muted, looping
+ * and inline (browsers only allow muted autoplay), showing the poster
+ * until the first frame arrives. YouTube / Vimeo links become their embed
+ * players (muted autoplay + loop when asked); any other link (e.g. a 360°
+ * viewer page) loads in an iframe as it is.
+ */
+function om_video_embed( $url, $title = '', $autoplay = false, $poster = '' ) {
+	if ( om_is_video_file( $url ) ) {
+		return sprintf(
+			'<video class="om-video" src="%1$s"%2$s playsinline muted loop %3$s preload="%4$s" aria-label="%5$s"></video>',
+			esc_url( $url ),
+			$poster ? ' poster="' . esc_url( $poster ) . '"' : '',
+			$autoplay ? 'autoplay' : 'controls',
+			$autoplay ? 'auto' : 'metadata',
+			esc_attr( $title )
+		);
+	}
+	if ( preg_match( '#(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([\w-]{6,})#', $url, $m ) ) {
+		$url = 'https://www.youtube-nocookie.com/embed/' . $m[1] . ( $autoplay ? '?autoplay=1&mute=1&loop=1&playlist=' . $m[1] . '&playsinline=1&rel=0&modestbranding=1' : '?rel=0' );
+	} elseif ( preg_match( '#vimeo\.com/(?:video/)?(\d+)#', $url, $m ) ) {
+		$url = 'https://player.vimeo.com/video/' . $m[1] . ( $autoplay ? '?autoplay=1&muted=1&loop=1&background=0' : '' );
 	}
 	return '<iframe class="om-video" src="' . esc_url( $url ) . '" title="' . esc_attr( $title ) . '" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>';
 }

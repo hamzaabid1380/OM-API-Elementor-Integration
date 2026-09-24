@@ -72,6 +72,7 @@ class OM_Ajax {
 						'sticky_gallery' => false,
 						'show_size'      => false,
 						'options_style'  => (string) get_option( 'om_options_style', 'swatches' ),
+						'video_mode'     => 'first',
 					)
 				) . '</div>',
 			)

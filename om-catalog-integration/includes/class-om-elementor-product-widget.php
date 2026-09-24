@@ -148,6 +148,20 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'video_mode',
+			array(
+				'label'       => __( 'Product videos', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'first',
+				'options'     => array(
+					'first' => __( 'Video first (plays silently on a loop)', 'om-catalog' ),
+					'thumb' => __( 'Photos first + "Watch video" button', 'om-catalog' ),
+				),
+				'description' => __( 'For products that have a video.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
 			'details_style',
 			array(
 				'label'   => __( 'Description & details', 'om-catalog' ),
@@ -1425,6 +1439,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['buttons_layout']   = 'stacked' === ( $settings['buttons_layout'] ?? 'inline' ) ? 'stacked' : 'inline';
 		$args['options_style']    = in_array( $settings['options_style'] ?? 'swatches', array( 'swatches', 'pills', 'dropdowns' ), true ) ? $settings['options_style'] : 'swatches';
 		$args['details_style']    = 'open' === ( $settings['details_style'] ?? 'accordion' ) ? 'open' : 'accordion';
+		$args['video_mode']       = 'thumb' === ( $settings['video_mode'] ?? 'first' ) ? 'thumb' : 'first';
 		foreach ( array( 'show_specs', 'show_size', 'show_size_guide', 'sticky_gallery', 'sticky_bar' ) as $flag ) {
 			$args[ $flag ] = 'yes' === ( $settings[ $flag ] ?? 'yes' );
 		}

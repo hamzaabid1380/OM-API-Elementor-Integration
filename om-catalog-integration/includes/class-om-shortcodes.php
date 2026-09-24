@@ -225,6 +225,9 @@ class OM_Shortcodes {
 				'badges'          => '',
 				'badge_new_days'  => 0,
 				'badge_shape'     => '',
+				// "yes": cards with a video show a play badge and preview it
+				// on hover (desktop) / when centred on screen (phones).
+				'card_video'      => 'yes',
 			),
 			$atts,
 			'om_catalog'
@@ -821,7 +824,11 @@ class OM_Shortcodes {
 			?>
 			<div class="om-card-cell">
 			<a class="om-card" href="<?php echo esc_url( $link ); ?>">
-				<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?>">
+				<?php list( $video_class, $video_attr ) = om_card_video_attrs( $product, 'yes' === $atts['card_video'] ); ?>
+				<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?><?php echo esc_attr( $video_class ); ?>"<?php echo $video_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_card_video_attrs(). ?>>
+					<?php if ( $video_class ) : ?>
+						<span class="om-card-play" aria-label="<?php esc_attr_e( 'Has video', 'om-catalog' ); ?>"></span>
+					<?php endif; ?>
 					<?php if ( $badges ) : ?>
 						<span class="om-badges">
 							<?php foreach ( $badges as $badge ) : ?>

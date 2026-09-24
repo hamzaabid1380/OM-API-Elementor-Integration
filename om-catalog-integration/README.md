@@ -265,11 +265,49 @@ catalog pages visitors use, the product lines, collections and search index
 every 10 minutes via WP-Cron, so visitors are served from cache. For exact
 timing, set a real server cron to call wp-cron.php.
 
-**Videos:** the API has a `videos` field on each product. The plugin shows
-any it finds as a play tile in the gallery. Settings > OM Catalog > Tools >
-Test connection reports how many products in a line actually have videos.
+## Product videos (1.7)
+
+Most OM products carry a video, and the plugin makes it the centrepiece:
+
+- **Video first** (default) — the product page opens on the video, playing
+  silently on a loop like a live showcase, with a sound toggle and a full
+  screen button. Photos follow in the thumbnails; the first thumbnail is the
+  labelled **Video** tile. Switching to a photo shows a **Watch video**
+  button to come back.
+- **Photos first** — the photo leads, with the **Watch video** button on it.
+  Pick either under Settings > OM Catalog > Product page (built-in page) or
+  the OM Single Product widget's **Product videos** control.
+- **Full screen** — the lightbox mixes videos and photos, with player
+  controls and sound.
+- **Listing cards** — a small play badge marks products with a video. On
+  desktop the video plays over the photo while the card is hovered; on
+  phones, the card nearest the middle of the screen plays as the visitor
+  scrolls (one at a time). Turn off with the catalog widget's **Video previews on
+  cards** switch or `card_video="no"`.
+- **Quick view** opens on the video too.
+- Considerate by default: autoplay is always muted (browsers require it),
+  videos pause when scrolled away, nothing loads for card previews until
+  needed, and visitors with *reduced motion* or *data saver* get a paused
+  player with controls instead. A file a browser can't play falls back to
+  the photos. Card previews need direct video files (.mp4/.webm/.mov);
+  YouTube/Vimeo links play on the product page only.
+
+Settings > OM Catalog > Tools > Test connection reports how many products in
+a line have videos.
 
 ## Changelog
+
+### 1.7.0
+- Product video experience: video-first gallery that autoplays muted on a
+  loop, sound toggle, full screen button, "Watch video" button over photos,
+  labelled video thumbnail.
+- Lightbox plays videos alongside photos.
+- Listing and related cards: play badge, hover preview on desktop,
+  centre-of-screen preview on phones.
+- Quick view opens on the video.
+- Reduced-motion / data-saver support; unplayable files fall back to photos.
+- New settings: Product videos (video first / photos first); catalog
+  widget "Video previews" switch.
 
 ### 1.6.1
 - Test connection always reports video status (present / empty / no field /

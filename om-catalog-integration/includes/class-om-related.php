@@ -145,7 +145,11 @@ class OM_Related {
 		$hover        = ! empty( $product['images'][1] ) ? om_image_url( $product['images'][1] ) : '';
 		?>
 		<a class="om-card" href="<?php echo esc_url( om_product_url( $line, $style_number ) ); ?>">
-			<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?>">
+			<?php list( $video_class, $video_attr ) = om_card_video_attrs( $product ); ?>
+			<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?><?php echo esc_attr( $video_class ); ?>"<?php echo $video_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_card_video_attrs(). ?>>
+				<?php if ( $video_class ) : ?>
+					<span class="om-card-play" aria-label="<?php esc_attr_e( 'Has video', 'om-catalog' ); ?>"></span>
+				<?php endif; ?>
 				<?php if ( $image ) : ?>
 					<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>" loading="lazy" decoding="async" />
 				<?php endif; ?>

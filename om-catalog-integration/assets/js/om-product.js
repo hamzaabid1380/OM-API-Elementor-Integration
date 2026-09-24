@@ -143,17 +143,98 @@
 		}
 	}
 
+	/* ---------- Product video ---------- */
+
+	var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	var saveData = !!(navigator.connection && navigator.connection.saveData);
+
+	// Autoplaying product videos run muted (browsers require it); give
+	// them a sound toggle, and respect reduced-motion / data-saver
+	// visitors by starting paused with controls instead.
+	function decorateMainVideo($gallery) {
+		var $box = $gallery.find('.om-main-video');
+		var video = $box.find('video')[0];
+		$box.find('.om-sound').remove();
+		if (!video) { return; }
+		// A file the browser can't play: fall back to the photos.
+		video.addEventListener('error', function () { videoFailed($gallery); });
+		if (video.error) { videoFailed($gallery); return; }
+		if (reduceMotion || saveData) {
+			video.removeAttribute('autoplay');
+			video.pause();
+			video.controls = true;
+			return;
+		}
+		var play = video.play && video.play();
+		if (play && play.catch) { play.catch(function () { video.controls = true; }); }
+		$('<button type="button" class="om-sound" aria-pressed="false"></button>')
+			.attr('aria-label', t('unmute', 'Turn sound on'))
+			.on('click', function () {
+				video.muted = !video.muted;
+				$(this).toggleClass('is-on', !video.muted).attr('aria-pressed', String(!video.muted))
+					.attr('aria-label', video.muted ? t('unmute', 'Turn sound on') : t('mute', 'Turn sound off'));
+			})
+			.appendTo($box);
+		// Pause while scrolled out of view.
+		if (window.IntersectionObserver) {
+			new IntersectionObserver(function (entries) {
+				if (!video.isConnected) { return; }
+				if (entries[0].isIntersecting) { video.play && video.play().catch(function () {}); } else { video.pause(); }
+			}, { threshold: 0.2 }).observe(video);
+		}
+	}
+
+	function videoFailed($gallery) {
+		var $photo = $gallery.find('.om-thumb-btn:not(.om-thumb--video)').first();
+		$gallery.find('.om-thumb--video, .om-watch-video, .om-media-expand').remove();
+		$gallery.removeClass('has-video is-video-first');
+		$gallery.find('.om-main-video').prop('hidden', true).empty();
+		if ($photo.length) {
+			$photo.addClass('is-active');
+			showImage($gallery, $photo.attr('data-full'));
+		} else {
+			$gallery.find('.om-zoom').prop('hidden', false);
+		}
+		if ($gallery.find('.om-thumb-btn').length < 2) { $gallery.find('.om-thumbs').remove(); }
+	}
+
+	function showVideo($gallery, html) {
+		$gallery.find('.om-zoom').prop('hidden', true);
+		$gallery.find('.om-watch-video').prop('hidden', true);
+		$gallery.find('.om-media-expand').prop('hidden', false);
+		$gallery.find('.om-main-video').html(html).prop('hidden', false);
+		decorateMainVideo($gallery);
+	}
+
 	$(document).on('click', '.om-thumb-btn', function () {
 		var $btn = $(this);
 		var $gallery = $btn.closest('.om-product-gallery');
 		$gallery.find('.om-thumb-btn').removeClass('is-active');
 		$btn.addClass('is-active');
 		if ($btn.attr('data-video')) {
-			$gallery.find('.om-zoom').prop('hidden', true);
-			$gallery.find('.om-main-video').html($btn.attr('data-video')).prop('hidden', false);
+			showVideo($gallery, $btn.attr('data-video'));
 		} else {
+			$gallery.find('.om-media-expand').prop('hidden', true);
+			$gallery.find('.om-watch-video').prop('hidden', false);
 			showImage($gallery, $btn.attr('data-full'));
 		}
+	});
+
+	$(document).on('click', '.om-watch-video', function () {
+		var $gallery = $(this).closest('.om-product-gallery');
+		var $thumb = $gallery.find('.om-thumb--video').first();
+		if ($thumb.length) { $thumb.trigger('click'); }
+	});
+
+	$(document).on('click', '.om-media-expand', function () {
+		if ($(this).closest('.om-quick-view').length) { return; }
+		var $gallery = $(this).closest('.om-product-gallery');
+		var slides = lightboxSlides($gallery);
+		var $active = $gallery.find('.om-thumb-btn.is-active');
+		var index = $active.length ? $gallery.find('.om-thumb-btn').index($active) : 0;
+		// Stop the inline copy; the lightbox plays its own.
+		$gallery.find('.om-main-video video').each(function () { this.pause(); });
+		openLightbox(slides, Math.max(0, index), this);
 	});
 
 	// Hover zoom on devices with a precise pointer.
@@ -171,10 +252,14 @@
 
 	var lb = null;
 
-	function lightboxImages($gallery) {
-		var list = $gallery.find('.om-thumb-btn[data-full]').map(function () { return $(this).attr('data-full'); }).get();
+	// Every photo and video of a gallery, in thumbnail order.
+	function lightboxSlides($gallery) {
+		var list = $gallery.find('.om-thumb-btn').map(function () {
+			return $(this).attr('data-video') ? { video: $(this).attr('data-video') } : { img: $(this).attr('data-full') };
+		}).get();
 		if (!list.length) {
-			list = [$gallery.find('.om-main-image').attr('src')];
+			var $video = $gallery.find('.om-main-video');
+			list = $video.children().length ? [{ video: $video.html() }] : [{ img: $gallery.find('.om-main-image').attr('src') }];
 		}
 		return list;
 	}
@@ -185,7 +270,7 @@
 				'<div class="om-lightbox" role="dialog" aria-modal="true" aria-label="' + t('gallery', 'Image gallery') + '" hidden>' +
 					'<button type="button" class="om-lb-close" aria-label="' + t('close', 'Close') + '">&times;</button>' +
 					'<button type="button" class="om-lb-prev" aria-label="' + t('prev', 'Previous image') + '">&lsaquo;</button>' +
-					'<figure class="om-lb-stage"><img class="om-lb-img" alt="" /></figure>' +
+					'<figure class="om-lb-stage"><img class="om-lb-img" alt="" /><div class="om-lb-video" hidden></div></figure>' +
 					'<button type="button" class="om-lb-next" aria-label="' + t('next', 'Next image') + '">&rsaquo;</button>' +
 					'<p class="om-lb-count" aria-live="polite"></p>' +
 				'</div>'
@@ -219,7 +304,19 @@
 	function renderLightbox() {
 		var images = lb.data('images');
 		var index = lb.data('index');
-		lb.find('.om-lb-img').attr('src', images[index]);
+		var slide = images[index];
+		if (typeof slide === 'string') { slide = { img: slide }; }
+		var $video = lb.find('.om-lb-video').empty();
+		if (slide.video) {
+			// Full screen: with sound controls available.
+			var $player = $($.parseHTML(slide.video));
+			$player.filter('video').add($player.find('video')).attr('controls', 'controls');
+			$video.append($player).prop('hidden', false);
+			lb.find('.om-lb-img').prop('hidden', true).removeAttr('src');
+		} else {
+			$video.prop('hidden', true);
+			lb.find('.om-lb-img').prop('hidden', false).attr('src', slide.img);
+		}
 		lb.find('.om-lb-count').text(images.length > 1 ? (index + 1) + ' / ' + images.length : '');
 	}
 
@@ -231,6 +328,7 @@
 
 	function closeLightbox() {
 		if (!lb || lb.prop('hidden')) { return; }
+		lb.find('.om-lb-video').empty();
 		lb.prop('hidden', true);
 		$('html').removeClass('om-lb-open');
 		var back = lb.data('returnFocus');
@@ -256,9 +354,11 @@
 		// underneath it; the hover zoom is enough there.
 		if ($(this).closest('.om-quick-view').length) { return; }
 		var $gallery = $(this).closest('.om-product-gallery');
-		var images = lightboxImages($gallery);
+		var slides = lightboxSlides($gallery);
 		var current = $(this).find('.om-main-image').attr('src');
-		openLightbox(images, Math.max(0, images.indexOf(current)), this);
+		var index = 0;
+		slides.forEach(function (slide, i) { if (slide.img === current) { index = i; } });
+		openLightbox(slides, index, this);
 	});
 
 	/* =========================================================
@@ -822,6 +922,7 @@
 			if (response && response.success && response.data.html) {
 				$body.html(response.data.html);
 				rememberFrom($body);
+				$body.find('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
 			} else {
 				$body.html($('<p class="om-error"></p>').text((response && response.data && response.data.message) || t('error', 'Something went wrong. Please try again.')));
 			}
@@ -832,6 +933,7 @@
 
 	function closeQuickView() {
 		if (!qv) { return; }
+		qv.find('video').each(function () { this.pause(); });
 		if (qv[0].close) { qv[0].close(); } else { qv.removeAttr('open'); $('html').removeClass('om-lb-open'); }
 	}
 
@@ -864,9 +966,83 @@
 		});
 	}
 
+	/* ---------- Card video previews ---------- */
+
+	// Desktop: the card's video plays while hovered. Phones: the card
+	// nearest the middle of the screen plays, one at a time. Nothing loads
+	// until needed; skipped for reduced-motion and data-saver visitors.
+	function startPreview(box) {
+		if (box._omVideo || !box.getAttribute('data-om-video')) { return; }
+		var video = document.createElement('video');
+		video.className = 'om-card-video';
+		video.muted = true;
+		video.loop = true;
+		video.playsInline = true;
+		video.setAttribute('playsinline', '');
+		video.setAttribute('muted', '');
+		video.preload = 'auto';
+		video.src = box.getAttribute('data-om-video');
+		video.addEventListener('playing', function () { box.classList.add('is-playing'); });
+		video.addEventListener('error', function () {
+			// Unplayable here: drop the preview (and its badge) for good.
+			stopPreview(box);
+			box.removeAttribute('data-om-video');
+			box.classList.remove('has-video');
+			$(box).find('.om-card-play').remove();
+		});
+		box.appendChild(video);
+		box._omVideo = video;
+		var p = video.play();
+		if (p && p.catch) { p.catch(function () {}); }
+	}
+
+	function stopPreview(box) {
+		if (!box._omVideo) { return; }
+		box._omVideo.pause();
+		box._omVideo.remove();
+		box._omVideo = null;
+		box.classList.remove('is-playing');
+	}
+
+	var canPreview = !reduceMotion && !saveData;
+	if (canPreview && fineHover) {
+		$(document).on('mouseenter', '.om-card-image[data-om-video]', function () { startPreview(this); });
+		$(document).on('mouseleave', '.om-card-image[data-om-video]', function () { stopPreview(this); });
+	}
+
+	var centreObserver = null;
+	var centreBoxes = [];
+	function initTouchPreviews(root) {
+		if (!canPreview || fineHover || !window.IntersectionObserver) { return; }
+		if (!centreObserver) {
+			var visible = new Set();
+			centreObserver = new IntersectionObserver(function (entries) {
+				entries.forEach(function (e) { if (e.isIntersecting) { visible.add(e.target); } else { visible.delete(e.target); stopPreview(e.target); } });
+				// Play only the visible card closest to the screen's middle.
+				var mid = window.innerHeight / 2;
+				var best = null;
+				var bestDist = Infinity;
+				visible.forEach(function (box) {
+					var r = box.getBoundingClientRect();
+					var d = Math.abs(r.top + r.height / 2 - mid);
+					if (d < bestDist) { bestDist = d; best = box; }
+				});
+				visible.forEach(function (box) { if (box !== best) { stopPreview(box); } });
+				if (best) { startPreview(best); }
+			}, { threshold: [0.6, 0.9] });
+		}
+		$(root || document).find('.om-card-image[data-om-video]').each(function () {
+			if (centreBoxes.indexOf(this) === -1) {
+				centreBoxes.push(this);
+				centreObserver.observe(this);
+			}
+		});
+	}
+
 	/* ---------- Boot ---------- */
 
 	function initBlock(root) {
+		initTouchPreviews(root);
 		syncPanels(root);
 		loadCardPrices(root);
 		markCachedImages(root);
@@ -900,6 +1076,8 @@
 		fillCustomForms(document);
 		initAutoplay(document);
 		initStickyBar();
+		$('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
+		initTouchPreviews(document);
 		if (mobileQuery) {
 			var onChange = function () { syncPanels(document); };
 			if (mobileQuery.addEventListener) {

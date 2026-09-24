@@ -59,6 +59,7 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_show_recent', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_options_style', array( 'sanitize_callback' => array( $this, 'sanitize_options_style' ) ) );
 		register_setting( 'om_catalog_settings', 'om_details_style', array( 'sanitize_callback' => array( $this, 'sanitize_details_style' ) ) );
+		register_setting( 'om_catalog_settings', 'om_video_mode', array( 'sanitize_callback' => array( $this, 'sanitize_video_mode' ) ) );
 		register_setting( 'om_catalog_settings', 'om_size_lines', array( 'sanitize_callback' => array( $this, 'sanitize_lines' ) ) );
 		register_setting( 'om_catalog_settings', 'om_size_guide_note', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'om_catalog_settings', 'om_warm_cache', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -110,6 +111,10 @@ class OM_Settings {
 
 	public function sanitize_options_style( $value ) {
 		return in_array( $value, array( 'swatches', 'pills', 'dropdowns' ), true ) ? $value : 'swatches';
+	}
+
+	public function sanitize_video_mode( $value ) {
+		return 'thumb' === $value ? 'thumb' : 'first';
 	}
 
 	public function sanitize_details_style( $value ) {
@@ -334,6 +339,14 @@ class OM_Settings {
 							<option value="swatches" <?php selected( $ostyle, 'swatches' ); ?>>Swatches (colour circles) + pills</option>
 							<option value="pills" <?php selected( $ostyle, 'pills' ); ?>>Pills</option>
 							<option value="dropdowns" <?php selected( $ostyle, 'dropdowns' ); ?>>Dropdowns</option>
+						</select></td>
+					</tr>
+					<tr>
+						<th><label for="om_video_mode">Product videos</label></th>
+						<td><select id="om_video_mode" name="om_video_mode">
+							<?php $vmode = get_option( 'om_video_mode', 'first' ); ?>
+							<option value="first" <?php selected( $vmode, 'first' ); ?>>Video first: plays silently on a loop as the main view</option>
+							<option value="thumb" <?php selected( $vmode, 'thumb' ); ?>>Photos first, with a "Watch video" button</option>
 						</select></td>
 					</tr>
 					<tr>
