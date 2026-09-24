@@ -321,30 +321,57 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 		return array( 'om-catalog-js' );
 	}
 
+	/** Color control helper. */
+	private function color( $id, $label, $selectors, $extra = array() ) {
+		$this->add_control( $id, array( 'label' => $label, 'type' => Controls_Manager::COLOR, 'selectors' => $selectors ) + $extra );
+	}
+
+	/** Slider control helper (px, optional other units). */
+	private function slider( $id, $label, $selectors, $max = 100, $units = array( 'px' ), $responsive = true, $extra = array() ) {
+		$args = array(
+			'label'      => $label,
+			'type'       => Controls_Manager::SLIDER,
+			'size_units' => $units,
+			'range'      => array(
+				'px' => array( 'min' => 0, 'max' => $max ),
+				'%'  => array( 'min' => 0, 'max' => 100 ),
+				'em' => array( 'min' => 0, 'max' => 10, 'step' => 0.1 ),
+			),
+			'selectors'  => $selectors,
+		) + $extra;
+		$responsive ? $this->add_responsive_control( $id, $args ) : $this->add_control( $id, $args );
+	}
+
+	private function dimensions( $id, $label, $selector, $property ) {
+		$this->add_responsive_control(
+			$id,
+			array(
+				'label'      => $label,
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', 'em', '%' ),
+				'selectors'  => array( $selector => $property . ': {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ),
+			)
+		);
+	}
+
 	protected function register_controls() {
+
+		/* ---------- Content: products ---------- */
+
 		$this->start_controls_section( 'section_content', array( 'label' => __( 'Products', 'om-catalog' ) ) );
 
 		$this->add_control(
 			'source',
 			array(
-				'label'   => __( 'Show', 'om-catalog' ),
-				'type'    => Controls_Manager::SELECT,
-				'default' => 'related',
-				'options' => array(
+				'label'       => __( 'Show', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'related',
+				'options'     => array(
 					'related' => __( 'You might also like (related designs)', 'om-catalog' ),
 					'recent'  => __( 'Recently viewed by this visitor', 'om-catalog' ),
 					'picked'  => __( 'Hand-picked style numbers', 'om-catalog' ),
 				),
-				'description' => __( 'On a product page, "related" follows the product being viewed. Recently viewed stays hidden until the visitor has looked at other pieces.', 'om-catalog' ),
-			)
-		);
-
-		$this->add_control(
-			'title',
-			array(
-				'label'       => __( 'Title', 'om-catalog' ),
-				'type'        => Controls_Manager::TEXT,
-				'placeholder' => __( 'You might also like', 'om-catalog' ),
+				'description' => __( 'On a product page, "related" follows the product being viewed. "Recently viewed" stays hidden until the visitor has looked at other pieces.', 'om-catalog' ),
 			)
 		);
 
@@ -355,7 +382,7 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 				'type'        => Controls_Manager::SELECT,
 				'default'     => 'engagement-rings',
 				'options'     => OM_Shortcodes::line_labels( is_admin() ),
-				'description' => __( 'Used for hand-picked products, and for related products outside a product page.', 'om-catalog' ),
+				'description' => __( 'For hand-picked products, and for related products outside a product page.', 'om-catalog' ),
 				'condition'   => array( 'source!' => 'recent' ),
 			)
 		);
@@ -382,10 +409,36 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 			)
 		);
 
+		$this->end_controls_section();
+
+		/* ---------- Content: layout ---------- */
+
+		$this->start_controls_section( 'section_layout', array( 'label' => __( 'Layout', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'title',
+			array(
+				'label'       => __( 'Title', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'You might also like', 'om-catalog' ),
+				'description' => __( 'Leave empty for the default; type a single space to hide the title.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'title_tag',
+			array(
+				'label'   => __( 'Title HTML tag', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'h2',
+				'options' => array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4', 'p' => 'p' ),
+			)
+		);
+
 		$this->add_control(
 			'layout',
 			array(
-				'label'   => __( 'Layout', 'om-catalog' ),
+				'label'   => __( 'Display', 'om-catalog' ),
 				'type'    => Controls_Manager::SELECT,
 				'default' => 'grid',
 				'options' => array(
@@ -395,126 +448,291 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'card_layout',
+			array(
+				'label'   => __( 'Card design', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'classic',
+				'options' => array(
+					'classic'   => __( 'Classic (centered under image)', 'om-catalog' ),
+					'editorial' => __( 'Editorial (left-aligned)', 'om-catalog' ),
+					'boxed'     => __( 'Boxed (framed card)', 'om-catalog' ),
+					'overlay'   => __( 'Overlay (title on image)', 'om-catalog' ),
+				),
+			)
+		);
+
 		$this->add_responsive_control(
 			'columns',
 			array(
-				'label'           => __( 'Columns', 'om-catalog' ),
-				'type'            => Controls_Manager::SELECT,
-				'default'         => '4',
-				'tablet_default'  => '3',
-				'mobile_default'  => '2',
-				'options'         => array( '1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5', '6' => '6' ),
-				'selectors'       => array(
-					'{{WRAPPER}} .om-related' => '--om-related-columns: {{VALUE}};',
-				),
+				'label'          => __( 'Columns / cards in view', 'om-catalog' ),
+				'type'           => Controls_Manager::SELECT,
+				'default'        => '4',
+				'tablet_default' => '3',
+				'mobile_default' => '2',
+				'options'        => array( '1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5', '6' => '6' ),
+				'selectors'      => array( '{{WRAPPER}} .om-related' => '--om-related-columns: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'show_arrows',
+			array(
+				'label'     => __( 'Arrows', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array( 'layout' => 'carousel' ),
+			)
+		);
+
+		$this->add_control(
+			'autoplay',
+			array(
+				'label'       => __( 'Autoplay every (seconds)', 'om-catalog' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 0,
+				'min'         => 0,
+				'max'         => 30,
+				'description' => __( '0 = off. Pauses while hovered or touched, and for visitors who prefer reduced motion.', 'om-catalog' ),
+				'condition'   => array( 'layout' => 'carousel' ),
+			)
+		);
+
+		$this->add_control(
+			'show_variant',
+			array(
+				'label'     => __( 'Carat / variant line', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'separator' => 'before',
 			)
 		);
 
 		$this->add_control(
 			'show_prices',
 			array(
-				'label'     => __( '"From $X" prices', 'om-catalog' ),
-				'type'      => Controls_Manager::SWITCHER,
-				'default'   => '',
-				'condition' => array( 'source!' => 'recent' ),
+				'label'       => __( '"From $X" prices', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => '',
+				'description' => __( 'Only once a markup is set.', 'om-catalog' ),
+				'condition'   => array( 'source!' => 'recent' ),
+			)
+		);
+
+		$this->add_control(
+			'hover_image',
+			array(
+				'label'                => __( 'Second photo on hover', 'om-catalog' ),
+				'type'                 => Controls_Manager::SWITCHER,
+				'default'              => 'yes',
+				'selectors_dictionary' => array( 'yes' => '', '' => 'display: none;' ),
+				'selectors'            => array( '{{WRAPPER}} .om-card-hover' => '{{VALUE}}' ),
 			)
 		);
 
 		$this->end_controls_section();
 
-		$this->start_controls_section(
-			'section_style',
-			array(
-				'label' => __( 'Style', 'om-catalog' ),
-				'tab'   => Controls_Manager::TAB_STYLE,
-			)
-		);
+		/* ---------- Style: section & title ---------- */
 
-		$this->add_control(
-			'title_color',
-			array(
-				'label'     => __( 'Title color', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'selectors' => array( '{{WRAPPER}} .om-related-title' => 'color: {{VALUE}};' ),
-			)
-		);
+		$this->start_controls_section( 'section_style_head', array( 'label' => __( 'Section & Title', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
 
-		$this->add_group_control(
-			Group_Control_Typography::get_type(),
-			array(
-				'name'     => 'title_typography',
-				'label'    => __( 'Title typography', 'om-catalog' ),
-				'selector' => '{{WRAPPER}} .om-related-title',
-			)
-		);
+		$this->dimensions( 'section_margin', __( 'Section margin', 'om-catalog' ), '{{WRAPPER}} .om-related', 'margin' );
+		$this->dimensions( 'section_padding', __( 'Section padding', 'om-catalog' ), '{{WRAPPER}} .om-related', 'padding' );
+		$this->color( 'section_bg', __( 'Section background', 'om-catalog' ), array( '{{WRAPPER}} .om-related' => 'background-color: {{VALUE}};' ) );
 
+		$this->color( 'title_color', __( 'Title color', 'om-catalog' ), array( '{{WRAPPER}} .om-related-title' => 'color: {{VALUE}};' ), array( 'separator' => 'before' ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'title_typography', 'label' => __( 'Title typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-related-title' ) );
 		$this->add_responsive_control(
 			'title_align',
 			array(
 				'label'     => __( 'Title alignment', 'om-catalog' ),
 				'type'      => Controls_Manager::CHOOSE,
 				'options'   => array(
-					'flex-start' => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
-					'center'     => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
+					'left'   => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
+					'center' => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
+					'right'  => array( 'title' => __( 'Right', 'om-catalog' ), 'icon' => 'eicon-text-align-right' ),
 				),
-				'selectors' => array( '{{WRAPPER}} .om-related-head' => 'justify-content: {{VALUE}};' ),
+				'selectors_dictionary' => array(
+					'left'   => 'justify-content: space-between; text-align: left;',
+					'center' => 'justify-content: center; text-align: center;',
+					'right'  => 'justify-content: flex-end; text-align: right;',
+				),
+				'selectors' => array( '{{WRAPPER}} .om-related-head' => '{{VALUE}}' ),
 			)
 		);
+		$this->slider( 'title_spacing', __( 'Space below title', 'om-catalog' ), array( '{{WRAPPER}} .om-related-head' => 'margin-bottom: {{SIZE}}{{UNIT}};' ), 100 );
 
+		$this->end_controls_section();
+
+		/* ---------- Style: grid / carousel ---------- */
+
+		$this->start_controls_section( 'section_style_grid', array( 'label' => __( 'Grid & Carousel', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+
+		$this->slider( 'gap', __( 'Gap between cards', 'om-catalog' ), array( '{{WRAPPER}} .om-related' => '--om-related-gap: {{SIZE}}{{UNIT}};' ), 80 );
+		$this->slider( 'row_gap', __( 'Row gap (grid)', 'om-catalog' ), array( '{{WRAPPER}} .om-related-track' => 'row-gap: {{SIZE}}{{UNIT}};' ), 120, array( 'px' ), true, array( 'condition' => array( 'layout' => 'grid' ) ) );
 		$this->add_control(
-			'card_title_color',
+			'peek',
 			array(
-				'label'     => __( 'Product name color', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'separator' => 'before',
-				'selectors' => array( '{{WRAPPER}} .om-card-title' => 'color: {{VALUE}};' ),
+				'label'       => __( 'Peek of next card (carousel)', 'om-catalog' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => array( '%' ),
+				'range'       => array( '%' => array( 'min' => 0, 'max' => 40 ) ),
+				'description' => __( 'Shows part of the next card so visitors see the row scrolls.', 'om-catalog' ),
+				'selectors'   => array( '{{WRAPPER}} .om-related--carousel .om-related-track' => 'padding-right: {{SIZE}}%; scroll-padding-right: {{SIZE}}%;' ),
+				'condition'   => array( 'layout' => 'carousel' ),
 			)
 		);
 
-		$this->add_group_control(
-			Group_Control_Typography::get_type(),
-			array(
-				'name'     => 'card_title_typography',
-				'label'    => __( 'Product name typography', 'om-catalog' ),
-				'selector' => '{{WRAPPER}} .om-card-title',
-			)
-		);
+		$this->end_controls_section();
 
+		/* ---------- Style: cards ---------- */
+
+		$this->start_controls_section( 'section_style_card', array( 'label' => __( 'Cards', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+
+		$this->color( 'card_bg', __( 'Background', 'om-catalog' ), array( '{{WRAPPER}} .om-card' => 'background-color: {{VALUE}};' ) );
+		$this->add_group_control( \Elementor\Group_Control_Border::get_type(), array( 'name' => 'card_border', 'selector' => '{{WRAPPER}} .om-card' ) );
+		$this->slider( 'card_radius', __( 'Corner radius', 'om-catalog' ), array( '{{WRAPPER}} .om-card, {{WRAPPER}} .om-card-image' => 'border-radius: {{SIZE}}{{UNIT}};' ), 40 );
+		$this->dimensions( 'card_padding', __( 'Padding', 'om-catalog' ), '{{WRAPPER}} .om-card', 'padding' );
+		$this->add_group_control( \Elementor\Group_Control_Box_Shadow::get_type(), array( 'name' => 'card_shadow', 'selector' => '{{WRAPPER}} .om-card' ) );
+		$this->add_group_control( \Elementor\Group_Control_Box_Shadow::get_type(), array( 'name' => 'card_shadow_hover', 'label' => __( 'Hover shadow', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-card:hover' ) );
 		$this->add_responsive_control(
-			'gap',
+			'card_align',
 			array(
-				'label'      => __( 'Gap', 'om-catalog' ),
-				'type'       => Controls_Manager::SLIDER,
-				'size_units' => array( 'px' ),
-				'range'      => array( 'px' => array( 'min' => 0, 'max' => 60 ) ),
-				'selectors'  => array( '{{WRAPPER}} .om-related' => '--om-related-gap: {{SIZE}}{{UNIT}};' ),
+				'label'     => __( 'Text alignment', 'om-catalog' ),
+				'type'      => Controls_Manager::CHOOSE,
+				'options'   => array(
+					'left'   => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
+					'center' => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
+					'right'  => array( 'title' => __( 'Right', 'om-catalog' ), 'icon' => 'eicon-text-align-right' ),
+				),
+				'selectors' => array( '{{WRAPPER}} .om-card-body' => 'text-align: {{VALUE}};' ),
 			)
 		);
 
+		$this->end_controls_section();
+
+		/* ---------- Style: image ---------- */
+
+		$this->start_controls_section( 'section_style_image', array( 'label' => __( 'Image', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+
 		$this->add_control(
-			'image_bg',
+			'image_ratio',
 			array(
-				'label'     => __( 'Image background', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'selectors' => array( '{{WRAPPER}} .om-card-image' => 'background-color: {{VALUE}};' ),
+				'label'     => __( 'Aspect ratio', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '',
+				'options'   => array(
+					''    => __( 'Square (default)', 'om-catalog' ),
+					'4/5' => __( 'Portrait 4:5', 'om-catalog' ),
+					'3/4' => __( 'Portrait 3:4', 'om-catalog' ),
+					'4/3' => __( 'Landscape 4:3', 'om-catalog' ),
+				),
+				'selectors' => array( '{{WRAPPER}} .om-card-image' => 'aspect-ratio: {{VALUE}};' ),
 			)
 		);
+		$this->add_control(
+			'image_fit',
+			array(
+				'label'     => __( 'Image fit', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '',
+				'options'   => array(
+					''        => __( 'Fill (crop)', 'om-catalog' ),
+					'contain' => __( 'Fit whole image', 'om-catalog' ),
+				),
+				'selectors' => array( '{{WRAPPER}} .om-card-image img' => 'object-fit: {{VALUE}};' ),
+			)
+		);
+		$this->color( 'image_bg', __( 'Background', 'om-catalog' ), array( '{{WRAPPER}} .om-card-image' => 'background-color: {{VALUE}};' ) );
+		$this->slider( 'image_spacing', __( 'Space below image', 'om-catalog' ), array( '{{WRAPPER}} .om-card-image' => 'margin-bottom: {{SIZE}}{{UNIT}};' ), 60 );
+		$this->add_control(
+			'image_zoom',
+			array(
+				'label'     => __( 'Hover zoom', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '',
+				'options'   => array(
+					''      => __( 'Subtle (default)', 'om-catalog' ),
+					'1'     => __( 'None', 'om-catalog' ),
+					'1.08'  => __( 'Medium', 'om-catalog' ),
+					'1.15'  => __( 'Strong', 'om-catalog' ),
+				),
+				'selectors' => array( '{{WRAPPER}} .om-card:hover .om-card-image img' => 'transform: scale({{VALUE}});' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Style: text ---------- */
+
+		$this->start_controls_section( 'section_style_text', array( 'label' => __( 'Product Name, Carat & Price', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+
+		$this->color( 'card_title_color', __( 'Name color', 'om-catalog' ), array( '{{WRAPPER}} .om-card-title' => 'color: {{VALUE}};' ) );
+		$this->color( 'card_title_hover', __( 'Name hover color', 'om-catalog' ), array( '{{WRAPPER}} .om-card:hover .om-card-title' => 'color: {{VALUE}};' ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'card_title_typography', 'label' => __( 'Name typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-card-title' ) );
+		$this->slider( 'card_title_spacing', __( 'Space below name', 'om-catalog' ), array( '{{WRAPPER}} .om-card-title' => 'margin-bottom: {{SIZE}}{{UNIT}};' ), 40 );
+
+		$this->color( 'variant_color', __( 'Carat line color', 'om-catalog' ), array( '{{WRAPPER}} .om-card-variant' => 'color: {{VALUE}};' ), array( 'separator' => 'before' ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'variant_typography', 'label' => __( 'Carat line typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-card-variant' ) );
+
+		$this->color( 'price_color', __( 'Price color', 'om-catalog' ), array( '{{WRAPPER}} .om-card-price' => 'color: {{VALUE}};' ), array( 'separator' => 'before' ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'price_typography', 'label' => __( 'Price typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-card-price' ) );
+
+		$this->end_controls_section();
+
+		/* ---------- Style: arrows ---------- */
+
+		$this->start_controls_section(
+			'section_style_arrows',
+			array(
+				'label'     => __( 'Arrows', 'om-catalog' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'layout' => 'carousel', 'show_arrows' => 'yes' ),
+			)
+		);
+
+		$this->slider( 'arrow_size', __( 'Button size', 'om-catalog' ), array( '{{WRAPPER}} .om-related-nav button' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};' ), 80 );
+		$this->slider( 'arrow_icon_size', __( 'Icon size', 'om-catalog' ), array( '{{WRAPPER}} .om-related-nav button' => 'font-size: {{SIZE}}{{UNIT}};' ), 48 );
+		$this->slider( 'arrow_radius', __( 'Corner radius', 'om-catalog' ), array( '{{WRAPPER}} .om-related-nav button' => 'border-radius: {{SIZE}}{{UNIT}};' ), 50, array( 'px', '%' ) );
+
+		$this->start_controls_tabs( 'arrow_tabs' );
+		foreach ( array( 'normal' => __( 'Normal', 'om-catalog' ), 'hover' => __( 'Hover', 'om-catalog' ) ) as $state => $state_label ) {
+			$this->start_controls_tab( 'arrow_tab_' . $state, array( 'label' => $state_label ) );
+			$sel = '{{WRAPPER}} .om-related-nav button' . ( 'hover' === $state ? ':hover' : '' );
+			$this->color( 'arrow_color_' . $state, __( 'Icon', 'om-catalog' ), array( $sel => 'color: {{VALUE}};' ) );
+			$this->color( 'arrow_bg_' . $state, __( 'Background', 'om-catalog' ), array( $sel => 'background-color: {{VALUE}};' ) );
+			$this->color( 'arrow_border_' . $state, __( 'Border', 'om-catalog' ), array( $sel => 'border-color: {{VALUE}};' ) );
+			$this->end_controls_tab();
+		}
+		$this->end_controls_tabs();
 
 		$this->end_controls_section();
 	}
 
 	protected function render() {
-		$s = $this->get_settings_for_display();
-		echo OM_Related::instance()->render( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+		$s     = $this->get_settings_for_display();
+		$title = (string) $s['title'];
+		$html  = OM_Related::instance()->render(
 			array(
-				'source'      => (string) $s['source'],
-				'title'       => (string) $s['title'],
-				'line'        => (string) ( $s['line'] ?? '' ),
-				'styles'      => (string) ( $s['styles'] ?? '' ),
-				'count'       => (int) $s['count'],
-				'layout'      => (string) $s['layout'],
-				'show_prices' => (string) ( $s['show_prices'] ?? '' ),
+				'source'       => (string) $s['source'],
+				'title'        => ( '' !== $title && '' === trim( $title ) ) ? ' ' : $title,
+				'line'         => (string) ( $s['line'] ?? '' ),
+				'styles'       => (string) ( $s['styles'] ?? '' ),
+				'count'        => (int) $s['count'],
+				'layout'       => (string) $s['layout'],
+				'card_layout'  => (string) ( $s['card_layout'] ?? 'classic' ),
+				'show_variant' => (string) ( $s['show_variant'] ?? 'yes' ),
+				'show_arrows'  => (string) ( $s['show_arrows'] ?? 'yes' ),
+				'autoplay'     => (int) ( $s['autoplay'] ?? 0 ),
+				'show_prices'  => (string) ( $s['show_prices'] ?? '' ),
 			)
 		);
+		// Title tag.
+		$tag = in_array( $s['title_tag'] ?? 'h2', array( 'h2', 'h3', 'h4', 'p' ), true ) ? $s['title_tag'] : 'h2';
+		if ( 'h2' !== $tag ) {
+			$html = preg_replace( '#<h2 class="om-related-title">(.*?)</h2>#s', '<' . $tag . ' class="om-related-title">$1</' . $tag . '>', $html, 1 );
+		}
+		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 	}
 }

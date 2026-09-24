@@ -464,41 +464,118 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			)
 		);
 
-		foreach ( array(
-			'inquiry_phone'   => array( __( 'Phone field', 'om-catalog' ), 'yes' ),
-			'inquiry_phone_required' => array( __( 'Phone required', 'om-catalog' ), '' ),
-			'inquiry_contact' => array( __( 'Preferred contact field', 'om-catalog' ), 'yes' ),
-			'inquiry_message' => array( __( 'Message field', 'om-catalog' ), 'yes' ),
-		) as $key => $def ) {
-			$this->add_control(
-				$key,
-				array(
-					'label'     => $def[0],
-					'type'      => Controls_Manager::SWITCHER,
-					'default'   => $def[1],
-					'condition' => array( 'show_inquiry' => 'yes', 'inquiry_source' => 'builtin' ) + ( 'inquiry_phone_required' === $key ? array( 'inquiry_phone' => 'yes' ) : array() ),
-				)
+		$this->add_control(
+			'inquiry_fields_source',
+			array(
+				'label'       => __( 'Form fields', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'global',
+				'options'     => array(
+					'global' => __( 'Site-wide form (Settings > OM Catalog)', 'om-catalog' ),
+					'custom' => __( 'Custom fields for this widget', 'om-catalog' ),
+				),
+				'condition'   => array( 'show_inquiry' => 'yes', 'inquiry_source' => 'builtin' ),
+			)
+		);
+
+		$fields = new Repeater();
+		$fields->add_control(
+			'label',
+			array(
+				'label'   => __( 'Label', 'om-catalog' ),
+				'type'    => Controls_Manager::TEXT,
+				'default' => __( 'Field', 'om-catalog' ),
+			)
+		);
+		$fields->add_control(
+			'type',
+			array(
+				'label'   => __( 'Type', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'text',
+				'options' => array(
+					'text'       => __( 'Text', 'om-catalog' ),
+					'email'      => __( 'Email', 'om-catalog' ),
+					'tel'        => __( 'Phone', 'om-catalog' ),
+					'textarea'   => __( 'Paragraph', 'om-catalog' ),
+					'select'     => __( 'Dropdown', 'om-catalog' ),
+					'radio'      => __( 'Radio buttons', 'om-catalog' ),
+					'checkboxes' => __( 'Checkboxes (several)', 'om-catalog' ),
+					'checkbox'   => __( 'Single checkbox', 'om-catalog' ),
+					'date'       => __( 'Date', 'om-catalog' ),
+					'number'     => __( 'Number', 'om-catalog' ),
+				),
+			)
+		);
+		$fields->add_control(
+			'options',
+			array(
+				'label'       => __( 'Choices (one per line)', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 3,
+				'condition'   => array( 'type' => array( 'select', 'radio', 'checkboxes' ) ),
+			)
+		);
+		$fields->add_control(
+			'placeholder',
+			array(
+				'label'     => __( 'Placeholder', 'om-catalog' ),
+				'type'      => Controls_Manager::TEXT,
+				'condition' => array( 'type' => array( 'text', 'email', 'tel', 'textarea', 'select', 'number' ) ),
+			)
+		);
+		$fields->add_control(
+			'required',
+			array(
+				'label'   => __( 'Required', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => '',
+			)
+		);
+		$fields->add_control(
+			'width',
+			array(
+				'label'   => __( 'Width', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'full',
+				'options' => array(
+					'full' => __( 'Full', 'om-catalog' ),
+					'half' => __( 'Half', 'om-catalog' ),
+				),
+			)
+		);
+		$fields->add_control(
+			'key',
+			array(
+				'label'       => __( 'Field ID (optional)', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'description' => __( 'Letters, numbers and _ only. Use "name" for the customer\'s name.', 'om-catalog' ),
+			)
+		);
+
+		$defaults = array();
+		foreach ( OM_Inquiry::default_fields() as $field ) {
+			$defaults[] = array(
+				'label'    => $field['label'],
+				'type'     => $field['type'],
+				'required' => $field['required'] ? 'yes' : '',
+				'width'    => $field['width'],
+				'key'      => $field['key'],
+				'options'  => implode( "\n", $field['options'] ?? array() ),
 			);
 		}
 
-		foreach ( array(
-			'name'    => __( 'Name', 'om-catalog' ),
-			'email'   => __( 'Email', 'om-catalog' ),
-			'phone'   => __( 'Phone', 'om-catalog' ),
-			'contact' => __( 'Preferred contact', 'om-catalog' ),
-			'message' => __( 'Message', 'om-catalog' ),
-		) as $key => $label ) {
-			$this->add_control(
-				'inquiry_label_' . $key,
-				array(
-					/* translators: %s: field name. */
-					'label'       => sprintf( __( '"%s" label', 'om-catalog' ), $label ),
-					'type'        => Controls_Manager::TEXT,
-					'placeholder' => $label,
-					'condition'   => array( 'show_inquiry' => 'yes', 'inquiry_source' => 'builtin' ),
-				)
-			);
-		}
+		$this->add_control(
+			'inquiry_fields',
+			array(
+				'label'       => __( 'Fields', 'om-catalog' ),
+				'type'        => Controls_Manager::REPEATER,
+				'fields'      => $fields->get_controls(),
+				'default'     => $defaults,
+				'title_field' => '{{{ label }}}{{{ required ? " *" : "" }}}',
+				'condition'   => array( 'show_inquiry' => 'yes', 'inquiry_source' => 'builtin', 'inquiry_fields_source' => 'custom' ),
+			)
+		);
 
 		$this->end_controls_section();
 
@@ -1074,15 +1151,9 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['show_inquiry']     = 'yes' === ( $settings['show_inquiry'] ?? 'yes' );
 		$args['inquiry_heading']  = (string) ( $settings['inquiry_heading'] ?? '' );
 		$args['inquiry_open']     = 'yes' === ( $settings['inquiry_open'] ?? '' );
-		$inquiry                  = array(
-			'show_phone'     => 'yes' === ( $settings['inquiry_phone'] ?? 'yes' ),
-			'phone_required' => 'yes' === ( $settings['inquiry_phone_required'] ?? '' ),
-			'show_contact'   => 'yes' === ( $settings['inquiry_contact'] ?? 'yes' ),
-			'show_message'   => 'yes' === ( $settings['inquiry_message'] ?? 'yes' ),
-			'labels'         => array(),
-		);
-		foreach ( array( 'name', 'email', 'phone', 'contact', 'message' ) as $key ) {
-			$inquiry['labels'][ $key ] = (string) ( $settings[ 'inquiry_label_' . $key ] ?? '' );
+		$inquiry                  = array();
+		if ( 'custom' === ( $settings['inquiry_fields_source'] ?? 'global' ) && ! empty( $settings['inquiry_fields'] ) ) {
+			$inquiry['fields'] = (array) $settings['inquiry_fields'];
 		}
 		if ( '' !== (string) ( $settings['inquiry_intro'] ?? '' ) ) {
 			$inquiry['intro'] = trim( (string) $settings['inquiry_intro'] );

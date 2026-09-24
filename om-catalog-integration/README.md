@@ -176,9 +176,16 @@ inquiry is emailed to the address in **Settings > OM Catalog > Inquiries**
 with the piece, chosen options, price shown and page link. Spam is filtered
 with a hidden field, a minimum fill time and a per-visitor hourly limit.
 
-Customise it in the OM Single Product widget (**Ring Builder & Inquiry**):
-title, intro, button text, which fields show, phone required, field labels,
-and a Style-tab **Inquiry Form** section. Or choose **My own form
+**Edit the fields** under **Settings > OM Catalog > Inquiry form fields**:
+add, remove and reorder fields (text, email, phone, paragraph, dropdown,
+radio buttons, checkboxes, single checkbox, date, number), each with its own
+label, placeholder, choices, width (half/full) and required flag. That form
+is used everywhere; an OM Single Product widget can instead use its own field
+list (**Ring Builder & Inquiry > Form fields > Custom fields for this
+widget**). Optionally the customer gets a confirmation email.
+
+The widget also sets the title, intro and button text, and its Style tab has
+an **Inquiry Form** section. Or choose **My own form
 (shortcode)** to use an Elementor Pro form (via `[elementor-template id=".."]`),
 Contact Form 7, Gravity Forms or WPForms: give the form hidden fields with
 the IDs/names `om_product`, `om_style`, `om_price`, `om_options`, `om_url`
@@ -231,6 +238,14 @@ untouched inherits the site-wide defaults from Settings > OM Catalog, so
 per-widget styling is opt-in.
 
 ## Changelog
+
+### 1.5.0
+- Inquiry form builder: add/remove/reorder fields of ten types, globally in
+  Settings or per Single Product widget; server-side validation of required
+  fields; optional customer confirmation email.
+- OM Related Products widget: card designs, title tag, hover second photo,
+  carousel arrows and autoplay, peek, and full styling for section, title,
+  cards, image, texts and arrows.
 
 ### 1.4.0
 - Inquiry form fully customisable in the Single Product widget (texts,

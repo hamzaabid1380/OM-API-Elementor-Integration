@@ -52,6 +52,12 @@ class OM_Related {
 				'line'        => '',
 				'styles'      => '',
 				'show_prices' => '',
+				// Card design: classic, editorial, boxed, overlay (as the grid).
+				'card_layout' => 'classic',
+				'show_variant' => 'yes',
+				'show_arrows' => 'yes',
+				// Carousel autoplay interval in seconds (0 = off).
+				'autoplay'    => 0,
 			),
 			$atts,
 			'om_related'
@@ -69,7 +75,8 @@ class OM_Related {
 			'recent'  => __( 'Recently viewed', 'om-catalog' ),
 			'picked'  => __( 'Featured designs', 'om-catalog' ),
 		);
-		$title = '' !== trim( (string) $atts['title'] ) ? $atts['title'] : $titles[ $source ];
+		// Empty = default title; whitespace only = no title.
+		$title = '' === (string) $atts['title'] ? $titles[ $source ] : trim( (string) $atts['title'] );
 
 		// The product being viewed, if this is a product page.
 		$rewrites = OM_Rewrites::instance();
@@ -80,19 +87,24 @@ class OM_Related {
 			$line = 'engagement-rings';
 		}
 
-		$classes = 'om-related om-related--' . $source . ' om-related--' . $layout;
-		$attrs   = $columns ? ' style="--om-related-columns:' . (int) $columns . ';"' : '';
+		$card_layout = in_array( $atts['card_layout'], array( 'classic', 'editorial', 'boxed', 'overlay' ), true ) ? $atts['card_layout'] : 'classic';
+		$arrows      = 'carousel' === $layout && 'yes' === $atts['show_arrows'];
+		$autoplay    = 'carousel' === $layout ? max( 0, min( 30, (int) $atts['autoplay'] ) ) : 0;
+
+		$classes = 'om-related om-related--' . $source . ' om-related--' . $layout . ( 'yes' === $atts['show_variant'] ? '' : ' om-related--no-variant' );
+		$attrs   = ( $columns ? ' style="--om-related-columns:' . (int) $columns . ';"' : '' ) . ( $autoplay ? ' data-om-autoplay="' . (int) $autoplay . '"' : '' );
 
 		if ( 'recent' === $source ) {
 			// Filled in by the script from this visitor's history; stays
 			// hidden when there's nothing to show.
 			return sprintf(
-				'<section class="%s"%s data-om-recent="%d" data-om-exclude="%s" hidden>%s<div class="om-related-track om-catalog-grid om-layout-classic"></div>%s</section>',
+				'<section class="%s"%s data-om-recent="%d" data-om-exclude="%s" hidden>%s<div class="om-related-track om-catalog-grid om-layout-%s"></div>%s</section>',
 				esc_attr( $classes ),
 				$attrs,
 				$count,
 				esc_attr( $style ),
-				$this->heading( $title, $layout ),
+				$this->heading( $title, $arrows ),
+				esc_attr( $card_layout ),
 				'' // Carousel arrows are part of the heading.
 			);
 		}
@@ -109,8 +121,8 @@ class OM_Related {
 
 		ob_start();
 		printf( '<section class="%s"%s>', esc_attr( $classes ), $attrs ); // phpcs:ignore WordPress.Security.EscapeOutput -- built from ints.
-		echo $this->heading( $title, $layout ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in heading().
-		echo '<div class="om-related-track om-catalog-grid om-layout-classic"' . ( $prices ? ' data-om-prices="' . esc_attr( $line ) . '"' : '' ) . '>';
+		echo $this->heading( $title, $arrows ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in heading().
+		echo '<div class="om-related-track om-catalog-grid om-layout-' . esc_attr( $card_layout ) . '"' . ( $prices ? ' data-om-prices="' . esc_attr( $line ) . '"' : '' ) . '>';
 		foreach ( $products as $product ) {
 			$this->card( $product, $line, $prices );
 		}
@@ -118,9 +130,9 @@ class OM_Related {
 		return ob_get_clean();
 	}
 
-	private function heading( $title, $layout ) {
-		$html = '<div class="om-related-head"><h2 class="om-related-title">' . esc_html( $title ) . '</h2>';
-		if ( 'carousel' === $layout ) {
+	private function heading( $title, $arrows ) {
+		$html = '<div class="om-related-head">' . ( '' !== trim( $title ) ? '<h2 class="om-related-title">' . esc_html( $title ) . '</h2>' : '<span></span>' );
+		if ( $arrows ) {
 			$html .= '<div class="om-related-nav"><button type="button" class="om-related-prev" aria-label="' . esc_attr__( 'Previous', 'om-catalog' ) . '">&lsaquo;</button><button type="button" class="om-related-next" aria-label="' . esc_attr__( 'Next', 'om-catalog' ) . '">&rsaquo;</button></div>';
 		}
 		return $html . '</div>';
@@ -130,11 +142,15 @@ class OM_Related {
 		$style_number = (string) ( $product['style_number'] ?? '' );
 		$title        = (string) ( $product['title'] ?? $style_number );
 		$image        = ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '';
+		$hover        = ! empty( $product['images'][1] ) ? om_image_url( $product['images'][1] ) : '';
 		?>
 		<a class="om-card" href="<?php echo esc_url( om_product_url( $line, $style_number ) ); ?>">
-			<div class="om-card-image">
+			<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?>">
 				<?php if ( $image ) : ?>
 					<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>" loading="lazy" decoding="async" />
+				<?php endif; ?>
+				<?php if ( $hover ) : ?>
+					<img class="om-card-hover" src="<?php echo esc_url( $hover ); ?>" alt="" loading="lazy" decoding="async" aria-hidden="true" />
 				<?php endif; ?>
 			</div>
 			<div class="om-card-body">

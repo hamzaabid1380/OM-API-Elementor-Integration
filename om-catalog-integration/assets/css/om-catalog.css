@@ -2763,3 +2763,94 @@ html.om-lb-open {
 		flex-basis: 44%;
 	}
 }
+
+/* ---------- Inquiry form: field grid (1.5) ---------- */
+
+.om-fields {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0 14px;
+}
+
+.om-fields .om-field--full {
+	grid-column: 1 / -1;
+}
+
+.om-inquiry fieldset.om-field {
+	min-width: 0;
+	margin: 0 0 14px;
+	padding: 0;
+	border: 0;
+}
+
+.om-inquiry fieldset.om-field legend {
+	margin: 0 0 8px;
+	padding: 0;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: #8a8a8a;
+}
+
+.om-choice-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 18px;
+}
+
+.om-inquiry .om-choice {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	font-weight: 300;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--om-color-text, #464646);
+	cursor: pointer;
+}
+
+.om-inquiry .om-choice input {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--om-color-primary, #00111C);
+}
+
+.om-field--checkbox .om-choice {
+	align-items: flex-start;
+}
+
+.om-req {
+	color: var(--om-color-primary, #00111C);
+}
+
+@media (max-width: 600px) {
+	.om-fields {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.om-related--no-variant .om-card-variant {
+	display: none;
+}
+
+.om-related .om-card {
+	overflow: hidden;
+	transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.om-related .om-card-image {
+	overflow: hidden;
+}
+
+.om-related-head > span:empty {
+	flex: 1;
+}
+
+/* Anything the script hides inside the form stays hidden, whatever the
+   element's own display rule. */
+.om-inquiry [hidden] {
+	display: none !important;
+}

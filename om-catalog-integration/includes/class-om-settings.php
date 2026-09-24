@@ -69,6 +69,9 @@ class OM_Settings {
 		// Inquiries.
 		register_setting( 'om_catalog_settings', 'om_inquiry_email', array( 'sanitize_callback' => 'sanitize_email' ) );
 		register_setting( 'om_catalog_settings', 'om_inquiry_success', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_inquiry_fields', array( 'sanitize_callback' => array( 'OM_Inquiry', 'normalize_fields' ) ) );
+		register_setting( 'om_catalog_settings', 'om_inquiry_autoreply', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_inquiry_autoreply_text', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 
 		// Brand colors / fonts.
 		register_setting( 'om_catalog_settings', 'om_style_source', array( 'sanitize_callback' => array( $this, 'sanitize_style_source' ) ) );
@@ -232,6 +235,20 @@ class OM_Settings {
 					<tr>
 						<th><label for="om_inquiry_success">Thank-you message</label></th>
 						<td><input type="text" id="om_inquiry_success" name="om_inquiry_success" value="<?php echo esc_attr( get_option( 'om_inquiry_success', '' ) ); ?>" class="large-text" placeholder="Thank you! Your inquiry has been sent. We will be in touch soon." /></td>
+					</tr>
+				</table>
+
+				<h2>Inquiry form fields</h2>
+				<p class="description">The built-in inquiry form used on product pages, the diamond search and the ring builder. Add, remove and reorder fields; the first email field is used to reply to the customer. An OM Single Product widget can also use its own field list.</p>
+				<?php $this->render_field_editor(); ?>
+				<table class="form-table">
+					<tr>
+						<th>Confirmation email</th>
+						<td>
+							<input type="hidden" name="om_inquiry_autoreply" value="0" />
+							<label><input type="checkbox" name="om_inquiry_autoreply" value="1" <?php checked( get_option( 'om_inquiry_autoreply', '0' ), '1' ); ?> /> Send the customer a confirmation email with the piece they asked about</label>
+							<textarea name="om_inquiry_autoreply_text" rows="3" class="large-text" placeholder="Thank you for your inquiry. We have received your message and will be in touch shortly."><?php echo esc_textarea( get_option( 'om_inquiry_autoreply_text', '' ) ); ?></textarea>
+						</td>
 					</tr>
 				</table>
 
@@ -457,5 +474,94 @@ class OM_Settings {
 			: array( false, 'No markup is set, so visitors see the "no price" text/buttons instead of prices. Set a markup above to show prices.' );
 
 		return $rows;
+	}
+
+	/**
+	 * Inquiry form field editor: a table of rows the admin can add, remove
+	 * and reorder. Saved as the om_inquiry_fields option (the form's field
+	 * list, in row order).
+	 */
+	private function render_field_editor() {
+		$fields = OM_Inquiry::global_fields();
+		$types  = array(
+			'text'       => 'Text',
+			'email'      => 'Email',
+			'tel'        => 'Phone',
+			'textarea'   => 'Paragraph',
+			'select'     => 'Dropdown',
+			'radio'      => 'Radio buttons',
+			'checkboxes' => 'Checkboxes (several)',
+			'checkbox'   => 'Single checkbox',
+			'date'       => 'Date',
+			'number'     => 'Number',
+		);
+		$row = function ( $i, $field ) use ( $types ) {
+			$n = 'om_inquiry_fields[' . $i . ']';
+			ob_start();
+			?>
+			<tr class="om-fe-row">
+				<td class="om-fe-move"><button type="button" class="button-link om-fe-up" aria-label="Move up">&#9650;</button><button type="button" class="button-link om-fe-down" aria-label="Move down">&#9660;</button></td>
+				<td><input type="text" name="<?php echo esc_attr( $n ); ?>[label]" value="<?php echo esc_attr( $field['label'] ?? '' ); ?>" placeholder="Label" class="regular-text" style="width:100%" />
+					<input type="hidden" name="<?php echo esc_attr( $n ); ?>[key]" value="<?php echo esc_attr( $field['key'] ?? '' ); ?>" /></td>
+				<td><select name="<?php echo esc_attr( $n ); ?>[type]" class="om-fe-type">
+					<?php foreach ( $types as $value => $label ) : ?>
+						<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $field['type'] ?? 'text', $value ); ?>><?php echo esc_html( $label ); ?></option>
+					<?php endforeach; ?>
+				</select></td>
+				<td><input type="text" name="<?php echo esc_attr( $n ); ?>[placeholder]" value="<?php echo esc_attr( $field['placeholder'] ?? '' ); ?>" placeholder="Placeholder" style="width:100%" /></td>
+				<td><textarea name="<?php echo esc_attr( $n ); ?>[options]" rows="2" placeholder="Choices, one per line" style="width:100%"><?php echo esc_textarea( implode( "\n", (array) ( $field['options'] ?? array() ) ) ); ?></textarea></td>
+				<td><select name="<?php echo esc_attr( $n ); ?>[width]">
+					<option value="full" <?php selected( $field['width'] ?? 'full', 'full' ); ?>>Full</option>
+					<option value="half" <?php selected( $field['width'] ?? 'full', 'half' ); ?>>Half</option>
+				</select></td>
+				<td style="text-align:center"><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[required]" value="1" <?php checked( ! empty( $field['required'] ) ); ?> /></td>
+				<td><button type="button" class="button-link-delete om-fe-remove">Remove</button></td>
+			</tr>
+			<?php
+			return ob_get_clean();
+		};
+		?>
+		<table class="widefat striped om-field-editor" style="max-width:1100px">
+			<thead><tr><th style="width:44px"></th><th>Label</th><th>Type</th><th>Placeholder</th><th>Choices <span class="description">(dropdown, radio, checkboxes)</span></th><th>Width</th><th>Required</th><th></th></tr></thead>
+			<tbody>
+				<?php
+				foreach ( $fields as $i => $field ) {
+					echo $row( $i, $field ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the row template.
+				}
+				?>
+			</tbody>
+		</table>
+		<p>
+			<button type="button" class="button om-fe-add">+ Add field</button>
+			<button type="button" class="button-link om-fe-reset" style="margin-left:12px">Restore default fields</button>
+		</p>
+		<script type="text/template" id="om-fe-template"><?php echo $row( '__i__', array( 'label' => '', 'type' => 'text', 'width' => 'full' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the row template. ?></script>
+		<script>
+		( function () {
+			var table = document.querySelector( '.om-field-editor tbody' );
+			var tpl = document.getElementById( 'om-fe-template' ).innerHTML;
+			var n = Date.now();
+			document.querySelector( '.om-fe-add' ).addEventListener( 'click', function () {
+				table.insertAdjacentHTML( 'beforeend', tpl.split( '__i__' ).join( 'n' + ( n++ ) ) );
+				table.lastElementChild.querySelector( 'input[type=text]' ).focus();
+			} );
+			document.querySelector( '.om-fe-reset' ).addEventListener( 'click', function () {
+				if ( window.confirm( 'Replace the fields with the default form (Name, Email, Phone, Preferred contact, Message)? Save to apply.' ) ) {
+					table.innerHTML = '';
+					var input = document.createElement( 'input' );
+					input.type = 'hidden'; input.name = 'om_inquiry_fields'; input.value = '';
+					table.closest( 'form' ).appendChild( input );
+				}
+			} );
+			table.addEventListener( 'click', function ( e ) {
+				var row = e.target.closest( '.om-fe-row' );
+				if ( ! row ) { return; }
+				if ( e.target.classList.contains( 'om-fe-remove' ) ) { row.remove(); }
+				if ( e.target.classList.contains( 'om-fe-up' ) && row.previousElementSibling ) { row.parentNode.insertBefore( row, row.previousElementSibling ); }
+				if ( e.target.classList.contains( 'om-fe-down' ) && row.nextElementSibling ) { row.parentNode.insertBefore( row.nextElementSibling, row ); }
+			} );
+		} )();
+		</script>
+		<?php
 	}
 }

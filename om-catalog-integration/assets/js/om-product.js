@@ -593,6 +593,35 @@
 		track.scrollBy({ left: dir * track.clientWidth * 0.9, behavior: 'smooth' });
 	});
 
+	// Optional autoplay: advance one card every N seconds, wrap to the
+	// start, pause while hovered/touched/focused or off screen, and never
+	// for visitors who prefer reduced motion.
+	function initAutoplay(root) {
+		var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (reduce) { return; }
+		$(root || document).find('.om-related--carousel[data-om-autoplay]').each(function () {
+			if (this._omAuto) { return; }
+			var box = this;
+			var track = box.querySelector('.om-related-track');
+			var seconds = parseInt(box.getAttribute('data-om-autoplay'), 10);
+			if (!track || !seconds) { return; }
+			var paused = false;
+			var visible = true;
+			$(box).on('mouseenter focusin touchstart', function () { paused = true; })
+				.on('mouseleave focusout touchend', function () { paused = false; });
+			if (window.IntersectionObserver) {
+				new IntersectionObserver(function (entries) { visible = entries[0].isIntersecting; }).observe(box);
+			}
+			box._omAuto = setInterval(function () {
+				if (paused || !visible || document.hidden) { return; }
+				var card = track.querySelector('.om-card');
+				var step = card ? card.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0) : track.clientWidth;
+				var atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+				track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + step, behavior: 'smooth' });
+			}, seconds * 1000);
+		});
+	}
+
 	/* ---------- Custom inquiry forms: pass the product along ---------- */
 
 	// A site's own form (Elementor Pro, Contact Form 7, Gravity Forms...)
@@ -645,6 +674,7 @@
 		rememberProduct();
 		renderRecent(document);
 		fillCustomForms(document);
+		initAutoplay(document);
 		if (mobileQuery) {
 			var onChange = function () { syncPanels(document); };
 			if (mobileQuery.addEventListener) {

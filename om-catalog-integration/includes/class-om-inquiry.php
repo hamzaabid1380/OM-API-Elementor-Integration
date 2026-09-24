@@ -100,6 +100,147 @@ class OM_Inquiry {
 		return time() - (int) $parts[0];
 	}
 
+	/** Field types the form builder offers. */
+	const FIELD_TYPES = array( 'text', 'email', 'tel', 'textarea', 'select', 'radio', 'checkboxes', 'checkbox', 'date', 'number' );
+
+	/** The form a fresh install starts with. */
+	public static function default_fields() {
+		return array(
+			array( 'key' => 'name', 'label' => __( 'Name', 'om-catalog' ), 'type' => 'text', 'required' => true, 'width' => 'half' ),
+			array( 'key' => 'email', 'label' => __( 'Email', 'om-catalog' ), 'type' => 'email', 'required' => true, 'width' => 'half' ),
+			array( 'key' => 'phone', 'label' => __( 'Phone', 'om-catalog' ), 'type' => 'tel', 'required' => false, 'width' => 'half' ),
+			array( 'key' => 'contact', 'label' => __( 'Preferred contact', 'om-catalog' ), 'type' => 'select', 'required' => false, 'width' => 'half', 'options' => array( __( 'Email', 'om-catalog' ), __( 'Phone call', 'om-catalog' ), __( 'Text message', 'om-catalog' ) ) ),
+			array( 'key' => 'message', 'label' => __( 'Message', 'om-catalog' ), 'type' => 'textarea', 'required' => false, 'width' => 'full' ),
+		);
+	}
+
+	/**
+	 * Clean a field list from the settings page or the Elementor widget:
+	 * known types only, unique keys (derived from the label when empty),
+	 * choices as a list.
+	 */
+	public static function normalize_fields( $raw ) {
+		$out  = array();
+		$seen = array();
+		foreach ( (array) $raw as $field ) {
+			if ( ! is_array( $field ) ) {
+				continue;
+			}
+			$label = sanitize_text_field( (string) ( $field['label'] ?? '' ) );
+			if ( '' === $label ) {
+				continue;
+			}
+			$type = in_array( $field['type'] ?? 'text', self::FIELD_TYPES, true ) ? $field['type'] : 'text';
+			$key  = sanitize_key( str_replace( array( ' ', '-' ), '_', (string) ( $field['key'] ?? '' ) ) );
+			if ( '' === $key ) {
+				$key = sanitize_key( str_replace( array( ' ', '-' ), '_', strtolower( remove_accents( $label ) ) ) );
+			}
+			$key  = '' === $key ? 'field' : substr( $key, 0, 40 );
+			$base = $key;
+			for ( $n = 2; isset( $seen[ $key ] ); $n++ ) {
+				$key = $base . '_' . $n;
+			}
+			$seen[ $key ] = true;
+
+			$options = $field['options'] ?? array();
+			if ( is_string( $options ) ) {
+				$options = preg_split( '/\r\n|\r|\n/', $options );
+			}
+			$options = array_values( array_filter( array_map( 'sanitize_text_field', (array) $options ), 'strlen' ) );
+
+			$out[] = array(
+				'key'         => $key,
+				'label'       => $label,
+				'type'        => $type,
+				'required'    => ! empty( $field['required'] ) && 'no' !== $field['required'],
+				'width'       => 'half' === ( $field['width'] ?? 'full' ) ? 'half' : 'full',
+				'placeholder' => sanitize_text_field( (string) ( $field['placeholder'] ?? '' ) ),
+				'options'     => $options,
+			);
+		}
+		return $out;
+	}
+
+	/** The site-wide form (Settings > OM Catalog > Inquiry form fields). */
+	public static function global_fields() {
+		$saved = get_option( 'om_inquiry_fields', null );
+		$list  = is_array( $saved ) ? self::normalize_fields( $saved ) : array();
+		return $list ? $list : self::default_fields();
+	}
+
+	private static function sign_fields( $json ) {
+		return hash_hmac( 'sha256', (string) $json, wp_salt( 'nonce' ) . '|om_inquiry_fields' );
+	}
+
+	/** One field's markup. */
+	private static function render_field( $field, $prefix ) {
+		$id       = $prefix . '-' . $field['key'];
+		$name     = 'om_f[' . $field['key'] . ']';
+		$required = $field['required'] ? ' required' : '';
+		$star     = $field['required'] ? ' <span class="om-req" aria-hidden="true">*</span>' : '';
+		$ph       = '' !== $field['placeholder'] ? ' placeholder="' . esc_attr( $field['placeholder'] ) . '"' : '';
+		$classes  = 'om-field om-field--' . $field['type'] . ' om-field--' . $field['width'];
+
+		if ( in_array( $field['type'], array( 'radio', 'checkboxes' ), true ) ) {
+			echo '<fieldset class="' . esc_attr( $classes ) . '"' . ( $field['required'] ? ' data-om-required="1"' : '' ) . '><legend>' . esc_html( $field['label'] ) . $star . '</legend><div class="om-choice-list">'; // phpcs:ignore WordPress.Security.EscapeOutput -- $star is static markup.
+			foreach ( $field['options'] as $i => $option ) {
+				$input_type = 'radio' === $field['type'] ? 'radio' : 'checkbox';
+				$input_name = 'radio' === $field['type'] ? $name : $name . '[]';
+				printf(
+					'<label class="om-choice"><input type="%s" name="%s" value="%s"%s /><span>%s</span></label>',
+					esc_attr( $input_type ),
+					esc_attr( $input_name ),
+					esc_attr( $option ),
+					( 'radio' === $field['type'] && $field['required'] && 0 === $i ) ? ' required' : '',
+					esc_html( $option )
+				);
+			}
+			echo '</div></fieldset>';
+			return;
+		}
+
+		if ( 'checkbox' === $field['type'] ) {
+			printf(
+				'<p class="%s"><label class="om-choice"><input type="checkbox" id="%s" name="%s" value="%s"%s /><span>%s%s</span></label></p>',
+				esc_attr( $classes ),
+				esc_attr( $id ),
+				esc_attr( $name ),
+				esc_attr__( 'Yes', 'om-catalog' ),
+				$required, // phpcs:ignore WordPress.Security.EscapeOutput -- static.
+				esc_html( $field['label'] ),
+				$star // phpcs:ignore WordPress.Security.EscapeOutput -- static.
+			);
+			return;
+		}
+
+		echo '<p class="' . esc_attr( $classes ) . '"><label for="' . esc_attr( $id ) . '">' . esc_html( $field['label'] ) . $star . '</label>'; // phpcs:ignore WordPress.Security.EscapeOutput -- $star is static markup.
+		switch ( $field['type'] ) {
+			case 'textarea':
+				echo '<textarea id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" rows="4"' . $ph . $required . '></textarea>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+				break;
+			case 'select':
+				echo '<select id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '"' . $required . '>'; // phpcs:ignore WordPress.Security.EscapeOutput -- static.
+				if ( '' !== $field['placeholder'] || $field['required'] ) {
+					echo '<option value="">' . esc_html( '' !== $field['placeholder'] ? $field['placeholder'] : __( 'Choose…', 'om-catalog' ) ) . '</option>';
+				}
+				foreach ( $field['options'] as $option ) {
+					echo '<option value="' . esc_attr( $option ) . '">' . esc_html( $option ) . '</option>';
+				}
+				echo '</select>';
+				break;
+			default:
+				$attrs = array(
+					'email'  => ' type="email" autocomplete="email" inputmode="email"',
+					'tel'    => ' type="tel" autocomplete="tel" inputmode="tel"',
+					'date'   => ' type="date"',
+					'number' => ' type="number" inputmode="decimal"',
+				);
+				$auto  = 'name' === $field['key'] ? ' autocomplete="name"' : '';
+				echo '<input id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '"' . ( $attrs[ $field['type'] ] ?? ' type="text"' . $auto ) . $ph . $required . ' />'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+		}
+		echo '</p>';
+	}
+
 	/**
 	 * Render the form.
 	 *
@@ -123,12 +264,9 @@ class OM_Inquiry {
 				'button'      => __( 'Send inquiry', 'om-catalog' ),
 				'collapsible' => true,
 				'open'        => false,
-				// Which optional fields show, and their labels.
-				'show_phone'     => true,
-				'phone_required' => false,
-				'show_contact'   => true,
-				'show_message'   => true,
-				'labels'         => array(),
+				// Custom field list for this form (see normalize_fields());
+				// empty = the site-wide form from Settings.
+				'fields'         => array(),
 				// Any form shortcode (Elementor Pro Form template, Contact
 				// Form 7, Gravity Forms, WPForms...) to use instead of the
 				// built-in form. The script copies the product details into
@@ -137,16 +275,8 @@ class OM_Inquiry {
 				'custom_form'    => '',
 			)
 		);
-		$labels = wp_parse_args(
-			array_filter( (array) $context['labels'], 'strlen' ),
-			array(
-				'name'    => __( 'Name', 'om-catalog' ),
-				'email'   => __( 'Email', 'om-catalog' ),
-				'phone'   => __( 'Phone', 'om-catalog' ),
-				'contact' => __( 'Preferred contact', 'om-catalog' ),
-				'message' => __( 'Message', 'om-catalog' ),
-			)
-		);
+		$custom_fields = self::normalize_fields( $context['fields'] );
+		$fields        = $custom_fields ? $custom_fields : self::global_fields();
 
 		wp_enqueue_style( 'om-catalog-css' );
 		wp_enqueue_script( 'om-catalog-js' );
@@ -180,48 +310,24 @@ class OM_Inquiry {
 					<input type="hidden" name="om_ctx_<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $context[ $field ] ); ?>" />
 				<?php endforeach; ?>
 				<input type="hidden" name="om_config" value="" class="om-inquiry-config" />
-				<?php if ( $context['show_phone'] && $context['phone_required'] ) : ?>
-					<input type="hidden" name="om_req_phone" value="1" />
-				<?php endif; ?>
+				<?php
+				if ( $custom_fields ) {
+					// This form's own field list, signed so the server can trust it.
+					$fields_json = wp_json_encode( $custom_fields );
+					echo '<input type="hidden" name="om_fields" value="' . esc_attr( $fields_json ) . '" />';
+					echo '<input type="hidden" name="om_fields_sig" value="' . esc_attr( self::sign_fields( $fields_json ) ) . '" />';
+				}
+				?>
 				<div class="om-hp" aria-hidden="true">
 					<label><?php esc_html_e( 'Leave this empty', 'om-catalog' ); ?><input type="text" name="om_website" value="" tabindex="-1" autocomplete="off" /></label>
 				</div>
-				<div class="om-field-row">
-					<p class="om-field">
-						<label for="<?php echo esc_attr( $id ); ?>-name"><?php echo esc_html( $labels['name'] ); ?> <span aria-hidden="true">*</span></label>
-						<input id="<?php echo esc_attr( $id ); ?>-name" type="text" name="om_name" required autocomplete="name" />
-					</p>
-					<p class="om-field">
-						<label for="<?php echo esc_attr( $id ); ?>-email"><?php echo esc_html( $labels['email'] ); ?> <span aria-hidden="true">*</span></label>
-						<input id="<?php echo esc_attr( $id ); ?>-email" type="email" name="om_email" required autocomplete="email" inputmode="email" />
-					</p>
+				<div class="om-fields">
+					<?php
+					foreach ( $fields as $field ) {
+						self::render_field( $field, $id );
+					}
+					?>
 				</div>
-				<?php if ( $context['show_phone'] || $context['show_contact'] ) : ?>
-					<div class="om-field-row">
-						<?php if ( $context['show_phone'] ) : ?>
-							<p class="om-field">
-								<label for="<?php echo esc_attr( $id ); ?>-phone"><?php echo esc_html( $labels['phone'] ); ?><?php echo $context['phone_required'] ? ' <span aria-hidden="true">*</span>' : ''; ?></label>
-								<input id="<?php echo esc_attr( $id ); ?>-phone" type="tel" name="om_phone" autocomplete="tel" inputmode="tel"<?php echo $context['phone_required'] ? ' required' : ''; ?> />
-							</p>
-						<?php endif; ?>
-						<?php if ( $context['show_contact'] ) : ?>
-							<p class="om-field">
-								<label for="<?php echo esc_attr( $id ); ?>-contact"><?php echo esc_html( $labels['contact'] ); ?></label>
-								<select id="<?php echo esc_attr( $id ); ?>-contact" name="om_contact">
-									<option value="email"><?php esc_html_e( 'Email', 'om-catalog' ); ?></option>
-									<option value="phone"><?php esc_html_e( 'Phone call', 'om-catalog' ); ?></option>
-									<option value="text"><?php esc_html_e( 'Text message', 'om-catalog' ); ?></option>
-								</select>
-							</p>
-						<?php endif; ?>
-					</div>
-				<?php endif; ?>
-				<?php if ( $context['show_message'] ) : ?>
-					<p class="om-field">
-						<label for="<?php echo esc_attr( $id ); ?>-msg"><?php echo esc_html( $labels['message'] ); ?></label>
-						<textarea id="<?php echo esc_attr( $id ); ?>-msg" name="om_message" rows="4"></textarea>
-					</p>
-				<?php endif; ?>
 				<p class="om-inquiry-status" role="status" aria-live="polite" hidden></p>
 				<button type="submit" class="om-inquiry-submit"><?php echo esc_html( $context['button'] ); ?></button>
 			</form>
@@ -265,13 +371,66 @@ class OM_Inquiry {
 			$this->fail( __( 'This form has expired. Please reload the page and try again.', 'om-catalog' ), $ajax );
 		}
 
-		$name  = mb_substr( $f( 'om_name' ), 0, 120 );
-		$email = sanitize_email( $f( 'om_email' ) );
-		if ( '' === $name || ! is_email( $email ) ) {
-			$this->fail( __( 'Please enter your name and a valid email address.', 'om-catalog' ), $ajax );
+		// Which fields this form had: its own signed list, or the site-wide one.
+		$fields = self::global_fields();
+		$json   = isset( $_POST['om_fields'] ) && is_scalar( $_POST['om_fields'] ) ? (string) wp_unslash( $_POST['om_fields'] ) : '';
+		$sig    = isset( $_POST['om_fields_sig'] ) && is_scalar( $_POST['om_fields_sig'] ) ? (string) wp_unslash( $_POST['om_fields_sig'] ) : '';
+		if ( '' !== $json && hash_equals( self::sign_fields( $json ), $sig ) ) {
+			$custom = self::normalize_fields( json_decode( $json, true ) );
+			if ( $custom ) {
+				$fields = $custom;
+			}
 		}
-		if ( '' !== $f( 'om_req_phone' ) && '' === $f( 'om_phone' ) ) {
-			$this->fail( __( 'Please enter your phone number.', 'om-catalog' ), $ajax );
+
+		$posted = isset( $_POST['om_f'] ) && is_array( $_POST['om_f'] ) ? wp_unslash( $_POST['om_f'] ) : array();
+		$values = array();
+		$name   = '';
+		$email  = '';
+		$phone  = '';
+		foreach ( $fields as $field ) {
+			$raw = $posted[ $field['key'] ] ?? '';
+			switch ( $field['type'] ) {
+				case 'checkboxes':
+					$value = implode( ', ', array_intersect( array_map( 'sanitize_text_field', (array) $raw ), $field['options'] ) );
+					break;
+				case 'select':
+				case 'radio':
+					$value = in_array( sanitize_text_field( (string) $raw ), $field['options'], true ) ? sanitize_text_field( (string) $raw ) : '';
+					break;
+				case 'checkbox':
+					$value = '' !== (string) $raw && ! is_array( $raw ) ? __( 'Yes', 'om-catalog' ) : '';
+					break;
+				case 'textarea':
+					$value = is_scalar( $raw ) ? mb_substr( sanitize_textarea_field( (string) $raw ), 0, 4000 ) : '';
+					break;
+				case 'email':
+					$value = is_scalar( $raw ) ? sanitize_email( (string) $raw ) : '';
+					if ( '' !== trim( (string) ( is_scalar( $raw ) ? $raw : '' ) ) && ! is_email( $value ) ) {
+						/* translators: %s: field label. */
+						$this->fail( sprintf( __( 'Please enter a valid email address for "%s".', 'om-catalog' ), $field['label'] ), $ajax );
+					}
+					break;
+				default:
+					$value = is_scalar( $raw ) ? mb_substr( sanitize_text_field( (string) $raw ), 0, 300 ) : '';
+			}
+			if ( $field['required'] && '' === $value ) {
+				/* translators: %s: field label. */
+				$this->fail( sprintf( __( 'Please fill in "%s".', 'om-catalog' ), $field['label'] ), $ajax );
+			}
+			$values[ $field['key'] ] = array( $field['label'], $value );
+
+			// Who the inquiry is from: the first email field, the "name"
+			// field (or first text field) and the first phone field.
+			if ( 'email' === $field['type'] && '' === $email ) {
+				$email = $value;
+			} elseif ( 'tel' === $field['type'] && '' === $phone ) {
+				$phone = $value;
+			} elseif ( 'text' === $field['type'] && ( '' === $name || 'name' === $field['key'] ) && '' !== $value ) {
+				$name = 'name' === $field['key'] || '' === $name ? $value : $name;
+			}
+		}
+		if ( '' === $name ) {
+			$name = '' !== $email ? $email : __( 'Website visitor', 'om-catalog' );
 		}
 
 		$ip       = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
@@ -283,11 +442,9 @@ class OM_Inquiry {
 		set_transient( $rate_key, $count + 1, HOUR_IN_SECONDS );
 
 		$data = array(
-			'name'    => $name,
+			'name'    => mb_substr( $name, 0, 120 ),
 			'email'   => $email,
-			'phone'   => mb_substr( $f( 'om_phone' ), 0, 40 ),
-			'contact' => in_array( $f( 'om_contact' ), array( 'email', 'phone', 'text' ), true ) ? $f( 'om_contact' ) : 'email',
-			'message' => mb_substr( $f( 'om_message', true ), 0, 4000 ),
+			'phone'   => $phone,
 			'title'   => mb_substr( $f( 'om_ctx_title' ), 0, 200 ),
 			'style'   => mb_substr( $f( 'om_ctx_style' ), 0, 60 ),
 			'line'    => sanitize_title( $f( 'om_ctx_line' ) ),
@@ -302,16 +459,12 @@ class OM_Inquiry {
 
 		$lines = array_filter(
 			array(
-				__( 'Piece', 'om-catalog' )             => trim( $data['title'] . ( $data['style'] ? ' (style ' . $data['style'] . ')' : '' ) ),
-				__( 'Options chosen', 'om-catalog' )    => $data['config'],
-				__( 'Price shown', 'om-catalog' )       => $data['price'],
-				__( 'Diamond', 'om-catalog' )           => $data['diamond'],
-				__( 'Ring builder', 'om-catalog' )      => $data['summary'],
-				__( 'Page', 'om-catalog' )              => $data['url'],
-				__( 'Name', 'om-catalog' )              => $data['name'],
-				__( 'Email', 'om-catalog' )             => $data['email'],
-				__( 'Phone', 'om-catalog' )             => $data['phone'],
-				__( 'Preferred contact', 'om-catalog' ) => $data['contact'],
+				__( 'Piece', 'om-catalog' )          => trim( $data['title'] . ( $data['style'] ? ' (style ' . $data['style'] . ')' : '' ) ),
+				__( 'Options chosen', 'om-catalog' ) => $data['config'],
+				__( 'Price shown', 'om-catalog' )    => $data['price'],
+				__( 'Diamond', 'om-catalog' )        => $data['diamond'],
+				__( 'Ring builder', 'om-catalog' )   => $data['summary'],
+				__( 'Page', 'om-catalog' )           => $data['url'],
 			),
 			'strlen'
 		);
@@ -319,7 +472,13 @@ class OM_Inquiry {
 		foreach ( $lines as $label => $value ) {
 			$body .= $label . ': ' . $value . "\n";
 		}
-		$body .= "\n" . __( 'Message', 'om-catalog' ) . ":\n" . ( '' !== $data['message'] ? $data['message'] : '—' ) . "\n";
+		$body .= "\n";
+		foreach ( $values as $pair ) {
+			if ( '' === $pair[1] ) {
+				continue;
+			}
+			$body .= false !== strpos( $pair[1], "\n" ) ? $pair[0] . ":\n" . $pair[1] . "\n" : $pair[0] . ': ' . $pair[1] . "\n";
+		}
 
 		/* translators: 1: customer name, 2: piece. */
 		$subject = sprintf( __( 'Inquiry from %1$s: %2$s', 'om-catalog' ), $data['name'], '' !== $data['title'] ? $data['title'] : __( 'general', 'om-catalog' ) );
@@ -343,8 +502,20 @@ class OM_Inquiry {
 			is_email( $to ) ? $to : get_option( 'admin_email' ),
 			wp_specialchars_decode( $subject, ENT_QUOTES ),
 			$body,
-			array( 'Reply-To: ' . str_replace( array( "\r", "\n" ), '', $data['name'] ) . ' <' . $data['email'] . '>' )
+			is_email( $data['email'] ) ? array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>' ), '', $data['name'] ) . ' <' . $data['email'] . '>' ) : array()
 		);
+
+		// Optional confirmation to the customer.
+		if ( is_email( $data['email'] ) && get_option( 'om_inquiry_autoreply', '' ) ) {
+			$reply = trim( (string) get_option( 'om_inquiry_autoreply_text', '' ) );
+			if ( '' === $reply ) {
+				/* translators: %s: site name. */
+				$reply = sprintf( __( "Thank you for your inquiry. We have received your message and will be in touch shortly.\n\n%s", 'om-catalog' ), get_bloginfo( 'name' ) );
+			}
+			$reply .= "\n\n---\n" . implode( "\n", array_map( function ( $label, $value ) { return $label . ': ' . $value; }, array_keys( $lines ), $lines ) );
+			/* translators: %s: site name. */
+			wp_mail( $data['email'], wp_specialchars_decode( sprintf( __( 'We received your inquiry — %s', 'om-catalog' ), get_bloginfo( 'name' ) ), ENT_QUOTES ), $reply );
+		}
 
 		$this->done( $ajax, $data['url'] );
 	}
