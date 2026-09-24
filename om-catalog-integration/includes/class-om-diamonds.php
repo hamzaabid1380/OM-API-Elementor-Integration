@@ -365,6 +365,24 @@ class OM_Diamonds {
 		echo '</div>';
 	}
 
+	/**
+	 * A 4C grade as a small badge; the top tiers (colourless D–F, flawless
+	 * to VVS clarity, Ideal/Excellent cut) are marked so they stand out.
+	 */
+	private static function grade_badge( $type, $grade ) {
+		$grade = trim( $grade );
+		if ( '' === $grade ) {
+			return '<span class="om-dt-badge om-dt-badge--none">—</span>';
+		}
+		$top = array(
+			'color'   => array( 'D', 'E', 'F' ),
+			'clarity' => array( 'FL', 'IF', 'VVS1', 'VVS2' ),
+			'cut'     => array( 'IDEAL', 'EXCELLENT', 'EX', 'ID' ),
+		);
+		$is_top = in_array( strtoupper( $grade ), $top[ $type ] ?? array(), true );
+		return '<span class="om-dt-badge om-dt-badge--' . esc_attr( $type ) . ( $is_top ? ' is-top' : '' ) . '">' . esc_html( $grade ) . '</span>';
+	}
+
 	/** One-line description, e.g. "1.50 ct Round · E · VS1 · Ideal · Lab-grown". */
 	public static function describe( $d ) {
 		return implode(
@@ -399,10 +417,10 @@ class OM_Diamonds {
 			<summary class="om-dt-row">
 				<span class="om-dt-shape"><?php echo self::shape_icon( (string) ( $d['shape'] ?? 'Round' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG. ?><?php echo esc_html( $d['shape'] ?? '' ); ?></span>
 				<span class="om-dt-carat" data-label="<?php esc_attr_e( 'Carat', 'om-catalog' ); ?>"><?php echo esc_html( isset( $d['carat'] ) ? number_format( (float) $d['carat'], 2 ) : '' ); ?></span>
-				<span data-label="<?php esc_attr_e( 'Color', 'om-catalog' ); ?>"><?php echo esc_html( $d['color'] ?? '' ); ?></span>
-				<span data-label="<?php esc_attr_e( 'Clarity', 'om-catalog' ); ?>"><?php echo esc_html( $d['clarity'] ?? '' ); ?></span>
-				<span data-label="<?php esc_attr_e( 'Cut', 'om-catalog' ); ?>"><?php echo esc_html( $d['cut'] ?? '—' ); ?></span>
-				<span data-label="<?php esc_attr_e( 'Report', 'om-catalog' ); ?>"><?php echo esc_html( trim( ( $d['lab'] ?? '' ) . ( ! empty( $d['is_lab'] ) ? ' · ' . __( 'Lab', 'om-catalog' ) : '' ) ) ); ?></span>
+				<span data-label="<?php esc_attr_e( 'Color', 'om-catalog' ); ?>"><?php echo self::grade_badge( 'color', (string) ( $d['color'] ?? '' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in grade_badge(). ?></span>
+				<span data-label="<?php esc_attr_e( 'Clarity', 'om-catalog' ); ?>"><?php echo self::grade_badge( 'clarity', (string) ( $d['clarity'] ?? '' ) ); // phpcs:ignore WordPress.Security.EscapeOutput ?></span>
+				<span data-label="<?php esc_attr_e( 'Cut', 'om-catalog' ); ?>"><?php echo self::grade_badge( 'cut', (string) ( $d['cut'] ?? '' ) ); // phpcs:ignore WordPress.Security.EscapeOutput ?></span>
+				<span class="om-dt-report" data-label="<?php esc_attr_e( 'Report', 'om-catalog' ); ?>"><?php echo '' !== (string) ( $d['lab'] ?? '' ) ? '<span class="om-dt-lab">' . esc_html( $d['lab'] ) . '</span>' : ''; ?><?php echo '<span class="om-dt-origin om-dt-origin--' . ( ! empty( $d['is_lab'] ) ? 'lab' : 'natural' ) . '">' . esc_html( ! empty( $d['is_lab'] ) ? __( 'Lab-grown', 'om-catalog' ) : __( 'Natural', 'om-catalog' ) ) . '</span>'; ?></span>
 				<span class="om-dt-price"><?php echo esc_html( $price ); ?></span>
 				<span class="om-dt-more" aria-hidden="true"></span>
 			</summary>

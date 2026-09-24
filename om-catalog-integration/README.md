@@ -378,7 +378,62 @@ language throughout: solid buttons invert, outline buttons fill, text links
 fade, icon buttons tint, and keyboard focus shows a ring in your brand
 colour.
 
+## Look & feel (1.11)
+
+Settings > OM Catalog > **Look & feel** keeps every OM widget and page
+consistent:
+
+- **Corner radius** for buttons, pills and fields, and a second one for
+  photos, cards and pop-ups (0 = square, the default).
+- **Spacing**: compact, comfortable or airy — the rhythm of the product
+  page, toolbar and rows.
+- **Card hover**: lift (card rises with a soft shadow, name underlined —
+  default), zoom (slow photo zoom) or none. Second photos fade in slowly.
+- **Trust line** under the price, e.g. `Free resizing | Certified diamonds
+  | Made to order` (empty = hidden). The Single Product widget can use it,
+  set its own, or hide it, and style it under Style > Price.
+- **Text sizes on phones** for product names, card names and body text.
+  Long names are balanced over two lines.
+
+## Search (1.11)
+
+- **Grouped search across lines.** The catalog widget's *Suggestions
+  search* setting: the line being browsed, all lines in the widget, or
+  every product line — each line gets a heading, its best matches and "See
+  all (n) in {line}".
+- **Stand-alone search box** for a header: the **OM Search** widget or
+  `[om_search]` (`lines="engagement-rings,wedding-bands"`, empty = all;
+  `results_page="ID"`; `placeholder`; `button="no"`). "See all" and Enter
+  open the **Search results page** (Settings > OM Catalog > Search) — a page
+  with an OM Product Catalog widget showing those lines.
+- **Recent and popular searches** appear when a visitor clicks into an
+  empty search box. Recent ones stay in the visitor's browser; popular ones
+  are your list (Settings > Search), topped up with what visitors search
+  most (can be turned off).
+- **Empty and error states**: "Nothing found for …" with *Clear search* /
+  *Clear all filters*, one-click "Without {filter}" chips, lines where the
+  search does match ("Found in"), and popular searches; errors get a *Try
+  again* button that reloads just the grid.
+
+## Diamond results (1.11)
+
+Colour, clarity and cut appear as small badges (top grades — D–F, FL–VVS2,
+Ideal/Excellent — highlighted), the report shows the lab and Lab-grown /
+Natural, and the column headings stay in view while scrolling.
+
 ## Changelog
+
+### 1.11.0
+- Look & feel settings: shared corner radii, spacing scale, card hover
+  (lift / zoom / none), trust line under the price, phone text sizes.
+- Designed empty and error states with one-click ways out, "Found in"
+  other lines and popular searches; retry reloads just the grid.
+- Grouped search across a widget's lines or every line; new OM Search
+  widget / `[om_search]` for headers with a results page.
+- Recent (per visitor) and popular searches on an empty search box;
+  optional learning of popular searches.
+- Diamond table: 4C badges, lab/origin tags, sticky column headings.
+- Fix: listing cards' fade-in no longer blocks hover transforms.
 
 ### 1.10.0
 - Search suggestions: product photo (default metal colour), carat and style

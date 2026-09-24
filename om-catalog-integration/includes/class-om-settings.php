@@ -88,6 +88,18 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_color_text', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
 		register_setting( 'om_catalog_settings', 'om_font_heading', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_font_body', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+
+		// Look & feel (1.11): one set of corners, spacing, hover and phone
+		// type sizes for every widget.
+		foreach ( array( 'om_radius', 'om_radius_lg', 'om_m_title', 'om_m_card_title', 'om_m_body' ) as $opt ) {
+			register_setting( 'om_catalog_settings', $opt, array( 'sanitize_callback' => array( $this, 'sanitize_px' ) ) );
+		}
+		register_setting( 'om_catalog_settings', 'om_spacing', array( 'sanitize_callback' => array( $this, 'sanitize_spacing' ) ) );
+		register_setting( 'om_catalog_settings', 'om_card_hover', array( 'sanitize_callback' => array( $this, 'sanitize_card_hover' ) ) );
+		register_setting( 'om_catalog_settings', 'om_trust_line', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_popular_searches', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_track_searches', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_search_results_page', array( 'sanitize_callback' => 'absint' ) );
 	}
 
 	/**
@@ -112,6 +124,19 @@ class OM_Settings {
 
 	public function sanitize_options_style( $value ) {
 		return in_array( $value, array( 'swatches', 'pills', 'dropdowns' ), true ) ? $value : 'swatches';
+	}
+
+	/** A pixel size 0–60, or '' for the default. */
+	public function sanitize_px( $value ) {
+		return '' === trim( (string) $value ) ? '' : (string) max( 0, min( 60, (int) $value ) );
+	}
+
+	public function sanitize_spacing( $value ) {
+		return in_array( $value, array( 'compact', 'comfortable', 'airy' ), true ) ? $value : 'comfortable';
+	}
+
+	public function sanitize_card_hover( $value ) {
+		return in_array( $value, array( 'lift', 'zoom', 'none' ), true ) ? $value : 'lift';
 	}
 
 	public function sanitize_video_mode( $value ) {
@@ -427,6 +452,83 @@ class OM_Settings {
 					<tr>
 						<th><label for="om_font_body">Body font (CSS font-family)</label></th>
 						<td><input type="text" id="om_font_body" name="om_font_body" value="<?php echo esc_attr( get_option( 'om_font_body', 'Inter, Helvetica, Arial, sans-serif' ) ); ?>" class="regular-text" /></td>
+					</tr>
+				</table>
+
+				<h2>Look &amp; feel</h2>
+				<p class="description">One set of corners, spacing and hover behaviour for every OM widget and page, so they stay consistent. A widget's own Style settings still override these.</p>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_radius">Corner radius: buttons, pills, fields</label></th>
+						<td><input type="number" min="0" max="60" id="om_radius" name="om_radius" value="<?php echo esc_attr( get_option( 'om_radius', '' ) ); ?>" class="small-text" /> px <span class="description">0 = square (default). 4–8 = soft. 30+ = fully rounded pills.</span></td>
+					</tr>
+					<tr>
+						<th><label for="om_radius_lg">Corner radius: photos, cards, pop-ups</label></th>
+						<td><input type="number" min="0" max="60" id="om_radius_lg" name="om_radius_lg" value="<?php echo esc_attr( get_option( 'om_radius_lg', '' ) ); ?>" class="small-text" /> px</td>
+					</tr>
+					<tr>
+						<th><label for="om_spacing">Spacing</label></th>
+						<td><select id="om_spacing" name="om_spacing">
+							<?php $spacing = get_option( 'om_spacing', 'comfortable' ); ?>
+							<option value="compact" <?php selected( $spacing, 'compact' ); ?>>Compact</option>
+							<option value="comfortable" <?php selected( $spacing, 'comfortable' ); ?>>Comfortable (default)</option>
+							<option value="airy" <?php selected( $spacing, 'airy' ); ?>>Airy</option>
+						</select> <span class="description">Space between groups on the product page, filters and sections.</span></td>
+					</tr>
+					<tr>
+						<th><label for="om_card_hover">Card hover</label></th>
+						<td><select id="om_card_hover" name="om_card_hover">
+							<?php $hover = get_option( 'om_card_hover', 'lift' ); ?>
+							<option value="lift" <?php selected( $hover, 'lift' ); ?>>Lift: card rises with a soft shadow, name underlined (default)</option>
+							<option value="zoom" <?php selected( $hover, 'zoom' ); ?>>Zoom: photo zooms slowly</option>
+							<option value="none" <?php selected( $hover, 'none' ); ?>>None</option>
+						</select></td>
+					</tr>
+					<tr>
+						<th><label for="om_trust_line">Trust line under the price</label></th>
+						<td><input type="text" id="om_trust_line" name="om_trust_line" value="<?php echo esc_attr( get_option( 'om_trust_line', '' ) ); ?>" class="large-text" placeholder="Free resizing | Certified diamonds | Made to order" />
+						<p class="description">Short promises, separated by <code>|</code>. Shown under the price on product pages and in quick view. Leave empty to hide. Only list what you really offer.</p></td>
+					</tr>
+					<tr>
+						<th>Text sizes on phones</th>
+						<td>
+							<label>Product name <input type="number" min="0" max="60" name="om_m_title" value="<?php echo esc_attr( get_option( 'om_m_title', '' ) ); ?>" class="small-text" placeholder="26" /> px</label> &nbsp;
+							<label>Card names <input type="number" min="0" max="60" name="om_m_card_title" value="<?php echo esc_attr( get_option( 'om_m_card_title', '' ) ); ?>" class="small-text" placeholder="15" /> px</label> &nbsp;
+							<label>Body text <input type="number" min="0" max="60" name="om_m_body" value="<?php echo esc_attr( get_option( 'om_m_body', '' ) ); ?>" class="small-text" placeholder="14" /> px</label>
+							<p class="description">Screens up to 600px wide. Leave empty for the defaults shown. Long names are balanced over two lines instead of leaving one word alone.</p>
+						</td>
+					</tr>
+				</table>
+
+				<h2>Search</h2>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_search_results_page">Search results page</label></th>
+						<td><?php
+						wp_dropdown_pages(
+							array(
+								'name'              => 'om_search_results_page',
+								'id'                => 'om_search_results_page',
+								'selected'          => (int) get_option( 'om_search_results_page', 0 ),
+								'show_option_none'  => '— None —',
+								'option_none_value' => '0',
+							)
+						);
+						?>
+						<p class="description">For the stand-alone search box (<code>[om_search]</code> / OM Search widget, e.g. in your header): "See all" and Enter open this page. Use a page with an OM Product Catalog widget that includes the lines you search.</p></td>
+					</tr>
+					<tr>
+						<th><label for="om_popular_searches">Popular searches</label></th>
+						<td><input type="text" id="om_popular_searches" name="om_popular_searches" value="<?php echo esc_attr( get_option( 'om_popular_searches', '' ) ); ?>" class="large-text" placeholder="Oval halo, Solitaire, Men's bands, Yellow gold" />
+						<p class="description">Comma-separated. Shown when a visitor clicks into an empty search box (with their own recent searches), and as suggestions when filters find nothing.</p></td>
+					</tr>
+					<tr>
+						<th>Learn from visitors</th>
+						<td><input type="hidden" name="om_track_searches" value="0" /><label><input type="checkbox" name="om_track_searches" value="1" <?php checked( get_option( 'om_track_searches', '1' ), '1' ); ?> /> Fill "Popular searches" with what visitors search most (when the list above is empty or short)</label>
+						<?php $top = get_option( 'om_search_counts', array() ); ?>
+						<?php if ( is_array( $top ) && $top ) : arsort( $top ); ?>
+							<p class="description">Most searched: <?php echo esc_html( implode( ', ', array_map( function ( $q, $n ) { return $q . ' (' . $n . ')'; }, array_keys( array_slice( $top, 0, 10, true ) ), array_slice( $top, 0, 10, true ) ) ) ); ?></p>
+						<?php endif; ?></td>
 					</tr>
 				</table>
 

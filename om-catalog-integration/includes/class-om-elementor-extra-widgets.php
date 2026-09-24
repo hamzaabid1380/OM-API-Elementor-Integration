@@ -810,3 +810,166 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 	}
 }
+
+/** "OM Search" widget: one search box for every product line, e.g. in a header. */
+class OM_Elementor_Search_Widget extends Widget_Base {
+
+	public function get_name() {
+		return 'om_search_widget';
+	}
+
+	public function get_title() {
+		return __( 'OM Search', 'om-catalog' );
+	}
+
+	public function get_icon() {
+		return 'eicon-search';
+	}
+
+	public function get_categories() {
+		return array( 'general' );
+	}
+
+	public function get_keywords() {
+		return array( 'search', 'jewelry', 'rings', 'overnight', 'catalog' );
+	}
+
+	public function get_style_depends() {
+		return array( 'om-catalog-css' );
+	}
+
+	public function get_script_depends() {
+		return array( 'om-catalog-js' );
+	}
+
+	protected function register_controls() {
+		$this->start_controls_section( 'section_content', array( 'label' => __( 'Search', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'lines',
+			array(
+				'label'       => __( 'Search these lines', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'options'     => OM_Shortcodes::line_labels( is_admin() ),
+				'default'     => array(),
+				'description' => __( 'Leave empty to search every product line. Suggestions are grouped by line.', 'om-catalog' ),
+			)
+		);
+
+		$pages = array( '' => __( 'From Settings > OM Catalog > Search', 'om-catalog' ) );
+		if ( is_admin() ) {
+			foreach ( get_pages( array( 'number' => 200 ) ) as $page ) {
+				$pages[ (string) $page->ID ] = $page->post_title;
+			}
+		}
+		$this->add_control(
+			'results_page',
+			array(
+				'label'       => __( 'Results page', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => '',
+				'options'     => $pages,
+				'description' => __( 'A page with an OM Product Catalog widget showing these lines. "See all" and Enter go there.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'placeholder',
+			array(
+				'label'       => __( 'Placeholder', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Search rings, bands, style numbers…', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'button',
+			array(
+				'label'   => __( 'Search button', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'suggest_prices',
+			array(
+				'label'       => __( 'Prices in suggestions', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Once a markup is set.', 'om-catalog' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_style_box', array( 'label' => __( 'Search Box', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+
+		$this->add_responsive_control(
+			'box_width',
+			array(
+				'label'      => __( 'Width', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array( 'px' => array( 'min' => 180, 'max' => 900 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-search-standalone' => 'max-width: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'box_height',
+			array(
+				'label'      => __( 'Height', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 32, 'max' => 72 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-search-input, {{WRAPPER}} .om-search-submit' => 'height: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'box_typography',
+				'selector' => '{{WRAPPER}} .om-search-input',
+			)
+		);
+
+		$this->add_control( 'box_bg', array( 'label' => __( 'Background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-search-input' => 'background-color: {{VALUE}};' ) ) );
+		$this->add_control( 'box_text', array( 'label' => __( 'Text', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-search-input, {{WRAPPER}} .om-search-icon' => 'color: {{VALUE}};' ) ) );
+		$this->add_control( 'box_border', array( 'label' => __( 'Border', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-search-input' => 'border-color: {{VALUE}};' ) ) );
+		$this->add_control(
+			'box_radius',
+			array(
+				'label'      => __( 'Corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-search-input'                => 'border-radius: {{SIZE}}{{UNIT}} 0 0 {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .om-search--no-button .om-search-input' => 'border-radius: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .om-search-submit'               => 'border-radius: 0 {{SIZE}}{{UNIT}} {{SIZE}}{{UNIT}} 0;',
+				),
+			)
+		);
+		$this->add_control( 'btn_bg', array( 'label' => __( 'Button background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'separator' => 'before', 'selectors' => array( '{{WRAPPER}} .om-search-submit' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ) ) );
+		$this->add_control( 'btn_text', array( 'label' => __( 'Button text', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-search-submit' => 'color: {{VALUE}};' ) ) );
+
+		$this->end_controls_section();
+	}
+
+	protected function render() {
+		$s = $this->get_settings_for_display();
+		echo OM_Search::render_box( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+			array(
+				'lines'          => implode( ',', (array) ( $s['lines'] ?? array() ) ),
+				'results_page'   => (string) ( $s['results_page'] ?? '' ),
+				'placeholder'    => (string) ( $s['placeholder'] ?? '' ),
+				'suggest_prices' => 'yes' === ( $s['suggest_prices'] ?? 'yes' ) ? 'yes' : 'no',
+				'button'         => 'yes' === ( $s['button'] ?? 'yes' ) ? 'yes' : 'no',
+			)
+		);
+	}
+}

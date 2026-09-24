@@ -289,6 +289,22 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'search_scope',
+			array(
+				'label'       => __( 'Suggestions search', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'line',
+				'options'     => array(
+					'line'  => __( 'The line being browsed', 'om-catalog' ),
+					'block' => __( 'All lines in this widget (grouped)', 'om-catalog' ),
+					'all'   => __( 'Every product line (grouped)', 'om-catalog' ),
+				),
+				'description' => __( 'Grouped suggestions show each line with its best matches and a "see all" link.', 'om-catalog' ),
+				'condition'   => array( 'show_search' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
 			'suggest_prices',
 			array(
 				'label'       => __( 'Prices in search suggestions', 'om-catalog' ),
@@ -1399,6 +1415,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'show_search'     => (string) ( $settings['show_search'] ?? 'yes' ),
 			'search_placeholder' => (string) ( $settings['search_placeholder'] ?? '' ),
 			'suggest_prices'  => 'yes' === ( $settings['suggest_prices'] ?? 'yes' ) ? 'yes' : 'no',
+			'search_scope'    => in_array( $settings['search_scope'] ?? 'line', array( 'line', 'block', 'all' ), true ) ? $settings['search_scope'] : 'line',
 			'show_sort'       => (string) ( $settings['show_sort'] ?? 'yes' ),
 			'sort'            => (string) ( $settings['default_sort'] ?? '' ),
 			'show_prices'     => (string) ( $settings['show_prices'] ?? '' ),

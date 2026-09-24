@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.10.0
+ * Version: 1.11.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.10.0' );
+define( 'OM_CATALOG_VERSION', '1.11.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -91,7 +91,14 @@ function om_catalog_enqueue_assets() {
 				'unmute'    => __( 'Turn sound on', 'om-catalog' ),
 				'mute'      => __( 'Turn sound off', 'om-catalog' ),
 				'sizeUnsure' => __( 'not sure — please help', 'om-catalog' ),
+				'recent'     => __( 'Recent searches', 'om-catalog' ),
+				'popular'    => __( 'Popular searches', 'om-catalog' ),
+				'clearRecent' => __( 'Clear', 'om-catalog' ),
+				'removeSearch' => __( 'Remove', 'om-catalog' ),
+				'inLine'     => __( 'in %s', 'om-catalog' ),
 			),
+			'cardHover' => (string) get_option( 'om_card_hover', 'lift' ),
+			'popular'   => om_popular_searches(),
 		)
 	);
 
@@ -112,7 +119,7 @@ function om_catalog_enqueue_assets() {
 		--om-font-heading: {$heading_font};
 		--om-font-body: {$body_font};
 	}";
-	wp_add_inline_style( 'om-catalog-css', $css_vars );
+	wp_add_inline_style( 'om-catalog-css', $css_vars . om_catalog_look_css() );
 
 	if ( om_catalog_page_needs_assets() ) {
 		wp_enqueue_style( 'om-catalog-css' );
@@ -207,6 +214,86 @@ function om_catalog_style_tokens() {
 }
 
 /**
+ * Look & feel settings as CSS variables: corner radii, spacing scale and
+ * phone text sizes. Empty settings keep the stylesheet's defaults.
+ */
+function om_catalog_look_css() {
+	$px = static function ( $option ) {
+		$value = get_option( $option, '' );
+		return '' === (string) $value ? null : max( 0, min( 60, (int) $value ) ) . 'px';
+	};
+	$space = array( 'compact' => '0.8', 'comfortable' => '1', 'airy' => '1.3' );
+	$vars  = array(
+		'--om-radius'    => $px( 'om_radius' ),
+		'--om-radius-lg' => $px( 'om_radius_lg' ),
+		'--om-space'     => $space[ get_option( 'om_spacing', 'comfortable' ) ] ?? '1',
+	);
+	$phone = array(
+		'--om-m-title'      => $px( 'om_m_title' ),
+		'--om-m-card-title' => $px( 'om_m_card_title' ),
+		'--om-m-body'       => $px( 'om_m_body' ),
+	);
+	$line = static function ( $list ) {
+		$out = '';
+		foreach ( $list as $name => $value ) {
+			if ( null !== $value ) {
+				$out .= $name . ':' . $value . ';';
+			}
+		}
+		return $out;
+	};
+	$css = ':root{' . $line( $vars ) . '}';
+	if ( '' !== $line( $phone ) ) {
+		$css .= '@media (max-width:600px){:root{' . $line( $phone ) . '}}';
+	}
+	return $css;
+}
+
+/**
+ * Popular searches: the admin's list, topped up (when enabled) with what
+ * visitors search most. At most 8.
+ *
+ * @return string[]
+ */
+function om_popular_searches() {
+	$list = array_filter( array_map( 'trim', explode( ',', (string) get_option( 'om_popular_searches', '' ) ) ), 'strlen' );
+	if ( count( $list ) < 8 && '0' !== get_option( 'om_track_searches', '1' ) ) {
+		$counts = get_option( 'om_search_counts', array() );
+		if ( is_array( $counts ) ) {
+			arsort( $counts );
+			foreach ( $counts as $query => $n ) {
+				if ( $n >= 3 && ! in_array( mb_strtolower( $query ), array_map( 'mb_strtolower', $list ), true ) ) {
+					$list[] = mb_strtoupper( mb_substr( (string) $query, 0, 1 ) ) . mb_substr( (string) $query, 1 );
+				}
+				if ( count( $list ) >= 8 ) {
+					break;
+				}
+			}
+		}
+	}
+	return array_values( array_slice( $list, 0, 8 ) );
+}
+
+/**
+ * Count a visitor search (for "popular searches"). Kept small: the 50
+ * most frequent queries of 2–40 characters.
+ */
+function om_record_search( $query ) {
+	$query = trim( mb_strtolower( preg_replace( '/\s+/', ' ', (string) $query ) ) );
+	if ( '0' === get_option( 'om_track_searches', '1' ) || mb_strlen( $query ) < 2 || mb_strlen( $query ) > 40 ) {
+		return;
+	}
+	$counts = get_option( 'om_search_counts', array() );
+	$counts = is_array( $counts ) ? $counts : array();
+	$counts[ $query ] = ( $counts[ $query ] ?? 0 ) + 1;
+	if ( count( $counts ) > 50 ) {
+		arsort( $counts );
+		$counts = array_slice( $counts, 0, 50, true );
+	}
+	update_option( 'om_search_counts', $counts, false );
+}
+
+/**
  * Does the current request render catalog output?
  */
 function om_catalog_page_needs_assets() {
@@ -217,14 +304,14 @@ function om_catalog_page_needs_assets() {
 	if ( is_singular() ) {
 		$post = get_post();
 		if ( $post ) {
-			foreach ( array( 'om_catalog', 'om_diamonds', 'om_ring_builder', 'om_related' ) as $tag ) {
+			foreach ( array( 'om_catalog', 'om_diamonds', 'om_ring_builder', 'om_related', 'om_search' ) as $tag ) {
 				if ( has_shortcode( (string) $post->post_content, $tag ) ) {
 					return true;
 				}
 			}
 			// Elementor stores widget data in post meta, not post_content.
 			$elementor_data = get_post_meta( $post->ID, '_elementor_data', true );
-			if ( is_string( $elementor_data ) && preg_match( '/"widgetType":"om_[a-z_]+"|\[om_(catalog|diamonds|ring_builder|related)/', $elementor_data ) ) {
+			if ( is_string( $elementor_data ) && preg_match( '/"widgetType":"om_[a-z_]+"|\[om_(catalog|diamonds|ring_builder|related|search)/', $elementor_data ) ) {
 				return true;
 			}
 		}

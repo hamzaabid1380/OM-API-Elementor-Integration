@@ -211,6 +211,10 @@ class OM_Shortcodes {
 				'search_placeholder' => '',
 				// "From $X" beside each search suggestion (once a markup is set).
 				'suggest_prices'  => 'yes',
+				// What suggestions search: line (the line being browsed),
+				// block (all of this block's lines, grouped) or all (every
+				// product line, grouped).
+				'search_scope'    => 'line',
 				// Visitor sort dropdown, and the default order.
 				'show_sort'       => 'yes',
 				'sort'            => '',
@@ -301,6 +305,12 @@ class OM_Shortcodes {
 			'q'     => 'yes' === $atts['show_search'] ? trim( (string) ( $request['q'] ?? '' ) ) : '',
 		);
 		$default_sort = isset( self::SORTS[ $atts['sort'] ] ) ? (string) $atts['sort'] : '';
+
+		// Count visitor searches for "Popular searches" (first page only,
+		// never the background refresh or the editor).
+		if ( '' !== $state['q'] && 1 === max( 1, (int) $request['page'] ) && ! wp_doing_cron() && ( wp_doing_ajax() || ! is_admin() ) ) {
+			om_record_search( $state['q'] );
+		}
 
 		$style_filter = '' !== $state['style'] ? $state['style'] : $admin_base;
 		$shape_filter = '' !== $state['shape'] ? $state['shape'] : self::normalize_style_list( $atts['shape'] );
@@ -744,6 +754,76 @@ class OM_Shortcodes {
 		<?php
 	}
 
+	/**
+	 * Nothing matches: a designed empty state — what happened, one-click
+	 * ways out (clear everything, or drop a single filter) and popular
+	 * searches to try instead.
+	 */
+	private function render_empty( $atts, $state, $chips, $clear_url, $url ) {
+		$searching = '' !== $state['q'];
+		echo '<div class="om-empty-state om-empty" role="status">';
+		echo '<span class="om-empty-icon" aria-hidden="true"></span>';
+		echo '<h3 class="om-empty-title">' . esc_html(
+			$searching
+				/* translators: %s: search words. */
+				? sprintf( __( 'Nothing found for "%s"', 'om-catalog' ), $state['q'] )
+				: __( 'No designs match these filters', 'om-catalog' )
+		) . '</h3>';
+		echo '<p class="om-empty-text">' . esc_html(
+			$searching
+				? __( 'Check the spelling, try fewer words, or search by style number.', 'om-catalog' )
+				: __( 'Try removing a filter, or start again with everything.', 'om-catalog' )
+		) . '</p>';
+
+		// A multi-line block: the search may match in another line.
+		$others = array();
+		if ( $searching ) {
+			$block = array_filter( array_map( 'sanitize_title', explode( ',', (string) ( ! empty( $atts['lines'] ) ? $atts['lines'] : ( $atts['line'] ?? '' ) ) ) ) );
+			$block = array_values( array_diff( $block, array( $state['line'] ) ) );
+			if ( $block ) {
+				$found  = OM_Search::search_lines( $block, $state['q'], 0 );
+				$labels = self::line_labels();
+				foreach ( $found['groups'] as $group ) {
+					$others[] = array(
+						'label' => ( $labels[ $group['line'] ] ?? ucwords( str_replace( '-', ' ', $group['line'] ) ) ) . ' (' . number_format_i18n( $group['total'] ) . ')',
+						'url'   => $url( array( 'line' => $group['line'], 'q' => $state['q'], 'style' => '', 'shape' => '', 'metal' => '' ) ),
+					);
+				}
+			}
+		}
+		if ( $others ) {
+			echo '<div class="om-empty-popular om-empty-elsewhere"><span class="om-empty-popular-label">' . esc_html__( 'Found in', 'om-catalog' ) . '</span>';
+			foreach ( $others as $other ) {
+				echo '<a class="om-chip om-chip--ghost" href="' . esc_url( $other['url'] ) . '">' . esc_html( $other['label'] ) . '</a>';
+			}
+			echo '</div>';
+		}
+
+		echo '<div class="om-empty-actions">';
+		if ( $chips || $searching ) {
+			echo '<a class="om-btn om-btn--solid om-clear-filters-btn" href="' . esc_url( $clear_url ) . '">' . esc_html( $searching && count( $chips ) <= 1 ? __( 'Clear search', 'om-catalog' ) : __( 'Clear all filters', 'om-catalog' ) ) . '</a>';
+		}
+		// With several filters, dropping just one is often enough.
+		if ( count( $chips ) > 1 ) {
+			foreach ( $chips as $chip ) {
+				/* translators: %s: filter name. */
+				printf( '<a class="om-chip" href="%s">%s<span aria-hidden="true">&times;</span></a>', esc_url( $chip['url'] ), esc_html( sprintf( __( 'Without %s', 'om-catalog' ), $chip['label'] ) ) );
+			}
+		}
+		echo '</div>';
+
+		$popular = 'yes' === $atts['show_search'] ? om_popular_searches() : array();
+		$popular = array_values( array_filter( $popular, static function ( $term ) use ( $state ) { return 0 !== strcasecmp( $term, $state['q'] ); } ) );
+		if ( $popular ) {
+			echo '<div class="om-empty-popular"><span class="om-empty-popular-label">' . esc_html__( 'Popular searches', 'om-catalog' ) . '</span>';
+			foreach ( array_slice( $popular, 0, 6 ) as $term ) {
+				echo '<a class="om-chip om-chip--ghost" href="' . esc_url( $url( array( 'q' => $term, 'style' => '', 'shape' => '', 'metal' => '' ) ) ) . '">' . esc_html( $term ) . '</a>';
+			}
+			echo '</div>';
+		}
+		echo '</div>';
+	}
+
 	/** Result toolbar, grid and pagination (or an empty/error state). */
 	private function render_results( $data, $atts, $paged, $per_page, $columns, $layout, $active_line, $chips, $clear_url, $state, $url, $base_url, $multi ) {
 		if ( 'yes' === $atts['show_search'] ) {
@@ -751,7 +831,13 @@ class OM_Shortcodes {
 		}
 
 		if ( is_wp_error( $data ) ) {
-			echo '<div class="om-error"><p>' . esc_html( om_public_error_message( $data ) ) . '</p></div>';
+			// Designed error state with a retry (re-renders just this block).
+			echo '<div class="om-empty-state om-error" role="alert">';
+			echo '<span class="om-empty-icon om-empty-icon--error" aria-hidden="true"></span>';
+			echo '<h3 class="om-empty-title">' . esc_html__( 'The catalog didn\'t load', 'om-catalog' ) . '</h3>';
+			echo '<p class="om-empty-text">' . esc_html( om_public_error_message( $data ) ) . '</p>';
+			echo '<div class="om-empty-actions"><a class="om-btn om-btn--solid om-retry" href="' . esc_url( $url( array( 'q' => $state['q'], 'page' => $paged ) ) ) . '">' . esc_html__( 'Try again', 'om-catalog' ) . '</a></div>';
+			echo '</div>';
 			return;
 		}
 
@@ -809,11 +895,7 @@ class OM_Shortcodes {
 		}
 
 		if ( empty( $products ) ) {
-			echo '<div class="om-empty"><p>' . esc_html( '' !== $state['q'] ? __( 'No designs match your search.', 'om-catalog' ) : __( 'No designs match these filters.', 'om-catalog' ) ) . '</p>';
-			if ( $chips ) {
-				echo '<a class="om-clear-filters" href="' . esc_url( $clear_url ) . '">' . esc_html( '' !== $state['q'] ? __( 'Clear search', 'om-catalog' ) : __( 'Clear all filters', 'om-catalog' ) ) . '</a>';
-			}
-			echo '</div>';
+			$this->render_empty( $atts, $state, $chips, $clear_url, $url );
 			return;
 		}
 

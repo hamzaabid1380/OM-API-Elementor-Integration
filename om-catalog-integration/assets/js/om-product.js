@@ -542,7 +542,7 @@
 
 	var blockLinks = [
 		'.om-catalog-wrap .om-filter-pill', '.om-catalog-wrap .om-filter-link', '.om-catalog-wrap .om-chip',
-		'.om-catalog-wrap .om-clear-filters', '.om-catalog-wrap .om-pagination a',
+		'.om-catalog-wrap .om-clear-filters', '.om-catalog-wrap .om-clear-filters-btn', '.om-catalog-wrap .om-pagination a',
 		'.om-diamonds .om-pagination a', '.om-diamonds .om-df-reset'
 	].join(', ');
 
@@ -579,11 +579,19 @@
 		return url.toString();
 	}
 
+	// Error state: "Try again" re-renders just this block.
+	$(document).on('click', '.om-catalog-wrap .om-retry', function (e) {
+		if (!window.URL) { return; }
+		e.preventDefault();
+		loadBlock($(this).closest('.om-catalog-wrap'), this.href);
+	});
+
 	/* ---------- Search with suggestions ---------- */
 
 	var suggestTimer = null;
 	var suggestSeq = 0;
 	var suggestPrices = {}; // line|style => "From $X" ('' = none)
+	var RECENT_SEARCH_KEY = 'om_recent_searches';
 
 	// The typed words in bold inside a suggestion's text.
 	function highlight(text, q) {
@@ -597,25 +605,26 @@
 		return $out;
 	}
 
-	// Starting prices for the suggestions shown, one request, remembered
-	// for the rest of the visit.
-	function fillSuggestPrices($list, line) {
-		var need = [];
+	// Starting prices for the suggestions shown: one request per line,
+	// remembered for the rest of the visit.
+	function fillSuggestPrices($list) {
+		var need = {};
 		$list.find('.om-suggest-price[data-om-style]').each(function () {
-			var style = $(this).attr('data-om-style');
-			var key = line + '|' + style;
-			if (key in suggestPrices) { setSuggestPrice($(this), suggestPrices[key]); } else { need.push(style); }
+			var line = $(this).attr('data-om-line');
+			var key = line + '|' + $(this).attr('data-om-style');
+			if (key in suggestPrices) { setSuggestPrice($(this), suggestPrices[key]); } else { (need[line] = need[line] || []).push($(this).attr('data-om-style')); }
 		});
-		if (!need.length) { return; }
-		$.post(cfg.ajaxUrl, { action: 'om_card_prices', line: line, styles: need }).done(function (response) {
-			var prices = (response && response.success && response.data.prices) || {};
-			need.forEach(function (style) { suggestPrices[line + '|' + style] = prices[style] || ''; });
-			$list.find('.om-suggest-price[data-om-style]').each(function () {
-				var key = line + '|' + $(this).attr('data-om-style');
-				if (key in suggestPrices) { setSuggestPrice($(this), suggestPrices[key]); }
+		$.each(need, function (line, styles) {
+			$.post(cfg.ajaxUrl, { action: 'om_card_prices', line: line, styles: styles.slice(0, 8) }).done(function (response) {
+				var prices = (response && response.success && response.data.prices) || {};
+				styles.forEach(function (style) { suggestPrices[line + '|' + style] = prices[style] || ''; });
+				$list.find('.om-suggest-price[data-om-line="' + line + '"]').each(function () {
+					var key = line + '|' + $(this).attr('data-om-style');
+					if (key in suggestPrices) { setSuggestPrice($(this), suggestPrices[key]); }
+				});
+			}).fail(function () {
+				$list.find('.om-suggest-price.is-loading[data-om-line="' + line + '"]').remove();
 			});
-		}).fail(function () {
-			$list.find('.om-suggest-price.is-loading').remove();
 		});
 	}
 
@@ -623,15 +632,146 @@
 		if (text) { $el.removeClass('is-loading').text(text); } else { $el.remove(); }
 	}
 
+	// Recent searches live in the visitor's own browser.
+	function readRecentSearches() {
+		try { return JSON.parse(window.localStorage.getItem(RECENT_SEARCH_KEY) || '[]').filter(function (x) { return typeof x === 'string'; }); } catch (err) { return []; }
+	}
+
+	function writeRecentSearches(list) {
+		try { window.localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(list.slice(0, 6))); } catch (err) { /* storage unavailable */ }
+	}
+
+	function rememberSearch(q) {
+		q = $.trim(q || '');
+		if (q.length < 2) { return; }
+		writeRecentSearches([q].concat(readRecentSearches().filter(function (x) { return x.toLowerCase() !== q.toLowerCase(); })));
+	}
+
+	function isStandalone($form) {
+		return $form.closest('.om-search-standalone').length > 0;
+	}
+
+	// "See all" for one line: in place for this block's lines, or the
+	// results page for the stand-alone search box.
+	function lineResultsUrl($form, line, q, resultsUrl) {
+		try {
+			var url;
+			if (isStandalone($form)) {
+				if (!resultsUrl) { return ''; }
+				url = new URL(resultsUrl, window.location.href);
+			} else {
+				url = new URL(formUrl($form[0]), window.location.href);
+			}
+			url.searchParams.set('om_q', q);
+			if (line && (isStandalone($form) || $form.find('[name="om_line"]').length)) { url.searchParams.set('om_line', line); }
+			url.searchParams.delete('om_page');
+			return url.toString();
+		} catch (err) { return ''; }
+	}
+
+	function suggestItem($list, item, q, i, priced) {
+		var $a = $('<a class="om-suggest-item" role="option"></a>').attr({ href: item.url, id: $list.attr('id') + '-' + i });
+		var $img = $('<span class="om-suggest-img"></span>');
+		if (item.image) { $img.append($('<img alt="" loading="lazy" decoding="async" />').attr('src', item.image)); }
+		$a.append($img);
+		var $meta = $('<span class="om-suggest-meta"></span>');
+		if (item.variant) { $meta.append($('<span class="om-suggest-variant"></span>').text(item.variant)); }
+		$meta.append($('<span class="om-suggest-style"></span>').append(t('style', 'Style') + ' ', highlight(item.style, q)));
+		$a.append($('<span class="om-suggest-text"></span>')
+			.append($('<span class="om-suggest-title"></span>').append(highlight(item.title, q)))
+			.append($meta));
+		if (priced) {
+			$a.append($('<span class="om-suggest-price is-loading"></span>').attr({ 'data-om-style': item.style, 'data-om-line': item.line || '' }));
+		}
+		return $('<li role="presentation"></li>').append($a);
+	}
+
+	// Empty box focused: recent searches (this visitor) and popular ones.
+	function showSearchStarters($form) {
+		var $list = $form.find('.om-suggest').empty();
+		var recent = readRecentSearches();
+		var popular = (cfg.popular || []).filter(function (p) { return recent.map(function (r) { return r.toLowerCase(); }).indexOf(String(p).toLowerCase()) === -1; });
+		if (!recent.length && !popular.length) { closeSuggest($form); return; }
+		if (recent.length) {
+			var $chips = $('<div class="om-suggest-chips"></div>');
+			recent.forEach(function (q) {
+				$chips.append($('<span class="om-suggest-chip om-suggest-chip--recent"></span>')
+					.append($('<button type="button" class="om-suggest-q"></button>').attr('data-q', q).text(q))
+					.append($('<button type="button" class="om-suggest-forget">&times;</button>').attr({ 'data-q': q, 'aria-label': t('removeSearch', 'Remove') + ': ' + q })));
+			});
+			$list.append($('<li class="om-suggest-section" role="presentation"></li>')
+				.append($('<div class="om-suggest-head"></div>')
+					.append($('<span></span>').text(t('recent', 'Recent searches')))
+					.append($('<button type="button" class="om-suggest-clear"></button>').text(t('clearRecent', 'Clear'))))
+				.append($chips));
+		}
+		if (popular.length) {
+			var $pop = $('<div class="om-suggest-chips"></div>');
+			popular.forEach(function (q) {
+				$pop.append($('<button type="button" class="om-suggest-chip om-suggest-q"></button>').attr('data-q', q).text(q));
+			});
+			$list.append($('<li class="om-suggest-section" role="presentation"></li>')
+				.append($('<div class="om-suggest-head"></div>').append($('<span></span>').text(t('popular', 'Popular searches'))))
+				.append($pop));
+		}
+		$list.addClass('is-starters').prop('hidden', false);
+		$form.find('.om-search-input').attr('aria-expanded', 'true');
+	}
+
+	// Pick a recent/popular search: run it.
+	$(document).on('click', '.om-suggest .om-suggest-q', function () {
+		var $form = $(this).closest('.om-search');
+		var q = $(this).attr('data-q');
+		$form.find('.om-search-input').val(q);
+		if (isStandalone($form) && !$form.attr('action')) {
+			$form.find('.om-search-input').trigger('input').trigger('focus');
+			return;
+		}
+		$form.trigger('submit');
+	});
+
+	$(document).on('click', '.om-suggest .om-suggest-forget', function (e) {
+		e.stopPropagation();
+		var q = $(this).attr('data-q');
+		writeRecentSearches(readRecentSearches().filter(function (x) { return x !== q; }));
+		showSearchStarters($(this).closest('.om-search'));
+	});
+
+	$(document).on('click', '.om-suggest .om-suggest-clear', function (e) {
+		e.stopPropagation();
+		writeRecentSearches([]);
+		showSearchStarters($(this).closest('.om-search'));
+	});
+
+	$(document).on('focus click', '.om-catalog-wrap .om-search-input', function () {
+		if ($.trim(this.value) === '') { showSearchStarters($(this).closest('.om-search')); }
+	});
+
 	$(document).on('submit', '.om-catalog-wrap .om-search', function (e) {
+		var $form = $(this);
+		var q = $.trim($form.find('.om-search-input').val());
+		rememberSearch(q);
+		if (isStandalone($form)) {
+			var $line = $form.find('.om-search-line');
+			var top = $form.data('omTopLine') || '';
+			$line.val(top).prop('disabled', !top);
+			if (!$form.attr('action')) {
+				// No results page: open the highlighted (or first) match.
+				e.preventDefault();
+				var $pick = $form.find('.om-suggest-item.is-active').first();
+				$pick = $pick.length ? $pick : $form.find('.om-suggest-item').first();
+				if ($pick.length) { window.location.href = $pick.attr('href'); }
+			}
+			return; // Otherwise the browser opens the results page.
+		}
 		if (!window.URL || !window.URLSearchParams) { return; }
 		e.preventDefault();
-		closeSuggest($(this));
-		loadBlock($(this).closest('.om-catalog-wrap'), formUrl(this));
+		closeSuggest($form);
+		loadBlock($form.closest('.om-catalog-wrap'), formUrl(this));
 	});
 
 	function closeSuggest($form) {
-		$form.find('.om-suggest').prop('hidden', true).empty();
+		$form.find('.om-suggest').prop('hidden', true).removeClass('is-starters').empty();
 		$form.find('.om-search-input').attr('aria-expanded', 'false').removeAttr('aria-activedescendant');
 	}
 
@@ -642,9 +782,9 @@
 		var q = $.trim(input.value);
 		clearTimeout(suggestTimer);
 		if (q.length < 2) {
-			closeSuggest($form);
+			if (q === '') { showSearchStarters($form); } else { closeSuggest($form); }
 			// Cleared the box: show the full catalog again.
-			if (q === '' && /[?&]om_q=/.test(window.location.search)) {
+			if (q === '' && !isStandalone($form) && /[?&]om_q=/.test(window.location.search)) {
 				loadBlock($wrap, formUrl($form[0]));
 			}
 			return;
@@ -659,37 +799,55 @@
 				q: q
 			}).done(function (response) {
 				if (seq !== suggestSeq || !response || !response.success) { return; }
-				var items = response.data.items || [];
-				var $list = $form.find('.om-suggest').empty();
-				if (!items.length) {
-					$list.append($('<li class="om-suggest-empty" role="presentation"></li>').text(response.data.message || t('noMatches', 'No matching designs')));
-				}
-				items.forEach(function (item, i) {
-					var $a = $('<a class="om-suggest-item" role="option"></a>').attr({ href: item.url, id: $list.attr('id') + '-' + i });
-					var $img = $('<span class="om-suggest-img"></span>');
-					if (item.image) { $img.append($('<img alt="" loading="lazy" decoding="async" />').attr('src', item.image)); }
-					$a.append($img);
-					var $meta = $('<span class="om-suggest-meta"></span>');
-					if (item.variant) { $meta.append($('<span class="om-suggest-variant"></span>').text(item.variant)); }
-					$meta.append($('<span class="om-suggest-style"></span>').append(t('style', 'Style') + ' ', highlight(item.style, q)));
-					$a.append($('<span class="om-suggest-text"></span>')
-						.append($('<span class="om-suggest-title"></span>').append(highlight(item.title, q)))
-						.append($meta));
-					if (response.data.prices) {
-						$a.append($('<span class="om-suggest-price is-loading" aria-hidden="false"></span>').attr('data-om-style', item.style));
+				var data = response.data;
+				var $list = $form.find('.om-suggest').removeClass('is-starters').empty();
+				var n = 0;
+				if (data.groups) {
+					// Several lines: a heading, best matches and "see all" per line.
+					$form.data('omTopLine', data.groups.length ? data.groups[0].line : '');
+					data.groups.forEach(function (group) {
+						$list.append($('<li class="om-suggest-group" role="presentation"></li>')
+							.append($('<span class="om-suggest-group-name"></span>').text(group.label))
+							.append($('<span class="om-suggest-group-count"></span>').text(group.total)));
+						group.items.forEach(function (item) { $list.append(suggestItem($list, item, q, n++, data.prices)); });
+						var more = group.total > group.items.length && (group.inBlock || isStandalone($form)) ? lineResultsUrl($form, group.line, q, data.resultsUrl) : '';
+						if (more) {
+							$list.append($('<li role="presentation"></li>').append(
+								$('<a class="om-suggest-group-all"></a>').attr({ href: more, 'data-om-line': group.line })
+									.text(t('seeAll', 'See all results') + ' (' + group.total + ') ' + t('inLine', 'in %s').replace('%s', group.label) + ' →')
+							));
+						}
+					});
+				} else {
+					(data.items || []).forEach(function (item) { $list.append(suggestItem($list, item, q, n++, data.prices)); });
+					if (data.total > n) {
+						$list.append($('<li role="presentation"></li>').append(
+							$('<button type="submit" class="om-suggest-all"></button>').text(t('seeAll', 'See all results') + ' (' + data.total + ')')
+						));
 					}
-					$list.append($('<li role="presentation"></li>').append($a));
-				});
-				if (response.data.total > items.length) {
-					$list.append($('<li role="presentation"></li>').append(
-						$('<button type="submit" class="om-suggest-all"></button>').text(t('seeAll', 'See all results') + ' (' + response.data.total + ')')
-					));
+				}
+				if (!n) {
+					$list.append($('<li class="om-suggest-empty" role="presentation"></li>').text(data.message || t('noMatches', 'No matching designs')));
 				}
 				$list.prop('hidden', false);
 				$(input).attr('aria-expanded', 'true');
-				if (response.data.prices) { fillSuggestPrices($list, $form.attr('data-om-line')); }
+				if (data.prices) { fillSuggestPrices($list); }
 			});
 		}, 220);
+	});
+
+	// A suggestion or "see all" chosen: remember what was typed.
+	$(document).on('click', '.om-suggest-item, .om-suggest-group-all', function () {
+		rememberSearch($(this).closest('.om-search').find('.om-search-input').val());
+	});
+
+	// "See all in <line>" within a catalog block: load it in place.
+	$(document).on('click', '.om-catalog-wrap:not(.om-search-standalone) .om-suggest-group-all', function (e) {
+		if (e.metaKey || e.ctrlKey || e.shiftKey || !window.URL) { return; }
+		e.preventDefault();
+		var $form = $(this).closest('.om-search');
+		closeSuggest($form);
+		loadBlock($form.closest('.om-catalog-wrap'), this.href);
 	});
 
 	$(document).on('keydown', '.om-catalog-wrap .om-search-input', function (e) {
@@ -700,7 +858,7 @@
 		var $active = $items.filter('.is-active');
 		var index = $items.index($active);
 		if (e.key === 'Enter') {
-			if ($active.length) { e.preventDefault(); window.location.href = $active.attr('href'); }
+			if ($active.length) { e.preventDefault(); rememberSearch(this.value); window.location.href = $active.attr('href'); }
 			return;
 		}
 		e.preventDefault();
@@ -816,7 +974,7 @@
 			var items = list.filter(function (x) { return x && x.u && x.s !== exclude; }).slice(0, max);
 			var $track = $box.find('.om-related-track').empty();
 			items.forEach(function (x) {
-				var $cell = $('<div class="om-card-cell"></div>');
+				var $cell = $('<div class="om-card-cell"></div>').addClass('om-hover-' + (cfg.cardHover || 'lift'));
 				var $card = $('<a class="om-card"></a>').attr('href', x.u);
 				var $img = $('<div class="om-card-image"></div>');
 				if (x.i) { $img.append($('<img loading="lazy" decoding="async" />').attr({ src: x.i, alt: x.t || '' })); }

@@ -390,6 +390,33 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'trust_source',
+			array(
+				'label'       => __( 'Trust line under the price', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'global',
+				'separator'   => 'before',
+				'options'     => array(
+					'global' => __( 'From Settings > OM Catalog', 'om-catalog' ),
+					'custom' => __( 'Custom for this page', 'om-catalog' ),
+					'none'   => __( 'Hide', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'trust_text',
+			array(
+				'label'       => __( 'Promises', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'label_block' => true,
+				'placeholder' => 'Free resizing | Certified diamonds | Made to order',
+				'description' => __( 'Separate with |', 'om-catalog' ),
+				'condition'   => array( 'trust_source' => 'custom' ),
+			)
+		);
+
 		$repeater = new Repeater();
 
 		$repeater->start_controls_tabs( 'button_tabs' );
@@ -1061,6 +1088,41 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			array(
 				'name'     => 'price_typography',
 				'selector' => '{{WRAPPER}} .om-price',
+			)
+		);
+
+		$this->add_control(
+			'trust_heading',
+			array(
+				'label'     => __( 'Trust line', 'om-catalog' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'trust_color',
+			array(
+				'label'     => __( 'Text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-trust' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'trust_icon_color',
+			array(
+				'label'     => __( 'Tick', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-trust li::before' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'trust_typography',
+				'selector' => '{{WRAPPER}} .om-trust',
 			)
 		);
 
@@ -1768,6 +1830,8 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['options_style']    = in_array( $settings['options_style'] ?? 'swatches', array( 'swatches', 'pills', 'dropdowns' ), true ) ? $settings['options_style'] : 'swatches';
 		$args['details_style']    = 'open' === ( $settings['details_style'] ?? 'accordion' ) ? 'open' : 'accordion';
 		$args['video_mode']       = 'thumb' === ( $settings['video_mode'] ?? 'first' ) ? 'thumb' : 'first';
+		$trust_source             = (string) ( $settings['trust_source'] ?? 'global' );
+		$args['trust_line']       = 'custom' === $trust_source ? (string) ( $settings['trust_text'] ?? '' ) : ( 'none' === $trust_source ? '' : null );
 		$args['gallery']          = array(
 			'autoplay'     => 'yes' === ( $settings['video_autoplay'] ?? 'yes' ),
 			'sound'        => 'yes' === ( $settings['video_sound'] ?? 'yes' ),

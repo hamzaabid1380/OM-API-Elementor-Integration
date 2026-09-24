@@ -87,6 +87,9 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			// Open with the options in the URL (?om_metal=18 KT&om_color=Rose),
 			// which is how a carat switch keeps the visitor's choices.
 			'read_selection'      => true,
+			// Short promises under the price ("Free resizing | …"); null =
+			// Settings > Look & feel, '' = none.
+			'trust_line'          => null,
 		)
 	);
 
@@ -232,6 +235,18 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 							<span class="om-price-fallback"<?php echo $has_price ? ' hidden' : ''; ?>><?php echo $fallback_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above. ?></span>
 						<?php endif; ?>
 					</div>
+				<?php endif; ?>
+
+				<?php
+				$trust = null === $args['trust_line'] ? (string) get_option( 'om_trust_line', '' ) : (string) $args['trust_line'];
+				$trust = array_filter( array_map( 'trim', explode( '|', $trust ) ), 'strlen' );
+				?>
+				<?php if ( $trust ) : ?>
+					<ul class="om-trust">
+						<?php foreach ( array_slice( $trust, 0, 5 ) as $promise ) : ?>
+							<li><?php echo esc_html( $promise ); ?></li>
+						<?php endforeach; ?>
+					</ul>
 				<?php endif; ?>
 
 				<?php if ( ! $has_price && '' !== $price_reason && 'never' !== $args['price_display'] && current_user_can( 'manage_options' ) ) : ?>
@@ -1042,7 +1057,7 @@ function om_render_card( $product, $line, $o ) {
 
 	ob_start();
 	?>
-	<div class="om-card-cell<?php echo $o['qv_mobile'] ? ' om-qv-mobile' : ''; ?>">
+	<div class="om-card-cell om-hover-<?php echo esc_attr( om_card_hover_style() ); ?><?php echo $o['qv_mobile'] ? ' om-qv-mobile' : ''; ?>">
 		<a class="om-card" href="<?php echo esc_url( $link ); ?>">
 			<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?><?php echo esc_attr( $video_class ); ?>"<?php echo $video_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_card_video_attrs(). ?>>
 				<?php if ( $video_class && 'none' !== $o['video_badge'] ) : ?>
@@ -1079,4 +1094,10 @@ function om_render_card( $product, $line, $o ) {
 	</div>
 	<?php
 	return ob_get_clean();
+}
+
+/** Card hover style from Settings > Look & feel: lift, zoom or none. */
+function om_card_hover_style() {
+	$style = (string) get_option( 'om_card_hover', 'lift' );
+	return in_array( $style, array( 'lift', 'zoom', 'none' ), true ) ? $style : 'lift';
 }

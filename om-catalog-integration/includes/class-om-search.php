@@ -28,6 +28,7 @@ class OM_Search {
 
 	private function __construct() {
 		add_action( 'wp_ajax_om_suggest', array( $this, 'handle_suggest' ) );
+		add_shortcode( 'om_search', array( $this, 'shortcode' ) );
 		add_action( 'wp_ajax_nopriv_om_suggest', array( $this, 'handle_suggest' ) );
 	}
 
@@ -163,35 +164,190 @@ class OM_Search {
 		if ( '' === $json || ! hash_equals( OM_Shortcodes::sign_atts( $json ), $sig ) ) {
 			wp_send_json_error( array( 'message' => 'Invalid catalog block.' ), 400 );
 		}
-		$atts  = json_decode( $json, true );
-		$lines = array_filter( array_map( 'sanitize_title', explode( ',', (string) ( ! empty( $atts['lines'] ) ? $atts['lines'] : ( $atts['line'] ?? '' ) ) ) ) );
-		if ( ! in_array( $line, $lines, true ) || mb_strlen( $q ) < 2 ) {
+		$atts   = json_decode( $json, true );
+		$atts   = is_array( $atts ) ? $atts : array();
+		$prices = 'no' !== ( $atts['suggest_prices'] ?? 'yes' ) && om_markup_is_configured();
+		$block  = array_values( array_filter( array_map( 'sanitize_title', explode( ',', (string) ( ! empty( $atts['lines'] ) ? $atts['lines'] : ( $atts['line'] ?? '' ) ) ) ) ) );
+		$scope  = (string) ( $atts['search_scope'] ?? 'line' );
+		if ( mb_strlen( $q ) < 2 ) {
 			wp_send_json_success( array( 'items' => array() ) );
 		}
 
-		$hits = self::search( $line, $q );
-		if ( is_wp_error( $hits ) ) {
-			wp_send_json_success( array( 'items' => array(), 'message' => $hits->get_error_message() ) );
-		}
-
-		$items = array();
-		foreach ( array_slice( $hits, 0, 6 ) as $product ) {
-			$items[] = array(
-				'title'   => $product['title'],
-				'variant' => $product['variant_name'],
-				'style'   => $product['style_number'],
-				'image'   => $product['images'][0] ?? '',
-				'url'     => om_product_url( $line, $product['style_number'] ),
+		// One line (the one being browsed), as before.
+		if ( 'line' === $scope ) {
+			if ( ! in_array( $line, $block, true ) ) {
+				wp_send_json_success( array( 'items' => array() ) );
+			}
+			$hits = self::search( $line, $q );
+			if ( is_wp_error( $hits ) ) {
+				wp_send_json_success( array( 'items' => array(), 'message' => $hits->get_error_message() ) );
+			}
+			$items = array();
+			foreach ( array_slice( $hits, 0, 6 ) as $product ) {
+				$items[] = self::item( $line, $product );
+			}
+			wp_send_json_success(
+				array(
+					'items'  => $items,
+					'total'  => count( $hits ),
+					// "From $X" is filled in right after, from the same
+					// cached starting prices the listing cards use.
+					'prices' => $prices,
+				)
 			);
 		}
+
+		// Several lines, grouped: this block's lines ("block") or every
+		// product line Overnight Mountings has ("all").
+		$lines  = 'all' === $scope ? array_keys( OM_Shortcodes::line_labels() ) : $block;
+		$labels = OM_Shortcodes::line_labels();
+		$result = self::search_lines( $lines, $q, 'all' === $scope && count( $lines ) > 4 ? 3 : 4 );
+		$groups = array();
+		foreach ( $result['groups'] as $group ) {
+			$groups[] = array(
+				'line'    => $group['line'],
+				'label'   => $labels[ $group['line'] ] ?? ucwords( str_replace( '-', ' ', $group['line'] ) ),
+				'total'   => $group['total'],
+				'inBlock' => in_array( $group['line'], $block, true ),
+				'items'   => array_map(
+					static function ( $product ) use ( $group ) {
+						return self::item( $group['line'], $product );
+					},
+					$group['items']
+				),
+			);
+		}
+		$results_page = ! empty( $atts['results_page'] ) ? get_permalink( (int) $atts['results_page'] ) : '';
 		wp_send_json_success(
 			array(
-				'items'  => $items,
-				'total'  => count( $hits ),
-				// "From $X" is filled in right after, from the same cached
-				// starting prices the listing cards use.
-				'prices' => 'no' !== ( $atts['suggest_prices'] ?? 'yes' ) && om_markup_is_configured(),
+				'groups'     => $groups,
+				'total'      => $result['total'],
+				'prices'     => $prices,
+				'warming'    => $result['pending'] > 0,
+				'resultsUrl' => $results_page ? $results_page : '',
 			)
 		);
+	}
+
+	/** One suggestion, as the script shows it. */
+	private static function item( $line, $product ) {
+		return array(
+			'title'   => $product['title'],
+			'variant' => $product['variant_name'],
+			'style'   => $product['style_number'],
+			'image'   => $product['images'][0] ?? '',
+			'url'     => om_product_url( $line, $product['style_number'] ),
+			'line'    => $line,
+		);
+	}
+
+	/**
+	 * Search several lines and group the hits by line: best match first,
+	 * then the lines with most results. Uses the cached indexes; a line
+	 * whose index isn't built yet is built (at most one per request, so a
+	 * cold site stays responsive) and reported as pending otherwise.
+	 *
+	 * @return array [ groups => [ line, total, items ], total, pending ]
+	 */
+	public static function search_lines( $lines, $query, $per_group = 4 ) {
+		$groups  = array();
+		$total   = 0;
+		$pending = 0;
+		$built   = 0;
+		foreach ( array_unique( array_filter( (array) $lines ) ) as $line ) {
+			if ( ! is_array( get_transient( 'om_index_' . md5( $line ) ) ) ) {
+				if ( $built >= 1 ) {
+					$pending++;
+					continue;
+				}
+				$built++;
+			}
+			$hits = self::search( $line, $query );
+			if ( is_wp_error( $hits ) ) {
+				$pending++;
+				continue;
+			}
+			if ( ! $hits ) {
+				continue;
+			}
+			$exact    = 0 === strcasecmp( (string) $hits[0]['style_number'], trim( (string) $query ) );
+			$groups[] = array(
+				'line'  => $line,
+				'total' => count( $hits ),
+				'items' => array_slice( $hits, 0, $per_group ),
+				'rank'  => $exact ? 0 : 1,
+			);
+			$total += count( $hits );
+		}
+		usort(
+			$groups,
+			static function ( $a, $b ) {
+				return $a['rank'] <=> $b['rank'] ?: $b['total'] <=> $a['total'];
+			}
+		);
+		return array(
+			'groups'  => $groups,
+			'total'   => $total,
+			'pending' => $pending,
+		);
+	}
+
+	/**
+	 * [om_search] — a search box on its own (e.g. in the header) that
+	 * searches every product line, or the lines given, with suggestions
+	 * grouped by line. "See all" and Enter go to the results page: a page
+	 * with an OM Product Catalog widget showing those lines.
+	 *
+	 * @param array $atts lines (comma list; empty = all), results_page (page
+	 *                    ID; empty = Settings > Search), placeholder,
+	 *                    suggest_prices (yes|no), button (yes|no).
+	 */
+	public function shortcode( $atts ) {
+		return self::render_box( (array) $atts );
+	}
+
+	public static function render_box( $atts ) {
+		$atts = shortcode_atts(
+			array(
+				'lines'          => '',
+				'results_page'   => '',
+				'placeholder'    => '',
+				'suggest_prices' => 'yes',
+				'button'         => 'yes',
+			),
+			$atts,
+			'om_search'
+		);
+		wp_enqueue_style( 'om-catalog-css' );
+		wp_enqueue_script( 'om-catalog-js' );
+
+		$results = (int) ( '' !== (string) $atts['results_page'] ? $atts['results_page'] : get_option( 'om_search_results_page', 0 ) );
+		$signed  = array(
+			'lines'          => implode( ',', array_filter( array_map( 'sanitize_title', explode( ',', (string) $atts['lines'] ) ) ) ),
+			'search_scope'   => '' === trim( (string) $atts['lines'] ) ? 'all' : 'block',
+			'results_page'   => $results,
+			'suggest_prices' => 'no' === $atts['suggest_prices'] ? 'no' : 'yes',
+		);
+		$json        = wp_json_encode( $signed );
+		$action      = $results ? get_permalink( $results ) : '';
+		$placeholder = '' !== trim( (string) $atts['placeholder'] ) ? $atts['placeholder'] : __( 'Search rings, bands, style numbers…', 'om-catalog' );
+		$input_id    = 'om-q-' . wp_rand( 1000, 9999 );
+
+		ob_start();
+		?>
+		<div class="om-catalog-wrap om-search-standalone" data-om-atts="<?php echo esc_attr( $json ); ?>" data-om-sig="<?php echo esc_attr( OM_Shortcodes::sign_atts( $json ) ); ?>">
+			<form class="om-search<?php echo 'no' === $atts['button'] ? ' om-search--no-button' : ''; ?>" role="search" action="<?php echo esc_url( $action ); ?>" method="get" data-om-line="" data-om-scope="<?php echo esc_attr( $signed['search_scope'] ); ?>">
+				<input type="hidden" name="om_line" value="" class="om-search-line" disabled />
+				<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>"><?php esc_html_e( 'Search the catalog', 'om-catalog' ); ?></label>
+				<span class="om-search-icon" aria-hidden="true"></span>
+				<input id="<?php echo esc_attr( $input_id ); ?>" class="om-search-input" type="search" name="om_q" placeholder="<?php echo esc_attr( $placeholder ); ?>" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="<?php echo esc_attr( $input_id ); ?>-list" enterkeyhint="search" />
+				<?php if ( 'no' !== $atts['button'] ) : ?>
+					<button class="om-search-submit" type="submit"><?php esc_html_e( 'Search', 'om-catalog' ); ?></button>
+				<?php endif; ?>
+				<ul class="om-suggest" id="<?php echo esc_attr( $input_id ); ?>-list" role="listbox" hidden></ul>
+			</form>
+		</div>
+		<?php
+		return ob_get_clean();
 	}
 }
