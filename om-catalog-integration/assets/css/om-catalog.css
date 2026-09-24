@@ -1,0 +1,644 @@
+/* Overnight Mountings Catalog — base styling.
+   Colors and fonts are injected as CSS variables from the admin settings page.
+   Defaults follow the live site's Elementor kit: Arapey headings, Inter body,
+   #00111C primary, flat square surfaces — no radii, no shadows. */
+
+/* ---------- Catalog grid ---------- */
+
+.om-catalog-grid {
+	display: grid;
+	grid-template-columns: repeat(var(--om-columns, 3), 1fr);
+	gap: 40px 28px;
+	margin: 48px 0;
+}
+
+@media (max-width: 900px) {
+	.om-catalog-grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 32px 20px;
+	}
+}
+
+@media (max-width: 600px) {
+	.om-catalog-grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 28px 16px;
+	}
+}
+
+.om-card {
+	display: block;
+	text-decoration: none;
+	color: var(--om-color-text, #464646);
+	background: var(--om-color-background, #fff);
+}
+
+.om-card-image {
+	aspect-ratio: 1 / 1;
+	overflow: hidden;
+	background: #fff;
+	margin-bottom: 18px;
+}
+
+.om-card-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.om-card:hover .om-card-image img {
+	transform: scale(1.045);
+}
+
+.om-card-body {
+	text-align: center;
+	padding: 0 8px;
+}
+
+.om-card-title {
+	font-family: var(--om-font-heading, Arapey, Georgia, serif);
+	font-size: 18px;
+	font-weight: 400;
+	margin: 0 0 7px;
+	color: var(--om-color-primary, #00111C);
+	line-height: 1.35;
+	text-wrap: balance;
+	transition: opacity 0.2s ease;
+}
+
+.om-card:hover .om-card-title {
+	opacity: 0.65;
+}
+
+.om-card-variant {
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 11px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: #9a9a9a;
+	margin: 0;
+}
+
+/* Inside an Elementor layout the section owns spacing and width; keep only
+   the typography inheritance of .om-single-product. */
+
+.om-single-product--widget {
+	max-width: none;
+	margin: 0;
+	padding: 0;
+}
+
+.om-single-product--layout {
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+/* ---------- Catalog wrapper (AJAX target) ---------- */
+
+.om-catalog-wrap {
+	transition: opacity 0.25s ease;
+}
+
+.om-catalog-wrap.om-loading {
+	opacity: 0.45;
+	pointer-events: none;
+}
+
+/* ---------- Visitor filter bar ---------- */
+
+.om-filter-bar {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+	margin: 40px 0 8px;
+	font-family: var(--om-font-body, Inter, sans-serif);
+}
+
+.om-filter-pill {
+	padding: 9px 16px;
+	border: 1px solid #d8d8d8;
+	text-decoration: none;
+	color: var(--om-color-text, #464646);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.om-filter-pill:hover {
+	border-color: var(--om-color-primary, #00111C);
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-filter-pill.is-active {
+	background: var(--om-color-primary, #00111C);
+	border-color: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+/* The line switcher sits above the collection bar, slightly more prominent. */
+.om-line-bar {
+	margin-bottom: 4px;
+}
+
+.om-line-bar .om-filter-pill {
+	font-size: 13px;
+	padding: 10px 20px;
+}
+
+.om-line-bar + .om-collection-bar {
+	margin-top: 0;
+}
+
+/* ---------- Filter design presets ----------
+   pills is the default look above; presets restyle the same markup. */
+
+/* Underline: quiet text tabs, active gets a thin rule. */
+.om-filters-underline .om-filter-pill {
+	border-color: transparent;
+	border-bottom: 1px solid transparent;
+	padding: 8px 4px;
+	background: transparent;
+}
+
+.om-filters-underline .om-filter-pill:hover {
+	border-color: transparent;
+	border-bottom-color: rgba(0, 0, 0, 0.25);
+}
+
+.om-filters-underline .om-filter-pill.is-active {
+	background: transparent;
+	color: var(--om-color-primary, #00111C);
+	border-color: transparent;
+	border-bottom-color: var(--om-color-primary, #00111C);
+}
+
+/* Buttons: soft filled squares, active goes solid. */
+.om-filters-buttons .om-filter-pill {
+	background: #f4f3f1;
+	border-color: transparent;
+}
+
+.om-filters-buttons .om-filter-pill:hover {
+	background: #eae8e4;
+	border-color: transparent;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-filters-buttons .om-filter-pill.is-active {
+	background: var(--om-color-primary, #00111C);
+	border-color: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+/* Minimal: plain lowercase-feel text, active simply darkens. */
+.om-filters-minimal .om-filter-pill {
+	border: none;
+	padding: 6px 6px;
+	background: transparent;
+	text-transform: none;
+	font-size: 14px;
+	letter-spacing: 0.02em;
+	color: #8a8a8a;
+}
+
+.om-filters-minimal .om-filter-pill:hover {
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-filters-minimal .om-filter-pill.is-active {
+	background: transparent;
+	color: var(--om-color-primary, #00111C);
+	font-weight: 500;
+}
+
+/* ---------- Card layouts ----------
+   classic is the default look above; the others restyle the same markup. */
+
+/* Editorial: quiet left-aligned text under the image. */
+.om-layout-editorial .om-card-body {
+	text-align: left;
+	padding: 0 2px;
+}
+
+/* Boxed: framed gallery card with the photo inset. */
+.om-layout-boxed .om-card {
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	padding: 14px 14px 22px;
+	transition: border-color 0.25s ease;
+}
+
+.om-layout-boxed .om-card:hover {
+	border-color: var(--om-color-primary, #00111C);
+}
+
+.om-layout-boxed .om-card-image {
+	margin-bottom: 16px;
+}
+
+/* Overlay: title sits over the lower edge of the photo on a soft scrim. */
+.om-layout-overlay .om-card {
+	position: relative;
+	overflow: hidden;
+}
+
+.om-layout-overlay .om-card-image {
+	margin-bottom: 0;
+}
+
+.om-layout-overlay .om-card-body {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: 56px 16px 18px;
+	background: linear-gradient(to top, rgba(0, 17, 28, 0.55), rgba(0, 17, 28, 0));
+}
+
+.om-layout-overlay .om-card-title {
+	color: #fff;
+}
+
+.om-layout-overlay .om-card:hover .om-card-title {
+	opacity: 1;
+}
+
+.om-layout-overlay .om-card-variant {
+	color: rgba(255, 255, 255, 0.78);
+}
+
+/* ---------- Pagination ---------- */
+
+.om-pagination {
+	display: flex;
+	justify-content: center;
+	gap: 6px;
+	margin: 40px 0 56px;
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 13px;
+}
+
+.om-pagination a,
+.om-pagination span {
+	min-width: 40px;
+	padding: 10px 12px;
+	text-align: center;
+	border: 1px solid transparent;
+	color: var(--om-color-text, #464646);
+	text-decoration: none;
+	letter-spacing: 0.04em;
+	transition: border-color 0.2s ease;
+}
+
+.om-pagination a:hover {
+	border-color: var(--om-color-primary, #00111C);
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-pagination .current {
+	background: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+/* ---------- Single product page ---------- */
+
+.om-single-product {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 56px 24px 80px;
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-weight: 300;
+	color: var(--om-color-text, #464646);
+	background: var(--om-color-background, #fff);
+}
+
+.om-product-wrap {
+	display: grid;
+	grid-template-columns: 1.15fr 0.85fr;
+	gap: 64px;
+	align-items: start;
+}
+
+@media (max-width: 800px) {
+	.om-product-wrap {
+		grid-template-columns: 1fr;
+		gap: 36px;
+	}
+}
+
+/* Gallery: vertical filmstrip of angles beside a large hero image. */
+
+.om-product-gallery {
+	display: grid;
+	grid-template-columns: 76px 1fr;
+	gap: 16px;
+	align-items: start;
+}
+
+.om-main-image {
+	grid-column: 2;
+	grid-row: 1;
+	width: 100%;
+	background: #fff;
+	transition: opacity 0.35s ease;
+}
+
+.om-thumbs {
+	grid-column: 1;
+	grid-row: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+@media (max-width: 800px) {
+	.om-product-gallery {
+		grid-template-columns: 1fr;
+	}
+
+	.om-main-image {
+		grid-column: 1;
+	}
+
+	.om-thumbs {
+		grid-column: 1;
+		grid-row: 2;
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+}
+
+.om-thumb {
+	width: 76px;
+	height: 76px;
+	object-fit: cover;
+	cursor: pointer;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	opacity: 0.75;
+	transition: border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.om-thumb:hover {
+	opacity: 1;
+	border-color: rgba(0, 0, 0, 0.3);
+}
+
+.om-thumb.is-active {
+	opacity: 1;
+	border-color: var(--om-color-primary, #00111C);
+}
+
+/* Details column */
+
+.om-line-label {
+	font-size: 11px;
+	font-weight: 400;
+	text-transform: uppercase;
+	letter-spacing: 0.18em;
+	color: #9a9a9a;
+	margin: 0 0 14px;
+}
+
+.om-product-title {
+	font-family: var(--om-font-heading, Arapey, Georgia, serif);
+	font-size: 36px;
+	font-weight: 400;
+	line-height: 1.2;
+	margin: 0 0 10px;
+	color: var(--om-color-primary, #00111C);
+	text-wrap: balance;
+}
+
+.om-style-meta {
+	font-size: 11px;
+	font-weight: 400;
+	text-transform: uppercase;
+	letter-spacing: 0.14em;
+	color: #9a9a9a;
+	margin: 0 0 26px;
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+}
+
+.om-price {
+	font-size: 26px;
+	font-weight: 300;
+	letter-spacing: 0.02em;
+	color: var(--om-color-primary, #00111C);
+	margin-bottom: 30px;
+}
+
+.om-price-loading {
+	opacity: 0.45;
+}
+
+.om-price a {
+	color: inherit;
+	text-decoration: none;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+	transition: border-color 0.2s ease;
+}
+
+.om-price a:hover {
+	border-bottom-color: currentColor;
+}
+
+/* Inline action buttons under the price (Call Us, Book an Appointment, ...) */
+
+.om-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: -8px 0 32px;
+}
+
+.om-btn {
+	display: inline-block;
+	padding: 14px 28px;
+	border: 1px solid var(--om-color-primary, #00111C);
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	text-decoration: none;
+	transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.om-btn--solid {
+	background: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+.om-btn--solid:hover {
+	background: transparent;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-btn--outline {
+	background: transparent;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-btn--outline:hover {
+	background: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+.om-btn--text {
+	border-color: transparent;
+	padding: 14px 6px;
+	color: var(--om-color-primary, #00111C);
+	text-decoration: underline;
+	text-underline-offset: 4px;
+}
+
+.om-btn--text:hover {
+	opacity: 0.65;
+}
+
+.om-description {
+	font-size: 15px;
+	line-height: 1.8;
+	margin-bottom: 32px;
+}
+
+/* Option selects */
+
+.om-options-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 18px 16px;
+	margin-bottom: 40px;
+}
+
+.om-options-form label {
+	display: flex;
+	flex-direction: column;
+	font-size: 11px;
+	font-weight: 400;
+	text-transform: uppercase;
+	letter-spacing: 0.14em;
+	color: #8a8a8a;
+	gap: 8px;
+}
+
+.om-options-form select {
+	appearance: none;
+	-webkit-appearance: none;
+	padding: 12px 40px 12px 14px;
+	border: 1px solid #d8d8d8;
+	border-radius: 0;
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 14px;
+	font-weight: 300;
+	letter-spacing: 0.02em;
+	color: var(--om-color-text, #464646);
+	min-width: 170px;
+	background-color: var(--om-color-background, #fff);
+	background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23777' stroke-width='1.2'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 14px center;
+	cursor: pointer;
+	transition: border-color 0.2s ease;
+}
+
+.om-options-form select:hover,
+.om-options-form select:focus {
+	border-color: var(--om-color-primary, #00111C);
+	outline: none;
+}
+
+/* Section headings (Stone Details, Other Sizes / Carats) */
+
+.om-product-details h3 {
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 11px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.18em;
+	color: var(--om-color-primary, #00111C);
+	border-top: 1px solid rgba(0, 0, 0, 0.1);
+	padding-top: 26px;
+	margin: 0 0 16px;
+}
+
+.om-stone-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 36px;
+}
+
+.om-stone-table td {
+	padding: 11px 0;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+	font-size: 14px;
+	font-weight: 300;
+}
+
+.om-stone-table td:last-child {
+	text-align: right;
+	color: #9a9a9a;
+}
+
+/* Variant chips */
+
+.om-variants {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.om-variant-link {
+	padding: 9px 15px;
+	border: 1px solid #d8d8d8;
+	text-decoration: none;
+	color: var(--om-color-text, #464646);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.om-variant-link:hover {
+	border-color: var(--om-color-primary, #00111C);
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-variant-link.is-current {
+	background: var(--om-color-primary, #00111C);
+	border-color: var(--om-color-primary, #00111C);
+	color: #fff;
+	pointer-events: none;
+}
+
+/* States */
+
+.om-error {
+	padding: 24px;
+	background: #fdecea;
+	color: #a12f26;
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.om-error a {
+	color: inherit;
+}
+
+.om-empty {
+	text-align: center;
+	padding: 48px 0;
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 14px;
+	letter-spacing: 0.04em;
+	color: #9a9a9a;
+}
