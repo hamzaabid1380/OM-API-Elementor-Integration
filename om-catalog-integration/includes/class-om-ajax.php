@@ -32,8 +32,50 @@ class OM_Ajax {
 		add_action( 'wp_ajax_nopriv_om_get_quote', array( $this, 'handle_get_quote' ) );
 		add_action( 'wp_ajax_om_filter_grid', array( $this, 'handle_filter_grid' ) );
 		add_action( 'wp_ajax_nopriv_om_filter_grid', array( $this, 'handle_filter_grid' ) );
+		add_action( 'wp_ajax_om_quick_view', array( $this, 'handle_quick_view' ) );
+		add_action( 'wp_ajax_nopriv_om_quick_view', array( $this, 'handle_quick_view' ) );
 		add_action( 'wp_ajax_om_card_prices', array( $this, 'handle_card_prices' ) );
 		add_action( 'wp_ajax_nopriv_om_card_prices', array( $this, 'handle_card_prices' ) );
+	}
+
+	/**
+	 * Quick view: a compact product block (gallery, price, options,
+	 * buttons, description) for the listing's pop-up. The product lookup
+	 * is the same cached call a product page makes.
+	 */
+	public function handle_quick_view() {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- public read-only endpoint, see class doc.
+		$line  = isset( $_POST['line'] ) ? sanitize_title( wp_unslash( $_POST['line'] ) ) : '';
+		$style = isset( $_POST['style'] ) ? sanitize_text_field( wp_unslash( $_POST['style'] ) ) : '';
+		// phpcs:enable
+		if ( '' === $line || '' === $style ) {
+			wp_send_json_error( array( 'message' => 'Missing product.' ), 400 );
+		}
+		$product = OM_API_Client::get_product_by_style( $line, $style );
+		if ( is_wp_error( $product ) ) {
+			wp_send_json_error( array( 'message' => om_public_error_message( $product ) ) );
+		}
+		require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
+		wp_send_json_success(
+			array(
+				'html' => '<div class="om-single-product om-single-product--widget om-single-product--qv">' . om_render_product_detail(
+					$product,
+					$line,
+					$style,
+					array(
+						'compact'        => true,
+						'show_meta'      => true,
+						'show_stones'    => false,
+						'show_specs'     => false,
+						'show_inquiry'   => false,
+						'sticky_bar'     => false,
+						'sticky_gallery' => false,
+						'show_size'      => false,
+						'options_style'  => (string) get_option( 'om_options_style', 'swatches' ),
+					)
+				) . '</div>',
+			)
+		);
 	}
 
 	/**
@@ -130,6 +172,9 @@ class OM_Ajax {
 					'color'       => $field( 'color' ),
 					'level'       => $field( 'level' ),
 					'quality'     => $field( 'quality' ),
+					// Ring size, when the customer picked one (OM prices
+					// the stock size otherwise).
+					'fingerSize'  => is_numeric( $field( 'fingerSize' ) ) ? (string) max( 0, min( 15, (float) $field( 'fingerSize' ) ) ) : '',
 				)
 			)
 		);

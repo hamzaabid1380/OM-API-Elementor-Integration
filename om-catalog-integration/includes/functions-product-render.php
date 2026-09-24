@@ -59,6 +59,22 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			// Extra OM_Inquiry::render_form() options (intro, button, field
 			// toggles, labels, custom_form...).
 			'inquiry_options'     => array(),
+			// How metal / colour / level / quality are chosen:
+			// swatches (colour circles + pills), pills, dropdowns.
+			'options_style'       => 'swatches',
+			// Description, stone details and specifications as collapsible
+			// sections (accordion) or always open (open).
+			'details_style'       => 'accordion',
+			'show_specs'          => true,
+			// Ring size picker + size guide, on the lines in Settings.
+			'show_size'           => true,
+			'show_size_guide'     => true,
+			// Phones: price + main button stay pinned to the bottom.
+			'sticky_bar'          => true,
+			// Wide screens: the gallery stays in view while details scroll.
+			'sticky_gallery'      => true,
+			// Quick view: compact version (no inquiry, links to the page).
+			'compact'             => false,
 		)
 	);
 
@@ -135,7 +151,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 
 	ob_start();
 	?>
-	<div class="om-product-wrap"
+	<div class="om-product-wrap<?php echo $args['sticky_gallery'] ? ' om-sticky-gallery' : ''; ?><?php echo $args['compact'] ? ' om-product-wrap--compact' : ''; ?>"
 		data-line="<?php echo esc_attr( $product_line ); ?>"
 		data-style="<?php echo esc_attr( $style_number ); ?>"
 		data-priced="<?php echo $can_requote ? '1' : '0'; ?>"
@@ -201,14 +217,135 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			<?php endif; ?>
 
 			<?php
-			echo $builder_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 			if ( 'price' === $buttons_position ) {
 				echo $buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_render_action_buttons().
 			}
 			?>
 
-			<?php if ( $args['show_description'] && ! empty( $product['description'] ) ) : ?>
-				<div class="om-description"><?php echo wp_kses_post( wpautop( $product['description'] ) ); ?></div>
+			<?php
+			// ---- Options: metal, colour, level, quality, carat, ring size ----
+			$size_lines = array_filter( array_map( 'trim', explode( ',', (string) get_option( 'om_size_lines', 'engagement-rings,wedding-bands,fashion-rings' ) ) ) );
+			$show_size  = $args['show_size'] && in_array( $product_line, $size_lines, true );
+			$variants   = ( $args['show_variants'] && ! empty( $product['product_variants'] ) && count( $product['product_variants'] ) > 1 ) ? $product['product_variants'] : array();
+			?>
+			<?php if ( $args['show_options'] || $variants || $show_size ) : ?>
+				<div class="om-options-form om-options--<?php echo esc_attr( $args['options_style'] ); ?>" data-om-options>
+					<?php
+					if ( $args['show_options'] ) {
+						$groups = array(
+							'metal'   => array( __( 'Metal', 'om-catalog' ), (array) ( $product['metals'] ?? array() ), $default_metal ),
+							'color'   => array( __( 'Color', 'om-catalog' ), (array) ( $product['colors'] ?? array() ), $default_color ),
+							'level'   => array( __( 'Setting', 'om-catalog' ), (array) ( $product['levels'] ?? array() ), $default_level ),
+							'quality' => array( __( 'Diamond quality', 'om-catalog' ), (array) ( $product['qualities'] ?? array() ), $default_quality ),
+						);
+						foreach ( $groups as $name => $def ) {
+							if ( $def[1] ) {
+								echo om_render_option_group( $name, $def[0], $def[1], $def[2], $args['options_style'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+							}
+						}
+					}
+					?>
+					<?php if ( $variants ) : ?>
+						<div class="om-opt om-opt--variants">
+							<p class="om-opt-label"><?php esc_html_e( 'Carat', 'om-catalog' ); ?></p>
+							<div class="om-variants">
+								<?php foreach ( $variants as $variant ) :
+									if ( empty( $variant['style_number'] ) ) {
+										continue;
+									}
+									$is_current = ( $variant['style_number'] === $style_number );
+									?>
+									<a class="om-variant-link<?php echo $is_current ? ' is-current' : ''; ?>"
+										<?php echo $is_current ? 'aria-current="page"' : ''; ?>
+										href="<?php echo esc_url( om_product_url( $product_line, $variant['style_number'] ) ); ?>">
+										<?php echo esc_html( ! empty( $variant['variant_name'] ) ? $variant['variant_name'] : $variant['style_number'] ); ?>
+									</a>
+								<?php endforeach; ?>
+							</div>
+						</div>
+					<?php endif; ?>
+					<?php if ( $show_size ) : ?>
+						<div class="om-opt om-opt--size" data-om-opt="finger_size" data-om-label="<?php esc_attr_e( 'Ring size', 'om-catalog' ); ?>">
+							<div class="om-opt-head">
+								<label class="om-opt-label" for="om-size-<?php echo esc_attr( sanitize_title( $style_number ) ); ?>"><?php esc_html_e( 'Ring size', 'om-catalog' ); ?></label>
+								<?php if ( $args['show_size_guide'] ) : ?>
+									<button type="button" class="om-size-guide-link" data-om-size-guide><?php esc_html_e( 'Size guide', 'om-catalog' ); ?></button>
+								<?php endif; ?>
+							</div>
+							<select id="om-size-<?php echo esc_attr( sanitize_title( $style_number ) ); ?>" name="finger_size" class="om-option">
+								<option value=""><?php esc_html_e( 'Select your size', 'om-catalog' ); ?></option>
+								<?php for ( $size = 3; $size <= 13; $size += 0.5 ) : ?>
+									<option value="<?php echo esc_attr( $size ); ?>"><?php echo esc_html( $size ); ?></option>
+								<?php endfor; ?>
+								<option value="unsure"><?php esc_html_e( 'Not sure — help me find it', 'om-catalog' ); ?></option>
+							</select>
+						</div>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
+
+			<?php
+			echo $builder_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+			if ( 'after_options' === $buttons_position ) {
+				echo $buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_render_action_buttons().
+			}
+			?>
+
+			<?php
+			// ---- Details: description, stone details, specifications ----
+			$sections = array();
+			if ( $args['show_description'] && ! empty( $product['description'] ) ) {
+				$sections['description'] = array( __( 'Description', 'om-catalog' ), '<div class="om-description">' . wp_kses_post( wpautop( $product['description'] ) ) . '</div>' );
+			}
+			if ( $args['show_stones'] && ! empty( $product['stone_breakdown'] ) ) {
+				$rows = '';
+				foreach ( $product['stone_breakdown'] as $stone ) {
+					$rows .= '<tr><td>' . esc_html( trim( ( $stone['quantity'] ?? '' ) . ' × ' . ( $stone['shape'] ?? '' ) . ' ' . ( $stone['type'] ?? '' ) ) ) . '</td><td>' . esc_html( isset( $stone['carat'] ) ? $stone['carat'] . ' ct' : '' ) . '</td><td>' . esc_html( $stone['dimension'] ?? '' ) . '</td></tr>';
+				}
+				$sections['stones'] = array( __( 'Stone details', 'om-catalog' ), '<table class="om-stone-table">' . $rows . '</table>' );
+			}
+			if ( $args['show_specs'] ) {
+				$specs = array_filter(
+					array(
+						__( 'Style number', 'om-catalog' )     => $style_number,
+						__( 'Collection', 'om-catalog' )       => ucwords( str_replace( '-', ' ', $product_line ) ),
+						__( 'Carat', 'om-catalog' )            => (string) ( $product['variant_name'] ?? '' ),
+						__( 'Available metals', 'om-catalog' ) => implode( ', ', (array) ( $product['metals'] ?? array() ) ),
+						__( 'Metal colours', 'om-catalog' )    => implode( ', ', (array) ( $product['colors'] ?? array() ) ),
+					),
+					'strlen'
+				);
+				$list = '';
+				foreach ( $specs as $label => $value ) {
+					$list .= '<div><dt>' . esc_html( $label ) . '</dt><dd>' . esc_html( $value ) . '</dd></div>';
+				}
+				$sections['specs'] = array( __( 'Specifications', 'om-catalog' ), '<dl class="om-specs">' . $list . '</dl>' );
+			}
+			if ( $args['compact'] ) {
+				$sections = array_intersect_key( $sections, array( 'description' => 1 ) );
+			}
+			?>
+			<?php if ( $sections ) : ?>
+				<div class="om-details om-details--<?php echo esc_attr( $args['details_style'] ); ?>">
+					<?php
+					$first = true;
+					foreach ( $sections as $key => $section ) {
+						if ( 'accordion' === $args['details_style'] ) {
+							// The description starts open; the rest folded.
+							printf(
+								'<details class="om-acc om-acc--%1$s"%2$s><summary class="om-acc-title">%3$s</summary><div class="om-acc-body">%4$s</div></details>',
+								esc_attr( $key ),
+								( $first && 'description' === $key ) ? ' open' : '',
+								esc_html( $section[0] ),
+								$section[1] // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+							);
+						} else {
+							printf( '<section class="om-acc om-acc--%1$s is-static"><h3 class="om-acc-title">%2$s</h3><div class="om-acc-body">%3$s</div></section>', esc_attr( $key ), esc_html( $section[0] ), $section[1] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+						}
+						$first = false;
+					}
+					?>
+				</div>
 			<?php endif; ?>
 
 			<?php
@@ -217,89 +354,12 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			}
 			?>
 
-			<?php if ( $args['show_options'] ) : ?>
-				<form class="om-options-form">
-					<?php if ( ! empty( $product['metals'] ) ) : ?>
-						<label>Metal
-							<select name="metal" class="om-option">
-								<?php foreach ( $product['metals'] as $metal ) : ?>
-									<option value="<?php echo esc_attr( $metal ); ?>" <?php selected( $metal, $default_metal ); ?>><?php echo esc_html( $metal ); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</label>
-					<?php endif; ?>
-
-					<?php if ( ! empty( $product['colors'] ) ) : ?>
-						<label>Color
-							<select name="color" class="om-option">
-								<?php foreach ( $product['colors'] as $color ) : ?>
-									<option value="<?php echo esc_attr( $color ); ?>" <?php selected( $color, $default_color ); ?>><?php echo esc_html( $color ); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</label>
-					<?php endif; ?>
-
-					<?php if ( ! empty( $product['levels'] ) ) : ?>
-						<label>Level
-							<select name="level" class="om-option">
-								<?php foreach ( $product['levels'] as $level ) : ?>
-									<option value="<?php echo esc_attr( $level ); ?>" <?php selected( $level, $default_level ); ?>><?php echo esc_html( $level ); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</label>
-					<?php endif; ?>
-
-					<?php if ( ! empty( $product['qualities'] ) ) : ?>
-						<label>Quality
-							<select name="quality" class="om-option">
-								<?php foreach ( $product['qualities'] as $quality ) : ?>
-									<option value="<?php echo esc_attr( $quality ); ?>" <?php selected( $quality, $default_quality ); ?>><?php echo esc_html( $quality ); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</label>
-					<?php endif; ?>
-				</form>
+			<?php if ( $args['compact'] ) : ?>
+				<a class="om-qv-full" href="<?php echo esc_url( om_product_url( $product_line, $style_number ) ); ?>"><?php esc_html_e( 'View full details', 'om-catalog' ); ?> &rarr;</a>
 			<?php endif; ?>
 
 			<?php
-			if ( 'after_options' === $buttons_position ) {
-				echo $buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_render_action_buttons().
-			}
-			?>
-
-			<?php if ( $args['show_stones'] && ! empty( $product['stone_breakdown'] ) ) : ?>
-				<h3><?php esc_html_e( 'Stone Details', 'om-catalog' ); ?></h3>
-				<table class="om-stone-table">
-					<?php foreach ( $product['stone_breakdown'] as $stone ) : ?>
-						<tr>
-							<td><?php echo esc_html( $stone['quantity'] ?? '' ); ?> x <?php echo esc_html( $stone['shape'] ?? '' ); ?> <?php echo esc_html( $stone['type'] ?? '' ); ?></td>
-							<td><?php echo esc_html( $stone['carat'] ?? '' ); ?> ct</td>
-							<td><?php echo esc_html( $stone['dimension'] ?? '' ); ?></td>
-						</tr>
-					<?php endforeach; ?>
-				</table>
-			<?php endif; ?>
-
-			<?php if ( $args['show_variants'] && ! empty( $product['product_variants'] ) && count( $product['product_variants'] ) > 1 ) : ?>
-				<h3><?php esc_html_e( 'Other Sizes / Carats', 'om-catalog' ); ?></h3>
-				<div class="om-variants">
-					<?php foreach ( $product['product_variants'] as $variant ) :
-						if ( empty( $variant['style_number'] ) ) {
-							continue;
-						}
-						$is_current = ( $variant['style_number'] === $style_number );
-						?>
-						<a class="om-variant-link<?php echo $is_current ? ' is-current' : ''; ?>"
-							<?php echo $is_current ? 'aria-current="page"' : ''; ?>
-							href="<?php echo esc_url( om_product_url( $product_line, $variant['style_number'] ) ); ?>">
-							<?php echo esc_html( ! empty( $variant['variant_name'] ) ? $variant['variant_name'] : $variant['style_number'] ); ?>
-						</a>
-					<?php endforeach; ?>
-				</div>
-			<?php endif; ?>
-
-			<?php
-			if ( $args['show_inquiry'] ) {
+			if ( $args['show_inquiry'] && ! $args['compact'] ) {
 				echo '<div id="om-inquiry" class="om-product-inquiry">';
 				echo OM_Inquiry::render_form( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 					(array) $args['inquiry_options'] + array(
@@ -313,6 +373,22 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 					)
 				);
 				echo '</div>';
+			}
+			?>
+
+			<?php if ( $args['sticky_bar'] && ! $args['compact'] ) : ?>
+				<div class="om-sticky-bar" hidden aria-hidden="true">
+					<div class="om-sticky-info">
+						<span class="om-sticky-title"><?php echo esc_html( $title ); ?></span>
+						<span class="om-sticky-price"><?php echo esc_html( $has_price ? $price_text : '' ); ?></span>
+					</div>
+					<button type="button" class="om-sticky-cta"><?php echo esc_html( $builder_url ? ( '' !== trim( (string) $args['builder_text'] ) ? $args['builder_text'] : __( 'Select this setting', 'om-catalog' ) ) : __( 'Inquire', 'om-catalog' ) ); ?></button>
+				</div>
+			<?php endif; ?>
+
+			<?php
+			if ( $show_size && $args['show_size_guide'] ) {
+				om_print_size_guide();
 			}
 			?>
 		</div>
@@ -441,4 +517,114 @@ function om_render_action_buttons( $buttons, $has_price, $layout = 'inline' ) {
 		return '';
 	}
 	return '<div class="om-actions om-actions--' . esc_attr( 'stacked' === $layout ? 'stacked' : 'inline' ) . '">' . $html . '</div>';
+}
+
+
+/** Colour names we can draw as a swatch. */
+function om_swatch_class( $value ) {
+	$v = strtolower( (string) $value );
+	foreach ( array( 'rose', 'yellow', 'white', 'platinum', 'black', 'two', 'tri' ) as $known ) {
+		if ( false !== strpos( $v, $known ) ) {
+			return 'om-swatch--' . ( 'two' === $known || 'tri' === $known ? 'multi' : $known );
+		}
+	}
+	return 'om-swatch--other';
+}
+
+/**
+ * One product option (metal, colour, level, quality) as swatches, pills
+ * or a dropdown. Swatch/pill styles are radio buttons, so they stay
+ * keyboard- and screen-reader-friendly.
+ */
+function om_render_option_group( $name, $label, $values, $default, $style ) {
+	$values = array_values( array_filter( array_map( 'strval', (array) $values ), 'strlen' ) );
+	if ( ! $values ) {
+		return '';
+	}
+	if ( ! in_array( $default, $values, true ) ) {
+		$default = $values[0];
+	}
+	$uid = 'om-opt-' . $name . '-' . wp_rand( 1000, 9999 );
+
+	if ( 'dropdowns' === $style ) {
+		$html = '<div class="om-opt om-opt--select" data-om-opt="' . esc_attr( $name ) . '" data-om-label="' . esc_attr( $label ) . '"><label class="om-opt-label" for="' . esc_attr( $uid ) . '">' . esc_html( $label ) . '</label><select id="' . esc_attr( $uid ) . '" name="' . esc_attr( $name ) . '" class="om-option">';
+		foreach ( $values as $value ) {
+			$html .= '<option value="' . esc_attr( $value ) . '"' . selected( $value, $default, false ) . '>' . esc_html( $value ) . '</option>';
+		}
+		return $html . '</select></div>';
+	}
+
+	$as_swatch = 'swatches' === $style && 'color' === $name;
+	$html      = '<fieldset class="om-opt om-opt--' . ( $as_swatch ? 'swatches' : 'pills' ) . '" data-om-opt="' . esc_attr( $name ) . '" data-om-label="' . esc_attr( $label ) . '"><legend class="om-opt-label">' . esc_html( $label ) . ': <span class="om-opt-current">' . esc_html( $default ) . '</span></legend><div class="om-opt-choices">';
+	foreach ( $values as $value ) {
+		$inner = $as_swatch
+			? '<span class="om-swatch ' . esc_attr( om_swatch_class( $value ) ) . '" aria-hidden="true"></span><span class="om-visually-hidden">' . esc_html( $value ) . '</span>'
+			: '<span class="om-pill-text">' . esc_html( $value ) . '</span>';
+		$html .= '<label class="om-choice-' . ( $as_swatch ? 'swatch' : 'pill' ) . '"' . ( $as_swatch ? ' title="' . esc_attr( $value ) . '"' : '' ) . '><input type="radio" class="om-option" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '"' . checked( $value, $default, false ) . ' />' . $inner . '</label>';
+	}
+	return $html . '</div></fieldset>';
+}
+
+/**
+ * Ring size guide dialog, printed once per page: how to measure, a size
+ * chart, and a printable sizer drawn at true size in millimetres.
+ */
+function om_print_size_guide() {
+	static $done = false;
+	if ( $done ) {
+		return;
+	}
+	$done = true;
+
+	$sizes = array();
+	for ( $us = 3; $us <= 13; $us += 0.5 ) {
+		// US ring size to inside diameter: 11.63 mm + 0.8128 mm per size.
+		$diameter = 11.63 + 0.8128 * $us;
+		$sizes[]  = array( $us, $diameter, $diameter * M_PI );
+	}
+	$custom = trim( (string) get_option( 'om_size_guide_note', '' ) );
+	?>
+	<dialog class="om-size-guide" aria-labelledby="om-size-guide-title">
+		<div class="om-sg-inner">
+			<button type="button" class="om-sg-close" aria-label="<?php esc_attr_e( 'Close', 'om-catalog' ); ?>">&times;</button>
+			<h2 id="om-size-guide-title" class="om-sg-title"><?php esc_html_e( 'Find your ring size', 'om-catalog' ); ?></h2>
+			<?php if ( '' !== $custom ) : ?>
+				<p class="om-sg-note"><?php echo esc_html( $custom ); ?></p>
+			<?php endif; ?>
+			<div class="om-sg-methods">
+				<div>
+					<h3><?php esc_html_e( 'Measure a ring you own', 'om-catalog' ); ?></h3>
+					<p><?php esc_html_e( 'Place a ring that fits the right finger on the circles below (print at 100%, no scaling) and pick the circle that matches its inside edge. Or measure the inside diameter in millimetres and find it in the chart.', 'om-catalog' ); ?></p>
+				</div>
+				<div>
+					<h3><?php esc_html_e( 'Measure your finger', 'om-catalog' ); ?></h3>
+					<p><?php esc_html_e( 'Wrap a strip of paper around the base of your finger, mark where it overlaps and measure the length in millimetres: that is the circumference. Measure at the end of the day, when fingers are largest.', 'om-catalog' ); ?></p>
+				</div>
+			</div>
+			<div class="om-sg-grid">
+				<table class="om-sg-table">
+					<thead><tr><th><?php esc_html_e( 'US size', 'om-catalog' ); ?></th><th><?php esc_html_e( 'Diameter', 'om-catalog' ); ?></th><th><?php esc_html_e( 'Circumference', 'om-catalog' ); ?></th></tr></thead>
+					<tbody>
+						<?php foreach ( $sizes as $row ) : ?>
+							<tr><td><?php echo esc_html( $row[0] ); ?></td><td><?php echo esc_html( number_format( $row[1], 1 ) ); ?> mm</td><td><?php echo esc_html( number_format( $row[2], 1 ) ); ?> mm</td></tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+				<div class="om-sg-sizer">
+					<p class="om-sg-sizer-title"><?php esc_html_e( 'Printable sizer', 'om-catalog' ); ?></p>
+					<div class="om-sg-circles">
+						<?php foreach ( $sizes as $row ) : ?>
+							<?php if ( floor( $row[0] ) == $row[0] ) : // phpcs:ignore Universal.Operators.StrictComparisons -- whole sizes only. ?>
+								<div class="om-sg-circle"><span style="width:<?php echo esc_attr( number_format( $row[1], 2, '.', '' ) ); ?>mm;height:<?php echo esc_attr( number_format( $row[1], 2, '.', '' ) ); ?>mm"></span><em><?php echo esc_html( $row[0] ); ?></em></div>
+							<?php endif; ?>
+						<?php endforeach; ?>
+					</div>
+					<button type="button" class="om-sg-print"><?php esc_html_e( 'Print the sizer', 'om-catalog' ); ?></button>
+					<p class="om-sg-small"><?php esc_html_e( 'Check the print: the ruler below should measure exactly 50 mm.', 'om-catalog' ); ?></p>
+					<div class="om-sg-ruler" aria-hidden="true"></div>
+				</div>
+			</div>
+		</div>
+	</dialog>
+	<?php
 }

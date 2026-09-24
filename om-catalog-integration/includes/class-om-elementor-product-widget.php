@@ -127,6 +127,91 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		$this->start_controls_section(
+			'section_layout',
+			array(
+				'label' => __( 'Layout & Options', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'options_style',
+			array(
+				'label'   => __( 'Options display', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'swatches',
+				'options' => array(
+					'swatches'  => __( 'Swatches (colour circles) + pills', 'om-catalog' ),
+					'pills'     => __( 'Pills', 'om-catalog' ),
+					'dropdowns' => __( 'Dropdowns', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'details_style',
+			array(
+				'label'   => __( 'Description & details', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'accordion',
+				'options' => array(
+					'accordion' => __( 'Collapsible sections', 'om-catalog' ),
+					'open'      => __( 'Always open', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'show_specs',
+			array(
+				'label'   => __( 'Specifications section', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'show_size',
+			array(
+				'label'       => __( 'Ring size picker', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'On the product lines set under Settings > OM Catalog > Product page.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'show_size_guide',
+			array(
+				'label'     => __( 'Size guide pop-up', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array( 'show_size' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_gallery',
+			array(
+				'label'       => __( 'Keep gallery in view while scrolling', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Desktop and tablet.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_bar',
+			array(
+				'label'       => __( 'Sticky price bar on phones', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Price and the main button stay at the bottom of the screen once the visitor scrolls past them.', 'om-catalog' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
 			'section_actions',
 			array(
 				'label' => __( 'Price & Buttons', 'om-catalog' ),
@@ -961,6 +1046,198 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		$this->start_controls_section(
+			'section_style_options',
+			array(
+				'label' => __( 'Options (Swatches & Pills)', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'opt_label_color',
+			array(
+				'label'     => __( 'Label color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-opt-label' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'opt_label_typography',
+				'label'    => __( 'Label typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-opt-label',
+			)
+		);
+
+		$this->add_responsive_control(
+			'swatch_size',
+			array(
+				'label'      => __( 'Swatch size', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 20, 'max' => 60 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-choice-swatch .om-swatch' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'pill_text',
+			array(
+				'label'     => __( 'Pill text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array( '{{WRAPPER}} .om-choice-pill span, {{WRAPPER}} .om-variant-link' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'pill_border',
+			array(
+				'label'     => __( 'Pill border', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-choice-pill span, {{WRAPPER}} .om-variant-link' => 'border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'pill_active_bg',
+			array(
+				'label'     => __( 'Selected: background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .om-choice-pill input:checked + span, {{WRAPPER}} .om-variant-link.is-current' => 'background-color: {{VALUE}}; border-color: {{VALUE}};',
+					'{{WRAPPER}} .om-choice-swatch input:checked + .om-swatch' => 'box-shadow: 0 0 0 2px #fff, 0 0 0 3px {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'pill_active_text',
+			array(
+				'label'     => __( 'Selected: text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-choice-pill input:checked + span, {{WRAPPER}} .om-variant-link.is-current' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'pill_typography',
+				'label'    => __( 'Pill typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-choice-pill span, {{WRAPPER}} .om-variant-link',
+			)
+		);
+
+		$this->add_responsive_control(
+			'pill_radius',
+			array(
+				'label'      => __( 'Pill corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 30 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-choice-pill span, {{WRAPPER}} .om-variant-link' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_sections',
+			array(
+				'label' => __( 'Description & Detail Sections', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'acc_title_color',
+			array(
+				'label'     => __( 'Section title color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-acc-title' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'acc_title_typography',
+				'label'    => __( 'Section title typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-acc-title',
+			)
+		);
+
+		$this->add_control(
+			'acc_divider',
+			array(
+				'label'     => __( 'Divider color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-acc, {{WRAPPER}} .om-details' => 'border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'acc_body_typography',
+				'label'    => __( 'Section text typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-acc-body',
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_sticky',
+			array(
+				'label'     => __( 'Sticky Price Bar (phones)', 'om-catalog' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'sticky_bar' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_bg',
+			array(
+				'label'     => __( 'Background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-sticky-bar' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_text',
+			array(
+				'label'     => __( 'Text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-sticky-title, {{WRAPPER}} .om-sticky-price' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_btn_bg',
+			array(
+				'label'     => __( 'Button background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-sticky-cta' => 'background-color: {{VALUE}}; border-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_btn_text',
+			array(
+				'label'     => __( 'Button text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-sticky-cta' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
 			'section_style_fallback',
 			array(
 				'label' => __( 'No-price Text', 'om-catalog' ),
@@ -1146,6 +1423,11 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['buttons']          = $buttons;
 		$args['buttons_position'] = in_array( $settings['buttons_position'] ?? 'price', array( 'price', 'after_description', 'after_options' ), true ) ? $settings['buttons_position'] : 'price';
 		$args['buttons_layout']   = 'stacked' === ( $settings['buttons_layout'] ?? 'inline' ) ? 'stacked' : 'inline';
+		$args['options_style']    = in_array( $settings['options_style'] ?? 'swatches', array( 'swatches', 'pills', 'dropdowns' ), true ) ? $settings['options_style'] : 'swatches';
+		$args['details_style']    = 'open' === ( $settings['details_style'] ?? 'accordion' ) ? 'open' : 'accordion';
+		foreach ( array( 'show_specs', 'show_size', 'show_size_guide', 'sticky_gallery', 'sticky_bar' ) as $flag ) {
+			$args[ $flag ] = 'yes' === ( $settings[ $flag ] ?? 'yes' );
+		}
 		$args['show_builder']     = 'yes' === ( $settings['show_builder'] ?? 'yes' );
 		$args['builder_text']     = (string) ( $settings['builder_text'] ?? '' );
 		$args['show_inquiry']     = 'yes' === ( $settings['show_inquiry'] ?? 'yes' );

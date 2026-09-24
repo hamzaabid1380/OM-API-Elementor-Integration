@@ -57,6 +57,11 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_product_layout_page', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_show_related', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_show_recent', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_options_style', array( 'sanitize_callback' => array( $this, 'sanitize_options_style' ) ) );
+		register_setting( 'om_catalog_settings', 'om_details_style', array( 'sanitize_callback' => array( $this, 'sanitize_details_style' ) ) );
+		register_setting( 'om_catalog_settings', 'om_size_lines', array( 'sanitize_callback' => array( $this, 'sanitize_lines' ) ) );
+		register_setting( 'om_catalog_settings', 'om_size_guide_note', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_catalog_settings', 'om_warm_cache', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 
 		// Loose diamonds: own markup (falls back to the jewelry markup).
 		register_setting( 'om_catalog_settings', 'om_diamond_markup_type', array( 'sanitize_callback' => 'sanitize_key' ) );
@@ -101,6 +106,14 @@ class OM_Settings {
 	/** Allow tel:, mailto: and normal URLs (esc_url_raw keeps those protocols). */
 	public function sanitize_link( $value ) {
 		return esc_url_raw( trim( (string) $value ) );
+	}
+
+	public function sanitize_options_style( $value ) {
+		return in_array( $value, array( 'swatches', 'pills', 'dropdowns' ), true ) ? $value : 'swatches';
+	}
+
+	public function sanitize_details_style( $value ) {
+		return 'open' === $value ? 'open' : 'accordion';
 	}
 
 	public function sanitize_flag( $value ) {
@@ -268,6 +281,14 @@ class OM_Settings {
 				<h2>Caching</h2>
 				<table class="form-table">
 					<tr>
+						<th>Background refresh</th>
+						<td>
+							<input type="hidden" name="om_warm_cache" value="0" />
+							<label><input type="checkbox" name="om_warm_cache" value="1" <?php checked( get_option( 'om_warm_cache', '1' ), '1' ); ?> /> Keep catalog pages, search and filters refreshed in the background, so visitors never wait on Overnight Mountings' API</label>
+							<p class="description"><?php echo esc_html( OM_Warmer::status_text() ); ?></p>
+						</td>
+					</tr>
+					<tr>
 						<th><label for="om_listing_cache_minutes">Listing cache (minutes)</label></th>
 						<td><input type="number" id="om_listing_cache_minutes" name="om_listing_cache_minutes" value="<?php echo esc_attr( get_option( 'om_listing_cache_minutes', 15 ) ); ?>" class="small-text" />
 						<p class="description">How long to cache product listing pages before re-fetching from the API. Live price quotes are never cached.</p></td>
@@ -300,6 +321,37 @@ class OM_Settings {
 							</select>
 							<p class="description">To design product pages visually: create a page in Elementor, drop in the <strong>OM Single Product</strong> widget (plus anything else you want around it), then pick that page here. Every <code>/catalog/...</code> product URL renders through it. The layout page itself is never linked publicly.</p>
 						</td>
+					</tr>
+				</table>
+
+				<h2>Product page</h2>
+				<p class="description">Defaults for the built-in product page and the quick view. An OM Single Product widget has its own settings.</p>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_options_style">Options display</label></th>
+						<td><select id="om_options_style" name="om_options_style">
+							<?php $ostyle = get_option( 'om_options_style', 'swatches' ); ?>
+							<option value="swatches" <?php selected( $ostyle, 'swatches' ); ?>>Swatches (colour circles) + pills</option>
+							<option value="pills" <?php selected( $ostyle, 'pills' ); ?>>Pills</option>
+							<option value="dropdowns" <?php selected( $ostyle, 'dropdowns' ); ?>>Dropdowns</option>
+						</select></td>
+					</tr>
+					<tr>
+						<th><label for="om_details_style">Description &amp; details</label></th>
+						<td><select id="om_details_style" name="om_details_style">
+							<?php $dstyle = get_option( 'om_details_style', 'accordion' ); ?>
+							<option value="accordion" <?php selected( $dstyle, 'accordion' ); ?>>Collapsible sections</option>
+							<option value="open" <?php selected( $dstyle, 'open' ); ?>>Always open</option>
+						</select></td>
+					</tr>
+					<tr>
+						<th><label for="om_size_lines">Ring size picker on</label></th>
+						<td><input type="text" id="om_size_lines" name="om_size_lines" value="<?php echo esc_attr( get_option( 'om_size_lines', 'engagement-rings,wedding-bands,fashion-rings' ) ); ?>" class="regular-text" />
+						<p class="description">Comma-separated product lines that get a ring size picker (with size guide); the chosen size is priced and sent with inquiries.</p></td>
+					</tr>
+					<tr>
+						<th><label for="om_size_guide_note">Size guide note</label></th>
+						<td><textarea id="om_size_guide_note" name="om_size_guide_note" rows="2" class="large-text" placeholder="Not sure? We offer free resizing within 60 days, or visit us for a free professional sizing."><?php echo esc_textarea( get_option( 'om_size_guide_note', '' ) ); ?></textarea></td>
 					</tr>
 				</table>
 
@@ -449,6 +501,24 @@ class OM_Settings {
 			return $rows;
 		}
 		$product = $list['products'][0];
+
+		// How many designs carry videos (the API lists a videos[] field on
+		// every product; this shows whether it's actually filled in).
+		$sample = OM_API_Client::get_products( $line, array( 'limit' => 100 ) );
+		if ( ! is_wp_error( $sample ) && ! empty( $sample['products'] ) ) {
+			$with  = 0;
+			$first = '';
+			foreach ( $sample['products'] as $item ) {
+				$videos = array_filter( array_map( 'om_video_url', (array) ( $item['videos'] ?? array() ) ) );
+				if ( $videos ) {
+					$with++;
+					$first = $first ? $first : reset( $videos );
+				}
+			}
+			$rows[] = $with
+				? array( true, sprintf( 'Videos: %d of the first %d products have one (they show as a play tile in the gallery). Example: %s', $with, count( $sample['products'] ), $first ) )
+				: array( false, sprintf( 'Videos: none of the first %d products in this line have a video.', count( $sample['products'] ) ) );
+		}
 		$rows[]  = array( true, sprintf( 'Listing "%s": %s products. First: %s (style %s).', $line, number_format_i18n( (int) ( $list['total_count'] ?? 0 ) ), $product['title'] ?? '?', $product['style_number'] ?? '?' ) );
 
 		$quote = OM_API_Client::get_quotation(

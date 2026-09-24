@@ -26,7 +26,17 @@ get_header();
 
 	<?php else : ?>
 
-		<?php echo om_render_product_detail( $product, $product_line, $style_number ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer. ?>
+		<?php
+		echo om_render_product_detail( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+			$product,
+			$product_line,
+			$style_number,
+			array(
+				'options_style' => (string) get_option( 'om_options_style', 'swatches' ),
+				'details_style' => (string) get_option( 'om_details_style', 'accordion' ),
+			)
+		);
+		?>
 
 		<?php
 		// Rows below the product (Settings > OM Catalog > Product page rows).

@@ -25,10 +25,47 @@
 		$price.find('.om-price-fallback').prop('hidden', hasPrice);
 		$wrap.find('.om-btn[data-om-show="no_price"]').prop('hidden', hasPrice);
 		$wrap.find('.om-btn[data-om-show="with_price"]').prop('hidden', !hasPrice);
+		$wrap.find('.om-sticky-price').text(priceText || '');
+	}
+
+	// Product options can be dropdowns or radio groups (swatches/pills).
+	function optVal($wrap, name) {
+		var $radio = $wrap.find('input[name="' + name + '"]:checked');
+		if ($radio.length) { return $radio.val(); }
+		return $wrap.find('select[name="' + name + '"]').val() || '';
+	}
+
+	function setOpt($wrap, name, value) {
+		var $radio = $wrap.find('input[name="' + name + '"]').filter(function () { return this.value === value; });
+		if ($radio.length) {
+			$radio.prop('checked', true);
+			$radio.closest('[data-om-opt]').find('.om-opt-current').text(value);
+			return;
+		}
+		var $select = $wrap.find('select[name="' + name + '"]');
+		if ($select.find('option').filter(function () { return this.value === value; }).length) {
+			$select.val(value);
+		}
+	}
+
+	// "Metal: 14 KT, Color: White, Ring size: 6" for inquiries.
+	function optionsSummary($wrap) {
+		return $wrap.find('[data-om-opt]').map(function () {
+			var name = $(this).attr('data-om-opt');
+			var value = optVal($wrap, name);
+			return value ? $(this).attr('data-om-label') + ': ' + (value === 'unsure' ? t('sizeUnsure', 'not sure') : value) : null;
+		}).get().join(', ');
 	}
 
 	$(document).on('change', '.om-option', function () {
 		var $wrap = $(this).closest('.om-product-wrap');
+		var $group = $(this).closest('[data-om-opt]');
+		$group.find('.om-opt-current').text(this.value);
+
+		// "Not sure" of the ring size: open the size guide.
+		if (this.name === 'finger_size' && this.value === 'unsure') {
+			openSizeGuide(this);
+		}
 
 		// Prices are off (no markup, or the layout never shows them).
 		if (String($wrap.data('priced')) !== '1' || !cfg.ajaxUrl) {
@@ -43,10 +80,11 @@
 			action: 'om_get_quote',
 			line: $wrap.data('line'),
 			styleNumber: $wrap.data('style'),
-			metal: $wrap.find('[name="metal"]').val() || '',
-			color: $wrap.find('[name="color"]').val() || '',
-			level: $wrap.find('[name="level"]').val() || '',
-			quality: $wrap.find('[name="quality"]').val() || ''
+			metal: optVal($wrap, 'metal'),
+			color: optVal($wrap, 'color'),
+			level: optVal($wrap, 'level'),
+			quality: optVal($wrap, 'quality'),
+			fingerSize: /^[\d.]+$/.test(optVal($wrap, 'finger_size')) ? optVal($wrap, 'finger_size') : ''
 		}).done(function (response) {
 			if (seq !== quoteSeq) {
 				return; // A newer change is in flight; ignore this answer.
@@ -56,10 +94,7 @@
 				// Sync the dropdowns to the configuration OM actually priced
 				// (e.g. a single-colour metal forces its colour).
 				$.each(response.data.config || {}, function (name, value) {
-					var $select = $wrap.find('[name="' + name + '"]');
-					if (value && $select.length && $select.find('option').filter(function () { return this.value === value; }).length) {
-						$select.val(value);
-					}
+					if (value) { setOpt($wrap, name, value); }
 				});
 			} else {
 				setPriceState($wrap, '');
@@ -84,8 +119,8 @@
 		}
 		try {
 			var url = new URL(href, window.location.href);
-			var metal = $wrap.find('[name="metal"]').val();
-			var color = $wrap.find('[name="color"]').val();
+			var metal = optVal($wrap, 'metal');
+			var color = optVal($wrap, 'color');
 			if (metal) { url.searchParams.set('rb_metal', metal); }
 			if (color) { url.searchParams.set('rb_color', color); }
 			this.href = url.toString();
@@ -217,6 +252,9 @@
 	});
 
 	$(document).on('click', '.om-zoom', function () {
+		// Inside the quick view (a modal dialog) a lightbox would open
+		// underneath it; the hover zoom is enough there.
+		if ($(this).closest('.om-quick-view').length) { return; }
 		var $gallery = $(this).closest('.om-product-gallery');
 		var images = lightboxImages($gallery);
 		var current = $(this).find('.om-main-image').attr('src');
@@ -245,12 +283,7 @@
 		// Record the options the customer had selected.
 		var $wrap = $form.closest('.om-product-wrap');
 		if ($wrap.length) {
-			var parts = [];
-			$wrap.find('.om-options-form select').each(function () {
-				var label = $.trim($(this).closest('label').contents().first().text());
-				parts.push(label + ': ' + $(this).val());
-			});
-			$form.find('.om-inquiry-config').val(parts.join(', '));
+			$form.find('.om-inquiry-config').val(optionsSummary($wrap));
 		}
 
 		var data = new FormData(form);
@@ -312,6 +345,7 @@
 		var isDiamonds = $wrap.hasClass('om-diamonds');
 		var focusSearch = $wrap.find('.om-search-input').is(':focus');
 		$wrap.addClass('om-loading').attr('aria-busy', 'true');
+		if (!isDiamonds) { showSkeleton($wrap); }
 
 		$.post(cfg.ajaxUrl, {
 			action: isDiamonds ? 'om_diamonds' : 'om_filter_grid',
@@ -633,9 +667,7 @@
 			var data = {};
 			try { data = JSON.parse($box.attr('data-om-product')) || {}; } catch (err) { return; }
 			var $wrap = $box.closest('.om-product-wrap');
-			var options = $wrap.find('.om-options-form select').map(function () {
-				return $.trim($(this).closest('label').contents().first().text()) + ': ' + $(this).val();
-			}).get().join(', ');
+			var options = $wrap.length ? optionsSummary($wrap) : '';
 			var price = $.trim($wrap.find('.om-price-amount:not([hidden])').text()) || data.price || '';
 			var values = { product: data.product, style: data.style, price: price, options: options, url: data.url || window.location.href, diamond: data.diamond, summary: data.summary };
 			$.each(values, function (key, value) {
@@ -654,11 +686,203 @@
 		setTimeout(function () { fillCustomForms(document); }, 800);
 	});
 
+	/* ---------- Ring size guide ---------- */
+
+	var sgReturn = null;
+
+	function openSizeGuide(from) {
+		var dialog = document.querySelector('.om-size-guide');
+		if (!dialog) { return; }
+		sgReturn = from || null;
+		if (dialog.showModal) {
+			if (!dialog.open) { dialog.showModal(); }
+		} else {
+			dialog.setAttribute('open', '');
+		}
+		$('html').addClass('om-lb-open');
+	}
+
+	function closeSizeGuide() {
+		var dialog = document.querySelector('.om-size-guide');
+		if (!dialog) { return; }
+		if (dialog.close) { dialog.close(); } else { dialog.removeAttribute('open'); }
+	}
+
+	$(document).on('click', '[data-om-size-guide]', function () { openSizeGuide(this); });
+	$(document).on('click', '.om-sg-close', closeSizeGuide);
+	$(document).on('click', '.om-size-guide', function (e) {
+		if (e.target === this) { closeSizeGuide(); } // backdrop click
+	});
+	$(document).on('close', '.om-size-guide', function () {
+		$('html').removeClass('om-lb-open');
+		if (sgReturn && sgReturn.focus) { sgReturn.focus(); }
+	});
+	// "close" doesn't bubble: listen on the element itself too.
+	$(function () {
+		var dialog = document.querySelector('.om-size-guide');
+		if (dialog) {
+			dialog.addEventListener('close', function () {
+				$('html').removeClass('om-lb-open');
+				if (sgReturn && sgReturn.focus) { sgReturn.focus(); }
+			});
+		}
+	});
+	$(document).on('click', '.om-sg-print', function () {
+		$('html').addClass('om-printing-sizer');
+		window.print();
+		setTimeout(function () { $('html').removeClass('om-printing-sizer'); }, 500);
+	});
+
+	/* ---------- Sticky price bar (phones) ---------- */
+
+	function initStickyBar() {
+		var bar = document.querySelector('.om-sticky-bar');
+		var wrap = bar && bar.closest('.om-product-wrap');
+		if (!bar || !wrap) { return; }
+		// Show the bar once the price and main buttons have scrolled away;
+		// hide it while the customer is filling in the open inquiry form.
+		var anchor = wrap.querySelector('.om-actions--builder') || wrap.querySelector('.om-price') || wrap.querySelector('.om-product-title');
+		var inquiry = wrap.querySelector('.om-product-inquiry');
+		var pastAnchor = false;
+		var atInquiry = false;
+		var update = function () {
+			var formOpen = inquiry && (inquiry.querySelector('details[open]') || inquiry.querySelector('.om-inquiry--open'));
+			var show = pastAnchor && !(atInquiry && formOpen);
+			bar.hidden = !show;
+			bar.setAttribute('aria-hidden', show ? 'false' : 'true');
+			document.documentElement.classList.toggle('om-has-sticky-bar', show);
+		};
+		if (anchor) {
+			// A scroll check (throttled to one per frame) rather than an
+			// IntersectionObserver: a jump past the anchor (restored scroll
+			// position, a #link) never "crosses" it, so no observer event.
+			var ticking = false;
+			var check = function () {
+				ticking = false;
+				var past = anchor.getBoundingClientRect().bottom < 0;
+				if (past !== pastAnchor) {
+					pastAnchor = past;
+					update();
+				}
+			};
+			window.addEventListener('scroll', function () {
+				if (!ticking) {
+					ticking = true;
+					window.requestAnimationFrame(check);
+				}
+			}, { passive: true });
+			check();
+		}
+		if (inquiry && window.IntersectionObserver) {
+			new IntersectionObserver(function (entries) {
+				atInquiry = entries[0].isIntersecting;
+				update();
+			}).observe(inquiry);
+			inquiry.addEventListener('toggle', update, true);
+		}
+	}
+
+	$(document).on('click', '.om-sticky-cta', function () {
+		var $wrap = $(this).closest('.om-product-wrap');
+		var $builder = $wrap.find('.om-builder-btn');
+		if ($builder.length) { $builder[0].click(); return; }
+		var $visibleBtn = $wrap.find('.om-actions .om-btn:not([hidden])').first();
+		var inquiry = $wrap.find('.om-product-inquiry')[0];
+		if (inquiry) {
+			var details = inquiry.querySelector('details');
+			if (details) { details.open = true; }
+			inquiry.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			var first = inquiry.querySelector('input:not([type=hidden]), textarea, select');
+			if (first) { setTimeout(function () { first.focus({ preventScroll: true }); }, 450); }
+		} else if ($visibleBtn.length) {
+			$visibleBtn[0].click();
+		}
+	});
+
+	/* ---------- Quick view ---------- */
+
+	var qv = null;
+	var qvReturn = null;
+
+	function openQuickView(line, style, trigger) {
+		if (!qv) {
+			qv = $('<dialog class="om-quick-view" aria-label="' + t('quickView', 'Quick view') + '"><div class="om-qv-inner"><button type="button" class="om-qv-close" aria-label="' + t('close', 'Close') + '">&times;</button><div class="om-qv-body"></div></div></dialog>').appendTo(document.body);
+			qv.on('click', function (e) { if (e.target === qv[0]) { closeQuickView(); } });
+			qv.find('.om-qv-close').on('click', closeQuickView);
+			qv[0].addEventListener('close', function () {
+				$('html').removeClass('om-lb-open');
+				if (qvReturn && qvReturn.focus) { qvReturn.focus(); }
+			});
+		}
+		qvReturn = trigger;
+		var $body = qv.find('.om-qv-body').html('<div class="om-qv-loading"><span class="om-qv-skel om-qv-skel--img"></span><span class="om-qv-skel"></span><span class="om-qv-skel om-qv-skel--short"></span></div>');
+		if (qv[0].showModal) { qv[0].showModal(); } else { qv.attr('open', ''); }
+		$('html').addClass('om-lb-open');
+		$.post(cfg.ajaxUrl, { action: 'om_quick_view', line: line, style: style }).done(function (response) {
+			if (response && response.success && response.data.html) {
+				$body.html(response.data.html);
+				rememberFrom($body);
+			} else {
+				$body.html($('<p class="om-error"></p>').text((response && response.data && response.data.message) || t('error', 'Something went wrong. Please try again.')));
+			}
+		}).fail(function () {
+			$body.html($('<p class="om-error"></p>').text(t('error', 'Something went wrong. Please try again.')));
+		});
+	}
+
+	function closeQuickView() {
+		if (!qv) { return; }
+		if (qv[0].close) { qv[0].close(); } else { qv.removeAttr('open'); $('html').removeClass('om-lb-open'); }
+	}
+
+	$(document).on('click', '.om-qv-btn', function (e) {
+		e.preventDefault();
+		openQuickView($(this).attr('data-om-qv-line'), $(this).attr('data-om-qv-style'), this);
+	});
+
+	/* ---------- Loading states: skeleton cards, image fade-in ---------- */
+
+	// While a grid re-renders, its cards turn into shimmering placeholders
+	// of the same size, so the page doesn't jump.
+	function showSkeleton($wrap) {
+		$wrap.find('.om-card-cell, .om-catalog-grid > .om-card').each(function () {
+			$(this).addClass('is-skeleton');
+		});
+	}
+
+	// Card photos fade in once loaded instead of popping in.
+	function markLoaded(img) {
+		var box = img.closest && img.closest('.om-card-image');
+		if (box) { box.classList.add('is-loaded'); }
+	}
+	document.addEventListener('load', function (e) {
+		if (e.target && e.target.tagName === 'IMG') { markLoaded(e.target); }
+	}, true);
+	function markCachedImages(root) {
+		$(root || document).find('.om-card-image img').each(function () {
+			if (this.complete && this.naturalWidth) { markLoaded(this); }
+		});
+	}
+
 	/* ---------- Boot ---------- */
 
 	function initBlock(root) {
 		syncPanels(root);
 		loadCardPrices(root);
+		markCachedImages(root);
+		$(root).find('.om-catalog-grid').addClass('om-fade-in');
+	}
+
+	// Record a product shown in the quick view as recently viewed too.
+	function rememberFrom($root) {
+		var el = $root.find('.om-product-wrap[data-om-recent-item]')[0];
+		if (!el) { return; }
+		try {
+			var item = JSON.parse(el.getAttribute('data-om-recent-item'));
+			var list = readRecent().filter(function (x) { return x && x.s !== item.s; });
+			list.unshift(item);
+			window.localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 20)));
+		} catch (err) { /* ignore */ }
 	}
 
 	// Back/forward after an in-place update: reload so the server renders
@@ -675,6 +899,7 @@
 		renderRecent(document);
 		fillCustomForms(document);
 		initAutoplay(document);
+		initStickyBar();
 		if (mobileQuery) {
 			var onChange = function () { syncPanels(document); };
 			if (mobileQuery.addEventListener) {

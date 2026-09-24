@@ -218,6 +218,13 @@ class OM_Shortcodes {
 				// Extra query args appended to product links (the ring
 				// builder uses this to carry its state).
 				'card_query'      => '',
+				// "yes" adds a Quick view button to each card.
+				'quick_view'      => 'yes',
+				// Card badges: "STYLE: Label" lines, and "New" for designs
+				// added within this many days (0 = off).
+				'badges'          => '',
+				'badge_new_days'  => 0,
+				'badge_shape'     => '',
 			),
 			$atts,
 			'om_catalog'
@@ -351,17 +358,7 @@ class OM_Shortcodes {
 			);
 		} else {
 			$args['offset'] = ( $paged - 1 ) * $per_page;
-			$cache_key      = 'om_listing_' . md5( $active_line . '|' . wp_json_encode( $args ) );
-			$data           = get_transient( $cache_key );
-			if ( false === $data ) {
-				$data = OM_API_Client::get_products( $active_line, array_filter( $args ) );
-				if ( ! is_wp_error( $data ) ) {
-					set_transient( $cache_key, $data, $cache_minutes * MINUTE_IN_SECONDS );
-					if ( isset( $data['total_count'] ) ) {
-						set_transient( $total_key, (int) $data['total_count'], $cache_minutes * MINUTE_IN_SECONDS );
-					}
-				}
-			}
+			$data           = self::fetch_listing( $active_line, $args );
 		}
 
 		// Hide list: drop excluded style numbers after the fetch. Totals stay
@@ -820,9 +817,18 @@ class OM_Shortcodes {
 			if ( $card_query ) {
 				$link = add_query_arg( $card_query, $link );
 			}
+			$badges = om_card_badges( $product, (string) $atts['badges'], (int) $atts['badge_new_days'], 'yes' === $atts['badge_shape'] );
 			?>
+			<div class="om-card-cell">
 			<a class="om-card" href="<?php echo esc_url( $link ); ?>">
 				<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?>">
+					<?php if ( $badges ) : ?>
+						<span class="om-badges">
+							<?php foreach ( $badges as $badge ) : ?>
+								<span class="om-badge om-badge--<?php echo esc_attr( sanitize_title( $badge ) ); ?>"><?php echo esc_html( $badge ); ?></span>
+							<?php endforeach; ?>
+						</span>
+					<?php endif; ?>
 					<?php if ( $image ) : ?>
 						<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>" loading="lazy" decoding="async" />
 					<?php endif; ?>
@@ -840,6 +846,10 @@ class OM_Shortcodes {
 					<?php endif; ?>
 				</div>
 			</a>
+			<?php if ( 'yes' === $atts['quick_view'] ) : ?>
+				<span class="om-qv-slot"><button type="button" class="om-qv-btn" data-om-qv-line="<?php echo esc_attr( $active_line ); ?>" data-om-qv-style="<?php echo esc_attr( $style_number ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: product. */ __( 'Quick view: %s', 'om-catalog' ), $title ) ); ?>"><?php esc_html_e( 'Quick view', 'om-catalog' ); ?></button></span>
+			<?php endif; ?>
+			</div>
 			<?php
 		}
 		echo '</div>';
@@ -860,5 +870,36 @@ class OM_Shortcodes {
 			);
 			echo '</nav>';
 		}
+	}
+
+	/**
+	 * One listing page, from cache or the API. Shared with the background
+	 * refresh (OM_Warmer), which re-fetches the pages visitors actually
+	 * use before they expire, so the cache keys must match exactly.
+	 *
+	 * @param string $line  Product line.
+	 * @param array  $args  API query incl. limit/offset (empty values allowed).
+	 * @param bool   $fresh Skip the cache (background refresh).
+	 * @return array|WP_Error
+	 */
+	public static function fetch_listing( $line, $args, $fresh = false ) {
+		$cache_key = 'om_listing_' . md5( $line . '|' . wp_json_encode( $args ) );
+		$data      = $fresh ? false : get_transient( $cache_key );
+		if ( false === $data ) {
+			$data = OM_API_Client::get_products( $line, array_filter( $args ) );
+			if ( ! is_wp_error( $data ) ) {
+				$ttl = OM_Warmer::listing_ttl();
+				set_transient( $cache_key, $data, $ttl );
+				if ( isset( $data['total_count'] ) ) {
+					$without_offset = $args;
+					unset( $without_offset['offset'] );
+					set_transient( 'om_total_' . md5( $line . '|' . wp_json_encode( $without_offset ) ), (int) $data['total_count'], $ttl );
+				}
+			}
+		}
+		if ( ! $fresh ) {
+			OM_Warmer::remember( $line, $args );
+		}
+		return $data;
 	}
 }

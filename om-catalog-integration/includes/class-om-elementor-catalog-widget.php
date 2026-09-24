@@ -320,6 +320,57 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'quick_view',
+			array(
+				'label'       => __( 'Quick view button', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Opens photos, price and options in a pop-up without leaving the grid.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'badges_heading',
+			array(
+				'label'     => __( 'Badges', 'om-catalog' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'badges',
+			array(
+				'label'       => __( 'Custom badges', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 3,
+				'placeholder' => "85121-2: Best seller\n84842-2: Staff pick",
+				'description' => __( 'One per line: style number, colon, label.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'badge_new_days',
+			array(
+				'label'       => __( '"New" badge for designs added in the last (days)', 'om-catalog' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 0,
+				'min'         => 0,
+				'max'         => 365,
+				'description' => __( '0 = off. Uses the date Overnight Mountings added the design, when it provides one.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'badge_shape',
+			array(
+				'label'   => __( 'Centre-shape badge (e.g. "Oval")', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => '',
+			)
+		);
+
+		$this->add_control(
 			'show_count',
 			array(
 				'label'   => __( 'Show result count', 'om-catalog' ),
@@ -595,6 +646,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 				),
 				'selectors' => array(
 					'{{WRAPPER}} .om-card-image' => 'aspect-ratio: {{VALUE}};',
+					'{{WRAPPER}} .om-catalog-grid' => '--om-card-ratio: {{VALUE}};',
 				),
 			)
 		);
@@ -1015,6 +1067,82 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		$this->start_controls_section(
+			'section_style_badges',
+			array(
+				'label' => __( 'Badges & Quick View', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'badge_bg',
+			array(
+				'label'     => __( 'Badge background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-badge' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'badge_color',
+			array(
+				'label'     => __( 'Badge text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-badge' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'badge_typography',
+				'label'    => __( 'Badge typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-badge',
+			)
+		);
+
+		$this->add_control(
+			'badge_radius',
+			array(
+				'label'      => __( 'Badge corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 30 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-badge' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'qv_bg',
+			array(
+				'label'     => __( 'Quick view background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array( '{{WRAPPER}} .om-qv-btn' => 'background-color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'qv_color',
+			array(
+				'label'     => __( 'Quick view text', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-qv-btn' => 'color: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'qv_typography',
+				'label'    => __( 'Quick view typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-qv-btn',
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
 			'section_style_pagination',
 			array(
 				'label'     => __( 'Pagination', 'om-catalog' ),
@@ -1157,6 +1285,10 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'show_sort'       => (string) ( $settings['show_sort'] ?? 'yes' ),
 			'sort'            => (string) ( $settings['default_sort'] ?? '' ),
 			'show_prices'     => (string) ( $settings['show_prices'] ?? '' ),
+			'quick_view'      => (string) ( $settings['quick_view'] ?? 'yes' ),
+			'badges'          => (string) ( $settings['badges'] ?? '' ),
+			'badge_new_days'  => (int) ( $settings['badge_new_days'] ?? 0 ),
+			'badge_shape'     => (string) ( $settings['badge_shape'] ?? '' ),
 			'per_page'        => '' !== (string) $settings['per_page'] ? (int) $settings['per_page'] : 12,
 			'style'           => trim( preg_replace( '/\s+/', ' ', (string) $settings['collection_filter'] ) ),
 			'set'             => trim( (string) $settings['set_filter'] ),

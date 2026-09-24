@@ -237,7 +237,50 @@ typography, and pagination colors, alignment and typography. Anything left
 untouched inherits the site-wide defaults from Settings > OM Catalog, so
 per-widget styling is opt-in.
 
+## Product page layout (1.6)
+
+The product page is organised as: title and price, options, the main
+button(s), then collapsible **Description**, **Stone details** and
+**Specifications** sections and the inquiry form. In the OM Single Product
+widget (**Layout & Options**), or under Settings > OM Catalog > Product page
+for the built-in page:
+
+- **Options display** — Swatches (colour circles for metal colour, pills for
+  the rest), Pills, or Dropdowns. Style them under **Options (Swatches &
+  Pills)**.
+- **Description & details** — collapsible sections or always open.
+- **Ring size picker** + **size guide** pop-up (how to measure, US size chart,
+  printable true-size sizer). Shown on the product lines listed in Settings;
+  the chosen size is priced (OM's fingerSize) and included in inquiries.
+- **Gallery stays in view** while the details scroll (desktop/tablet).
+- **Sticky price bar on phones** — price + main button pinned to the bottom
+  once the visitor scrolls past them.
+
+Listing grids add **Quick view** (photos, price and options in a pop-up),
+**badges** (your own per style number, automatic "New", centre shape) and
+shimmering **placeholder cards** while filters load.
+
+**Background refresh** (Settings > OM Catalog > Caching) re-fetches the
+catalog pages visitors use, the product lines, collections and search index
+every 10 minutes via WP-Cron, so visitors are served from cache. For exact
+timing, set a real server cron to call wp-cron.php.
+
+**Videos:** the API has a `videos` field on each product. The plugin shows
+any it finds as a play tile in the gallery. Settings > OM Catalog > Tools >
+Test connection reports how many products in a line actually have videos.
+
 ## Changelog
+
+### 1.6.0
+- Cleaner product page: options as swatches/pills/dropdowns, collapsible
+  description / stone details / specifications, sticky gallery.
+- Ring size picker (priced via fingerSize) with a size guide pop-up and
+  printable sizer.
+- Sticky price + CTA bar on phones.
+- Quick view pop-up on listing cards; card badges (custom, New, shape).
+- Skeleton placeholder cards while filtering; card photos fade in.
+- Background cache refresh via WP-Cron.
+- Test connection reports product video coverage.
 
 ### 1.5.0
 - Inquiry form builder: add/remove/reorder fields of ten types, globally in

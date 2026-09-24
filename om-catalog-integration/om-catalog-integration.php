@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.5.0
+ * Version: 1.6.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.5.0' );
+define( 'OM_CATALOG_VERSION', '1.6.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -27,6 +27,7 @@ require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-ring-builder.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-related.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-warmer.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-elementor-widgets.php';
 
 /**
@@ -44,6 +45,7 @@ function om_catalog_init() {
 	OM_Diamonds::instance();
 	OM_Ring_Builder::instance();
 	OM_Related::instance();
+	OM_Warmer::instance();
 	OM_Elementor_Widgets::instance();
 }
 add_action( 'plugins_loaded', 'om_catalog_init' );
@@ -84,6 +86,8 @@ function om_catalog_enqueue_assets() {
 				'error'     => __( 'Something went wrong. Please try again.', 'om-catalog' ),
 				'noMatches' => __( 'No matching designs', 'om-catalog' ),
 				'seeAll'    => __( 'See all results', 'om-catalog' ),
+				'quickView' => __( 'Quick view', 'om-catalog' ),
+				'sizeUnsure' => __( 'not sure — please help', 'om-catalog' ),
 			),
 		)
 	);
@@ -237,6 +241,7 @@ function om_catalog_activate() {
 register_activation_hook( __FILE__, 'om_catalog_activate' );
 
 function om_catalog_deactivate() {
+	OM_Warmer::unschedule();
 	flush_rewrite_rules();
 }
 register_deactivation_hook( __FILE__, 'om_catalog_deactivate' );

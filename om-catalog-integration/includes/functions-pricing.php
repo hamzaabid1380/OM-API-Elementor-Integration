@@ -174,6 +174,46 @@ function om_builder_lines() {
 	return $lines ? $lines : array( 'engagement-rings' );
 }
 
+/**
+ * Badges for a listing card: the admin's own labels by style number
+ * ("85121-2: Best seller", one per line) and an automatic "New" for
+ * designs Overnight Mountings added in the last N days, when the product
+ * carries a creation date.
+ *
+ * @return string[] Badge labels.
+ */
+function om_card_badges( $product, $rules = '', $new_days = 0, $show_shape = false ) {
+	$badges = array();
+	$style  = strtoupper( (string) ( $product['style_number'] ?? '' ) );
+	foreach ( preg_split( '/\r\n|\r|\n|;/', (string) $rules ) as $line ) {
+		$parts = explode( ':', $line, 2 );
+		if ( 2 === count( $parts ) && strtoupper( trim( $parts[0] ) ) === $style && '' !== trim( $parts[1] ) ) {
+			$badges[] = trim( $parts[1] );
+		}
+	}
+	if ( (int) $new_days > 0 ) {
+		foreach ( array( 'created_at', 'createdAt', 'date_created', 'created', 'new_date' ) as $key ) {
+			if ( ! empty( $product[ $key ] ) && is_string( $product[ $key ] ) ) {
+				$time = strtotime( $product[ $key ] );
+				if ( $time && time() - $time < (int) $new_days * DAY_IN_SECONDS ) {
+					$badges[] = __( 'New', 'om-catalog' );
+				}
+				break;
+			}
+		}
+	}
+	// Centre-stone shape, from the single-stone line of the breakdown.
+	if ( $show_shape ) {
+		foreach ( (array) ( $product['stone_breakdown'] ?? array() ) as $stone ) {
+			if ( ! empty( $stone['shape'] ) && 1 === (int) ( $stone['quantity'] ?? 0 ) ) {
+				$badges[] = (string) $stone['shape'];
+				break;
+			}
+		}
+	}
+	return array_slice( array_unique( $badges ), 0, 3 );
+}
+
 /** Make a site-relative URL ("/rings/?a=b") absolute. */
 function om_absolute_url( $url ) {
 	$url = (string) $url;
