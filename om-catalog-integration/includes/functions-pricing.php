@@ -91,3 +91,19 @@ function om_image_url( $image ) {
 	}
 	return '';
 }
+
+/**
+ * What a visitor sees when the catalog can't load. Admins get the real
+ * reason (missing credentials, an API error message) so they can fix it;
+ * visitors get a calm, generic message instead of setup details.
+ *
+ * @param WP_Error $error
+ * @return string
+ */
+function om_public_error_message( $error ) {
+	if ( is_wp_error( $error ) && current_user_can( 'manage_options' ) ) {
+		/* translators: %s: error message from the plugin or the Overnight Mountings API. */
+		return sprintf( __( 'Catalog error (only admins see this): %s', 'om-catalog' ), $error->get_error_message() );
+	}
+	return __( 'Our catalog is temporarily unavailable. Please check back shortly.', 'om-catalog' );
+}

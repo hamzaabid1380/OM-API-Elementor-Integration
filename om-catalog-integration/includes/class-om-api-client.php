@@ -14,6 +14,45 @@ class OM_API_Client {
 	const API_BASE = 'https://api.overnightmountings.com/api/v1/';
 	const TOKEN_TRANSIENT = 'om_catalog_access_token';
 	const AUTH_FAIL_TRANSIENT = 'om_catalog_auth_failed';
+	const LINES_TRANSIENT = 'om_catalog_product_lines';
+
+	/**
+	 * Quotes are a snapshot of a daily metal-market price, so identical
+	 * configurations are reused for a few minutes. This keeps repeated
+	 * dropdown changes (and anyone hammering the public quote endpoint)
+	 * from turning into one OM API call each.
+	 */
+	const QUOTE_CACHE_SECONDS = 300;
+
+	/**
+	 * Forget the cached token and any cached auth failure. Called when the
+	 * credentials are saved, so new credentials take effect immediately.
+	 */
+	public static function clear_auth_cache() {
+		delete_transient( self::TOKEN_TRANSIENT );
+		delete_transient( self::AUTH_FAIL_TRANSIENT );
+	}
+
+	/**
+	 * Delete every transient this plugin created (token, listings, product
+	 * details, quotes, taxonomy). Used by the "Clear cache" admin action.
+	 *
+	 * @return int Number of cache entries removed.
+	 */
+	public static function clear_all_caches() {
+		global $wpdb;
+		$names = $wpdb->get_col(
+			"SELECT option_name FROM {$wpdb->options}
+			WHERE option_name LIKE '\\_transient\\_om\\_%'"
+		);
+		$count = 0;
+		foreach ( $names as $name ) {
+			if ( delete_transient( substr( $name, strlen( '_transient_' ) ) ) ) {
+				$count++;
+			}
+		}
+		return $count;
+	}
 
 	/**
 	 * Get a valid access token, using the cached one if still fresh.
@@ -98,7 +137,9 @@ class OM_API_Client {
 			// http_build_query() URL-encodes values; real filter values contain
 			// spaces and ampersands ("Hidden Halo", "Clip & Ship"), which
 			// add_query_arg() would pass through raw and corrupt the request.
-			$url .= '?' . http_build_query( $query );
+			// The separator is explicit: some hosts set arg_separator.output
+			// to "&amp;", which http_build_query() would otherwise use.
+			$url .= '?' . http_build_query( $query, '', '&' );
 		}
 
 		$response = wp_remote_get(
@@ -144,6 +185,46 @@ class OM_API_Client {
 		return self::request( 'products/metadata' );
 	}
 
+	/**
+	 * Active product lines as [ code => name ], from OM's own list.
+	 *
+	 * Front-end callers pass $fetch = false and only ever read the cache, so
+	 * a visitor's page view never waits on this call; wp-admin (the settings
+	 * page, the Elementor editor) passes true and refreshes it. Returns an
+	 * empty array when nothing is cached yet or the API is unavailable.
+	 *
+	 * @param bool $fetch Call the API when the cache is empty.
+	 * @return array
+	 */
+	public static function get_product_lines_map( $fetch = false ) {
+		$cached = get_transient( self::LINES_TRANSIENT );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		if ( 'none' === $cached || ! $fetch ) {
+			return array();
+		}
+
+		$result = self::get_product_lines();
+		$lines  = array();
+		if ( ! is_wp_error( $result ) && ! empty( $result['products'] ) && is_array( $result['products'] ) ) {
+			foreach ( $result['products'] as $line ) {
+				$code = sanitize_title( (string) ( $line['code'] ?? '' ) );
+				if ( '' !== $code ) {
+					$lines[ $code ] = (string) ( $line['name'] ?? $code );
+				}
+			}
+		}
+
+		if ( empty( $lines ) ) {
+			set_transient( self::LINES_TRANSIENT, 'none', 10 * MINUTE_IN_SECONDS );
+			return array();
+		}
+
+		set_transient( self::LINES_TRANSIENT, $lines, 12 * HOUR_IN_SECONDS );
+		return $lines;
+	}
+
 	/** List/search products for one line. $args supports style, shape, color, level, styleNumber, limit, offset, etc. */
 	public static function get_products( $product_line, $args = array() ) {
 		return self::request( 'products/' . $product_line, $args );
@@ -187,9 +268,24 @@ class OM_API_Client {
 		return $result['products'][0];
 	}
 
-	/** Get a live wholesale quote for a configuration. Never cached. */
+	/**
+	 * Get a live wholesale quote for a configuration. Identical
+	 * configurations are reused for QUOTE_CACHE_SECONDS; errors are not
+	 * cached.
+	 */
 	public static function get_quotation( $product_line, $args ) {
-		return self::request( 'products/' . $product_line . '/quotation', $args );
+		ksort( $args );
+		$cache_key = 'om_quote_' . md5( $product_line . '|' . wp_json_encode( $args ) );
+		$cached    = get_transient( $cache_key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		$quote = self::request( 'products/' . $product_line . '/quotation', $args );
+		if ( ! is_wp_error( $quote ) && isset( $quote['price'] ) ) {
+			set_transient( $cache_key, $quote, self::QUOTE_CACHE_SECONDS );
+		}
+		return $quote;
 	}
 
 	/** Navigation taxonomy (collections/categories) for one product line. */
@@ -206,12 +302,20 @@ class OM_API_Client {
 	 * like "Multi Row and Pave" searches as "Multi Row,Pave"). Subcategories
 	 * become their own options. Cached 12 hours; a failed fetch is cached
 	 * briefly so a missing key doesn't hammer the API from the editor.
+	 *
+	 * @param string $product_line Line code.
+	 * @param bool   $fetch        Call the API when the cache is empty. The
+	 *                             Elementor widget passes false on the front
+	 *                             end, where the dropdown options are unused.
 	 */
-	public static function get_line_collections( $product_line ) {
+	public static function get_line_collections( $product_line, $fetch = true ) {
 		$cache_key = 'om_line_collections_' . md5( $product_line );
 		$cached    = get_transient( $cache_key );
 		if ( false !== $cached ) {
 			return is_array( $cached ) ? $cached : array();
+		}
+		if ( ! $fetch ) {
+			return array();
 		}
 
 		$meta = self::get_line_metadata( $product_line );

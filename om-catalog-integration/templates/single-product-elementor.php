@@ -22,8 +22,8 @@ get_header();
 	<?php if ( ! $product || is_wp_error( $product ) ) : ?>
 
 		<div class="om-error">
-			<p><?php echo esc_html( is_wp_error( $product ) ? $product->get_error_message() : __( 'Product not found.', 'om-catalog' ) ); ?></p>
-			<p><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Back to home', 'om-catalog' ); ?></a></p>
+			<p><?php echo esc_html( ( is_wp_error( $product ) && 'om_not_found' !== $product->get_error_code() ) ? om_public_error_message( $product ) : __( 'Sorry, this design is no longer available.', 'om-catalog' ) ); ?></p>
+			<p><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Back to the home page', 'om-catalog' ); ?></a></p>
 		</div>
 
 	<?php else : ?>

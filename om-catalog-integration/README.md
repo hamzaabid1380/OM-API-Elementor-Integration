@@ -27,8 +27,14 @@ Go to **Settings > OM Catalog > Pricing Markup** and choose either:
 - **Percentage** — e.g. `120` means retail = wholesale × 2.2
 - **Multiplier** — e.g. `2.2` means the same thing, entered directly
 
-Until a markup is set, the site shows **"Call for pricing"** instead of any
-price — wholesale numbers are never exposed to visitors.
+Until a markup is set, the site shows **"Call for pricing"** (or your own
+text/buttons, see below) instead of any price — wholesale numbers are never
+exposed to visitors. Logged-in admins see a small note on product pages
+explaining why no price is shown.
+
+**Not seeing prices?** Go to **Settings > OM Catalog > Tools** and click
+**Test connection & pricing**. It logs in, reads the product lines, loads a
+product and prices it, and tells you exactly which step fails.
 
 ## Set your brand colors and fonts
 
@@ -77,10 +83,11 @@ template via the `om_single_product_template` filter.
 
 - No WooCommerce dependency, no cart/checkout — this is display-only, matching
   what was requested.
-- Prices are fetched live on each page view (not stored), since Overnight Mountings'
-  pricing includes a daily metal-market snapshot.
+- Prices are fetched live (identical configurations are reused for up to 5
+  minutes), since Overnight Mountings' pricing includes a daily metal-market
+  snapshot.
 - Product listings are cached briefly (default 15 minutes, adjustable in settings)
-  to reduce API calls; price quotes are never cached.
+  to reduce API calls.
 - If a product's style number changes or is discontinued on Overnight Mountings'
   side, the single product page will show a clear "not found" message rather than
   a broken page (and sends a real HTTP 404, so search engines drop it).
@@ -89,6 +96,43 @@ template via the `om_single_product_template` filter.
 - Listing pagination uses an `?om_page=N` query parameter, which works reliably
   on Elementor-built pages (WordPress's pretty `/page/2/` URLs get redirected
   away on static pages).
+
+## Visitor filters: top bar, dropdowns or sidebar
+
+In the **OM Product Catalog** widget (Content tab > Visitor filters):
+
+- **Collection filter**, **Shape filter**, **Metal colour filter** — switch on
+  the ones shoppers should see.
+- **Filter position** — *Top bar* (pills/tabs above the grid), *Dropdowns*
+  (compact selects above the grid), *Sidebar — left* or *Sidebar — right*.
+  On phones the sidebar folds into a "Filters" button.
+- **Show result count** — "Showing 1–12 of 318" above the grid, with the
+  active filters as removable chips.
+
+The Style tab's **Sidebar & Dropdown Filters** section sets the sidebar
+width, spacing, sticky behaviour, colours and typography. Shortcode
+equivalent: `[om_catalog show_filters="yes" filter_shapes="yes"
+filter_metals="yes" filter_position="left"]`.
+
+Filtering updates the grid in place. Only the options the widget offers are
+accepted, so visitors can't make the site run arbitrary catalog queries.
+
+## Price & buttons on product pages
+
+In the **OM Single Product** widget (Content tab > Price & Buttons):
+
+- **Price** — show the live price when available, or never show prices.
+- **When no price is shown** — show text ("Call for pricing", optionally
+  linked), show the buttons in the price's place, or show nothing.
+- **Buttons** — any number, each with text, link, icon, style (solid,
+  outline, text link), its own colours, and a rule: show always, only when
+  there's no price, or only with a price.
+- **Buttons position / Arrangement / Alignment** — under the price, after
+  the description or after the options; side by side or stacked; left,
+  centre, right or full width.
+
+The Style tab's **Buttons** section covers typography, padding, height,
+width, corner radius, border, icon size/spacing and normal/hover colours.
 
 ## Filtering & curating what shows (Elementor or shortcode)
 
@@ -123,6 +167,42 @@ untouched inherits the site-wide defaults from Settings > OM Catalog, so
 per-widget styling is opt-in.
 
 ## Changelog
+
+### 1.2.0
+- New filter layouts: sidebar (left or right, collapsing to a "Filters"
+  button on phones), dropdowns, or the existing top bar. New visitor filters
+  for shape and metal colour, a result count and removable filter chips.
+- Product page price & buttons rebuilt: buttons can replace "Call for
+  pricing", with icons, per-button colours and show rules, positions,
+  stacking/alignment and full styling. Buttons no longer pick up theme link
+  styles.
+- Fixed: collection/filter values containing an apostrophe or "&" were
+  corrupted when set in the Elementor widget.
+- Fixed: the catalog widget made up to 8 taxonomy API calls on a visitor's
+  page view whenever its cache expired; those now only run in wp-admin.
+- Fixed: anyone could make the site query OM with arbitrary settings via
+  the grid's AJAX endpoint. Grid attributes are now signed, filter values
+  are checked against the offered options, and out-of-range pages no longer
+  call the API.
+- Fixed: WordPress treated product pages as the blog home page (wrong
+  signals for themes, Elementor Pro and SEO plugins). Product pages now also
+  output a canonical tag, and missing products are marked noindex.
+- Fixed: the product layout page was publicly viewable; visitors are now
+  redirected to the home page.
+- Fixed: price updates failed on pages served from a cache older than
+  12–24 hours (expired nonce). The public endpoints no longer depend on one.
+- Fixed: new API credentials only took effect after the cached token
+  expired; saving them now takes effect immediately.
+- Fixed: the client secret could be altered on save and was printed into
+  the settings page source.
+- Fixed: the shortcode didn't load its CSS/JS outside page content.
+- Product lines come from OM's own list when available.
+- Visitors see a friendly message instead of raw API/setup errors (admins
+  still see the details).
+- Identical price quotes are reused for 5 minutes; dropdowns sync to the
+  configuration OM actually priced (e.g. Platinum forces White).
+- Settings: "Test connection & pricing" and "Clear cache" tools; default
+  "no price" text and link for the built-in product page.
 
 ### 1.1.0 (tenth pass — price CTA & action buttons)
 - The OM Single Product widget gained a "Price & Actions" section: custom

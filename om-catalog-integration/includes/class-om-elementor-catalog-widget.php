@@ -48,18 +48,22 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		return array( 'om-catalog-js' );
 	}
 
-	/** Product line codes and labels, shared by the line select and the per-line collection dropdowns. */
+	/**
+	 * Product line codes and labels, shared by the line select and the
+	 * per-line collection dropdowns. OM's own list when available.
+	 */
 	private function product_lines() {
-		return array(
-			'engagement-rings' => __( 'Engagement Rings', 'om-catalog' ),
-			'wedding-bands'    => __( 'Wedding Bands', 'om-catalog' ),
-			'bracelets'        => __( 'Bracelets', 'om-catalog' ),
-			'earrings'         => __( 'Earrings', 'om-catalog' ),
-			'fashion-rings'    => __( 'Fashion Rings', 'om-catalog' ),
-			'necklaces'        => __( 'Necklaces', 'om-catalog' ),
-			'pendants'         => __( 'Pendants', 'om-catalog' ),
-			'in-stock'         => __( 'In-Stock Products', 'om-catalog' ),
-		);
+		return OM_Shortcodes::line_labels( self::is_editor_context() );
+	}
+
+	/**
+	 * Elementor builds a widget's controls on the front end too, but the
+	 * dropdown options are only needed in the editor. Only fetch them from
+	 * the API in wp-admin (where the editor lives), so a visitor's page view
+	 * never waits on taxonomy calls.
+	 */
+	private static function is_editor_context() {
+		return is_admin();
 	}
 
 	/** Settings key of the collection dropdown belonging to one product line. */
@@ -129,7 +133,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		// the API is unreachable, so a saved selection is never dropped on
 		// the front end.
 		foreach ( $this->product_lines() as $line_code => $line_label ) {
-			$groups  = OM_API_Client::get_line_collections( $line_code );
+			$groups  = OM_API_Client::get_line_collections( $line_code, self::is_editor_context() );
 			$options = array();
 			$prefix  = count( $groups ) > 1;
 			foreach ( $groups as $group ) {
@@ -171,27 +175,102 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		}
 
 		$this->add_control(
+			'visitor_filters_heading',
+			array(
+				'label'     => __( 'Visitor filters', 'om-catalog' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
 			'show_filter_bar',
 			array(
-				'label'       => __( 'Category filter bar for visitors', 'om-catalog' ),
+				'label'       => __( 'Collection filter', 'om-catalog' ),
 				'type'        => Controls_Manager::SWITCHER,
 				'default'     => '',
-				'description' => __( 'Shows a row of category filters above the grid so shoppers can filter the line themselves. With additional product lines, the line switcher shows regardless. Filtering updates in place, no page reload.', 'om-catalog' ),
+				'description' => __( "Lets shoppers filter by the line's collections and categories. With additional product lines, the line switcher shows regardless. Filtering updates in place, no page reload.", 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'filter_shapes',
+			array(
+				'label'   => __( 'Shape filter', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => '',
+			)
+		);
+
+		$this->add_control(
+			'shape_options',
+			array(
+				'label'       => __( 'Shapes offered', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => 'Round, Oval, Cushion, Princess, Emerald, Pear, Marquise, Radiant, Asscher, Heart',
+				'description' => __( 'Comma-separated. Leave blank for the standard list.', 'om-catalog' ),
+				'condition'   => array( 'filter_shapes' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'filter_metals',
+			array(
+				'label'       => __( 'Metal colour filter', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => '',
+				'description' => __( 'White, Yellow and Rose.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'filter_position',
+			array(
+				'label'   => __( 'Filter position', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'top',
+				'options' => array(
+					'top'      => __( 'Top bar (above the grid)', 'om-catalog' ),
+					'dropdown' => __( 'Dropdowns (compact, above the grid)', 'om-catalog' ),
+					'left'     => __( 'Sidebar — left', 'om-catalog' ),
+					'right'    => __( 'Sidebar — right', 'om-catalog' ),
+				),
+				'description' => __( 'On phones the sidebar folds into a "Filters" button above the grid.', 'om-catalog' ),
 			)
 		);
 
 		$this->add_control(
 			'filter_style',
 			array(
-				'label'   => __( 'Filter design', 'om-catalog' ),
-				'type'    => Controls_Manager::SELECT,
-				'default' => 'pills',
-				'options' => array(
+				'label'     => __( 'Top bar design', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'pills',
+				'options'   => array(
 					'pills'     => __( 'Pills (outlined, default)', 'om-catalog' ),
 					'underline' => __( 'Underline (quiet text tabs)', 'om-catalog' ),
 					'buttons'   => __( 'Buttons (soft filled)', 'om-catalog' ),
 					'minimal'   => __( 'Minimal (plain text)', 'om-catalog' ),
 				),
+				'condition' => array( 'filter_position' => 'top' ),
+			)
+		);
+
+		$this->add_control(
+			'filters_title',
+			array(
+				'label'       => __( 'Sidebar title', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Filters', 'om-catalog' ),
+				'condition'   => array( 'filter_position' => array( 'left', 'right' ) ),
+			)
+		);
+
+		$this->add_control(
+			'show_count',
+			array(
+				'label'   => __( 'Show result count', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => 'yes',
 			)
 		);
 
@@ -712,6 +791,175 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 
 		/* ---------- Style: Pagination ---------- */
 
+		/* ---------- Style: Sidebar & dropdown filters ---------- */
+
+		$this->start_controls_section(
+			'section_style_sidebar',
+			array(
+				'label'      => __( 'Sidebar & Dropdown Filters', 'om-catalog' ),
+				'tab'        => Controls_Manager::TAB_STYLE,
+				'conditions' => array(
+					'terms' => array(
+						array(
+							'name'     => 'filter_position',
+							'operator' => 'in',
+							'value'    => array( 'left', 'right', 'dropdown' ),
+						),
+					),
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'sidebar_width',
+			array(
+				'label'      => __( 'Sidebar width', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array(
+					'px' => array( 'min' => 160, 'max' => 420 ),
+					'%'  => array( 'min' => 15, 'max' => 40 ),
+				),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-catalog-wrap' => '--om-sidebar-width: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array( 'filter_position' => array( 'left', 'right' ) ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'sidebar_gap',
+			array(
+				'label'      => __( 'Space between sidebar and grid', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 120 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-catalog-wrap' => '--om-sidebar-gap: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array( 'filter_position' => array( 'left', 'right' ) ),
+			)
+		);
+
+		$this->add_control(
+			'sidebar_sticky',
+			array(
+				'label'        => __( 'Sticky sidebar', 'om-catalog' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+				'selectors'    => array(
+					'{{WRAPPER}} .om-filter-sidebar' => 'position: sticky; top: var(--om-sticky-offset, 24px);',
+				),
+				'condition'    => array( 'filter_position' => array( 'left', 'right' ) ),
+			)
+		);
+
+		$this->add_control(
+			'sidebar_background',
+			array(
+				'label'     => __( 'Panel background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .om-filter-panel-body' => 'background-color: {{VALUE}}; padding: 24px;',
+				),
+				'condition' => array( 'filter_position' => array( 'left', 'right' ) ),
+			)
+		);
+
+		$this->add_control(
+			'sidebar_heading_color',
+			array(
+				'label'     => __( 'Group heading color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array(
+					'{{WRAPPER}} .om-filter-heading, {{WRAPPER}} .om-filter-panel-title, {{WRAPPER}} .om-filter-select-label' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'sidebar_heading_typography',
+				'label'    => __( 'Group heading typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-filter-heading, {{WRAPPER}} .om-filter-select-label',
+			)
+		);
+
+		$this->add_control(
+			'sidebar_link_color',
+			array(
+				'label'     => __( 'Option color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => array(
+					'{{WRAPPER}} .om-filter-link, {{WRAPPER}} .om-filter-nav' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'sidebar_link_hover',
+			array(
+				'label'     => __( 'Option hover color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .om-filter-link:hover' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_control(
+			'sidebar_link_active',
+			array(
+				'label'     => __( 'Selected option color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .om-filter-link.is-active' => 'color: {{VALUE}};',
+					'{{WRAPPER}} .om-filter-link.is-active::before' => 'border-color: {{VALUE}}; background-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'sidebar_link_typography',
+				'label'    => __( 'Option typography', 'om-catalog' ),
+				'selector' => '{{WRAPPER}} .om-filter-link, {{WRAPPER}} .om-filter-nav',
+			)
+		);
+
+		$this->add_responsive_control(
+			'sidebar_group_spacing',
+			array(
+				'label'      => __( 'Space between groups', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 80 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-filter-group + .om-filter-group' => 'margin-top: {{SIZE}}{{UNIT}}; padding-top: {{SIZE}}{{UNIT}};',
+				),
+				'condition'  => array( 'filter_position' => array( 'left', 'right' ) ),
+			)
+		);
+
+		$this->add_control(
+			'sidebar_divider_color',
+			array(
+				'label'     => __( 'Divider & field border color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .om-filter-group + .om-filter-group, {{WRAPPER}} .om-filter-panel-head' => 'border-color: {{VALUE}};',
+					'{{WRAPPER}} .om-filter-nav' => 'border-color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->end_controls_section();
+
 		$this->start_controls_section(
 			'section_style_pagination',
 			array(
@@ -826,35 +1074,41 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			$lines = array_values( array_unique( array_merge( $lines, $settings['extra_lines'] ) ) );
 		}
 
-		// Each line's Collections picks, encoded for the shortcode as
-		// "line:val|val;line2:val" (values themselves can contain commas).
+		// Each line's Collections picks.
 		$line_styles = array();
 		foreach ( $lines as $code ) {
 			$selected = $settings[ self::collection_control_key( $code ) ] ?? array();
 			if ( is_array( $selected ) && ! empty( $selected ) ) {
-				$line_styles[] = $code . ':' . implode( '|', $selected );
+				$line_styles[ $code ] = array_values( $selected );
 			}
 		}
 
-		// inline_columns="no": the responsive Columns control owns the column
-		// count via CSS, so the shortcode must not print an inline --om-columns
-		// (an inline custom property would beat Elementor's breakpoint CSS).
-		echo do_shortcode(
-			sprintf(
-				'[om_catalog lines="%s" line_styles="%s" layout="%s" filter_style="%s" show_filters="%s" per_page="%s" style="%s" set="%s" shape="%s" in_stock="%s" include="%s" exclude="%s" inline_columns="no"]',
-				esc_attr( implode( ',', $lines ) ),
-				esc_attr( implode( ';', $line_styles ) ),
-				esc_attr( $settings['layout'] ),
-				esc_attr( $settings['filter_style'] ),
-				esc_attr( $settings['show_filter_bar'] ),
-				esc_attr( $settings['per_page'] ),
-				esc_attr( preg_replace( '/\s+/', ' ', (string) $settings['collection_filter'] ) ),
-				esc_attr( $settings['set_filter'] ),
-				esc_attr( $settings['shape_filter'] ),
-				esc_attr( $settings['in_stock_only'] ),
-				esc_attr( preg_replace( '/\s+/', ' ', (string) $settings['include_styles'] ) ),
-				esc_attr( preg_replace( '/\s+/', ' ', (string) $settings['exclude_styles'] ) )
-			)
+		// Rendered directly rather than through a [om_catalog] string: values
+		// escaped into shortcode attributes came back as "Men&#039;s" /
+		// "Halo &amp; Pave" and broke the API filter.
+		$atts = array(
+			'lines'           => implode( ',', $lines ),
+			'line_styles'     => $line_styles,
+			'layout'          => (string) $settings['layout'],
+			'filter_style'    => (string) $settings['filter_style'],
+			'filter_position' => (string) ( $settings['filter_position'] ?? 'top' ),
+			'show_filters'    => (string) $settings['show_filter_bar'],
+			'filter_shapes'   => (string) ( $settings['filter_shapes'] ?? '' ),
+			'shape_options'   => (string) ( $settings['shape_options'] ?? '' ),
+			'filter_metals'   => (string) ( $settings['filter_metals'] ?? '' ),
+			'filters_title'   => (string) ( $settings['filters_title'] ?? '' ),
+			'show_count'      => (string) ( $settings['show_count'] ?? 'yes' ),
+			'per_page'        => '' !== (string) $settings['per_page'] ? (int) $settings['per_page'] : 12,
+			'style'           => trim( preg_replace( '/\s+/', ' ', (string) $settings['collection_filter'] ) ),
+			'set'             => trim( (string) $settings['set_filter'] ),
+			'shape'           => trim( (string) $settings['shape_filter'] ),
+			'in_stock'        => (string) $settings['in_stock_only'],
+			'include'         => trim( preg_replace( '/\s+/', ' ', (string) $settings['include_styles'] ) ),
+			'exclude'         => trim( preg_replace( '/\s+/', ' ', (string) $settings['exclude_styles'] ) ),
+			// The responsive Columns control owns the column count via CSS.
+			'inline_columns'  => 'no',
 		);
+
+		echo OM_Shortcodes::instance()->render_grid( $atts, OM_Shortcodes::request_from_globals() ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 	}
 }

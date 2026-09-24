@@ -5,6 +5,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once OM_CATALOG_DIR . 'includes/functions-pricing.php';
 
+/**
+ * Public, read-only endpoints for the catalog: re-rendering a grid for a
+ * clicked filter/page link, and re-quoting a product configuration.
+ *
+ * Neither checks a nonce. Both only read public catalog data, and a nonce
+ * baked into a page that a cache serves for more than 12-24 hours would
+ * expire and break filtering/pricing for every visitor. Abuse is limited
+ * instead by what the endpoints accept: the grid endpoint only renders
+ * attribute sets signed by this site, visitor filter values are checked
+ * against the offered options, and quotes are cached per configuration.
+ */
 class OM_Ajax {
 
 	private static $instance = null;
@@ -26,32 +37,31 @@ class OM_Ajax {
 	/**
 	 * Re-render a catalog block for a clicked filter/pagination link, so the
 	 * grid updates without a page reload. The client sends the block's own
-	 * attributes (from its data-om-atts) and the clicked link's URL; the
-	 * visitor state is parsed out of that URL, exactly as a full page load
-	 * would read it from the query string.
+	 * attributes and their signature (from data-om-atts / data-om-sig) plus
+	 * the clicked link's URL; the visitor state is parsed out of that URL,
+	 * exactly as a full page load would read it from the query string.
 	 */
 	public function handle_filter_grid() {
-		check_ajax_referer( 'om_catalog_nonce', 'nonce' );
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- public read-only endpoint, see class doc.
+		$json = isset( $_POST['atts'] ) ? (string) wp_unslash( $_POST['atts'] ) : '';
+		$sig  = isset( $_POST['sig'] ) ? (string) wp_unslash( $_POST['sig'] ) : '';
+		$url  = isset( $_POST['url'] ) ? esc_url_raw( wp_unslash( $_POST['url'] ) ) : '';
+		// phpcs:enable
 
-		$atts = json_decode( isset( $_POST['atts'] ) ? wp_unslash( $_POST['atts'] ) : '', true );
-		if ( ! is_array( $atts ) ) {
-			$atts = array();
+		if ( '' === $json || ! hash_equals( OM_Shortcodes::sign_atts( $json ), $sig ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid catalog block.' ), 400 );
 		}
-		$atts = array_map( 'sanitize_text_field', array_filter( $atts, 'is_scalar' ) );
-
-		$url = isset( $_POST['url'] ) ? esc_url_raw( wp_unslash( $_POST['url'] ) ) : '';
-		if ( '' === $url ) {
-			wp_send_json_error( array( 'message' => 'Missing target URL.' ) );
+		$atts = json_decode( $json, true );
+		if ( ! is_array( $atts ) || '' === $url ) {
+			wp_send_json_error( array( 'message' => 'Invalid request.' ), 400 );
 		}
 
 		$query = array();
 		parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
 
-		$request = array(
-			'page'     => isset( $query['om_page'] ) ? max( 1, absint( $query['om_page'] ) ) : 1,
-			'style'    => isset( $query['om_style'] ) ? sanitize_text_field( $query['om_style'] ) : '',
-			'line'     => isset( $query['om_line'] ) ? sanitize_title( $query['om_line'] ) : '',
-			'base_url' => remove_query_arg( array( 'om_style', 'om_page', 'om_line' ), $url ),
+		$request = OM_Shortcodes::request_from_query(
+			$query,
+			remove_query_arg( array( 'om_style', 'om_page', 'om_line', 'om_shape', 'om_metal' ), $url )
 		);
 
 		wp_send_json_success(
@@ -62,27 +72,21 @@ class OM_Ajax {
 	}
 
 	public function handle_get_quote() {
-		check_ajax_referer( 'om_catalog_nonce', 'nonce' );
-
 		// No markup configured: never expose wholesale pricing. Don't even
 		// call the quotation endpoint.
 		if ( ! om_markup_is_configured() ) {
-			wp_send_json_success(
-				array(
-					'price_formatted' => om_price_placeholder(),
-					'price_raw'       => null,
-				)
-			);
+			wp_send_json_error( array( 'message' => 'Pricing is not enabled.' ) );
 		}
 
-		$line          = isset( $_POST['line'] ) ? sanitize_title( wp_unslash( $_POST['line'] ) ) : '';
-		$style_number  = isset( $_POST['styleNumber'] ) ? sanitize_text_field( wp_unslash( $_POST['styleNumber'] ) ) : '';
-		$metal         = isset( $_POST['metal'] ) ? sanitize_text_field( wp_unslash( $_POST['metal'] ) ) : '';
-		$color         = isset( $_POST['color'] ) ? sanitize_text_field( wp_unslash( $_POST['color'] ) ) : '';
-		$level         = isset( $_POST['level'] ) ? sanitize_text_field( wp_unslash( $_POST['level'] ) ) : '';
-		$quality       = isset( $_POST['quality'] ) ? sanitize_text_field( wp_unslash( $_POST['quality'] ) ) : '';
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- public read-only endpoint, see class doc.
+		$field = function ( $key ) {
+			return isset( $_POST[ $key ] ) && is_scalar( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '';
+		};
+		$line         = sanitize_title( $field( 'line' ) );
+		$style_number = $field( 'styleNumber' );
+		// phpcs:enable
 
-		if ( empty( $line ) || empty( $style_number ) ) {
+		if ( '' === $line || '' === $style_number ) {
 			wp_send_json_error( array( 'message' => 'Missing product reference.' ) );
 		}
 
@@ -91,17 +95,16 @@ class OM_Ajax {
 			array_filter(
 				array(
 					'styleNumber' => $style_number,
-					'metal'       => $metal,
-					'color'       => $color,
-					'level'       => $level,
-					'quality'     => $quality,
+					'metal'       => $field( 'metal' ),
+					'color'       => $field( 'color' ),
+					'level'       => $field( 'level' ),
+					'quality'     => $field( 'quality' ),
 				)
 			)
 		);
 
 		if ( is_wp_error( $quote ) || ! isset( $quote['price'] ) ) {
-			$message = is_wp_error( $quote ) ? $quote->get_error_message() : 'No price returned.';
-			wp_send_json_error( array( 'message' => $message ) );
+			wp_send_json_error( array( 'message' => is_wp_error( $quote ) ? $quote->get_error_message() : 'No price returned.' ) );
 		}
 
 		$retail = om_apply_markup( floatval( $quote['price'] ) );
@@ -110,6 +113,14 @@ class OM_Ajax {
 			array(
 				'price_formatted' => om_format_price( $retail ),
 				'price_raw'       => $retail,
+				// The configuration OM actually priced (e.g. Platinum forces
+				// White), so the dropdowns can be synced to match.
+				'config'          => array(
+					'metal'   => (string) ( $quote['metal'] ?? '' ),
+					'color'   => (string) ( $quote['color'] ?? '' ),
+					'level'   => (string) ( $quote['level'] ?? '' ),
+					'quality' => (string) ( $quote['quality'] ?? '' ),
+				),
 			)
 		);
 	}

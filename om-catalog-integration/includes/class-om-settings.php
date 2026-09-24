@@ -18,6 +18,13 @@ class OM_Settings {
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_notices', array( $this, 'maybe_show_markup_notice' ) );
+
+		// New credentials take effect immediately: drop the cached token and
+		// any remembered login failure.
+		foreach ( array( 'om_client_id', 'om_client_secret' ) as $option ) {
+			add_action( 'add_option_' . $option, array( 'OM_API_Client', 'clear_auth_cache' ) );
+			add_action( 'update_option_' . $option, array( 'OM_API_Client', 'clear_auth_cache' ) );
+		}
 	}
 
 	public function add_settings_page() {
@@ -33,11 +40,15 @@ class OM_Settings {
 	public function register_settings() {
 		// Credentials.
 		register_setting( 'om_catalog_settings', 'om_client_id', array( 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( 'om_catalog_settings', 'om_client_secret', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_client_secret', array( 'sanitize_callback' => array( $this, 'sanitize_secret' ) ) );
 
 		// Pricing markup.
 		register_setting( 'om_catalog_settings', 'om_markup_type', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_markup_value', array( 'sanitize_callback' => array( $this, 'sanitize_float' ) ) );
+
+		// What shows instead of a price (built-in template, and the widget's default).
+		register_setting( 'om_catalog_settings', 'om_price_placeholder', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_price_link', array( 'sanitize_callback' => array( $this, 'sanitize_link' ) ) );
 
 		// Caching.
 		register_setting( 'om_catalog_settings', 'om_listing_cache_minutes', array( 'sanitize_callback' => 'absint' ) );
@@ -52,6 +63,26 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_color_text', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
 		register_setting( 'om_catalog_settings', 'om_font_heading', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_font_body', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+	}
+
+	/**
+	 * The secret is stored exactly as entered (only surrounding whitespace
+	 * trimmed): sanitize_text_field() would silently drop "%xx" sequences
+	 * and anything between < and >, corrupting a valid secret. It is never
+	 * printed back into the page, so an empty submission means "keep the
+	 * saved one".
+	 */
+	public function sanitize_secret( $value ) {
+		$value = trim( (string) $value );
+		if ( '' === $value ) {
+			return (string) get_option( 'om_client_secret', '' );
+		}
+		return $value;
+	}
+
+	/** Allow tel:, mailto: and normal URLs (esc_url_raw keeps those protocols). */
+	public function sanitize_link( $value ) {
+		return esc_url_raw( trim( (string) $value ) );
 	}
 
 	public function sanitize_float( $value ) {
@@ -81,8 +112,8 @@ class OM_Settings {
 					</tr>
 					<tr>
 						<th><label for="om_client_secret">Client Secret</label></th>
-						<td><input type="password" id="om_client_secret" name="om_client_secret" value="<?php echo esc_attr( get_option( 'om_client_secret' ) ); ?>" class="regular-text" autocomplete="off" />
-						<p class="description">Provided by Overnight Mountings. Only admins can view this page.</p></td>
+						<td><input type="password" id="om_client_secret" name="om_client_secret" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo get_option( 'om_client_secret' ) ? esc_attr__( 'Saved — leave blank to keep it', 'om-catalog' ) : ''; ?>" />
+						<p class="description">Provided by Overnight Mountings. For security the saved secret is never shown here; type a new one only to replace it.</p></td>
 					</tr>
 				</table>
 
@@ -105,6 +136,19 @@ class OM_Settings {
 							<input type="number" step="0.01" id="om_markup_value" name="om_markup_value" value="<?php echo esc_attr( get_option( 'om_markup_value', '' ) ); ?>" class="small-text" />
 							<p class="description">Percentage example: <code>120</code> means retail = wholesale &times; 2.2. Multiplier example: <code>2.2</code> means the same thing directly.</p>
 						</td>
+					</tr>
+				</table>
+
+				<h2>When no price is shown</h2>
+				<p class="description">Used by the built-in product page, and by the OM Single Product widget unless its own text/link is set. The widget can also show fully custom buttons instead.</p>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_price_placeholder">Text</label></th>
+						<td><input type="text" id="om_price_placeholder" name="om_price_placeholder" value="<?php echo esc_attr( get_option( 'om_price_placeholder', '' ) ); ?>" class="regular-text" placeholder="Call for pricing" /></td>
+					</tr>
+					<tr>
+						<th><label for="om_price_link">Link (optional)</label></th>
+						<td><input type="text" id="om_price_link" name="om_price_link" value="<?php echo esc_attr( get_option( 'om_price_link', '' ) ); ?>" class="regular-text" placeholder="tel:+12195550100 or /contact/" /></td>
 					</tr>
 				</table>
 
@@ -178,11 +222,117 @@ class OM_Settings {
 				<?php submit_button( 'Save Settings' ); ?>
 			</form>
 
+			<?php $this->render_tools(); ?>
+
 			<h2>Shortcuts</h2>
-			<p>Catalog grid shortcode: <code>[om_catalog line="engagement-rings" columns="3" per_page="12"]</code></p>
-			<p>Product lines: engagement-rings, wedding-bands, bracelets, earrings, fashion-rings, necklaces, pendants, in-stock.</p>
+			<p>Catalog grid shortcode: <code>[om_catalog line="engagement-rings" columns="3" per_page="12"]</code> &mdash; add <code>show_filters="yes" filter_position="left"</code> for a filter sidebar.</p>
+			<p>Product lines: <?php echo esc_html( implode( ', ', array_keys( OM_Shortcodes::line_labels( true ) ) ) ); ?>.</p>
 			<p>Single product pages are generated automatically at: <code><?php echo esc_html( home_url( '/catalog/{product-line}/{style-number}/' ) ); ?></code></p>
 		</div>
 		<?php
+	}
+
+	/**
+	 * "Test connection" and "Clear cache" tools. The test walks the same
+	 * path a product page does (token, product lines, one product, one
+	 * quote) and reports each step, so pricing problems can be diagnosed
+	 * without reading logs. Wholesale figures are shown to admins only.
+	 */
+	private function render_tools() {
+		$tool   = isset( $_GET['om_tool'] ) ? sanitize_key( wp_unslash( $_GET['om_tool'] ) ) : '';
+		$line   = isset( $_GET['om_test_line'] ) ? sanitize_title( wp_unslash( $_GET['om_test_line'] ) ) : 'engagement-rings';
+		$lines  = OM_Shortcodes::line_labels();
+		$result = array();
+
+		if ( $tool && check_admin_referer( 'om_catalog_tools' ) ) {
+			if ( 'clear' === $tool ) {
+				$count    = OM_API_Client::clear_all_caches();
+				$result[] = array( true, sprintf( 'Cleared %d cached entries. The next page view fetches fresh data.', $count ) );
+			} elseif ( 'test' === $tool ) {
+				$result = $this->run_connection_test( $line );
+				$lines  = OM_Shortcodes::line_labels();
+			}
+		}
+		?>
+		<h2>Tools</h2>
+		<form method="get" action="<?php echo esc_url( admin_url( 'options-general.php' ) ); ?>" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+			<input type="hidden" name="page" value="om-catalog-settings" />
+			<?php wp_nonce_field( 'om_catalog_tools', '_wpnonce', false ); ?>
+			<label for="om_test_line">Product line</label>
+			<select id="om_test_line" name="om_test_line">
+				<?php foreach ( $lines as $code => $label ) : ?>
+					<option value="<?php echo esc_attr( $code ); ?>" <?php selected( $code, $line ); ?>><?php echo esc_html( $label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<button class="button button-primary" name="om_tool" value="test">Test connection &amp; pricing</button>
+			<button class="button" name="om_tool" value="clear">Clear cache</button>
+		</form>
+		<?php if ( $result ) : ?>
+			<table class="widefat striped" style="max-width:900px;margin-top:12px">
+				<tbody>
+				<?php foreach ( $result as $row ) : ?>
+					<tr>
+						<td style="width:28px"><?php echo $row[0] ? '<span style="color:#008a20">&#10004;</span>' : '<span style="color:#d63638">&#10008;</span>'; ?></td>
+						<td><?php echo esc_html( $row[1] ); ?></td>
+					</tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
+		<?php endif; ?>
+		<?php
+	}
+
+	/** @return array[] Rows of [ ok (bool), message ]. */
+	private function run_connection_test( $line ) {
+		$rows = array();
+
+		OM_API_Client::clear_auth_cache();
+		$token = OM_API_Client::get_token();
+		if ( is_wp_error( $token ) ) {
+			$rows[] = array( false, 'Login to Overnight Mountings failed: ' . $token->get_error_message() );
+			return $rows;
+		}
+		$rows[] = array( true, 'Logged in to Overnight Mountings (access token received).' );
+
+		delete_transient( OM_API_Client::LINES_TRANSIENT );
+		$lines = OM_API_Client::get_product_lines_map( true );
+		$rows[] = $lines
+			? array( true, 'Product lines from OM: ' . implode( ', ', array_keys( $lines ) ) )
+			: array( false, 'Could not read the product-line list (GET /products/metadata).' );
+		if ( $lines && ! isset( $lines[ $line ] ) ) {
+			$rows[] = array( false, sprintf( '"%s" is not one of OM\'s product lines, so a widget set to it will show nothing.', $line ) );
+		}
+
+		$list = OM_API_Client::get_products( $line, array( 'limit' => 1 ) );
+		if ( is_wp_error( $list ) || empty( $list['products'][0] ) ) {
+			$rows[] = array( false, 'Listing "' . $line . '" failed: ' . ( is_wp_error( $list ) ? $list->get_error_message() : 'no products returned.' ) );
+			return $rows;
+		}
+		$product = $list['products'][0];
+		$rows[]  = array( true, sprintf( 'Listing "%s": %s products. First: %s (style %s).', $line, number_format_i18n( (int) ( $list['total_count'] ?? 0 ) ), $product['title'] ?? '?', $product['style_number'] ?? '?' ) );
+
+		$quote = OM_API_Client::get_quotation(
+			$line,
+			array_filter(
+				array(
+					'styleNumber' => $product['style_number'] ?? '',
+					'metal'       => $product['default_metal'] ?? '',
+					'color'       => $product['default_color'] ?? '',
+					'level'       => $product['default_level'] ?? '',
+					'quality'     => $product['default_quality'] ?? '',
+				)
+			)
+		);
+		if ( is_wp_error( $quote ) || ! isset( $quote['price'] ) ) {
+			$rows[] = array( false, 'Quote failed: ' . ( is_wp_error( $quote ) ? $quote->get_error_message() : 'no price in the response.' ) );
+			return $rows;
+		}
+		$wholesale = floatval( $quote['price'] );
+		$rows[]    = array( true, sprintf( 'Quote OK: wholesale %s (%s %s, %s).', om_format_price( $wholesale ), $quote['metal'] ?? '', $quote['color'] ?? '', $quote['level'] ?? '' ) );
+		$rows[]    = om_markup_is_configured()
+			? array( true, sprintf( 'Visitors see %s (markup applied). Prices are live on the site.', om_format_price( om_apply_markup( $wholesale ) ) ) )
+			: array( false, 'No markup is set, so visitors see the "no price" text/buttons instead of prices. Set a markup above to show prices.' );
+
+		return $rows;
 	}
 }

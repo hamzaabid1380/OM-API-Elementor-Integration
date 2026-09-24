@@ -35,10 +35,64 @@ class OM_Rewrites {
 	private function __construct() {
 		add_action( 'init', array( $this, 'register_rules' ) );
 		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
+		add_action( 'parse_query', array( $this, 'mark_product_query' ) );
+		add_filter( 'posts_pre_query', array( $this, 'skip_posts_query' ), 10, 2 );
 		add_filter( 'pre_handle_404', array( $this, 'handle_status' ), 10, 2 );
-		add_filter( 'pre_get_document_title', array( $this, 'product_document_title' ) );
+		// Late, so an SEO plugin's generic title doesn't replace the product's.
+		add_filter( 'pre_get_document_title', array( $this, 'product_document_title' ), 99 );
+		add_filter( 'wp_robots', array( $this, 'product_robots' ) );
 		add_action( 'wp_head', array( $this, 'product_meta_tags' ), 5 );
+		add_action( 'template_redirect', array( $this, 'protect_layout_page' ) );
 		add_filter( 'template_include', array( $this, 'maybe_load_product_template' ) );
+	}
+
+	/**
+	 * A request that only carries our query vars would otherwise be flagged
+	 * as the blog home page (is_home), so themes, Elementor Pro's theme
+	 * builder and SEO plugins would treat every product URL as the blog —
+	 * blog titles, homepage canonical/OG tags, archive templates.
+	 */
+	public function mark_product_query( $query ) {
+		if ( $query->is_main_query() && '' !== (string) $query->get( 'om_style_number' ) ) {
+			$query->is_home       = false;
+			$query->is_front_page = false;
+		}
+	}
+
+	/** Product URLs don't list posts; skip the pointless latest-posts query. */
+	public function skip_posts_query( $posts, $query ) {
+		if ( $query->is_main_query() && '' !== (string) $query->get( 'om_style_number' ) ) {
+			$query->found_posts   = 0;
+			$query->max_num_pages = 0;
+			return array();
+		}
+		return $posts;
+	}
+
+	/** Keep "not found" product URLs out of search results. */
+	public function product_robots( $robots ) {
+		if ( $this->is_product_request() ) {
+			$this->ensure_product_loaded();
+			if ( ! $this->current_product || is_wp_error( $this->current_product ) ) {
+				$robots['noindex'] = true;
+				$robots['follow']  = true;
+			}
+		}
+		return $robots;
+	}
+
+	/**
+	 * The page chosen as the product layout is a design template, not a
+	 * page for visitors: editors can open it (and Elementor can preview
+	 * it), everyone else is sent to the home page.
+	 */
+	public function protect_layout_page() {
+		$layout_id = (int) get_option( 'om_product_layout_page', 0 );
+		if ( ! $layout_id || ! is_page( $layout_id ) || current_user_can( 'edit_post', $layout_id ) ) {
+			return;
+		}
+		wp_safe_redirect( home_url( '/' ), 302 );
+		exit;
 	}
 
 	public function register_rules() {
@@ -142,11 +196,13 @@ class OM_Rewrites {
 		$title   = isset( $product['title'] ) ? $product['title'] : '';
 		$desc    = ! empty( $product['description'] )
 			? wp_strip_all_tags( $product['description'] )
-			: sprintf( '%s from Wulf Diamond Jewelers. Style %s.', $title, $this->current_style );
+			/* translators: 1: product title, 2: site name, 3: style number. */
+			: sprintf( __( '%1$s from %2$s. Style %3$s.', 'om-catalog' ), $title, get_bloginfo( 'name' ), $this->current_style );
 		$desc    = mb_substr( $desc, 0, 160 );
 		$image   = ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '';
 		$url     = om_product_url( $this->current_line, $this->current_style );
 
+		echo '<link rel="canonical" href="' . esc_url( $url ) . '" />' . "\n";
 		echo '<meta name="description" content="' . esc_attr( $desc ) . '" />' . "\n";
 		echo '<meta property="og:type" content="product" />' . "\n";
 		echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";

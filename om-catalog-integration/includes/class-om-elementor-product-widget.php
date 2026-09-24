@@ -6,6 +6,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Elementor\Widget_Base;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Typography;
+use Elementor\Group_Control_Border;
+use Elementor\Icons_Manager;
 use Elementor\Repeater;
 
 require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
@@ -77,7 +79,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 				'label'   => __( 'Preview product line', 'om-catalog' ),
 				'type'    => Controls_Manager::SELECT,
 				'default' => 'engagement-rings',
-				'options' => OM_Shortcodes::line_labels(),
+				'options' => OM_Shortcodes::line_labels( is_admin() ),
 			)
 		);
 
@@ -127,31 +129,62 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->start_controls_section(
 			'section_actions',
 			array(
-				'label' => __( 'Price & Actions', 'om-catalog' ),
+				'label' => __( 'Price & Buttons', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'price_display',
+			array(
+				'label'       => __( 'Price', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'auto',
+				'options'     => array(
+					'auto'  => __( 'Show the live price when available', 'om-catalog' ),
+					'never' => __( 'Never show prices', 'om-catalog' ),
+				),
+				'description' => __( 'Live prices need a markup under Settings > OM Catalog. Until then (or if a quote fails) the option below shows instead.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'price_fallback',
+			array(
+				'label'   => __( 'When no price is shown', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'text',
+				'options' => array(
+					'text'    => __( 'Show text (e.g. "Call for pricing")', 'om-catalog' ),
+					'buttons' => __( 'Show the buttons in its place', 'om-catalog' ),
+					'none'    => __( 'Show nothing', 'om-catalog' ),
+				),
 			)
 		);
 
 		$this->add_control(
 			'price_placeholder_text',
 			array(
-				'label'       => __( '"Call for pricing" text', 'om-catalog' ),
+				'label'       => __( 'Text', 'om-catalog' ),
 				'type'        => Controls_Manager::TEXT,
 				'placeholder' => __( 'Call for pricing', 'om-catalog' ),
-				'description' => __( 'Shown in place of the price while no markup is configured. Once a markup is set, real prices show instead.', 'om-catalog' ),
+				'condition'   => array( 'price_fallback' => 'text' ),
 			)
 		);
 
 		$this->add_control(
 			'price_placeholder_link',
 			array(
-				'label'       => __( '"Call for pricing" link (optional)', 'om-catalog' ),
+				'label'       => __( 'Text link (optional)', 'om-catalog' ),
 				'type'        => Controls_Manager::URL,
 				'placeholder' => 'tel:+12195550100 or /contact/',
-				'description' => __( 'Makes the text clickable, e.g. tel:, mailto: or a contact page.', 'om-catalog' ),
+				'condition'   => array( 'price_fallback' => 'text' ),
 			)
 		);
 
 		$repeater = new Repeater();
+
+		$repeater->start_controls_tabs( 'button_tabs' );
+		$repeater->start_controls_tab( 'button_tab_content', array( 'label' => __( 'Content', 'om-catalog' ) ) );
 
 		$repeater->add_control(
 			'button_text',
@@ -185,15 +218,142 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			)
 		);
 
+		$repeater->add_control(
+			'button_show',
+			array(
+				'label'   => __( 'Show', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'always',
+				'options' => array(
+					'always'     => __( 'Always', 'om-catalog' ),
+					'no_price'   => __( 'Only when no price is shown', 'om-catalog' ),
+					'with_price' => __( 'Only when a price is shown', 'om-catalog' ),
+				),
+			)
+		);
+
+		$repeater->add_control(
+			'button_icon',
+			array(
+				'label'       => __( 'Icon', 'om-catalog' ),
+				'type'        => Controls_Manager::ICONS,
+				'skin'        => 'inline',
+				'label_block' => false,
+			)
+		);
+
+		$repeater->add_control(
+			'button_icon_position',
+			array(
+				'label'     => __( 'Icon position', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'before',
+				'options'   => array(
+					'before' => __( 'Before text', 'om-catalog' ),
+					'after'  => __( 'After text', 'om-catalog' ),
+				),
+				'condition' => array( 'button_icon[value]!' => '' ),
+			)
+		);
+
+		$repeater->end_controls_tab();
+		$repeater->start_controls_tab( 'button_tab_colors', array( 'label' => __( 'Colors', 'om-catalog' ) ) );
+
+		$repeater->add_control(
+			'button_custom_note',
+			array(
+				'type'            => Controls_Manager::RAW_HTML,
+				'raw'             => __( 'Optional: overrides the shared button colors (Style tab) for this button only.', 'om-catalog' ),
+				'content_classes' => 'elementor-descriptor',
+			)
+		);
+
+		$item_colors = array(
+			'item_bg'          => array( __( 'Background', 'om-catalog' ), 'background-color: {{VALUE}};', '' ),
+			'item_color'       => array( __( 'Text', 'om-catalog' ), 'color: {{VALUE}};', '' ),
+			'item_border'      => array( __( 'Border', 'om-catalog' ), 'border-color: {{VALUE}};', '' ),
+			'item_hover_bg'    => array( __( 'Hover background', 'om-catalog' ), 'background-color: {{VALUE}};', ':hover' ),
+			'item_hover_color' => array( __( 'Hover text', 'om-catalog' ), 'color: {{VALUE}};', ':hover' ),
+			'item_hover_border' => array( __( 'Hover border', 'om-catalog' ), 'border-color: {{VALUE}};', ':hover' ),
+		);
+		foreach ( $item_colors as $key => $def ) {
+			$repeater->add_control(
+				$key,
+				array(
+					'label'     => $def[0],
+					'type'      => Controls_Manager::COLOR,
+					'selectors' => array(
+						'{{WRAPPER}} .om-single-product .om-actions {{CURRENT_ITEM}}.om-btn' . $def[2] => $def[1],
+					),
+				)
+			);
+		}
+
+		$repeater->end_controls_tab();
+		$repeater->end_controls_tabs();
+
 		$this->add_control(
 			'action_buttons',
 			array(
-				'label'       => __( 'Action buttons', 'om-catalog' ),
+				'label'       => __( 'Buttons', 'om-catalog' ),
 				'type'        => Controls_Manager::REPEATER,
 				'fields'      => $repeater->get_controls(),
 				'default'     => array(),
 				'title_field' => '{{{ button_text }}}',
-				'description' => __( 'Inline buttons under the price — e.g. Call Us, Book an Appointment, Ask About This Ring. Looks best with 2-3.', 'om-catalog' ),
+				'separator'   => 'before',
+				'description' => __( 'E.g. Call Us, Book an Appointment, Ask About This Ring. Each can show always, only when there is no price, or only with a price.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'buttons_position',
+			array(
+				'label'   => __( 'Buttons position', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'price',
+				'options' => array(
+					'price'             => __( 'Under the price', 'om-catalog' ),
+					'after_description' => __( 'After the description', 'om-catalog' ),
+					'after_options'     => __( 'After the metal / color options', 'om-catalog' ),
+				),
+				'description' => __( 'When "Show the buttons in its place" applies, they sit where the price would be.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'buttons_layout',
+			array(
+				'label'   => __( 'Arrangement', 'om-catalog' ),
+				'type'    => Controls_Manager::CHOOSE,
+				'default' => 'inline',
+				'toggle'  => false,
+				'options' => array(
+					'inline'  => array( 'title' => __( 'Side by side', 'om-catalog' ), 'icon' => 'eicon-ellipsis-h' ),
+					'stacked' => array( 'title' => __( 'Stacked', 'om-catalog' ), 'icon' => 'eicon-ellipsis-v' ),
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'buttons_align',
+			array(
+				'label'                => __( 'Alignment', 'om-catalog' ),
+				'type'                 => Controls_Manager::CHOOSE,
+				'options'              => array(
+					'start'   => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-h-align-left' ),
+					'center'  => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-h-align-center' ),
+					'end'     => array( 'title' => __( 'Right', 'om-catalog' ), 'icon' => 'eicon-h-align-right' ),
+					'stretch' => array( 'title' => __( 'Full width', 'om-catalog' ), 'icon' => 'eicon-h-align-stretch' ),
+				),
+				'selectors_dictionary' => array(
+					'start'   => '--om-btn-justify: flex-start; --om-btn-grow: 0; --om-btn-align: flex-start;',
+					'center'  => '--om-btn-justify: center; --om-btn-grow: 0; --om-btn-align: center;',
+					'end'     => '--om-btn-justify: flex-end; --om-btn-grow: 0; --om-btn-align: flex-end;',
+					'stretch' => '--om-btn-justify: stretch; --om-btn-grow: 1; --om-btn-align: stretch;',
+				),
+				'selectors'            => array(
+					'{{WRAPPER}} .om-actions' => '{{VALUE}}',
+				),
 			)
 		);
 
@@ -262,7 +422,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->start_controls_section(
 			'section_style_buttons',
 			array(
-				'label' => __( 'Action Buttons', 'om-catalog' ),
+				'label' => __( 'Buttons', 'om-catalog' ),
 				'tab'   => Controls_Manager::TAB_STYLE,
 			)
 		);
@@ -271,62 +431,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			Group_Control_Typography::get_type(),
 			array(
 				'name'     => 'buttons_typography',
-				'selector' => '{{WRAPPER}} .om-btn',
-			)
-		);
-
-		$this->add_control(
-			'btn_solid_bg',
-			array(
-				'label'     => __( 'Solid: background', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'selectors' => array(
-					'{{WRAPPER}} .om-btn--solid' => 'background-color: {{VALUE}}; border-color: {{VALUE}};',
-				),
-			)
-		);
-
-		$this->add_control(
-			'btn_solid_color',
-			array(
-				'label'     => __( 'Solid: text', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'selectors' => array(
-					'{{WRAPPER}} .om-btn--solid' => 'color: {{VALUE}};',
-				),
-			)
-		);
-
-		$this->add_control(
-			'btn_outline_color',
-			array(
-				'label'     => __( 'Outline / text link: color', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'selectors' => array(
-					'{{WRAPPER}} .om-btn--outline, {{WRAPPER}} .om-btn--text' => 'color: {{VALUE}}; border-color: {{VALUE}};',
-				),
-			)
-		);
-
-		$this->add_control(
-			'btn_hover_bg',
-			array(
-				'label'     => __( 'Hover background', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'selectors' => array(
-					'{{WRAPPER}} .om-btn--solid:hover, {{WRAPPER}} .om-btn--outline:hover' => 'background-color: {{VALUE}}; border-color: {{VALUE}};',
-				),
-			)
-		);
-
-		$this->add_control(
-			'btn_hover_color',
-			array(
-				'label'     => __( 'Hover text', 'om-catalog' ),
-				'type'      => Controls_Manager::COLOR,
-				'selectors' => array(
-					'{{WRAPPER}} .om-btn:hover' => 'color: {{VALUE}};',
-				),
+				'selector' => '{{WRAPPER}} .om-single-product .om-btn',
 			)
 		);
 
@@ -337,7 +442,58 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 				'type'       => Controls_Manager::DIMENSIONS,
 				'size_units' => array( 'px', 'em' ),
 				'selectors'  => array(
-					'{{WRAPPER}} .om-btn' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					'{{WRAPPER}} .om-single-product .om-btn' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'btn_min_height',
+			array(
+				'label'      => __( 'Minimum height', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 24, 'max' => 90 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-single-product .om-btn' => 'min-height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'btn_min_width',
+			array(
+				'label'      => __( 'Minimum width', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 400 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-single-product .om-btn' => 'min-width: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'btn_radius',
+			array(
+				'label'      => __( 'Corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px', '%' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-single-product .om-btn' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'btn_stroke_width',
+			array(
+				'label'      => __( 'Border width', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 6 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-single-product .om-btn--solid, {{WRAPPER}} .om-single-product .om-btn--outline' => 'border-width: {{SIZE}}{{UNIT}};',
 				),
 			)
 		);
@@ -345,12 +501,122 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->add_responsive_control(
 			'btn_gap',
 			array(
-				'label'     => __( 'Gap', 'om-catalog' ),
+				'label'     => __( 'Space between buttons', 'om-catalog' ),
 				'type'      => Controls_Manager::SLIDER,
 				'range'     => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
 				'selectors' => array(
 					'{{WRAPPER}} .om-actions' => 'gap: {{SIZE}}{{UNIT}};',
 				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'btn_group_margin',
+			array(
+				'label'      => __( 'Button group margin', 'om-catalog' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => array( 'px' ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-actions' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'btn_icon_size',
+			array(
+				'label'      => __( 'Icon size', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 8, 'max' => 40 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-btn-icon' => 'font-size: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .om-btn-icon svg' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'btn_icon_spacing',
+			array(
+				'label'      => __( 'Icon spacing', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 30 ) ),
+				'selectors'  => array(
+					'{{WRAPPER}} .om-single-product .om-btn' => 'gap: {{SIZE}}{{UNIT}};',
+				),
+			)
+		);
+
+		$this->start_controls_tabs( 'btn_color_tabs', array( 'separator' => 'before' ) );
+
+		foreach ( array( 'normal' => __( 'Normal', 'om-catalog' ), 'hover' => __( 'Hover', 'om-catalog' ) ) as $state => $state_label ) {
+			$this->start_controls_tab( 'btn_tab_' . $state, array( 'label' => $state_label ) );
+			$pseudo = 'hover' === $state ? ':hover' : '';
+			$prefix = 'hover' === $state ? 'btn_hover_' : 'btn_';
+			$defs   = array(
+				// Keep the 1.1 control ids so saved designs carry over.
+				( 'hover' === $state ? 'btn_hover_bg' : 'btn_solid_bg' )      => array( __( 'Solid: background', 'om-catalog' ), '.om-btn--solid', 'background-color: {{VALUE}}; border-color: {{VALUE}};' ),
+				( 'hover' === $state ? 'btn_hover_color' : 'btn_solid_color' ) => array( __( 'Solid: text', 'om-catalog' ), '.om-btn--solid', 'color: {{VALUE}};' ),
+				$prefix . 'outline_text'                                        => array( __( 'Outline: text', 'om-catalog' ), '.om-btn--outline', 'color: {{VALUE}};' ),
+				$prefix . 'outline_border'                                      => array( __( 'Outline: border', 'om-catalog' ), '.om-btn--outline', 'border-color: {{VALUE}};' ),
+				$prefix . 'outline_bg'                                          => array( __( 'Outline: background', 'om-catalog' ), '.om-btn--outline', 'background-color: {{VALUE}};' ),
+				( 'hover' === $state ? 'btn_hover_link' : 'btn_outline_color' ) => array( __( 'Text link: color', 'om-catalog' ), '.om-btn--text', 'color: {{VALUE}};' ),
+			);
+			foreach ( $defs as $id => $def ) {
+				$this->add_control(
+					$id,
+					array(
+						'label'     => $def[0],
+						'type'      => Controls_Manager::COLOR,
+						'selectors' => array(
+							'{{WRAPPER}} .om-single-product ' . $def[1] . $pseudo => $def[2],
+						),
+					)
+				);
+			}
+			$this->end_controls_tab();
+		}
+
+		$this->end_controls_tabs();
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			array(
+				'name'      => 'btn_border',
+				'label'     => __( 'Border (overrides style)', 'om-catalog' ),
+				'selector'  => '{{WRAPPER}} .om-single-product .om-btn',
+				'separator' => 'before',
+			)
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_fallback',
+			array(
+				'label' => __( 'No-price Text', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'fallback_color',
+			array(
+				'label'     => __( 'Color', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array(
+					'{{WRAPPER}} .om-price-fallback, {{WRAPPER}} .om-price-fallback a' => 'color: {{VALUE}};',
+				),
+			)
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			array(
+				'name'     => 'fallback_typography',
+				'selector' => '{{WRAPPER}} .om-price-fallback',
 			)
 		);
 
@@ -464,7 +730,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 
 		if ( ! $product || is_wp_error( $product ) ) {
 			echo '<div class="om-error"><p>' . esc_html(
-				is_wp_error( $product ) ? $product->get_error_message() : __( 'No product to display. Check API credentials in Settings > OM Catalog.', 'om-catalog' )
+				is_wp_error( $product ) ? om_public_error_message( $product ) : __( 'No product to display. Check API credentials in Settings > OM Catalog.', 'om-catalog' )
 			) . '</p></div>';
 			return;
 		}
@@ -473,6 +739,9 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		foreach ( array( 'show_gallery', 'show_line_label', 'show_title', 'show_meta', 'show_price', 'show_description', 'show_options', 'show_stones', 'show_variants' ) as $key ) {
 			$args[ $key ] = 'yes' === ( $settings[ $key ] ?? 'yes' );
 		}
+
+		$args['price_display']  = 'never' === ( $settings['price_display'] ?? 'auto' ) ? 'never' : 'auto';
+		$args['price_fallback'] = in_array( $settings['price_fallback'] ?? 'text', array( 'text', 'buttons', 'none' ), true ) ? $settings['price_fallback'] : 'text';
 
 		$args['price_placeholder'] = (string) ( $settings['price_placeholder_text'] ?? '' );
 
@@ -487,15 +756,29 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 				continue;
 			}
 			$item_link = is_array( $item['button_link'] ?? null ) ? $item['button_link'] : array();
+
+			$icon_html = '';
+			if ( ! empty( $item['button_icon']['value'] ) ) {
+				ob_start();
+				Icons_Manager::render_icon( $item['button_icon'], array( 'aria-hidden' => 'true' ) );
+				$icon_html = (string) ob_get_clean();
+			}
+
 			$buttons[] = array(
-				'text'     => $item['button_text'],
-				'url'      => (string) ( $item_link['url'] ?? '' ),
-				'external' => ! empty( $item_link['is_external'] ),
-				'nofollow' => ! empty( $item_link['nofollow'] ),
-				'style'    => $item['button_style'] ?? 'solid',
+				'text'          => $item['button_text'],
+				'url'           => (string) ( $item_link['url'] ?? '' ),
+				'external'      => ! empty( $item_link['is_external'] ),
+				'nofollow'      => ! empty( $item_link['nofollow'] ),
+				'style'         => $item['button_style'] ?? 'solid',
+				'show'          => $item['button_show'] ?? 'always',
+				'icon_html'     => $icon_html,
+				'icon_position' => $item['button_icon_position'] ?? 'before',
+				'class'         => ! empty( $item['_id'] ) ? 'elementor-repeater-item-' . $item['_id'] : '',
 			);
 		}
-		$args['buttons'] = $buttons;
+		$args['buttons']          = $buttons;
+		$args['buttons_position'] = in_array( $settings['buttons_position'] ?? 'price', array( 'price', 'after_description', 'after_options' ), true ) ? $settings['buttons_position'] : 'price';
+		$args['buttons_layout']   = 'stacked' === ( $settings['buttons_layout'] ?? 'inline' ) ? 'stacked' : 'inline';
 
 		// The extra class neutralizes the container geometry of
 		// .om-single-product (the Elementor section owns spacing here) while

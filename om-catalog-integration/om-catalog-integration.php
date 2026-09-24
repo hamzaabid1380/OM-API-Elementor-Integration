@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.1.0' );
+define( 'OM_CATALOG_VERSION', '1.2.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -39,8 +39,9 @@ add_action( 'plugins_loaded', 'om_catalog_init' );
 
 /**
  * Register front-end assets and enqueue them only where the catalog appears:
- * single product pages, and pages containing the shortcode or Elementor widget.
- * The shortcode also enqueues defensively at render time as a fallback.
+ * single product pages, and pages containing the shortcode or an OM Elementor
+ * widget. The grid also enqueues them when it renders (in a sidebar, a theme
+ * template, ...), and the Elementor widgets declare them as dependencies.
  */
 function om_catalog_enqueue_assets() {
 	wp_register_style( 'om-catalog-css', OM_CATALOG_URL . 'assets/css/om-catalog.css', array(), OM_CATALOG_VERSION );
@@ -57,7 +58,6 @@ function om_catalog_enqueue_assets() {
 		'omCatalog',
 		array(
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'nonce'   => wp_create_nonce( 'om_catalog_nonce' ),
 		)
 	);
 
@@ -112,7 +112,7 @@ function om_catalog_page_needs_assets() {
 			}
 			// Elementor stores widget data in post meta, not post_content.
 			$elementor_data = get_post_meta( $post->ID, '_elementor_data', true );
-			if ( is_string( $elementor_data ) && false !== strpos( $elementor_data, 'om_catalog' ) ) {
+			if ( is_string( $elementor_data ) && ( false !== strpos( $elementor_data, 'om_catalog' ) || false !== strpos( $elementor_data, 'om_product_widget' ) ) ) {
 				return true;
 			}
 		}
