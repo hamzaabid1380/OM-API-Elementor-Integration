@@ -107,3 +107,79 @@ function om_public_error_message( $error ) {
 	}
 	return __( 'Our catalog is temporarily unavailable. Please check back shortly.', 'om-catalog' );
 }
+
+/**
+ * Loose diamonds can carry their own markup (Settings > OM Catalog >
+ * Diamond markup); when none is set they use the jewelry markup.
+ */
+function om_diamond_markup_multiplier() {
+	$value = floatval( get_option( 'om_diamond_markup_value', 0 ) );
+	$type  = get_option( 'om_diamond_markup_type', 'multiplier' );
+	if ( $value <= 0 ) {
+		$value = floatval( get_option( 'om_markup_value', 0 ) );
+		$type  = get_option( 'om_markup_type', 'percentage' );
+	}
+	if ( $value <= 0 ) {
+		return 0.0;
+	}
+	return 'multiplier' === $type ? $value : 1 + ( $value / 100 );
+}
+
+/** Retail price of a loose diamond, or null when no markup is configured. */
+function om_diamond_retail( $wholesale ) {
+	$m = om_diamond_markup_multiplier();
+	return $m > 0 ? round( floatval( $wholesale ) * $m, 2 ) : null;
+}
+
+/**
+ * The multiplier the jewelry markup applies (e.g. 120% => 2.2). Used to
+ * turn a visitor's retail price range back into the API's terms.
+ */
+function om_markup_multiplier() {
+	$value = floatval( get_option( 'om_markup_value', 0 ) );
+	if ( $value <= 0 ) {
+		return 0.0;
+	}
+	return 'multiplier' === get_option( 'om_markup_type', 'percentage' ) ? $value : 1 + ( $value / 100 );
+}
+
+/** Format a whole-dollar price for compact spots (cards, tables): $1,188. */
+function om_format_price_short( $price ) {
+	return '$' . number_format_i18n( round( (float) $price ) );
+}
+
+/**
+ * URL of the ring builder page with builder state merged in, or '' when no
+ * builder page is configured.
+ *
+ * @param array $state rb_setting, rb_metal, rb_color, rb_diamond, rb_start ...
+ */
+function om_builder_url( $state = array() ) {
+	$page_id = (int) get_option( 'om_builder_page', 0 );
+	if ( ! $page_id || 'publish' !== get_post_status( $page_id ) ) {
+		return '';
+	}
+	$args = array();
+	foreach ( $state as $key => $value ) {
+		if ( '' !== (string) $value ) {
+			$args[ $key ] = rawurlencode( (string) $value );
+		}
+	}
+	return add_query_arg( $args, get_permalink( $page_id ) );
+}
+
+/** Product lines whose products can be chosen as ring-builder settings. */
+function om_builder_lines() {
+	$lines = array_filter( array_map( 'sanitize_title', explode( ',', (string) get_option( 'om_builder_lines', 'engagement-rings' ) ) ) );
+	return $lines ? $lines : array( 'engagement-rings' );
+}
+
+/** Make a site-relative URL ("/rings/?a=b") absolute. */
+function om_absolute_url( $url ) {
+	$url = (string) $url;
+	if ( '' === $url || preg_match( '#^https?://#i', $url ) ) {
+		return $url;
+	}
+	$home = wp_parse_url( home_url( '/' ) );
+	return ( $home['scheme'] ?? 'https' ) . '://' . ( $home['host'] ?? '' ) . ( isset( $home['port'] ) ? ':' . $home['port'] : '' ) . '/' . ltrim( $url, '/' );
+}

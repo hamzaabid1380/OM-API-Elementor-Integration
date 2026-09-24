@@ -2,8 +2,16 @@
 	'use strict';
 
 	var cfg = window.omCatalog || {};
+	document.documentElement.classList.add('om-js');
+	var i18n = cfg.i18n || {};
 
-	/* ---------- Product page: live re-quote ---------- */
+	function t(key, fallback) {
+		return i18n[key] || fallback;
+	}
+
+	/* =========================================================
+	   Product page: live re-quote
+	   ========================================================= */
 
 	var quoteSeq = 0;
 
@@ -67,28 +75,209 @@
 		});
 	});
 
-	/* ---------- Product page: gallery ---------- */
+	// Ring builder: carry the chosen metal/colour into the builder.
+	$(document).on('click', '.om-builder-btn', function () {
+		var $wrap = $(this).closest('.om-product-wrap');
+		var href = $(this).attr('data-om-builder');
+		if (!href) {
+			return;
+		}
+		try {
+			var url = new URL(href, window.location.href);
+			var metal = $wrap.find('[name="metal"]').val();
+			var color = $wrap.find('[name="color"]').val();
+			if (metal) { url.searchParams.set('rb_metal', metal); }
+			if (color) { url.searchParams.set('rb_color', color); }
+			this.href = url.toString();
+		} catch (err) { /* keep the plain link */ }
+	});
 
-	$(document).on('click', '.om-thumb', function () {
-		var src = $(this).attr('src');
-		var $gallery = $(this).closest('.om-product-gallery');
+	/* =========================================================
+	   Product page: gallery, hover zoom, videos, lightbox
+	   ========================================================= */
+
+	function showImage($gallery, src) {
 		var $main = $gallery.find('.om-main-image');
-
-		$gallery.find('.om-thumb').removeClass('is-active');
-		$(this).addClass('is-active');
-
-		// Soft cross-fade into the new angle.
+		$gallery.find('.om-main-video').prop('hidden', true).empty();
+		$gallery.find('.om-zoom').prop('hidden', false);
 		$main.css('opacity', 0);
-		$main.one('load', function () {
-			$main.css('opacity', 1);
-		});
+		$main.one('load', function () { $main.css('opacity', 1); });
 		$main.attr('src', src);
 		if ($main[0] && $main[0].complete) {
 			$main.css('opacity', 1);
 		}
+	}
+
+	$(document).on('click', '.om-thumb-btn', function () {
+		var $btn = $(this);
+		var $gallery = $btn.closest('.om-product-gallery');
+		$gallery.find('.om-thumb-btn').removeClass('is-active');
+		$btn.addClass('is-active');
+		if ($btn.attr('data-video')) {
+			$gallery.find('.om-zoom').prop('hidden', true);
+			$gallery.find('.om-main-video').html($btn.attr('data-video')).prop('hidden', false);
+		} else {
+			showImage($gallery, $btn.attr('data-full'));
+		}
 	});
 
-	/* ---------- Catalog: filters & pagination without reloads ---------- */
+	// Hover zoom on devices with a precise pointer.
+	var fineHover = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+	if (fineHover) {
+		$(document).on('mousemove', '.om-zoom', function (e) {
+			var rect = this.getBoundingClientRect();
+			var x = ((e.clientX - rect.left) / rect.width) * 100;
+			var y = ((e.clientY - rect.top) / rect.height) * 100;
+			$(this).addClass('is-zooming').find('.om-main-image').css('transform-origin', x + '% ' + y + '%');
+		}).on('mouseleave', '.om-zoom', function () {
+			$(this).removeClass('is-zooming');
+		});
+	}
+
+	var lb = null;
+
+	function lightboxImages($gallery) {
+		var list = $gallery.find('.om-thumb-btn[data-full]').map(function () { return $(this).attr('data-full'); }).get();
+		if (!list.length) {
+			list = [$gallery.find('.om-main-image').attr('src')];
+		}
+		return list;
+	}
+
+	function openLightbox(images, index, returnFocus) {
+		if (!lb) {
+			lb = $(
+				'<div class="om-lightbox" role="dialog" aria-modal="true" aria-label="' + t('gallery', 'Image gallery') + '" hidden>' +
+					'<button type="button" class="om-lb-close" aria-label="' + t('close', 'Close') + '">&times;</button>' +
+					'<button type="button" class="om-lb-prev" aria-label="' + t('prev', 'Previous image') + '">&lsaquo;</button>' +
+					'<figure class="om-lb-stage"><img class="om-lb-img" alt="" /></figure>' +
+					'<button type="button" class="om-lb-next" aria-label="' + t('next', 'Next image') + '">&rsaquo;</button>' +
+					'<p class="om-lb-count" aria-live="polite"></p>' +
+				'</div>'
+			).appendTo(document.body);
+
+			lb.on('click', function (e) {
+				if (e.target === lb[0] || $(e.target).is('.om-lb-stage')) { closeLightbox(); }
+			});
+			lb.find('.om-lb-close').on('click', closeLightbox);
+			lb.find('.om-lb-prev').on('click', function () { stepLightbox(-1); });
+			lb.find('.om-lb-next').on('click', function () { stepLightbox(1); });
+
+			// Swipe on touch screens.
+			var startX = null;
+			lb.on('touchstart', function (e) { startX = e.originalEvent.touches[0].clientX; });
+			lb.on('touchend', function (e) {
+				if (startX === null) { return; }
+				var dx = e.originalEvent.changedTouches[0].clientX - startX;
+				if (Math.abs(dx) > 40) { stepLightbox(dx < 0 ? 1 : -1); }
+				startX = null;
+			});
+		}
+		lb.data({ images: images, index: index, returnFocus: returnFocus });
+		lb.toggleClass('is-single', images.length < 2);
+		renderLightbox();
+		lb.prop('hidden', false);
+		$('html').addClass('om-lb-open');
+		lb.find('.om-lb-close').trigger('focus');
+	}
+
+	function renderLightbox() {
+		var images = lb.data('images');
+		var index = lb.data('index');
+		lb.find('.om-lb-img').attr('src', images[index]);
+		lb.find('.om-lb-count').text(images.length > 1 ? (index + 1) + ' / ' + images.length : '');
+	}
+
+	function stepLightbox(dir) {
+		var images = lb.data('images');
+		lb.data('index', (lb.data('index') + dir + images.length) % images.length);
+		renderLightbox();
+	}
+
+	function closeLightbox() {
+		if (!lb || lb.prop('hidden')) { return; }
+		lb.prop('hidden', true);
+		$('html').removeClass('om-lb-open');
+		var back = lb.data('returnFocus');
+		if (back) { back.focus(); }
+	}
+
+	$(document).on('keydown', function (e) {
+		if (!lb || lb.prop('hidden')) { return; }
+		if (e.key === 'Escape') { closeLightbox(); }
+		if (e.key === 'ArrowRight') { stepLightbox(1); }
+		if (e.key === 'ArrowLeft') { stepLightbox(-1); }
+		if (e.key === 'Tab') {
+			// Keep focus inside the dialog.
+			var $f = lb.find('button:visible');
+			var first = $f[0], last = $f[$f.length - 1];
+			if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+			else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+		}
+	});
+
+	$(document).on('click', '.om-zoom', function () {
+		var $gallery = $(this).closest('.om-product-gallery');
+		var images = lightboxImages($gallery);
+		var current = $(this).find('.om-main-image').attr('src');
+		openLightbox(images, Math.max(0, images.indexOf(current)), this);
+	});
+
+	/* =========================================================
+	   Inquiry form
+	   ========================================================= */
+
+	$(document).on('submit', '.om-inquiry-form', function (e) {
+		if (!cfg.ajaxUrl || !window.FormData) {
+			return; // Normal form post.
+		}
+		e.preventDefault();
+		var form = this;
+		var $form = $(form);
+		var $status = $form.find('.om-inquiry-status');
+		var $btn = $form.find('.om-inquiry-submit');
+
+		if (form.checkValidity && !form.checkValidity()) {
+			form.reportValidity && form.reportValidity();
+			return;
+		}
+
+		// Record the options the customer had selected.
+		var $wrap = $form.closest('.om-product-wrap');
+		if ($wrap.length) {
+			var parts = [];
+			$wrap.find('.om-options-form select').each(function () {
+				var label = $.trim($(this).closest('label').contents().first().text());
+				parts.push(label + ': ' + $(this).val());
+			});
+			$form.find('.om-inquiry-config').val(parts.join(', '));
+		}
+
+		var data = new FormData(form);
+		$btn.prop('disabled', true).addClass('is-busy');
+		$status.prop('hidden', true).removeClass('is-success is-error');
+
+		$.ajax({ url: cfg.ajaxUrl, method: 'POST', data: data, processData: false, contentType: false })
+			.done(function (response) {
+				var ok = response && response.success;
+				$status.text((response && response.data && response.data.message) || (ok ? '' : t('error', 'Something went wrong. Please try again.')))
+					.addClass(ok ? 'is-success' : 'is-error').prop('hidden', false);
+				if (ok) {
+					form.reset();
+					$form.find('.om-field, .om-field-row, .om-inquiry-submit').prop('hidden', true);
+				}
+			})
+			.fail(function () {
+				$status.text(t('error', 'Something went wrong. Please try again.')).addClass('is-error').prop('hidden', false);
+			})
+			.always(function () {
+				$btn.prop('disabled', false).removeClass('is-busy');
+			});
+	});
+
+	/* =========================================================
+	   Catalog grid & diamond search: in-place updates
+	   ========================================================= */
 
 	var mobileQuery = window.matchMedia ? window.matchMedia('(max-width: 900px)') : null;
 
@@ -109,54 +298,256 @@
 	});
 
 	var omPushed = false;
+	var blockSeq = 0;
 
-	function loadGrid($wrap, href, scroll) {
+	// Re-render a catalog grid (.om-catalog-wrap) or diamond search
+	// (.om-diamonds) for a URL, falling back to normal navigation.
+	function loadBlock($wrap, href, opts) {
+		opts = opts || {};
 		if (!$wrap.length || !href || !cfg.ajaxUrl) {
 			window.location.href = href;
 			return;
 		}
+		var seq = ++blockSeq;
+		var isDiamonds = $wrap.hasClass('om-diamonds');
+		var focusSearch = $wrap.find('.om-search-input').is(':focus');
 		$wrap.addClass('om-loading').attr('aria-busy', 'true');
 
 		$.post(cfg.ajaxUrl, {
-			action: 'om_filter_grid',
+			action: isDiamonds ? 'om_diamonds' : 'om_filter_grid',
 			atts: $wrap.attr('data-om-atts'),
 			sig: $wrap.attr('data-om-sig'),
 			url: href
 		}).done(function (response) {
+			if (seq !== blockSeq) { return; }
 			if (!(response && response.success && response.data.html)) {
 				window.location.href = href;
 				return;
 			}
 			var $fresh = $($.parseHTML($.trim(response.data.html)));
 			$wrap.replaceWith($fresh);
-			syncPanels($fresh);
+			initBlock($fresh);
 			if (window.history && window.history.pushState) {
 				window.history.pushState({ omCatalog: true }, '', href);
 				omPushed = true;
 			}
-			if (scroll && $fresh[0] && $fresh[0].getBoundingClientRect().top < 0 && $fresh[0].scrollIntoView) {
+			if (focusSearch) {
+				var input = $fresh.find('.om-search-input')[0];
+				if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+			}
+			if (opts.scroll && $fresh[0] && $fresh[0].getBoundingClientRect().top < 0 && $fresh[0].scrollIntoView) {
 				$fresh[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
 			}
 		}).fail(function () {
-			window.location.href = href;
+			if (seq === blockSeq) { window.location.href = href; }
 		});
 	}
 
-	$(document).on('click', '.om-catalog-wrap .om-filter-pill, .om-catalog-wrap .om-filter-link, .om-catalog-wrap .om-chip, .om-catalog-wrap .om-clear-filters, .om-catalog-wrap .om-pagination a', function (e) {
+	var blockLinks = [
+		'.om-catalog-wrap .om-filter-pill', '.om-catalog-wrap .om-filter-link', '.om-catalog-wrap .om-chip',
+		'.om-catalog-wrap .om-clear-filters', '.om-catalog-wrap .om-pagination a',
+		'.om-diamonds .om-pagination a', '.om-diamonds .om-df-reset'
+	].join(', ');
+
+	$(document).on('click', blockLinks, function (e) {
 		if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) {
 			return; // Let "open in new tab" work.
 		}
 		e.preventDefault();
 		var isPagination = $(this).closest('.om-pagination').length > 0;
-		loadGrid($(this).closest('.om-catalog-wrap'), this.href, isPagination);
+		loadBlock($(this).closest('.om-catalog-wrap, .om-diamonds'), this.href, { scroll: isPagination });
 	});
 
-	$(document).on('change', '.om-catalog-wrap .om-filter-nav', function () {
-		loadGrid($(this).closest('.om-catalog-wrap'), this.value, false);
+	$(document).on('change', '.om-catalog-wrap .om-filter-nav, .om-diamonds .om-sort-select', function () {
+		loadBlock($(this).closest('.om-catalog-wrap, .om-diamonds'), this.value);
 	});
 
-	// Back/forward after an AJAX swap: reload so the server renders the
-	// state the URL describes.
+	// A GET form's target URL, as the browser would build it.
+	function formUrl(form) {
+		var url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+		url.search = '';
+		var params = new URLSearchParams();
+		var multi = {};
+		$(form).serializeArray().forEach(function (field) {
+			if (field.value === '') { return; }
+			if (/\[\]$/.test(field.name)) {
+				var key = field.name.slice(0, -2);
+				(multi[key] = multi[key] || []).push(field.value);
+			} else {
+				params.set(field.name, field.value);
+			}
+		});
+		$.each(multi, function (key, values) { params.set(key, values.join(',')); });
+		url.search = params.toString();
+		return url.toString();
+	}
+
+	/* ---------- Search with suggestions ---------- */
+
+	var suggestTimer = null;
+	var suggestSeq = 0;
+
+	$(document).on('submit', '.om-catalog-wrap .om-search', function (e) {
+		if (!window.URL || !window.URLSearchParams) { return; }
+		e.preventDefault();
+		closeSuggest($(this));
+		loadBlock($(this).closest('.om-catalog-wrap'), formUrl(this));
+	});
+
+	function closeSuggest($form) {
+		$form.find('.om-suggest').prop('hidden', true).empty();
+		$form.find('.om-search-input').attr('aria-expanded', 'false').removeAttr('aria-activedescendant');
+	}
+
+	$(document).on('input', '.om-catalog-wrap .om-search-input', function () {
+		var input = this;
+		var $form = $(input).closest('.om-search');
+		var $wrap = $form.closest('.om-catalog-wrap');
+		var q = $.trim(input.value);
+		clearTimeout(suggestTimer);
+		if (q.length < 2) {
+			closeSuggest($form);
+			// Cleared the box: show the full catalog again.
+			if (q === '' && /[?&]om_q=/.test(window.location.search)) {
+				loadBlock($wrap, formUrl($form[0]));
+			}
+			return;
+		}
+		suggestTimer = setTimeout(function () {
+			var seq = ++suggestSeq;
+			$.post(cfg.ajaxUrl, {
+				action: 'om_suggest',
+				atts: $wrap.attr('data-om-atts'),
+				sig: $wrap.attr('data-om-sig'),
+				line: $form.attr('data-om-line'),
+				q: q
+			}).done(function (response) {
+				if (seq !== suggestSeq || !response || !response.success) { return; }
+				var items = response.data.items || [];
+				var $list = $form.find('.om-suggest').empty();
+				if (!items.length) {
+					$list.append($('<li class="om-suggest-empty" role="presentation"></li>').text(response.data.message || t('noMatches', 'No matching designs')));
+				}
+				items.forEach(function (item, i) {
+					var $a = $('<a class="om-suggest-item" role="option"></a>').attr({ href: item.url, id: $list.attr('id') + '-' + i });
+					var $img = $('<span class="om-suggest-img"></span>');
+					if (item.image) { $img.append($('<img alt="" loading="lazy" />').attr('src', item.image)); }
+					$a.append($img);
+					$a.append($('<span class="om-suggest-text"></span>')
+						.append($('<span class="om-suggest-title"></span>').text(item.title))
+						.append($('<span class="om-suggest-meta"></span>').text([item.variant, 'Style ' + item.style].filter(Boolean).join(' · '))));
+					$list.append($('<li role="presentation"></li>').append($a));
+				});
+				if (response.data.total > items.length) {
+					$list.append($('<li role="presentation"></li>').append(
+						$('<button type="submit" class="om-suggest-all"></button>').text(t('seeAll', 'See all results') + ' (' + response.data.total + ')')
+					));
+				}
+				$list.prop('hidden', false);
+				$(input).attr('aria-expanded', 'true');
+			});
+		}, 220);
+	});
+
+	$(document).on('keydown', '.om-catalog-wrap .om-search-input', function (e) {
+		var $form = $(this).closest('.om-search');
+		var $items = $form.find('.om-suggest-item');
+		if (e.key === 'Escape') { closeSuggest($form); return; }
+		if (!$items.length || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter')) { return; }
+		var $active = $items.filter('.is-active');
+		var index = $items.index($active);
+		if (e.key === 'Enter') {
+			if ($active.length) { e.preventDefault(); window.location.href = $active.attr('href'); }
+			return;
+		}
+		e.preventDefault();
+		index = e.key === 'ArrowDown' ? Math.min($items.length - 1, index + 1) : Math.max(0, index - 1);
+		$items.removeClass('is-active').eq(index).addClass('is-active');
+		$(this).attr('aria-activedescendant', $items.eq(index).attr('id'));
+	});
+
+	$(document).on('click', function (e) {
+		if (!$(e.target).closest('.om-search').length) {
+			$('.om-search').each(function () { closeSuggest($(this)); });
+		}
+	});
+
+	/* ---------- Diamond search ---------- */
+
+	var diamondTimer = null;
+
+	$(document).on('change', '.om-diamond-filters input', function () {
+		var $input = $(this);
+		if ($input.is(':checkbox, :radio')) {
+			$input.closest('form').find('input[name="' + this.name + '"]').each(function () {
+				$(this).closest('label').toggleClass('is-checked', this.checked);
+			});
+		}
+		var form = $input.closest('form')[0];
+		clearTimeout(diamondTimer);
+		// Typed ranges wait a moment; clicks apply straight away.
+		diamondTimer = setTimeout(function () {
+			if (window.URL && window.URLSearchParams) {
+				loadBlock($(form).closest('.om-diamonds'), formUrl(form));
+			}
+		}, $input.is('[type="number"]') ? 600 : 50);
+	});
+
+	$(document).on('submit', '.om-diamond-filters', function (e) {
+		if (!window.URL || !window.URLSearchParams) { return; }
+		e.preventDefault();
+		clearTimeout(diamondTimer);
+		loadBlock($(this).closest('.om-diamonds'), formUrl(this));
+	});
+
+	// 360° viewers load only when a diamond is opened.
+	$(document).on('toggle', '.om-diamond', function () {
+		if (this.open) {
+			$(this).find('iframe[data-src]').each(function () {
+				this.src = this.getAttribute('data-src');
+				this.removeAttribute('data-src');
+			});
+		}
+	});
+	// "toggle" doesn't bubble in every browser; catch the summary click too.
+	$(document).on('click', '.om-diamond > summary', function () {
+		var details = this.parentNode;
+		setTimeout(function () { $(details).trigger('toggle'); }, 0);
+	});
+
+	/* ---------- "From $X" card prices ---------- */
+
+	function loadCardPrices(root) {
+		$(root || document).find('.om-catalog-grid[data-om-prices]').each(function () {
+			var line = $(this).attr('data-om-prices');
+			var $cells = $(this).find('.om-card-price[data-om-style]').not('.is-loaded');
+			var styles = $cells.map(function () { return $(this).attr('data-om-style'); }).get();
+			// A few cards per request, several requests at once.
+			for (var i = 0; i < styles.length; i += 4) {
+				(function (chunk) {
+					$.post(cfg.ajaxUrl, { action: 'om_card_prices', line: line, styles: chunk }).done(function (response) {
+						var prices = (response && response.success && response.data.prices) || {};
+						chunk.forEach(function (style) {
+							var $cell = $cells.filter(function () { return $(this).attr('data-om-style') === style; });
+							$cell.addClass('is-loaded').text(prices[style] || '');
+						});
+					}).fail(function () {
+						$cells.filter(function () { return chunk.indexOf($(this).attr('data-om-style')) > -1; }).addClass('is-loaded').empty();
+					});
+				})(styles.slice(i, i + 4));
+			}
+		});
+	}
+
+	/* ---------- Boot ---------- */
+
+	function initBlock(root) {
+		syncPanels(root);
+		loadCardPrices(root);
+	}
+
+	// Back/forward after an in-place update: reload so the server renders
+	// the state the URL describes.
 	window.addEventListener('popstate', function () {
 		if (omPushed) {
 			window.location.reload();
@@ -164,7 +555,7 @@
 	});
 
 	$(function () {
-		syncPanels(document);
+		initBlock(document);
 		if (mobileQuery) {
 			var onChange = function () { syncPanels(document); };
 			if (mobileQuery.addEventListener) {
@@ -179,7 +570,7 @@
 	$(window).on('elementor/frontend/init', function () {
 		if (window.elementorFrontend && window.elementorFrontend.hooks) {
 			window.elementorFrontend.hooks.addAction('frontend/element_ready/om_catalog_widget.default', function ($scope) {
-				syncPanels($scope);
+				initBlock($scope);
 			});
 		}
 	});

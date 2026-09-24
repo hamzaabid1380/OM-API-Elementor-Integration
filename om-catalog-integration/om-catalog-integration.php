@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.2.0' );
+define( 'OM_CATALOG_VERSION', '1.3.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -21,6 +21,11 @@ require_once OM_CATALOG_DIR . 'includes/class-om-settings.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-rewrites.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-shortcodes.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-ajax.php';
+require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-search.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-ring-builder.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-elementor-widgets.php';
 
 /**
@@ -33,6 +38,10 @@ function om_catalog_init() {
 	OM_Rewrites::instance();
 	OM_Shortcodes::instance();
 	OM_Ajax::instance();
+	OM_Search::instance();
+	OM_Inquiry::instance();
+	OM_Diamonds::instance();
+	OM_Ring_Builder::instance();
 	OM_Elementor_Widgets::instance();
 }
 add_action( 'plugins_loaded', 'om_catalog_init' );
@@ -45,12 +54,19 @@ add_action( 'plugins_loaded', 'om_catalog_init' );
  */
 function om_catalog_enqueue_assets() {
 	wp_register_style( 'om-catalog-css', OM_CATALOG_URL . 'assets/css/om-catalog.css', array(), OM_CATALOG_VERSION );
-	wp_register_style(
-		'om-catalog-fonts',
-		'https://fonts.googleapis.com/css?family=Arapey:400,400italic,500,600|Inter:300,400,500,600&display=swap',
-		array(),
-		null
-	);
+	$tokens = om_catalog_style_tokens();
+	if ( 'kit' === $tokens['source'] ) {
+		// The kit's fonts load through Elementor (Google or self-hosted, as
+		// the kit is configured); this handle only exists for dependencies.
+		wp_register_style( 'om-catalog-fonts', false, array(), OM_CATALOG_VERSION );
+	} else {
+		wp_register_style(
+			'om-catalog-fonts',
+			'https://fonts.googleapis.com/css?family=Arapey:400,400italic,500,600|Inter:300,400,500,600&display=swap',
+			array(),
+			null
+		);
+	}
 	wp_register_script( 'om-catalog-js', OM_CATALOG_URL . 'assets/js/om-product.js', array( 'jquery' ), OM_CATALOG_VERSION, true );
 
 	wp_localize_script(
@@ -58,23 +74,26 @@ function om_catalog_enqueue_assets() {
 		'omCatalog',
 		array(
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			'i18n'    => array(
+				'gallery'   => __( 'Image gallery', 'om-catalog' ),
+				'close'     => __( 'Close', 'om-catalog' ),
+				'prev'      => __( 'Previous image', 'om-catalog' ),
+				'next'      => __( 'Next image', 'om-catalog' ),
+				'error'     => __( 'Something went wrong. Please try again.', 'om-catalog' ),
+				'noMatches' => __( 'No matching designs', 'om-catalog' ),
+				'seeAll'    => __( 'See all results', 'om-catalog' ),
+			),
 		)
 	);
 
-	// Inline CSS variables driven by the admin settings (brand colors/fonts).
-	// Defaults match the live site's Elementor kit: Arapey headings, Inter body,
-	// near-black navy primary (#00111C), monochrome accent.
-	$primary      = get_option( 'om_color_primary', '#00111C' );
-	$accent       = get_option( 'om_color_accent', '#000000' );
-	$background   = get_option( 'om_color_background', '#ffffff' );
-	$text         = get_option( 'om_color_text', '#464646' );
-	$heading_font = get_option( 'om_font_heading', 'Arapey, Georgia, serif' );
-	$body_font    = get_option( 'om_font_body', 'Inter, Helvetica, Arial, sans-serif' );
-
-	// Colors are sanitized as hex on save; strip characters that could break
-	// out of the declaration in case a font value was saved before validation.
-	$heading_font = str_replace( array( ';', '{', '}', '<', '>' ), '', $heading_font );
-	$body_font    = str_replace( array( ';', '{', '}', '<', '>' ), '', $body_font );
+	// Inline CSS variables: brand colours and fonts, from the Elementor kit
+	// or the plugin's own settings (Settings > OM Catalog).
+	$primary      = $tokens['primary'];
+	$accent       = $tokens['accent'];
+	$background   = $tokens['background'];
+	$text         = $tokens['text'];
+	$heading_font = $tokens['heading_font'];
+	$body_font    = $tokens['body_font'];
 
 	$css_vars = ":root{
 		--om-color-primary: {$primary};
@@ -92,9 +111,91 @@ function om_catalog_enqueue_assets() {
 		// (plugin-rendered product pages use the theme's plain header).
 		wp_enqueue_style( 'om-catalog-fonts' );
 		wp_enqueue_script( 'om-catalog-js' );
+		// Kit mode: make sure the kit's fonts load here too (plugin-rendered
+		// product pages aren't Elementor pages).
+		foreach ( $tokens['kit_fonts'] as $font ) {
+			\Elementor\Plugin::$instance->frontend->enqueue_font( $font );
+		}
 	}
 }
 add_action( 'wp_enqueue_scripts', 'om_catalog_enqueue_assets' );
+
+/**
+ * Brand colours and fonts for the catalog.
+ *
+ * "kit" (the default when Elementor is active) follows the site's Elementor
+ * kit — Site Settings > Global Colors / Global Fonts — so the catalog
+ * changes with the rest of the site: Primary, Accent and Text colours and
+ * the Primary (headings) and Text (body) fonts. Anything the kit doesn't
+ * set falls back to the plugin's own values.
+ *
+ * @return array
+ */
+function om_catalog_style_tokens() {
+	static $tokens = null;
+	if ( null !== $tokens ) {
+		return $tokens;
+	}
+
+	$clean_font = function ( $font ) {
+		return str_replace( array( ';', '{', '}', '<', '>', '"' ), '', (string) $font );
+	};
+	$hex = function ( $color, $fallback ) {
+		$color = sanitize_hex_color( (string) $color );
+		return $color ? $color : $fallback;
+	};
+
+	$tokens = array(
+		'source'       => 'custom',
+		'primary'      => $hex( get_option( 'om_color_primary', '#00111C' ), '#00111C' ),
+		'accent'       => $hex( get_option( 'om_color_accent', '#000000' ), '#000000' ),
+		'background'   => $hex( get_option( 'om_color_background', '#ffffff' ), '#ffffff' ),
+		'text'         => $hex( get_option( 'om_color_text', '#464646' ), '#464646' ),
+		'heading_font' => $clean_font( get_option( 'om_font_heading', 'Arapey, Georgia, serif' ) ),
+		'body_font'    => $clean_font( get_option( 'om_font_body', 'Inter, Helvetica, Arial, sans-serif' ) ),
+		'kit_fonts'    => array(),
+	);
+
+	$source = get_option( 'om_style_source', 'kit' );
+	if ( 'kit' !== $source || ! did_action( 'elementor/loaded' ) || ! class_exists( '\\Elementor\\Plugin' ) ) {
+		return $tokens;
+	}
+	$kits = \Elementor\Plugin::$instance->kits_manager ?? null;
+	$kit  = $kits ? $kits->get_active_kit_for_frontend() : null;
+	if ( ! $kit ) {
+		return $tokens;
+	}
+
+	$settings = (array) $kit->get_settings();
+	$colors   = array();
+	foreach ( (array) ( $settings['system_colors'] ?? array() ) as $item ) {
+		if ( ! empty( $item['_id'] ) && ! empty( $item['color'] ) ) {
+			$colors[ $item['_id'] ] = $item['color'];
+		}
+	}
+	$fonts = array();
+	foreach ( (array) ( $settings['system_typography'] ?? array() ) as $item ) {
+		if ( ! empty( $item['_id'] ) && ! empty( $item['typography_font_family'] ) ) {
+			$fonts[ $item['_id'] ] = $item['typography_font_family'];
+		}
+	}
+
+	$tokens['source']  = 'kit';
+	$tokens['primary'] = $hex( $colors['primary'] ?? '', $tokens['primary'] );
+	$tokens['accent']  = $hex( $colors['accent'] ?? '', $tokens['accent'] );
+	$tokens['text']    = $hex( $colors['text'] ?? '', $tokens['text'] );
+	if ( ! empty( $fonts['primary'] ) ) {
+		$tokens['heading_font'] = '"' . $clean_font( $fonts['primary'] ) . '", ' . $tokens['heading_font'];
+		$tokens['kit_fonts'][]  = $fonts['primary'];
+	}
+	if ( ! empty( $fonts['text'] ) ) {
+		$tokens['body_font']   = '"' . $clean_font( $fonts['text'] ) . '", ' . $tokens['body_font'];
+		$tokens['kit_fonts'][] = $fonts['text'];
+	}
+	$tokens['kit_fonts'] = array_unique( $tokens['kit_fonts'] );
+
+	return $tokens;
+}
 
 /**
  * Does the current request render catalog output?
@@ -107,12 +208,14 @@ function om_catalog_page_needs_assets() {
 	if ( is_singular() ) {
 		$post = get_post();
 		if ( $post ) {
-			if ( has_shortcode( (string) $post->post_content, 'om_catalog' ) ) {
-				return true;
+			foreach ( array( 'om_catalog', 'om_diamonds', 'om_ring_builder' ) as $tag ) {
+				if ( has_shortcode( (string) $post->post_content, $tag ) ) {
+					return true;
+				}
 			}
 			// Elementor stores widget data in post meta, not post_content.
 			$elementor_data = get_post_meta( $post->ID, '_elementor_data', true );
-			if ( is_string( $elementor_data ) && ( false !== strpos( $elementor_data, 'om_catalog' ) || false !== strpos( $elementor_data, 'om_product_widget' ) ) ) {
+			if ( is_string( $elementor_data ) && preg_match( '/"widgetType":"om_[a-z_]+"|\[om_(catalog|diamonds|ring_builder)/', $elementor_data ) ) {
 				return true;
 			}
 		}

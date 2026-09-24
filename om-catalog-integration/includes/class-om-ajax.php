@@ -32,6 +32,37 @@ class OM_Ajax {
 		add_action( 'wp_ajax_nopriv_om_get_quote', array( $this, 'handle_get_quote' ) );
 		add_action( 'wp_ajax_om_filter_grid', array( $this, 'handle_filter_grid' ) );
 		add_action( 'wp_ajax_nopriv_om_filter_grid', array( $this, 'handle_filter_grid' ) );
+		add_action( 'wp_ajax_om_card_prices', array( $this, 'handle_card_prices' ) );
+		add_action( 'wp_ajax_nopriv_om_card_prices', array( $this, 'handle_card_prices' ) );
+	}
+
+	/**
+	 * "From $X" prices for listing cards, loaded after the page so the grid
+	 * never waits on quotes. The script asks for a few cards per request
+	 * and sends several requests at once. Each price is cached 12 hours.
+	 */
+	public function handle_card_prices() {
+		if ( ! om_markup_is_configured() ) {
+			wp_send_json_error( array( 'message' => 'Pricing is not enabled.' ) );
+		}
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- public read-only endpoint, see class doc.
+		$line   = isset( $_POST['line'] ) ? sanitize_title( wp_unslash( $_POST['line'] ) ) : '';
+		$styles = isset( $_POST['styles'] ) && is_array( $_POST['styles'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['styles'] ) ) : array();
+		// phpcs:enable
+		$styles = array_slice( array_unique( array_filter( $styles, 'strlen' ) ), 0, 8 );
+		if ( '' === $line || ! $styles ) {
+			wp_send_json_error( array( 'message' => 'Nothing to price.' ) );
+		}
+
+		$prices = array();
+		foreach ( $styles as $style ) {
+			$wholesale = OM_API_Client::get_card_price( $line, $style );
+			if ( null !== $wholesale ) {
+				/* translators: %s: price. */
+				$prices[ $style ] = sprintf( __( 'From %s', 'om-catalog' ), om_format_price_short( om_apply_markup( $wholesale ) ) );
+			}
+		}
+		wp_send_json_success( array( 'prices' => $prices ) );
 	}
 
 	/**
@@ -61,7 +92,7 @@ class OM_Ajax {
 
 		$request = OM_Shortcodes::request_from_query(
 			$query,
-			remove_query_arg( array( 'om_style', 'om_page', 'om_line', 'om_shape', 'om_metal' ), $url )
+			remove_query_arg( OM_Shortcodes::STATE_PARAMS, $url )
 		);
 
 		wp_send_json_success(

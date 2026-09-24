@@ -49,6 +49,13 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			// after_options, after_description.
 			'buttons_position'    => 'price',
 			'buttons_layout'      => 'inline',
+			// Ring builder: "Select this setting" on builder product lines.
+			'show_builder'        => true,
+			'builder_text'        => '',
+			// "Inquire about this piece" form at the end of the details.
+			'show_inquiry'        => true,
+			'inquiry_heading'     => '',
+			'inquiry_open'        => false,
 		)
 	);
 
@@ -101,7 +108,27 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 	$buttons_position  = $buttons_in_price ? 'price' : $args['buttons_position'];
 	$buttons_html      = $buttons ? om_render_action_buttons( $buttons, $has_price, $args['buttons_layout'] ) : '';
 
-	$main_image = ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '';
+	// Ring builder button: only for the builder's product lines, when a
+	// builder page is set. Carries a diamond the customer already chose.
+	$builder_url = '';
+	if ( $args['show_builder'] && in_array( $product_line, om_builder_lines(), true ) ) {
+		$rb_diamond  = isset( $_GET['rb_diamond'] ) ? sanitize_text_field( wp_unslash( $_GET['rb_diamond'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
+		$builder_url = om_builder_url(
+			array(
+				'rb_setting' => $product_line . ':' . $style_number,
+				'rb_diamond' => $rb_diamond,
+			)
+		);
+	}
+	$builder_html = '';
+	if ( $builder_url ) {
+		$builder_html = sprintf(
+			'<div class="om-actions om-actions--builder"><a class="om-btn om-btn--solid om-builder-btn" href="%s" data-om-builder="%s">%s</a></div>',
+			esc_url( $builder_url ),
+			esc_url( $builder_url ),
+			esc_html( '' !== trim( (string) $args['builder_text'] ) ? $args['builder_text'] : __( 'Select this setting', 'om-catalog' ) )
+		);
+	}
 
 	ob_start();
 	?>
@@ -110,26 +137,11 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 		data-style="<?php echo esc_attr( $style_number ); ?>"
 		data-priced="<?php echo $can_requote ? '1' : '0'; ?>">
 
-		<?php if ( $args['show_gallery'] ) : ?>
-			<div class="om-product-gallery">
-				<?php if ( $main_image ) : ?>
-					<img class="om-main-image" src="<?php echo esc_url( $main_image ); ?>" alt="<?php echo esc_attr( $title ); ?>" />
-				<?php endif; ?>
-
-				<?php if ( ! empty( $product['images'] ) && count( $product['images'] ) > 1 ) : ?>
-					<div class="om-thumbs">
-						<?php foreach ( array_slice( $product['images'], 0, 8 ) as $i => $img ) :
-							$thumb_url = om_image_url( $img );
-							if ( ! $thumb_url ) {
-								continue;
-							}
-							?>
-							<img class="om-thumb<?php echo 0 === $i ? ' is-active' : ''; ?>" src="<?php echo esc_url( $thumb_url ); ?>" alt="" />
-						<?php endforeach; ?>
-					</div>
-				<?php endif; ?>
-			</div>
-		<?php endif; ?>
+		<?php
+		if ( $args['show_gallery'] ) {
+			echo om_render_gallery( $product, $title ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+		}
+		?>
 
 		<div class="om-product-details">
 			<?php if ( $args['show_line_label'] ) : ?>
@@ -185,6 +197,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			<?php endif; ?>
 
 			<?php
+			echo $builder_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 			if ( 'price' === $buttons_position ) {
 				echo $buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_render_action_buttons().
 			}
@@ -281,10 +294,108 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 				</div>
 			<?php endif; ?>
 
+			<?php
+			if ( $args['show_inquiry'] ) {
+				echo '<div id="om-inquiry" class="om-product-inquiry">';
+				echo OM_Inquiry::render_form( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+					array(
+						'title'   => $title,
+						'style'   => $style_number,
+						'line'    => $product_line,
+						'url'     => om_product_url( $product_line, $style_number ),
+						'price'   => $price_text,
+						'heading' => '' !== trim( (string) $args['inquiry_heading'] ) ? $args['inquiry_heading'] : __( 'Inquire about this piece', 'om-catalog' ),
+						'open'    => (bool) $args['inquiry_open'],
+					)
+				);
+				echo '</div>';
+			}
+			?>
 		</div>
 	</div>
 	<?php
 	return ob_get_clean();
+}
+
+/**
+ * Resolve an entry of a product's videos[] to a URL (string or
+ * {url|video_url|src|href}).
+ */
+function om_video_url( $video ) {
+	if ( is_string( $video ) ) {
+		return $video;
+	}
+	if ( is_array( $video ) ) {
+		foreach ( array( 'url', 'video_url', 'src', 'href' ) as $key ) {
+			if ( ! empty( $video[ $key ] ) && is_string( $video[ $key ] ) ) {
+				return $video[ $key ];
+			}
+		}
+	}
+	return '';
+}
+
+/**
+ * Product gallery: large image (click to open the lightbox, hover to zoom
+ * on desktop), a filmstrip of angles and any videos. Videos play in place:
+ * files (mp4/webm/mov) in a <video>, anything else (YouTube, Vimeo, a
+ * 360° viewer) in an iframe.
+ */
+function om_render_gallery( $product, $title ) {
+	$images = array_values( array_filter( array_map( 'om_image_url', array_slice( (array) ( $product['images'] ?? array() ), 0, 12 ) ) ) );
+	$videos = array_values( array_filter( array_map( 'om_video_url', array_slice( (array) ( $product['videos'] ?? array() ), 0, 4 ) ) ) );
+	if ( ! $images && ! $videos ) {
+		return '';
+	}
+
+	ob_start();
+	?>
+	<div class="om-product-gallery" data-om-gallery>
+		<div class="om-main-media">
+			<?php if ( $images ) : ?>
+				<button type="button" class="om-zoom" aria-label="<?php esc_attr_e( 'Enlarge image', 'om-catalog' ); ?>">
+					<img class="om-main-image" src="<?php echo esc_url( $images[0] ); ?>" alt="<?php echo esc_attr( $title ); ?>" fetchpriority="high" />
+				</button>
+			<?php endif; ?>
+			<div class="om-main-video"<?php echo $images ? ' hidden' : ''; ?>>
+				<?php if ( ! $images ) : ?>
+					<?php echo om_video_embed( $videos[0], $title ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer. ?>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php if ( count( $images ) + count( $videos ) > 1 ) : ?>
+			<div class="om-thumbs" role="list">
+				<?php foreach ( $images as $i => $url ) : ?>
+					<button type="button" role="listitem" class="om-thumb-btn<?php echo 0 === $i ? ' is-active' : ''; ?>" data-full="<?php echo esc_url( $url ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: image number. */ __( 'View image %d', 'om-catalog' ), $i + 1 ) ); ?>">
+						<img class="om-thumb" src="<?php echo esc_url( $url ); ?>" alt="" loading="lazy" decoding="async" />
+					</button>
+				<?php endforeach; ?>
+				<?php foreach ( $videos as $i => $url ) : ?>
+					<button type="button" role="listitem" class="om-thumb-btn om-thumb--video<?php echo ( ! $images && 0 === $i ) ? ' is-active' : ''; ?>" data-video="<?php echo esc_attr( om_video_embed( $url, $title ) ); ?>" aria-label="<?php esc_attr_e( 'Play video', 'om-catalog' ); ?>">
+						<?php if ( $images ) : ?><img class="om-thumb" src="<?php echo esc_url( $images[0] ); ?>" alt="" loading="lazy" decoding="async" /><?php endif; ?>
+						<span class="om-play" aria-hidden="true"></span>
+					</button>
+				<?php endforeach; ?>
+			</div>
+		<?php endif; ?>
+	</div>
+	<?php
+	return ob_get_clean();
+}
+
+/** Player markup for one video URL. */
+function om_video_embed( $url, $title = '' ) {
+	$path = strtolower( (string) wp_parse_url( $url, PHP_URL_PATH ) );
+	if ( preg_match( '/\.(mp4|webm|mov|m4v)$/', $path ) ) {
+		return '<video class="om-video" src="' . esc_url( $url ) . '" controls playsinline muted loop autoplay preload="metadata"></video>';
+	}
+	// YouTube / Vimeo page links become their embed players.
+	if ( preg_match( '#(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]{6,})#', $url, $m ) ) {
+		$url = 'https://www.youtube-nocookie.com/embed/' . $m[1];
+	} elseif ( preg_match( '#vimeo\.com/(\d+)#', $url, $m ) ) {
+		$url = 'https://player.vimeo.com/video/' . $m[1];
+	}
+	return '<iframe class="om-video" src="' . esc_url( $url ) . '" title="' . esc_attr( $title ) . '" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>';
 }
 
 /**

@@ -359,6 +359,65 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 
 		$this->end_controls_section();
 
+		$this->start_controls_section(
+			'section_extras',
+			array(
+				'label' => __( 'Ring Builder & Inquiry', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'show_builder',
+			array(
+				'label'       => __( '"Select this setting" button', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Shows on the ring builder\'s product lines once a builder page is set (Settings > OM Catalog).', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'builder_text',
+			array(
+				'label'       => __( 'Button text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Select this setting', 'om-catalog' ),
+				'condition'   => array( 'show_builder' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'show_inquiry',
+			array(
+				'label'     => __( 'Inquiry form', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'separator' => 'before',
+			)
+		);
+
+		$this->add_control(
+			'inquiry_heading',
+			array(
+				'label'       => __( 'Form title', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Inquire about this piece', 'om-catalog' ),
+				'condition'   => array( 'show_inquiry' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'inquiry_open',
+			array(
+				'label'       => __( 'Start expanded', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => '',
+				'condition'   => array( 'show_inquiry' => 'yes' ),
+			)
+		);
+
+		$this->end_controls_section();
+
 		/* ---------- Style ---------- */
 
 		$this->start_controls_section(
@@ -779,6 +838,11 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['buttons']          = $buttons;
 		$args['buttons_position'] = in_array( $settings['buttons_position'] ?? 'price', array( 'price', 'after_description', 'after_options' ), true ) ? $settings['buttons_position'] : 'price';
 		$args['buttons_layout']   = 'stacked' === ( $settings['buttons_layout'] ?? 'inline' ) ? 'stacked' : 'inline';
+		$args['show_builder']     = 'yes' === ( $settings['show_builder'] ?? 'yes' );
+		$args['builder_text']     = (string) ( $settings['builder_text'] ?? '' );
+		$args['show_inquiry']     = 'yes' === ( $settings['show_inquiry'] ?? 'yes' );
+		$args['inquiry_heading']  = (string) ( $settings['inquiry_heading'] ?? '' );
+		$args['inquiry_open']     = 'yes' === ( $settings['inquiry_open'] ?? '' );
 
 		// The extra class neutralizes the container geometry of
 		// .om-single-product (the Elementor section owns spacing here) while

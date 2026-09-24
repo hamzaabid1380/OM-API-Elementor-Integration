@@ -32,5 +32,8 @@ class OM_Elementor_Widgets {
 		require_once OM_CATALOG_DIR . 'includes/class-om-elementor-product-widget.php';
 		$widgets_manager->register( new OM_Elementor_Catalog_Widget() );
 		$widgets_manager->register( new OM_Elementor_Product_Widget() );
+		require_once OM_CATALOG_DIR . 'includes/class-om-elementor-extra-widgets.php';
+		$widgets_manager->register( new OM_Elementor_Diamond_Widget() );
+		$widgets_manager->register( new OM_Elementor_Builder_Widget() );
 	}
 }

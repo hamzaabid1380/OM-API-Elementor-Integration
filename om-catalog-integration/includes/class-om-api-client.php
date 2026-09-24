@@ -378,4 +378,72 @@ class OM_API_Client {
 		}
 		return $out;
 	}
+
+	/**
+	 * Starting price of a product in its default configuration, for listing
+	 * cards ("From $1,188"). Cached for 12 hours — it is an indication, the
+	 * product page always re-quotes live.
+	 *
+	 * @return float|null Wholesale price, or null when unavailable.
+	 */
+	public static function get_card_price( $product_line, $style_number ) {
+		$cache_key = 'om_cardprice_' . md5( $product_line . '|' . $style_number );
+		$cached    = get_transient( $cache_key );
+		if ( false !== $cached ) {
+			return 'none' === $cached ? null : (float) $cached;
+		}
+		$quote = self::request( 'products/' . $product_line . '/quotation', array( 'styleNumber' => $style_number ) );
+		if ( is_wp_error( $quote ) || ! isset( $quote['price'] ) ) {
+			// Remember "no price" briefly so a broken product isn't re-quoted on every view.
+			set_transient( $cache_key, 'none', 30 * MINUTE_IN_SECONDS );
+			return null;
+		}
+		set_transient( $cache_key, (float) $quote['price'], 12 * HOUR_IN_SECONDS );
+		return (float) $quote['price'];
+	}
+
+	/**
+	 * Search loose diamonds (GET /products/diamonds). Results are cached
+	 * for 10 minutes per query; the diamond catalog changes during the day.
+	 *
+	 * @param array $args origin, shape, color, clarity, cut, lab, carat,
+	 *                    cost, sort_by, order, limit, offset, lot_number...
+	 * @return array|WP_Error
+	 */
+	public static function search_diamonds( $args ) {
+		ksort( $args );
+		$cache_key = 'om_diamonds_' . md5( wp_json_encode( $args ) );
+		$cached    = get_transient( $cache_key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		$result = self::request( 'products/diamonds', $args );
+		if ( ! is_wp_error( $result ) ) {
+			set_transient( $cache_key, $result, 10 * MINUTE_IN_SECONDS );
+		}
+		return $result;
+	}
+
+	/**
+	 * One diamond by its lot number. The API's lot_number filter is a
+	 * partial match, so the exact stone is picked from the results.
+	 *
+	 * @return array|WP_Error
+	 */
+	public static function get_diamond( $lot_number ) {
+		$lot_number = trim( (string) $lot_number );
+		if ( '' === $lot_number ) {
+			return new WP_Error( 'om_not_found', __( 'Diamond not found.', 'om-catalog' ) );
+		}
+		$result = self::search_diamonds( array( 'lot_number' => $lot_number, 'limit' => 20 ) );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		foreach ( (array) ( $result['diamonds'] ?? array() ) as $diamond ) {
+			if ( isset( $diamond['lot_number'] ) && 0 === strcasecmp( (string) $diamond['lot_number'], $lot_number ) ) {
+				return $diamond;
+			}
+		}
+		return new WP_Error( 'om_not_found', __( 'This diamond is no longer available.', 'om-catalog' ) );
+	}
 }

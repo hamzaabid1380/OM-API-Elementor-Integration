@@ -211,6 +211,64 @@ class OM_Rewrites {
 		if ( $image ) {
 			echo '<meta property="og:image" content="' . esc_url( $image ) . '" />' . "\n";
 		}
+
+		$this->product_schema( $product, $title, $desc, $url );
+	}
+
+	/**
+	 * schema.org Product data, so search engines can show the piece's
+	 * name, images and (when prices are live) its price in results.
+	 */
+	private function product_schema( $product, $title, $desc, $url ) {
+		$images = array_values( array_filter( array_map( 'om_image_url', array_slice( (array) ( $product['images'] ?? array() ), 0, 6 ) ) ) );
+		$schema = array(
+			'@context'    => 'https://schema.org',
+			'@type'       => 'Product',
+			'name'        => $title,
+			'sku'         => $this->current_style,
+			'mpn'         => $this->current_style,
+			'description' => $desc,
+			'url'         => $url,
+			'brand'       => array(
+				'@type' => 'Brand',
+				'name'  => get_bloginfo( 'name' ),
+			),
+			'category'    => ucwords( str_replace( '-', ' ', $this->current_line ) ),
+		);
+		if ( $images ) {
+			$schema['image'] = $images;
+		}
+
+		if ( om_markup_is_configured() ) {
+			$quote = OM_API_Client::get_quotation(
+				$this->current_line,
+				array_filter(
+					array(
+						'styleNumber' => $this->current_style,
+						'metal'       => $product['default_metal'] ?? '',
+						'color'       => $product['default_color'] ?? '',
+						'level'       => $product['default_level'] ?? '',
+						'quality'     => $product['default_quality'] ?? '',
+					)
+				)
+			);
+			if ( ! is_wp_error( $quote ) && isset( $quote['price'] ) ) {
+				$schema['offers'] = array(
+					'@type'         => 'Offer',
+					'price'         => number_format( om_apply_markup( floatval( $quote['price'] ) ), 2, '.', '' ),
+					'priceCurrency' => (string) ( $quote['currency'] ?? 'USD' ),
+					// Made to order by Overnight Mountings.
+					'availability'  => 'https://schema.org/PreOrder',
+					'url'           => $url,
+					'seller'        => array(
+						'@type' => 'Organization',
+						'name'  => get_bloginfo( 'name' ),
+					),
+				);
+			}
+		}
+
+		echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG ) . '</script>' . "\n";
 	}
 
 	public function maybe_load_product_template( $template ) {

@@ -266,6 +266,60 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'show_search',
+			array(
+				'label'       => __( 'Search box', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'separator'   => 'before',
+				'description' => __( 'Searches names and style numbers of the active line, with suggestions as you type.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'search_placeholder',
+			array(
+				'label'       => __( 'Search placeholder', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Search by name or style number', 'om-catalog' ),
+				'condition'   => array( 'show_search' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'show_sort',
+			array(
+				'label'   => __( 'Sort dropdown', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => 'yes',
+			)
+		);
+
+		$this->add_control(
+			'default_sort',
+			array(
+				'label'   => __( 'Default order', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => '',
+				'options' => array(
+					''       => __( 'Featured (Overnight Mountings order)', 'om-catalog' ),
+					'newest' => __( 'Newest first', 'om-catalog' ),
+					'style'  => __( 'Style number', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'show_prices',
+			array(
+				'label'       => __( '"From $X" price on cards', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => '',
+				'description' => __( 'Starting price in the default configuration, loaded after the page. Only shows once a markup is set.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
 			'show_count',
 			array(
 				'label'   => __( 'Show result count', 'om-catalog' ),
@@ -1098,6 +1152,11 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'filter_metals'   => (string) ( $settings['filter_metals'] ?? '' ),
 			'filters_title'   => (string) ( $settings['filters_title'] ?? '' ),
 			'show_count'      => (string) ( $settings['show_count'] ?? 'yes' ),
+			'show_search'     => (string) ( $settings['show_search'] ?? 'yes' ),
+			'search_placeholder' => (string) ( $settings['search_placeholder'] ?? '' ),
+			'show_sort'       => (string) ( $settings['show_sort'] ?? 'yes' ),
+			'sort'            => (string) ( $settings['default_sort'] ?? '' ),
+			'show_prices'     => (string) ( $settings['show_prices'] ?? '' ),
 			'per_page'        => '' !== (string) $settings['per_page'] ? (int) $settings['per_page'] : 12,
 			'style'           => trim( preg_replace( '/\s+/', ' ', (string) $settings['collection_filter'] ) ),
 			'set'             => trim( (string) $settings['set_filter'] ),

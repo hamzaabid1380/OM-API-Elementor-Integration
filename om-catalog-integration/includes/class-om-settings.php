@@ -56,7 +56,20 @@ class OM_Settings {
 		// Product page layout (0 = built-in template, else an Elementor page ID).
 		register_setting( 'om_catalog_settings', 'om_product_layout_page', array( 'sanitize_callback' => 'absint' ) );
 
+		// Loose diamonds: own markup (falls back to the jewelry markup).
+		register_setting( 'om_catalog_settings', 'om_diamond_markup_type', array( 'sanitize_callback' => 'sanitize_key' ) );
+		register_setting( 'om_catalog_settings', 'om_diamond_markup_value', array( 'sanitize_callback' => array( $this, 'sanitize_float' ) ) );
+
+		// Ring builder.
+		register_setting( 'om_catalog_settings', 'om_builder_page', array( 'sanitize_callback' => 'absint' ) );
+		register_setting( 'om_catalog_settings', 'om_builder_lines', array( 'sanitize_callback' => array( $this, 'sanitize_lines' ) ) );
+
+		// Inquiries.
+		register_setting( 'om_catalog_settings', 'om_inquiry_email', array( 'sanitize_callback' => 'sanitize_email' ) );
+		register_setting( 'om_catalog_settings', 'om_inquiry_success', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+
 		// Brand colors / fonts.
+		register_setting( 'om_catalog_settings', 'om_style_source', array( 'sanitize_callback' => array( $this, 'sanitize_style_source' ) ) );
 		register_setting( 'om_catalog_settings', 'om_color_primary', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
 		register_setting( 'om_catalog_settings', 'om_color_accent', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
 		register_setting( 'om_catalog_settings', 'om_color_background', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
@@ -83,6 +96,32 @@ class OM_Settings {
 	/** Allow tel:, mailto: and normal URLs (esc_url_raw keeps those protocols). */
 	public function sanitize_link( $value ) {
 		return esc_url_raw( trim( (string) $value ) );
+	}
+
+	public function sanitize_lines( $value ) {
+		return implode( ',', array_filter( array_map( 'sanitize_title', explode( ',', (string) $value ) ) ) );
+	}
+
+	public function sanitize_style_source( $value ) {
+		return 'custom' === $value ? 'custom' : 'kit';
+	}
+
+	/** Published pages, for the page pickers. */
+	private function page_options( $name, $selected, $only_elementor = false ) {
+		$args = array(
+			'post_type'      => 'page',
+			'post_status'    => 'publish',
+			'posts_per_page' => 200,
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+		);
+		if ( $only_elementor ) {
+			$args['meta_key']   = '_elementor_edit_mode'; // phpcs:ignore WordPress.DB.SlowDBQuery
+			$args['meta_value'] = 'builder'; // phpcs:ignore WordPress.DB.SlowDBQuery
+		}
+		foreach ( get_posts( $args ) as $page ) {
+			printf( '<option value="%d" %s>%s</option>', (int) $page->ID, selected( (int) $selected, (int) $page->ID, false ), esc_html( $page->post_title ) );
+		}
 	}
 
 	public function sanitize_float( $value ) {
@@ -139,6 +178,57 @@ class OM_Settings {
 					</tr>
 				</table>
 
+				<h2>Loose Diamonds</h2>
+				<p class="description">Markup for loose diamonds (diamond search and ring builder). Leave the value empty to use the jewelry markup above.</p>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_diamond_markup_type">Markup type</label></th>
+						<td>
+							<?php $dtype = get_option( 'om_diamond_markup_type', 'multiplier' ); ?>
+							<select id="om_diamond_markup_type" name="om_diamond_markup_type">
+								<option value="percentage" <?php selected( $dtype, 'percentage' ); ?>>Percentage on top of wholesale</option>
+								<option value="multiplier" <?php selected( $dtype, 'multiplier' ); ?>>Multiplier</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="om_diamond_markup_value">Markup value</label></th>
+						<td><input type="number" step="0.01" id="om_diamond_markup_value" name="om_diamond_markup_value" value="<?php echo esc_attr( get_option( 'om_diamond_markup_value', '' ) ); ?>" class="small-text" /></td>
+					</tr>
+				</table>
+
+				<h2>Ring Builder</h2>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_builder_page">Builder page</label></th>
+						<td>
+							<select id="om_builder_page" name="om_builder_page">
+								<option value="0">&mdash; None (builder off) &mdash;</option>
+								<?php $this->page_options( 'om_builder_page', get_option( 'om_builder_page', 0 ) ); ?>
+							</select>
+							<p class="description">A page containing the <strong>OM Ring Builder</strong> widget or <code>[om_ring_builder]</code>. Once set, product pages of the lines below show a "Select this setting" button and the diamond search a "Select this diamond" button.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="om_builder_lines">Setting product lines</label></th>
+						<td><input type="text" id="om_builder_lines" name="om_builder_lines" value="<?php echo esc_attr( get_option( 'om_builder_lines', 'engagement-rings' ) ); ?>" class="regular-text" />
+						<p class="description">Comma-separated line codes whose products can be chosen as the setting.</p></td>
+					</tr>
+				</table>
+
+				<h2>Inquiries</h2>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_inquiry_email">Send inquiries to</label></th>
+						<td><input type="email" id="om_inquiry_email" name="om_inquiry_email" value="<?php echo esc_attr( get_option( 'om_inquiry_email', '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>" />
+						<p class="description">Every inquiry is also saved under <a href="<?php echo esc_url( admin_url( 'edit.php?post_type=om_inquiry' ) ); ?>">Inquiries</a>, so none are lost if email fails.</p></td>
+					</tr>
+					<tr>
+						<th><label for="om_inquiry_success">Thank-you message</label></th>
+						<td><input type="text" id="om_inquiry_success" name="om_inquiry_success" value="<?php echo esc_attr( get_option( 'om_inquiry_success', '' ) ); ?>" class="large-text" placeholder="Thank you! Your inquiry has been sent. We will be in touch soon." /></td>
+					</tr>
+				</table>
+
 				<h2>When no price is shown</h2>
 				<p class="description">Used by the built-in product page, and by the OM Single Product widget unless its own text/link is set. The widget can also show fully custom buttons instead.</p>
 				<table class="form-table">
@@ -191,6 +281,19 @@ class OM_Settings {
 				</table>
 
 				<h2>Brand Colors &amp; Fonts</h2>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_style_source">Style source</label></th>
+						<td>
+							<?php $source = get_option( 'om_style_source', 'kit' ); ?>
+							<select id="om_style_source" name="om_style_source">
+								<option value="kit" <?php selected( $source, 'kit' ); ?>>Follow the Elementor kit (Site Settings &gt; Global Colors &amp; Fonts)</option>
+								<option value="custom" <?php selected( $source, 'custom' ); ?>>Use the values below</option>
+							</select>
+							<p class="description">With the kit, the catalog uses its Primary, Accent and Text colours and its Primary (headings) and Text (body) fonts, and changes whenever the site's kit does. Anything the kit doesn't set uses the values below.</p>
+						</td>
+					</tr>
+				</table>
 				<p class="description">Used to style the catalog grid and single product pages. Defaults match the live wulfdiamondjewelers.com Elementor kit (Arapey headings, Inter body, #00111C primary). Adjust here if the site's branding changes.</p>
 				<table class="form-table">
 					<tr>

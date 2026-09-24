@@ -19,6 +19,19 @@ class OM_Shortcodes {
 	/** Center-stone shapes offered by the visitor "Shape" filter. */
 	const DEFAULT_SHAPES = array( 'Round', 'Oval', 'Cushion', 'Princess', 'Emerald', 'Pear', 'Marquise', 'Radiant', 'Asscher', 'Heart' );
 
+	/**
+	 * Visitor sort options => API sortBy/order. '' is OM's own curated
+	 * order (sortOrder).
+	 */
+	const SORTS = array(
+		''       => array(),
+		'newest' => array( 'sortBy' => 'new', 'order' => 'desc' ),
+		'style'  => array( 'sortBy' => 'styleNumber', 'order' => 'asc' ),
+	);
+
+	/** Query-string parameters that carry visitor state. */
+	const STATE_PARAMS = array( 'om_style', 'om_page', 'om_line', 'om_shape', 'om_metal', 'om_q', 'om_sort' );
+
 	/** Metal colours offered by the visitor "Metal" filter. */
 	const DEFAULT_METAL_COLORS = array( 'White', 'Yellow', 'Rose' );
 
@@ -85,7 +98,7 @@ class OM_Shortcodes {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view state.
 		return self::request_from_query(
 			wp_unslash( $_GET ),
-			remove_query_arg( array( 'om_style', 'om_page', 'om_line', 'om_shape', 'om_metal' ) )
+			remove_query_arg( self::STATE_PARAMS )
 		);
 		// phpcs:enable
 	}
@@ -101,6 +114,8 @@ class OM_Shortcodes {
 			'line'     => sanitize_title( $get( 'om_line' ) ),
 			'shape'    => sanitize_text_field( $get( 'om_shape' ) ),
 			'metal'    => sanitize_text_field( $get( 'om_metal' ) ),
+			'q'        => mb_substr( sanitize_text_field( $get( 'om_q' ) ), 0, 80 ),
+			'sort'     => sanitize_key( $get( 'om_sort' ) ),
 			'base_url' => $base_url,
 		);
 	}
@@ -191,6 +206,18 @@ class OM_Shortcodes {
 				'filter_style'    => 'pills',
 				'filters_title'   => '',
 				'show_count'      => 'yes',
+				// Keyword search box with as-you-type suggestions.
+				'show_search'     => 'yes',
+				'search_placeholder' => '',
+				// Visitor sort dropdown, and the default order.
+				'show_sort'       => 'yes',
+				'sort'            => '',
+				// "yes" shows a "From $X" starting price on each card (loaded
+				// after the page, only when a markup is configured).
+				'show_prices'     => '',
+				// Extra query args appended to product links (the ring
+				// builder uses this to carry its state).
+				'card_query'      => '',
 			),
 			$atts,
 			'om_catalog'
@@ -245,7 +272,10 @@ class OM_Shortcodes {
 			'style' => isset( $allowed_styles[ $request['style'] ] ) ? $request['style'] : '',
 			'shape' => isset( $shape_options[ $request['shape'] ] ) ? $request['shape'] : '',
 			'metal' => isset( $metal_options[ $request['metal'] ] ) ? $request['metal'] : '',
+			'sort'  => 'featured' === $request['sort'] ? '' : ( ( '' !== $request['sort'] && isset( self::SORTS[ $request['sort'] ] ) ) ? $request['sort'] : ( isset( self::SORTS[ $atts['sort'] ] ) ? (string) $atts['sort'] : '' ) ),
+			'q'     => 'yes' === $atts['show_search'] ? trim( (string) ( $request['q'] ?? '' ) ) : '',
 		);
+		$default_sort = isset( self::SORTS[ $atts['sort'] ] ) ? (string) $atts['sort'] : '';
 
 		$style_filter = '' !== $state['style'] ? $state['style'] : $admin_base;
 		$shape_filter = '' !== $state['shape'] ? $state['shape'] : self::normalize_style_list( $atts['shape'] );
@@ -256,11 +286,19 @@ class OM_Shortcodes {
 		$base_url = $request['base_url'];
 		$multi    = count( $lines ) > 1;
 
-		$url = function ( $changes = array() ) use ( $state, $base_url, $multi ) {
-			$s    = array_merge( $state, array( 'page' => 1 ), $changes );
+		// Links drop the search unless asked to keep it (pagination and
+		// sorting do): picking a filter starts a fresh browse.
+		$url = function ( $changes = array() ) use ( $state, $base_url, $multi, $default_sort ) {
+			$s    = array_merge( $state, array( 'page' => 1, 'q' => '' ), $changes );
 			$args = array();
 			if ( $multi ) {
 				$args['om_line'] = $s['line'];
+			}
+			if ( '' !== $s['q'] ) {
+				$args['om_q'] = rawurlencode( $s['q'] );
+			}
+			if ( $s['sort'] !== $default_sort ) {
+				$args['om_sort'] = '' === $s['sort'] ? 'featured' : $s['sort'];
 			}
 			foreach ( array( 'style' => 'om_style', 'shape' => 'om_shape', 'metal' => 'om_metal' ) as $key => $param ) {
 				if ( '' !== (string) $s[ $key ] ) {
@@ -289,7 +327,7 @@ class OM_Shortcodes {
 				// numbers included.
 				'parentsOnly' => '' !== $include ? 'false' : '',
 				'limit'       => $per_page,
-			)
+			) + self::SORTS[ $state['sort'] ]
 		);
 
 		// Remember each query's total so out-of-range pages (or anyone
@@ -299,7 +337,14 @@ class OM_Shortcodes {
 		$cache_minutes = max( 1, (int) get_option( 'om_listing_cache_minutes', 15 ) );
 		$out_of_range  = false !== $known_total && $paged > max( 1, (int) ceil( (int) $known_total / $per_page ) );
 
-		if ( $out_of_range ) {
+		if ( '' !== $state['q'] ) {
+			// Keyword search runs against the line's local index.
+			$hits = OM_Search::search( $active_line, $state['q'] );
+			$data = is_wp_error( $hits ) ? $hits : array(
+				'products'    => array_slice( $hits, ( $paged - 1 ) * $per_page, $per_page ),
+				'total_count' => count( $hits ),
+			);
+		} elseif ( $out_of_range ) {
 			$data = array(
 				'products'    => array(),
 				'total_count' => (int) $known_total,
@@ -396,6 +441,10 @@ class OM_Shortcodes {
 
 		// Active filter chips (each removes one pick) + "Clear all".
 		$chips = array();
+		if ( '' !== $state['q'] ) {
+			/* translators: %s: search words. */
+			$chips[] = array( 'label' => sprintf( __( '"%s"', 'om-catalog' ), $state['q'] ), 'url' => $url( array( 'q' => '' ) ) );
+		}
 		if ( '' !== $state['style'] ) {
 			$chips[] = array( 'label' => $allowed_styles[ $state['style'] ], 'url' => $url( array( 'style' => '' ) ) );
 		}
@@ -435,7 +484,7 @@ class OM_Shortcodes {
 			$this->render_top_bars( $facets, $filter_style );
 		}
 
-		$this->render_results( $data, $atts, $paged, $per_page, $columns, $layout, $active_line, $chips, $clear_url, $has_side, $url );
+		$this->render_results( $data, $atts, $paged, $per_page, $columns, $layout, $active_line, $chips, $clear_url, $state, $url, $base_url, $multi );
 
 		if ( $has_side ) {
 			echo '</div></div>';
@@ -646,8 +695,46 @@ class OM_Shortcodes {
 		);
 	}
 
+	/**
+	 * Search box: a real GET form (works without JavaScript) that the
+	 * script upgrades with as-you-type suggestions and in-place results.
+	 * Submitting a search starts fresh: filters are cleared, the line and
+	 * sort order are kept.
+	 */
+	private function render_search( $atts, $state, $base_url, $multi, $active_line ) {
+		$action = strtok( $base_url, '?' );
+		$query  = array();
+		parse_str( (string) wp_parse_url( $base_url, PHP_URL_QUERY ), $query );
+		$placeholder = '' !== trim( (string) $atts['search_placeholder'] ) ? $atts['search_placeholder'] : __( 'Search by name or style number', 'om-catalog' );
+		$input_id    = 'om-q-' . wp_rand( 1000, 9999 );
+		?>
+		<form class="om-search" role="search" action="<?php echo esc_url( $action ); ?>" method="get" data-om-line="<?php echo esc_attr( $active_line ); ?>">
+			<?php foreach ( $query as $key => $value ) : ?>
+				<?php if ( is_scalar( $value ) ) : ?>
+					<input type="hidden" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $value ); ?>" />
+				<?php endif; ?>
+			<?php endforeach; ?>
+			<?php if ( $multi ) : ?>
+				<input type="hidden" name="om_line" value="<?php echo esc_attr( $active_line ); ?>" />
+			<?php endif; ?>
+			<?php if ( '' !== $state['sort'] ) : ?>
+				<input type="hidden" name="om_sort" value="<?php echo esc_attr( $state['sort'] ); ?>" />
+			<?php endif; ?>
+			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>"><?php esc_html_e( 'Search the catalog', 'om-catalog' ); ?></label>
+			<span class="om-search-icon" aria-hidden="true"></span>
+			<input id="<?php echo esc_attr( $input_id ); ?>" class="om-search-input" type="search" name="om_q" value="<?php echo esc_attr( $state['q'] ); ?>" placeholder="<?php echo esc_attr( $placeholder ); ?>" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="<?php echo esc_attr( $input_id ); ?>-list" enterkeyhint="search" />
+			<button class="om-search-submit" type="submit"><?php esc_html_e( 'Search', 'om-catalog' ); ?></button>
+			<ul class="om-suggest" id="<?php echo esc_attr( $input_id ); ?>-list" role="listbox" hidden></ul>
+		</form>
+		<?php
+	}
+
 	/** Result toolbar, grid and pagination (or an empty/error state). */
-	private function render_results( $data, $atts, $paged, $per_page, $columns, $layout, $active_line, $chips, $clear_url, $has_side, $url ) {
+	private function render_results( $data, $atts, $paged, $per_page, $columns, $layout, $active_line, $chips, $clear_url, $state, $url, $base_url, $multi ) {
+		if ( 'yes' === $atts['show_search'] ) {
+			$this->render_search( $atts, $state, $base_url, $multi, $active_line );
+		}
+
 		if ( is_wp_error( $data ) ) {
 			echo '<div class="om-error"><p>' . esc_html( om_public_error_message( $data ) ) . '</p></div>';
 			return;
@@ -656,45 +743,71 @@ class OM_Shortcodes {
 		$total    = isset( $data['total_count'] ) ? (int) $data['total_count'] : count( (array) ( $data['products'] ?? array() ) );
 		$products = ! empty( $data['products'] ) ? $data['products'] : array();
 
-		// Toolbar: result count, plus active-filter chips when there's no
-		// sidebar to show them.
+		// Toolbar: result count + active-filter chips on the left, sort on
+		// the right.
 		$show_count = 'yes' === $atts['show_count'] && $total > 0 && $products;
-		if ( $show_count || ( $chips && ! $has_side ) ) {
-			echo '<div class="om-catalog-toolbar">';
+		$show_sort  = 'yes' === $atts['show_sort'] && '' === $state['q'] && $products;
+		if ( $show_count || $chips || $show_sort ) {
+			echo '<div class="om-catalog-toolbar"><div class="om-toolbar-start">';
 			if ( $show_count ) {
 				$first = ( $paged - 1 ) * $per_page + 1;
 				$last  = min( $total, $first + count( $products ) - 1 );
-				echo '<p class="om-result-count">' . esc_html(
-					$total > $per_page
-						/* translators: 1: first item, 2: last item, 3: total. */
-						? sprintf( __( 'Showing %1$s–%2$s of %3$s', 'om-catalog' ), number_format_i18n( $first ), number_format_i18n( $last ), number_format_i18n( $total ) )
-						/* translators: %s: number of designs. */
-						: sprintf( _n( '%s design', '%s designs', $total, 'om-catalog' ), number_format_i18n( $total ) )
-				) . '</p>';
+				if ( '' !== $state['q'] ) {
+					/* translators: 1: number of results, 2: search words. */
+					$count_text = sprintf( _n( '%1$s result for "%2$s"', '%1$s results for "%2$s"', $total, 'om-catalog' ), number_format_i18n( $total ), $state['q'] );
+				} elseif ( $total > $per_page ) {
+					/* translators: 1: first item, 2: last item, 3: total. */
+					$count_text = sprintf( __( 'Showing %1$s–%2$s of %3$s', 'om-catalog' ), number_format_i18n( $first ), number_format_i18n( $last ), number_format_i18n( $total ) );
+				} else {
+					/* translators: %s: number of designs. */
+					$count_text = sprintf( _n( '%s design', '%s designs', $total, 'om-catalog' ), number_format_i18n( $total ) );
+				}
+				echo '<p class="om-result-count" aria-live="polite">' . esc_html( $count_text ) . '</p>';
 			}
-			if ( $chips && ! $has_side ) {
+			if ( $chips ) {
 				echo '<div class="om-active-filters">';
 				foreach ( $chips as $chip ) {
 					/* translators: %s: filter name. */
 					printf( '<a class="om-chip" href="%s" aria-label="%s">%s<span aria-hidden="true">&times;</span></a>', esc_url( $chip['url'] ), esc_attr( sprintf( __( 'Remove filter: %s', 'om-catalog' ), $chip['label'] ) ), esc_html( $chip['label'] ) );
 				}
-				echo '<a class="om-clear-filters" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Clear all', 'om-catalog' ) . '</a>';
+				if ( count( $chips ) > 1 ) {
+					echo '<a class="om-clear-filters" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Clear all', 'om-catalog' ) . '</a>';
+				}
 				echo '</div>';
+			}
+			echo '</div>';
+			if ( $show_sort ) {
+				$labels = array(
+					''       => __( 'Featured', 'om-catalog' ),
+					'newest' => __( 'Newest', 'om-catalog' ),
+					'style'  => __( 'Style number', 'om-catalog' ),
+				);
+				$sort_id = 'om-sort-' . wp_rand( 1000, 9999 );
+				echo '<label class="om-sort" for="' . esc_attr( $sort_id ) . '"><span>' . esc_html__( 'Sort by', 'om-catalog' ) . '</span>';
+				echo '<select id="' . esc_attr( $sort_id ) . '" class="om-filter-nav om-sort-select">';
+				foreach ( $labels as $key => $label ) {
+					printf( '<option value="%s"%s>%s</option>', esc_url( $url( array( 'sort' => $key ) ) ), selected( $state['sort'], $key, false ), esc_html( $label ) );
+				}
+				echo '</select></label>';
 			}
 			echo '</div>';
 		}
 
 		if ( empty( $products ) ) {
-			echo '<div class="om-empty"><p>' . esc_html__( 'No designs match these filters.', 'om-catalog' ) . '</p>';
+			echo '<div class="om-empty"><p>' . esc_html( '' !== $state['q'] ? __( 'No designs match your search.', 'om-catalog' ) : __( 'No designs match these filters.', 'om-catalog' ) ) . '</p>';
 			if ( $chips ) {
-				echo '<a class="om-clear-filters" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Clear all filters', 'om-catalog' ) . '</a>';
+				echo '<a class="om-clear-filters" href="' . esc_url( $clear_url ) . '">' . esc_html( '' !== $state['q'] ? __( 'Clear search', 'om-catalog' ) : __( 'Clear all filters', 'om-catalog' ) ) . '</a>';
 			}
 			echo '</div>';
 			return;
 		}
 
+		$card_query = is_array( $atts['card_query'] ) ? $atts['card_query'] : wp_parse_args( (string) $atts['card_query'] );
+		$card_query = array_map( 'rawurlencode', array_filter( array_map( 'strval', $card_query ), 'strlen' ) );
+		$prices     = 'yes' === $atts['show_prices'] && om_markup_is_configured();
+
 		$style_attr = 'no' === $atts['inline_columns'] ? '' : ' style="--om-columns: ' . esc_attr( $columns ) . ';"';
-		echo '<div class="om-catalog-grid om-layout-' . esc_attr( $layout ) . '"' . $style_attr . '>'; // phpcs:ignore WordPress.Security.EscapeOutput -- built from an int.
+		echo '<div class="om-catalog-grid om-layout-' . esc_attr( $layout ) . '"' . $style_attr . ( $prices ? ' data-om-prices="' . esc_attr( $active_line ) . '"' : '' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput -- built from an int.
 		foreach ( $products as $product ) {
 			$style_number = (string) ( $product['style_number'] ?? '' );
 			if ( '' === $style_number ) {
@@ -702,17 +815,28 @@ class OM_Shortcodes {
 			}
 			$title = (string) ( $product['title'] ?? $style_number );
 			$image = ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '';
+			$hover = ! empty( $product['images'][1] ) ? om_image_url( $product['images'][1] ) : '';
+			$link  = om_product_url( $active_line, $style_number );
+			if ( $card_query ) {
+				$link = add_query_arg( $card_query, $link );
+			}
 			?>
-			<a class="om-card" href="<?php echo esc_url( om_product_url( $active_line, $style_number ) ); ?>">
-				<div class="om-card-image">
+			<a class="om-card" href="<?php echo esc_url( $link ); ?>">
+				<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?>">
 					<?php if ( $image ) : ?>
 						<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>" loading="lazy" decoding="async" />
+					<?php endif; ?>
+					<?php if ( $hover ) : ?>
+						<img class="om-card-hover" src="<?php echo esc_url( $hover ); ?>" alt="" loading="lazy" decoding="async" aria-hidden="true" />
 					<?php endif; ?>
 				</div>
 				<div class="om-card-body">
 					<h3 class="om-card-title"><?php echo esc_html( $title ); ?></h3>
 					<?php if ( ! empty( $product['variant_name'] ) ) : ?>
 						<p class="om-card-variant"><?php echo esc_html( $product['variant_name'] ); ?></p>
+					<?php endif; ?>
+					<?php if ( $prices ) : ?>
+						<p class="om-card-price" data-om-style="<?php echo esc_attr( $style_number ); ?>"><span class="om-card-price-skeleton" aria-hidden="true"></span></p>
 					<?php endif; ?>
 				</div>
 			</a>
@@ -725,7 +849,7 @@ class OM_Shortcodes {
 			echo '<nav class="om-pagination" aria-label="' . esc_attr__( 'Pages', 'om-catalog' ) . '">';
 			echo paginate_links( // phpcs:ignore WordPress.Security.EscapeOutput -- core function, escaped internally.
 				array(
-					'base'      => str_replace( '999999999', '%#%', $url( array( 'page' => 999999999 ) ) ),
+					'base'      => str_replace( '999999999', '%#%', $url( array( 'page' => 999999999, 'q' => $state['q'] ) ) ),
 					'format'    => '',
 					'total'     => $total_pages,
 					'current'   => min( $paged, $total_pages ),

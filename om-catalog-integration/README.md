@@ -134,6 +134,48 @@ In the **OM Single Product** widget (Content tab > Price & Buttons):
 The Style tab's **Buttons** section covers typography, padding, height,
 width, corner radius, border, icon size/spacing and normal/hover colours.
 
+## Search, sorting and card prices
+
+Every catalog grid has a **search box** (names, style numbers and carat
+names of the active line, with suggestions as you type) and a **Sort by**
+dropdown (Featured, Newest, Style number). Overnight Mountings' API has no
+keyword search, so the plugin keeps its own small index per product line,
+rebuilt every 12 hours (a few API calls, 500 products each).
+
+Turn on **"From $X" price on cards** to show each design's starting price.
+Prices load just after the page (so it never waits on them), are cached for
+12 hours, and only appear once a markup is set.
+
+## Loose diamonds
+
+Drop the **OM Diamond Search** widget (or `[om_diamonds]`) on a page:
+shape picker, carat and price ranges, lab-grown/natural, colour, clarity and
+cut, sorting, and an expandable detail panel per stone (photo or 360° view,
+specs, certificate link, "Select this diamond", "Ask about this diamond").
+Diamonds use their own markup (**Settings > OM Catalog > Loose Diamonds**),
+falling back to the jewelry markup.
+
+## Ring builder
+
+1. Create a page (e.g. "Design Your Ring") with the **OM Ring Builder**
+   widget or `[om_ring_builder]`.
+2. Choose it under **Settings > OM Catalog > Ring Builder** (and which
+   product lines count as settings — engagement rings by default).
+
+Customers pick a setting and a diamond in either order, then see both with
+the total price and a "Request this ring" form. The design lives in the page
+URL, so it can be bookmarked or shared. Engagement-ring product pages get a
+**Select this setting** button; the diamond search gets **Select this
+diamond**.
+
+## Inquiries
+
+Product pages, diamonds and the builder review have an inquiry form. Each
+inquiry is emailed to the address in **Settings > OM Catalog > Inquiries**
+(default: the site admin email) and saved under **Inquiries** in wp-admin,
+with the piece, chosen options, price shown and page link. Spam is filtered
+with a hidden field, a minimum fill time and a per-visitor hourly limit.
+
 ## Filtering & curating what shows (Elementor or shortcode)
 
 The widget's Content tab (and matching shortcode attributes) control what
@@ -167,6 +209,22 @@ untouched inherits the site-wide defaults from Settings > OM Catalog, so
 per-widget styling is opt-in.
 
 ## Changelog
+
+### 1.3.0
+- Search box with as-you-type suggestions on every catalog grid; Sort by
+  dropdown; optional "From $X" starting prices on cards; second product
+  photo on card hover.
+- Product pages: click-to-open lightbox (keyboard and swipe), hover zoom,
+  product videos, schema.org Product data for search engines, "Select this
+  setting" (ring builder) and an inquiry form.
+- New OM Diamond Search widget / [om_diamonds] and OM Ring Builder widget /
+  [om_ring_builder], with a separate diamond markup.
+- Inquiries saved in wp-admin and emailed.
+- Catalog colours and fonts can follow the Elementor kit (Settings > OM
+  Catalog > Style source).
+- Responsive pass: diamond rows become cards, builder steps stack, forms
+  use 16px inputs on phones (no iOS zoom), thumbnails scroll sideways,
+  full-width buttons.
 
 ### 1.2.0
 - New filter layouts: sidebar (left or right, collapsing to a "Filters"
