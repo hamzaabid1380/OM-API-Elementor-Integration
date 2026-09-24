@@ -380,6 +380,14 @@ colour.
 
 ## Changelog
 
+### 1.10.0
+- Search suggestions: product photo (default metal colour), carat and style
+  number, and a "From $X" starting price that loads right after the list
+  (cached, remembered while the visitor keeps typing). Typed words are
+  highlighted; a two-line layout on phones. Catalog widget switch:
+  "Prices in search suggestions" (shortcode `suggest_prices="no"`).
+- The search box's clear button uses the brand colour.
+
 ### 1.9.0
 - Buttons, links, pills and icon buttons keep their own colours and shape
   on hover and focus under any theme or Elementor kit (no more pink/purple

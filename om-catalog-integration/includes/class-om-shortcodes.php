@@ -209,6 +209,8 @@ class OM_Shortcodes {
 				// Keyword search box with as-you-type suggestions.
 				'show_search'     => 'yes',
 				'search_placeholder' => '',
+				// "From $X" beside each search suggestion (once a markup is set).
+				'suggest_prices'  => 'yes',
 				// Visitor sort dropdown, and the default order.
 				'show_sort'       => 'yes',
 				'sort'            => '',

@@ -68,7 +68,8 @@ class OM_Search {
 					's' => (string) $product['style_number'],
 					't' => (string) ( $product['title'] ?? '' ),
 					'v' => (string) ( $product['variant_name'] ?? '' ),
-					'i' => ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '',
+					// The photo a card shows (the default metal colour's).
+					'i' => function_exists( 'om_card_images' ) ? (string) om_card_images( $product )[0] : ( ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '' ),
 				);
 			}
 			$total   = (int) ( $page['total_count'] ?? 0 );
@@ -185,8 +186,11 @@ class OM_Search {
 		}
 		wp_send_json_success(
 			array(
-				'items' => $items,
-				'total' => count( $hits ),
+				'items'  => $items,
+				'total'  => count( $hits ),
+				// "From $X" is filled in right after, from the same cached
+				// starting prices the listing cards use.
+				'prices' => 'no' !== ( $atts['suggest_prices'] ?? 'yes' ) && om_markup_is_configured(),
 			)
 		);
 	}

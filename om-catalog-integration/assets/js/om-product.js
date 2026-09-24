@@ -583,6 +583,45 @@
 
 	var suggestTimer = null;
 	var suggestSeq = 0;
+	var suggestPrices = {}; // line|style => "From $X" ('' = none)
+
+	// The typed words in bold inside a suggestion's text.
+	function highlight(text, q) {
+		var $out = $('<span></span>');
+		var words = q.toLowerCase().split(/\s+/).filter(function (w) { return w.length > 1; });
+		if (!words.length) { return $out.text(text); }
+		var re = new RegExp('(' + words.map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')', 'ig');
+		String(text).split(re).forEach(function (part, i) {
+			$out.append(i % 2 ? $('<mark></mark>').text(part) : document.createTextNode(part));
+		});
+		return $out;
+	}
+
+	// Starting prices for the suggestions shown, one request, remembered
+	// for the rest of the visit.
+	function fillSuggestPrices($list, line) {
+		var need = [];
+		$list.find('.om-suggest-price[data-om-style]').each(function () {
+			var style = $(this).attr('data-om-style');
+			var key = line + '|' + style;
+			if (key in suggestPrices) { setSuggestPrice($(this), suggestPrices[key]); } else { need.push(style); }
+		});
+		if (!need.length) { return; }
+		$.post(cfg.ajaxUrl, { action: 'om_card_prices', line: line, styles: need }).done(function (response) {
+			var prices = (response && response.success && response.data.prices) || {};
+			need.forEach(function (style) { suggestPrices[line + '|' + style] = prices[style] || ''; });
+			$list.find('.om-suggest-price[data-om-style]').each(function () {
+				var key = line + '|' + $(this).attr('data-om-style');
+				if (key in suggestPrices) { setSuggestPrice($(this), suggestPrices[key]); }
+			});
+		}).fail(function () {
+			$list.find('.om-suggest-price.is-loading').remove();
+		});
+	}
+
+	function setSuggestPrice($el, text) {
+		if (text) { $el.removeClass('is-loading').text(text); } else { $el.remove(); }
+	}
 
 	$(document).on('submit', '.om-catalog-wrap .om-search', function (e) {
 		if (!window.URL || !window.URLSearchParams) { return; }
@@ -628,11 +667,17 @@
 				items.forEach(function (item, i) {
 					var $a = $('<a class="om-suggest-item" role="option"></a>').attr({ href: item.url, id: $list.attr('id') + '-' + i });
 					var $img = $('<span class="om-suggest-img"></span>');
-					if (item.image) { $img.append($('<img alt="" loading="lazy" />').attr('src', item.image)); }
+					if (item.image) { $img.append($('<img alt="" loading="lazy" decoding="async" />').attr('src', item.image)); }
 					$a.append($img);
+					var $meta = $('<span class="om-suggest-meta"></span>');
+					if (item.variant) { $meta.append($('<span class="om-suggest-variant"></span>').text(item.variant)); }
+					$meta.append($('<span class="om-suggest-style"></span>').append(t('style', 'Style') + ' ', highlight(item.style, q)));
 					$a.append($('<span class="om-suggest-text"></span>')
-						.append($('<span class="om-suggest-title"></span>').text(item.title))
-						.append($('<span class="om-suggest-meta"></span>').text([item.variant, 'Style ' + item.style].filter(Boolean).join(' · '))));
+						.append($('<span class="om-suggest-title"></span>').append(highlight(item.title, q)))
+						.append($meta));
+					if (response.data.prices) {
+						$a.append($('<span class="om-suggest-price is-loading" aria-hidden="false"></span>').attr('data-om-style', item.style));
+					}
 					$list.append($('<li role="presentation"></li>').append($a));
 				});
 				if (response.data.total > items.length) {
@@ -642,6 +687,7 @@
 				}
 				$list.prop('hidden', false);
 				$(input).attr('aria-expanded', 'true');
+				if (response.data.prices) { fillSuggestPrices($list, $form.attr('data-om-line')); }
 			});
 		}, 220);
 	});

@@ -289,6 +289,17 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'suggest_prices',
+			array(
+				'label'       => __( 'Prices in search suggestions', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( '"From $X" beside each suggestion, once a markup is set.', 'om-catalog' ),
+				'condition'   => array( 'show_search' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
 			'show_sort',
 			array(
 				'label'   => __( 'Sort dropdown', 'om-catalog' ),
@@ -1387,6 +1398,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'show_count'      => (string) ( $settings['show_count'] ?? 'yes' ),
 			'show_search'     => (string) ( $settings['show_search'] ?? 'yes' ),
 			'search_placeholder' => (string) ( $settings['search_placeholder'] ?? '' ),
+			'suggest_prices'  => 'yes' === ( $settings['suggest_prices'] ?? 'yes' ) ? 'yes' : 'no',
 			'show_sort'       => (string) ( $settings['show_sort'] ?? 'yes' ),
 			'sort'            => (string) ( $settings['default_sort'] ?? '' ),
 			'show_prices'     => (string) ( $settings['show_prices'] ?? '' ),
