@@ -7,6 +7,9 @@ require_once OM_CATALOG_DIR . 'includes/functions-pricing.php';
 
 class OM_Shortcodes {
 
+	/** Pages shown at once by the current grid ("load more" restore). */
+	private $window = 1;
+
 	/**
 	 * The API hard-rejects (400) any limit over 500 on product routes rather
 	 * than capping it silently.
@@ -27,10 +30,12 @@ class OM_Shortcodes {
 		''       => array(),
 		'newest' => array( 'sortBy' => 'new', 'order' => 'desc' ),
 		'style'  => array( 'sortBy' => 'styleNumber', 'order' => 'asc' ),
+		// Most viewed first (views counted on this site), then OM's order.
+		'popular' => array(),
 	);
 
 	/** Query-string parameters that carry visitor state. */
-	const STATE_PARAMS = array( 'om_style', 'om_page', 'om_line', 'om_shape', 'om_metal', 'om_q', 'om_sort' );
+	const STATE_PARAMS = array( 'om_style', 'om_page', 'om_line', 'om_shape', 'om_metal', 'om_q', 'om_sort', 'om_upto' );
 
 	/** Metal colours offered by the visitor "Metal" filter. */
 	const DEFAULT_METAL_COLORS = array( 'White', 'Yellow', 'Rose' );
@@ -116,6 +121,9 @@ class OM_Shortcodes {
 			'metal'    => sanitize_text_field( $get( 'om_metal' ) ),
 			'q'        => mb_substr( sanitize_text_field( $get( 'om_q' ) ), 0, 80 ),
 			'sort'     => sanitize_key( $get( 'om_sort' ) ),
+			// "Load more": pages 1..upto shown at once (coming back to a
+			// longer list restores it).
+			'upto'     => '' !== $get( 'om_upto' ) ? min( 20, max( 1, absint( $get( 'om_upto' ) ) ) ) : 0,
 			'base_url' => $base_url,
 		);
 	}
@@ -218,6 +226,15 @@ class OM_Shortcodes {
 				// Page design: modern (framed panels, soft corners, motion,
 				// bottom-sheet filters on phones) or classic.
 				'design'          => 'modern',
+				// numbers, loadmore (a "Show more" button) or infinite
+				// (loads as the visitor nears the end).
+				'pagination_style' => 'numbers',
+				// "Compare" toggle under each card (tray + side-by-side table).
+				'compare'          => 'yes',
+				// "Popular" badge on the most viewed designs.
+				'badge_popular'    => 'yes',
+				// Badges double as quick filters (shape, New, Popular).
+				'badge_links'      => 'yes',
 				// Visitor sort dropdown, and the default order.
 				'show_sort'       => 'yes',
 				'sort'            => '',
@@ -373,13 +390,42 @@ class OM_Shortcodes {
 		$cache_minutes = max( 1, (int) get_option( 'om_listing_cache_minutes', 15 ) );
 		$out_of_range  = false !== $known_total && $paged > max( 1, (int) ceil( (int) $known_total / $per_page ) );
 
+		// "Load more" / infinite: coming back with om_upto=N shows pages
+		// 1..N at once (the browser then restores the scroll position).
+		$more_mode = in_array( $atts['pagination_style'], array( 'loadmore', 'infinite' ), true );
+		$window    = 1;
+		if ( $more_mode && (int) ( $request['upto'] ?? 0 ) > $paged ) {
+			$window = min( (int) $request['upto'], (int) floor( 480 / $per_page ) );
+			$paged  = max( 1, $window );
+		}
+		$w_offset = $window > 1 ? 0 : ( $paged - 1 ) * $per_page;
+		$w_length = $per_page * $window;
+
 		if ( '' !== $state['q'] ) {
 			// Keyword search runs against the line's local index.
 			$hits = OM_Search::search( $active_line, $state['q'] );
 			$data = is_wp_error( $hits ) ? $hits : array(
-				'products'    => array_slice( $hits, ( $paged - 1 ) * $per_page, $per_page ),
+				'products'    => array_slice( $hits, $w_offset, $w_length ),
 				'total_count' => count( $hits ),
 			);
+		} elseif ( 'popular' === $state['sort'] ) {
+			// Most viewed: order built locally from this site's view counts.
+			$order = OM_Engage::popular_order( $active_line, $args );
+			if ( is_wp_error( $order ) ) {
+				$data = $order;
+			} else {
+				$slice    = array_slice( $order, $w_offset, $w_length );
+				$products = OM_Engage::products_in_order( $active_line, $slice );
+				$data     = is_wp_error( $products ) ? $products : array(
+					'products'    => $products,
+					'total_count' => count( $order ),
+				);
+			}
+		} elseif ( $window > 1 ) {
+			$args['limit']  = $w_length;
+			$args['offset'] = 0;
+			$data           = self::fetch_listing( $active_line, $args );
+			$args['limit']  = $per_page;
 		} elseif ( $out_of_range ) {
 			$data = array(
 				'products'    => array(),
@@ -510,6 +556,7 @@ class OM_Shortcodes {
 			$this->render_top_bars( $facets, $filter_style );
 		}
 
+		$this->window = $window;
 		$this->render_results( $data, $atts, $paged, $per_page, $columns, $layout, $active_line, $chips, $clear_url, $state, $url, $base_url, $multi );
 
 		if ( $has_side ) {
@@ -760,6 +807,41 @@ class OM_Shortcodes {
 	}
 
 	/**
+	 * A card's badges: the admin's own, "Popular" (most viewed here),
+	 * "New" and the centre shape. With badge links on, the ones that match
+	 * a filter or sort this grid offers link to it (Oval -> shape filter,
+	 * Popular -> Most viewed, New -> Newest).
+	 *
+	 * @return array[] [ label, url ] ('' url = plain badge).
+	 */
+	private function card_badges( $product, $atts, $state, $url, $line ) {
+		$labels = om_card_badges( $product, (string) $atts['badges'], (int) $atts['badge_new_days'], 'yes' === $atts['badge_shape'] );
+		$links  = 'yes' === $atts['badge_links'];
+		$style  = strtoupper( (string) ( $product['style_number'] ?? '' ) );
+		$out    = array();
+		if ( 'yes' === $atts['badge_popular'] && in_array( $style, OM_Engage::popular( $line ), true ) ) {
+			$out[] = array( __( 'Popular', 'om-catalog' ), $links && 'popular' !== $state['sort'] ? $url( array( 'sort' => 'popular', 'q' => $state['q'] ) ) : '' );
+		}
+		$shape = '';
+		foreach ( (array) ( $product['stone_breakdown'] ?? array() ) as $stone ) {
+			if ( ! empty( $stone['shape'] ) && 1 === (int) ( $stone['quantity'] ?? 0 ) ) {
+				$shape = (string) $stone['shape'];
+				break;
+			}
+		}
+		foreach ( $labels as $label ) {
+			$link = '';
+			if ( $links && '' !== $shape && $label === $shape && 'yes' === $atts['filter_shapes'] && $state['shape'] !== $shape ) {
+				$link = $url( array( 'shape' => $shape ) );
+			} elseif ( $links && __( 'New', 'om-catalog' ) === $label && 'newest' !== $state['sort'] ) {
+				$link = $url( array( 'sort' => 'newest', 'q' => $state['q'] ) );
+			}
+			$out[] = array( $label, $link );
+		}
+		return array_slice( $out, 0, 3 );
+	}
+
+	/**
 	 * Nothing matches: a designed empty state — what happened, one-click
 	 * ways out (clear everything, or drop a single filter) and popular
 	 * searches to try instead.
@@ -856,8 +938,8 @@ class OM_Shortcodes {
 		if ( $show_count || $chips || $show_sort ) {
 			echo '<div class="om-catalog-toolbar"><div class="om-toolbar-start">';
 			if ( $show_count ) {
-				$first = ( $paged - 1 ) * $per_page + 1;
-				$last  = min( $total, $first + count( $products ) - 1 );
+				$first = $this->window > 1 || in_array( $atts['pagination_style'], array( 'loadmore', 'infinite' ), true ) ? 1 : ( $paged - 1 ) * $per_page + 1;
+				$last  = 1 === $first && $paged > 1 ? min( $total, $paged * $per_page ) : min( $total, $first + count( $products ) - 1 );
 				if ( '' !== $state['q'] ) {
 					/* translators: 1: number of results, 2: search words. */
 					$count_text = sprintf( _n( '%1$s result for "%2$s"', '%1$s results for "%2$s"', $total, 'om-catalog' ), number_format_i18n( $total ), $state['q'] );
@@ -886,6 +968,7 @@ class OM_Shortcodes {
 				$labels = array(
 					''       => __( 'Featured', 'om-catalog' ),
 					'newest' => __( 'Newest', 'om-catalog' ),
+					'popular' => __( 'Most viewed', 'om-catalog' ),
 					'style'  => __( 'Style number', 'om-catalog' ),
 				);
 				$sort_id = 'om-sort-' . wp_rand( 1000, 9999 );
@@ -936,7 +1019,7 @@ class OM_Shortcodes {
 				array(
 					'link'   => $link,
 					'prices' => $prices,
-					'badges' => om_card_badges( $product, (string) $atts['badges'], (int) $atts['badge_new_days'], 'yes' === $atts['badge_shape'] ),
+					'badges' => $this->card_badges( $product, $atts, $state, $url, $active_line ),
 					// Filtered by metal colour: show photos in that colour.
 					'color'  => (string) $state['metal'],
 				) + $card_opts
@@ -954,6 +1037,21 @@ class OM_Shortcodes {
 				esc_html( sprintf( __( "You've viewed %1\$s of %2\$s designs", 'om-catalog' ), number_format_i18n( $seen ), number_format_i18n( $total ) ) ),
 				esc_attr( round( 100 * $seen / max( 1, $total ), 1 ) )
 			);
+		}
+		if ( in_array( $atts['pagination_style'], array( 'loadmore', 'infinite' ), true ) ) {
+			// A real link, so it works without JavaScript too; the script
+			// appends the next page instead of navigating.
+			if ( $paged < $total_pages ) {
+				printf(
+					'<div class="om-load-more%s"><a class="om-load-more-btn" href="%s" data-om-upto="%s">%s</a></div>',
+					'infinite' === $atts['pagination_style'] ? ' is-infinite' : '',
+					esc_url( $url( array( 'page' => $paged + 1, 'q' => $state['q'] ) ) ),
+					esc_url( add_query_arg( 'om_upto', $paged + 1, $url( array( 'page' => 1, 'q' => $state['q'] ) ) ) ),
+					/* translators: %s: number of designs. */
+					esc_html( sprintf( __( 'Show %s more', 'om-catalog' ), number_format_i18n( min( $per_page, $total - $paged * $per_page ) ) ) )
+				);
+			}
+			return;
 		}
 		if ( $total_pages > 1 ) {
 			echo '<nav class="om-pagination" aria-label="' . esc_attr__( 'Pages', 'om-catalog' ) . '">';

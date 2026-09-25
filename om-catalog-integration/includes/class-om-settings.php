@@ -99,6 +99,7 @@ class OM_Settings {
 		}
 		register_setting( 'om_catalog_settings', 'om_spacing', array( 'sanitize_callback' => array( $this, 'sanitize_spacing' ) ) );
 		register_setting( 'om_catalog_settings', 'om_card_hover', array( 'sanitize_callback' => array( $this, 'sanitize_card_hover' ) ) );
+		register_setting( 'om_catalog_settings', 'om_page_transitions', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_trust_line', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_popular_searches', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_track_searches', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -497,6 +498,10 @@ class OM_Settings {
 							<option value="zoom" <?php selected( $hover, 'zoom' ); ?>>Zoom: photo zooms slowly</option>
 							<option value="none" <?php selected( $hover, 'none' ); ?>>None</option>
 						</select></td>
+					</tr>
+					<tr>
+						<th>Page transitions</th>
+						<td><input type="hidden" name="om_page_transitions" value="0" /><label><input type="checkbox" name="om_page_transitions" value="1" <?php checked( get_option( 'om_page_transitions', '1' ), '1' ); ?> /> Smooth transitions between listing and product pages: the clicked photo glides into the product page (Chrome, Edge, Safari 18+; other browsers simply open the page)</label></td>
 					</tr>
 					<tr>
 						<th><label for="om_trust_line">Trust line under the price</label></th>

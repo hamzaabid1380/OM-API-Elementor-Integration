@@ -425,6 +425,10 @@
 					'<figure class="om-lb-stage"><img class="om-lb-img" alt="" /><div class="om-lb-video" hidden></div></figure>' +
 					'<button type="button" class="om-lb-next" aria-label="' + t('next', 'Next image') + '">&rsaquo;</button>' +
 					'<p class="om-lb-count" aria-live="polite"></p>' +
+					'<div class="om-lb-zoom" role="group" aria-label="' + t('zoom', 'Zoom') + '">' +
+						'<button type="button" class="om-lb-zoom-out" aria-label="' + t('zoomOut', 'Zoom out') + '">&minus;</button>' +
+						'<button type="button" class="om-lb-zoom-in" aria-label="' + t('zoomIn', 'Zoom in') + '">+</button>' +
+					'</div>' +
 				'</div>'
 			).appendTo(document.body);
 
@@ -435,15 +439,16 @@
 			lb.find('.om-lb-prev').on('click', function () { stepLightbox(-1); });
 			lb.find('.om-lb-next').on('click', function () { stepLightbox(1); });
 
-			// Swipe on touch screens.
+			// Swipe on touch screens (not while zoomed or pinching).
 			var startX = null;
-			lb.on('touchstart', function (e) { startX = e.originalEvent.touches[0].clientX; });
+			lb.on('touchstart', function (e) { startX = e.originalEvent.touches.length === 1 && zoom.s === 1 ? e.originalEvent.touches[0].clientX : null; });
 			lb.on('touchend', function (e) {
-				if (startX === null) { return; }
+				if (startX === null || zoom.s !== 1 || zoom.pinched) { startX = null; return; }
 				var dx = e.originalEvent.changedTouches[0].clientX - startX;
 				if (Math.abs(dx) > 40) { stepLightbox(dx < 0 ? 1 : -1); }
 				startX = null;
 			});
+			initZoom();
 		}
 		lb.data({ images: images, index: index, returnFocus: returnFocus });
 		lb.toggleClass('is-single', images.length < 2);
@@ -469,6 +474,8 @@
 			$video.prop('hidden', true);
 			lb.find('.om-lb-img').prop('hidden', false).attr('src', slide.img);
 		}
+		resetZoom();
+		lb.toggleClass('is-video', !!slide.video);
 		lb.find('.om-lb-count').text(images.length > 1 ? (index + 1) + ' / ' + images.length : '');
 	}
 
@@ -478,8 +485,123 @@
 		renderLightbox();
 	}
 
+	/* ---------- Lightbox zoom: double-click / double-tap, wheel, pinch,
+	   drag to pan, +/- buttons and keys ---------- */
+
+	var zoom = { s: 1, x: 0, y: 0, pinched: false };
+
+	function zoomImg() { return lb ? lb.find('.om-lb-img')[0] : null; }
+
+	function applyZoom(animate) {
+		var img = zoomImg();
+		if (!img) { return; }
+		img.style.transition = animate ? 'transform 0.25s ease' : 'none';
+		img.style.transform = zoom.s === 1 ? '' : 'translate(' + zoom.x + 'px,' + zoom.y + 'px) scale(' + zoom.s + ')';
+		lb.toggleClass('is-zoomed', zoom.s > 1);
+		lb.find('.om-lb-zoom-out').prop('disabled', zoom.s <= 1);
+		lb.find('.om-lb-zoom-in').prop('disabled', zoom.s >= 4);
+	}
+
+	function resetZoom() {
+		zoom.s = 1; zoom.x = 0; zoom.y = 0;
+		applyZoom(false);
+	}
+
+	// Keep the zoomed photo covering its box: no empty edges when panning.
+	function clampZoom() {
+		var img = zoomImg();
+		if (!img) { return; }
+		var w = img.offsetWidth, h = img.offsetHeight;
+		var mx = Math.max(0, (zoom.s - 1) * w / 2), my = Math.max(0, (zoom.s - 1) * h / 2);
+		zoom.x = Math.max(-mx, Math.min(mx, zoom.x));
+		zoom.y = Math.max(-my, Math.min(my, zoom.y));
+	}
+
+	// Zoom to scale s keeping the point under (cx, cy) in place.
+	function zoomAt(s, cx, cy, animate) {
+		var img = zoomImg();
+		if (!img || img.hidden) { return; }
+		s = Math.max(1, Math.min(4, s));
+		var r = img.getBoundingClientRect();
+		var centreX = r.left + r.width / 2 - zoom.x, centreY = r.top + r.height / 2 - zoom.y;
+		if (cx === undefined) { cx = r.left + r.width / 2; cy = r.top + r.height / 2; }
+		var px = cx - centreX, py = cy - centreY;
+		zoom.x = px - s * (px - zoom.x) / zoom.s;
+		zoom.y = py - s * (py - zoom.y) / zoom.s;
+		zoom.s = s;
+		if (s === 1) { zoom.x = 0; zoom.y = 0; }
+		clampZoom();
+		applyZoom(animate);
+	}
+
+	function initZoom() {
+		var img = zoomImg();
+		var pointers = {};
+		var pinch = null, drag = null, lastTap = 0;
+		lb.find('.om-lb-zoom-in').on('click', function () { zoomAt(zoom.s * 1.6, undefined, undefined, true); });
+		lb.find('.om-lb-zoom-out').on('click', function () { zoomAt(zoom.s / 1.6, undefined, undefined, true); });
+		img.addEventListener('dblclick', function (e) {
+			if (zoom.s > 1) { zoomAt(1, 0, 0, true); } else { zoomAt(2.5, e.clientX, e.clientY, true); }
+		});
+		lb[0].addEventListener('wheel', function (e) {
+			if (img.hidden || lb.prop('hidden')) { return; }
+			e.preventDefault();
+			zoomAt(zoom.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX, e.clientY, false);
+		}, { passive: false });
+		img.addEventListener('pointerdown', function (e) {
+			pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+			var ids = Object.keys(pointers);
+			if (ids.length === 2) {
+				var a = pointers[ids[0]], b = pointers[ids[1]];
+				pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), s: zoom.s };
+				zoom.pinched = true;
+				drag = null;
+			} else if (ids.length === 1) {
+				// Double-tap on touch screens.
+				if (e.pointerType !== 'mouse') {
+					var now = Date.now();
+					if (now - lastTap < 300) {
+						if (zoom.s > 1) { zoomAt(1, 0, 0, true); } else { zoomAt(2.5, e.clientX, e.clientY, true); }
+						lastTap = 0;
+						return;
+					}
+					lastTap = now;
+				}
+				zoom.pinched = false;
+				if (zoom.s > 1) {
+					drag = { x: e.clientX, y: e.clientY, ox: zoom.x, oy: zoom.y };
+					img.setPointerCapture && img.setPointerCapture(e.pointerId);
+				}
+			}
+		});
+		img.addEventListener('pointermove', function (e) {
+			if (!pointers[e.pointerId]) { return; }
+			pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+			var ids = Object.keys(pointers);
+			if (pinch && ids.length === 2) {
+				var a = pointers[ids[0]], b = pointers[ids[1]];
+				zoomAt(pinch.s * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2, false);
+			} else if (drag) {
+				zoom.x = drag.ox + e.clientX - drag.x;
+				zoom.y = drag.oy + e.clientY - drag.y;
+				clampZoom();
+				applyZoom(false);
+			}
+		});
+		var end = function (e) {
+			delete pointers[e.pointerId];
+			if (Object.keys(pointers).length < 2) { pinch = null; }
+			if (!Object.keys(pointers).length) { drag = null; }
+		};
+		img.addEventListener('pointerup', end);
+		img.addEventListener('pointercancel', end);
+		// A click on a zoomed photo shouldn't close the lightbox.
+		img.addEventListener('click', function (e) { e.stopPropagation(); });
+	}
+
 	function closeLightbox() {
 		if (!lb || lb.prop('hidden')) { return; }
+		resetZoom();
 		lb.find('.om-lb-video').empty();
 		lb.prop('hidden', true);
 		$('html').removeClass('om-lb-open');
@@ -490,8 +612,11 @@
 	$(document).on('keydown', function (e) {
 		if (!lb || lb.prop('hidden')) { return; }
 		if (e.key === 'Escape') { closeLightbox(); }
-		if (e.key === 'ArrowRight') { stepLightbox(1); }
-		if (e.key === 'ArrowLeft') { stepLightbox(-1); }
+		if (e.key === 'ArrowRight' && zoom.s === 1) { stepLightbox(1); }
+		if (e.key === 'ArrowLeft' && zoom.s === 1) { stepLightbox(-1); }
+		if (e.key === '+' || e.key === '=') { zoomAt(zoom.s * 1.6, undefined, undefined, true); }
+		if (e.key === '-') { zoomAt(zoom.s / 1.6, undefined, undefined, true); }
+		if (e.key === '0') { zoomAt(1, 0, 0, true); }
 		if (e.key === 'Tab') {
 			// Keep focus inside the dialog.
 			var $f = lb.find('button:visible');
@@ -624,6 +749,12 @@
 		}
 	}, true);
 
+	$(document).on('keydown', function (e) {
+		if (e.key !== 'Escape' || !$('html').hasClass('om-sheet-open')) { return; }
+		$('.om-cdesign-modern .om-filter-panel[open]').each(function () { this.open = false; $(this).find('.om-filter-toggle').trigger('focus'); });
+		lockSheet(false);
+	});
+
 	$(document).on('click', '.om-filter-close, .om-filter-done', function () {
 		var panel = $(this).closest('.om-filter-panel')[0];
 		if (panel) { panel.open = false; }
@@ -676,6 +807,7 @@
 			var $fresh = $($.parseHTML($.trim(response.data.html)));
 			$wrap.replaceWith($fresh);
 			initBlock($fresh);
+			announce($fresh.find('.om-result-count').first().text() || $fresh.find('.om-empty-title').first().text());
 			if (sheetOpen) {
 				$fresh.find('.om-filter-panel').prop('open', true);
 				$fresh.find('.om-filter-panel-body').scrollTop(sheetScroll);
@@ -1020,7 +1152,7 @@
 		}
 		e.preventDefault();
 		index = e.key === 'ArrowDown' ? Math.min($items.length - 1, index + 1) : Math.max(0, index - 1);
-		$items.removeClass('is-active').eq(index).addClass('is-active');
+		$items.removeClass('is-active').attr('aria-selected', 'false').eq(index).addClass('is-active').attr('aria-selected', 'true');
 		$(this).attr('aria-activedescendant', $items.eq(index).attr('id'));
 	});
 
@@ -1120,6 +1252,22 @@
 			list.unshift(item);
 			window.localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 20)));
 		} catch (err) { /* storage unavailable: nothing to remember */ }
+		countView(el);
+	}
+
+	// One counted view per design per visit, for "Most viewed" and the
+	// "Popular" badge. Sent after load so it never slows the page.
+	function countView(el) {
+		var line = el.getAttribute('data-line'), style = el.getAttribute('data-style');
+		if (!line || !style || !cfg.ajaxUrl) { return; }
+		var key = 'om_viewed_' + line + '|' + style;
+		try { if (window.sessionStorage.getItem(key)) { return; } window.sessionStorage.setItem(key, '1'); } catch (err) { /* count anyway */ }
+		var send = function () {
+			var data = new FormData();
+			data.append('action', 'om_track_view'); data.append('line', line); data.append('style', style);
+			if (navigator.sendBeacon) { navigator.sendBeacon(cfg.ajaxUrl, data); } else { $.post(cfg.ajaxUrl, { action: 'om_track_view', line: line, style: style }); }
+		};
+		if (window.requestIdleCallback) { window.requestIdleCallback(send, { timeout: 4000 }); } else { setTimeout(send, 1500); }
 	}
 
 	function renderRecent(root) {
@@ -1486,6 +1634,223 @@
 		});
 	}
 
+	/* ---------- "Show more" / infinite scroll ---------- */
+
+	// Screen readers hear what changed (results after filtering, more
+	// designs added), from one polite live region.
+	var liveRegion = null;
+	function announce(text) {
+		if (!text) { return; }
+		if (!liveRegion) {
+			liveRegion = $('<div class="om-visually-hidden" role="status" aria-live="polite"></div>').appendTo(document.body);
+		}
+		liveRegion.text('');
+		setTimeout(function () { liveRegion.text(text); }, 60);
+	}
+
+	function loadMore(btn) {
+		var $btn = $(btn);
+		if ($btn.hasClass('is-loading')) { return; }
+		var $wrap = $btn.closest('.om-catalog-wrap');
+		var $grid = $wrap.find('.om-catalog-grid').first();
+		$btn.addClass('is-loading').attr('aria-busy', 'true');
+		$.post(cfg.ajaxUrl, {
+			action: 'om_filter_grid',
+			atts: $wrap.attr('data-om-atts'),
+			sig: $wrap.attr('data-om-sig'),
+			url: btn.href
+		}).done(function (response) {
+			if (!(response && response.success && response.data.html)) { window.location.href = btn.href; return; }
+			var $fresh = $('<div></div>').append($.parseHTML($.trim(response.data.html)));
+			var $cells = $fresh.find('.om-catalog-grid').first().children();
+			var firstNew = $cells.first();
+			$grid.append($cells);
+			$cells.addClass('om-card-new');
+			// Toolbar count, progress and the next button from the new page.
+			$wrap.find('.om-result-count').first().text($fresh.find('.om-result-count').first().text());
+			$wrap.find('.om-progress').first().replaceWith($fresh.find('.om-progress').first());
+			var $next = $fresh.find('.om-load-more').first();
+			$btn.closest('.om-load-more').replaceWith($next);
+			if (window.history && window.history.replaceState && btn.getAttribute('data-om-upto')) {
+				window.history.replaceState({ omCatalog: true }, '', btn.getAttribute('data-om-upto'));
+			}
+			initBlock($wrap);
+			observeInfinite($wrap);
+			announce($wrap.find('.om-result-count').first().text());
+			// Keyboard users continue from the first new design.
+			if (document.activeElement === btn || !$next.length) {
+				var link = firstNew.find('a.om-card')[0];
+				if (link) { link.focus({ preventScroll: true }); }
+			}
+		}).fail(function () {
+			$btn.removeClass('is-loading').removeAttr('aria-busy');
+		});
+	}
+
+	$(document).on('click', '.om-catalog-wrap .om-load-more-btn', function (e) {
+		if (e.metaKey || e.ctrlKey || e.shiftKey || !cfg.ajaxUrl) { return; }
+		e.preventDefault();
+		loadMore(this);
+	});
+
+	// Infinite: load the next page shortly before the visitor reaches it.
+	function observeInfinite(root) {
+		if (!window.IntersectionObserver) { return; }
+		$(root).find('.om-load-more.is-infinite .om-load-more-btn').each(function () {
+			var btn = this;
+			if (btn._omIO) { return; }
+			btn._omIO = new IntersectionObserver(function (entries) {
+				if (entries[0].isIntersecting) { btn._omIO.disconnect(); loadMore(btn); }
+			}, { rootMargin: '600px 0px' });
+			btn._omIO.observe(btn);
+		});
+	}
+
+	/* ---------- Compare (up to 4 designs, across pages) ---------- */
+
+	var COMPARE_KEY = 'om_compare';
+	var compareTray = null;
+	var compareDialog = null;
+
+	function readCompare() {
+		try { return JSON.parse(window.localStorage.getItem(COMPARE_KEY) || '[]').filter(function (x) { return x && x.l && x.s; }).slice(0, 4); } catch (err) { return []; }
+	}
+
+	function writeCompare(list) {
+		try { window.localStorage.setItem(COMPARE_KEY, JSON.stringify(list.slice(0, 4))); } catch (err) { /* storage unavailable */ }
+		syncCompare();
+	}
+
+	function syncCompare() {
+		var list = readCompare();
+		var keys = list.map(function (x) { return x.l + '|' + x.s; });
+		$('.om-compare-toggle').each(function () {
+			var item = {};
+			try { item = JSON.parse(this.getAttribute('data-om-compare')); } catch (err) { return; }
+			var on = keys.indexOf(item.l + '|' + item.s) !== -1;
+			$(this).toggleClass('is-on', on).attr('aria-pressed', String(on));
+		});
+		renderTray(list);
+	}
+
+	function renderTray(list) {
+		if (!list.length) {
+			if (compareTray) { compareTray.prop('hidden', true); }
+			$('html').removeClass('om-has-compare');
+			return;
+		}
+		if (!compareTray) {
+			compareTray = $('<div class="om-compare-tray" role="region"></div>').attr('aria-label', t('compare', 'Compare')).appendTo(document.body);
+		}
+		var $items = $('<ul class="om-compare-items"></ul>');
+		list.forEach(function (x) {
+			$items.append($('<li class="om-compare-item"></li>')
+				.append(x.i ? $('<img alt="" />').attr('src', x.i) : $('<span class="om-compare-noimg"></span>'))
+				.append($('<button type="button" class="om-compare-drop">&times;</button>').attr({ 'data-om-key': x.l + '|' + x.s, 'aria-label': t('removeSearch', 'Remove') + ': ' + (x.t || x.s) })));
+		});
+		for (var i = list.length; i < 4; i++) { $items.append('<li class="om-compare-item is-empty" aria-hidden="true"></li>'); }
+		compareTray.empty().append(
+			$('<p class="om-compare-label"></p>').text(t('compare', 'Compare') + ' ' + list.length + '/4'),
+			$items,
+			$('<div class="om-compare-actions"></div>').append(
+				$('<button type="button" class="om-compare-open"></button>').text(list.length < 2 ? t('compareMore', 'Add one more') : t('compareNow', 'Compare now')).prop('disabled', list.length < 2),
+				$('<button type="button" class="om-compare-clear"></button>').text(t('clearRecent', 'Clear'))
+			)
+		).prop('hidden', false);
+		$('html').addClass('om-has-compare');
+	}
+
+	$(document).on('click', '.om-compare-toggle', function () {
+		var item;
+		try { item = JSON.parse(this.getAttribute('data-om-compare')); } catch (err) { return; }
+		var list = readCompare();
+		var key = item.l + '|' + item.s;
+		var at = list.map(function (x) { return x.l + '|' + x.s; }).indexOf(key);
+		if (at !== -1) {
+			list.splice(at, 1);
+		} else {
+			if (list.length >= 4) { announce(t('compareFull', 'You can compare up to 4 designs.')); $(this).addClass('is-shake'); var el = this; setTimeout(function () { $(el).removeClass('is-shake'); }, 500); return; }
+			list.push(item);
+		}
+		writeCompare(list);
+		announce((at !== -1 ? t('compareRemoved', 'Removed from compare') : t('compareAdded', 'Added to compare')) + ' (' + list.length + '/4)');
+	});
+
+	$(document).on('click', '.om-compare-drop', function () {
+		var key = this.getAttribute('data-om-key');
+		writeCompare(readCompare().filter(function (x) { return x.l + '|' + x.s !== key; }));
+	});
+
+	$(document).on('click', '.om-compare-clear', function () { writeCompare([]); });
+
+	function openCompare() {
+		if (!compareDialog) {
+			compareDialog = $('<dialog class="om-compare-dialog" aria-labelledby="om-compare-title"><div class="om-compare-inner"><div class="om-compare-head"><h2 class="om-compare-title" id="om-compare-title"></h2><button type="button" class="om-compare-close">&times;</button></div><div class="om-compare-body"></div></div></dialog>').appendTo(document.body);
+			compareDialog.find('.om-compare-title').text(t('compare', 'Compare'));
+			compareDialog.find('.om-compare-close').attr('aria-label', t('close', 'Close')).on('click', function () { compareDialog[0].close(); });
+			compareDialog.on('click', function (e) { if (e.target === compareDialog[0]) { compareDialog[0].close(); } });
+			compareDialog[0].addEventListener('close', function () { $('html').removeClass('om-lb-open'); });
+		}
+		var list = readCompare();
+		var $body = compareDialog.find('.om-compare-body').html('<div class="om-qv-loading"><span class="om-qv-skel om-qv-skel--img"></span><span class="om-qv-skel"></span></div>');
+		if (compareDialog[0].showModal && !compareDialog[0].open) { compareDialog[0].showModal(); }
+		$('html').addClass('om-lb-open');
+		$.post(cfg.ajaxUrl, { action: 'om_compare', items: list.map(function (x) { return { line: x.l, style: x.s }; }) }).done(function (response) {
+			$body.html(response && response.success ? response.data.html : $('<p class="om-error"></p>').text((response && response.data && response.data.message) || t('error', 'Something went wrong. Please try again.')));
+		}).fail(function () {
+			$body.html($('<p class="om-error"></p>').text(t('error', 'Something went wrong. Please try again.')));
+		});
+	}
+
+	$(document).on('click', '.om-compare-open', openCompare);
+	$(document).on('click', '.om-compare-remove', function () {
+		var key = this.getAttribute('data-om-line') + '|' + this.getAttribute('data-om-style');
+		var list = readCompare().filter(function (x) { return x.l + '|' + x.s !== key; });
+		writeCompare(list);
+		if (list.length) { openCompare(); } else if (compareDialog) { compareDialog[0].close(); }
+	});
+
+	// Another tab changed the picks.
+	window.addEventListener('storage', function (e) { if (e.key === COMPARE_KEY) { syncCompare(); } });
+
+	/* ---------- Page transitions (listing <-> product) ---------- */
+
+	// The clicked card's photo morphs into the product photo (browsers with
+	// cross-document view transitions; others simply navigate).
+	var VT_KEY = 'om_vt_style';
+	$(document).on('click', 'a.om-card', function () {
+		if (!cfg.pageTransitions) { return; }
+		var box = this.querySelector('.om-card-image');
+		var cell = $(this).closest('.om-card-cell').find('.om-compare-toggle')[0];
+		var style = '';
+		try { style = cell ? JSON.parse(cell.getAttribute('data-om-compare')).s : ''; } catch (err) { style = ''; }
+		if (!style) { style = (this.getAttribute('href') || '').split('/').filter(Boolean).pop() || ''; }
+		$('.om-card-image').each(function () { this.style.viewTransitionName = ''; });
+		if (box) { box.style.viewTransitionName = 'om-hero'; }
+		try { window.sessionStorage.setItem(VT_KEY, String(style).toLowerCase()); } catch (err) { /* nothing */ }
+	});
+
+	window.addEventListener('pagereveal', function (e) {
+		if (!e.viewTransition) { return; }
+		var style = '';
+		try { style = window.sessionStorage.getItem(VT_KEY) || ''; } catch (err) { style = ''; }
+		if (!style) { return; }
+		var target = null;
+		var wrap = document.querySelector('.om-product-wrap:not(.om-product-wrap--compact)');
+		if (wrap && String(wrap.getAttribute('data-style')).toLowerCase() === style) {
+			target = wrap.querySelector('.om-main-media');
+		} else {
+			// Back on the listing: the card we came from.
+			$('a.om-card').each(function () {
+				if (!target && (this.getAttribute('href') || '').toLowerCase().indexOf('/' + style + '/') !== -1) { target = this.querySelector('.om-card-image'); }
+			});
+		}
+		if (target) {
+			target.style.viewTransitionName = 'om-hero';
+			e.viewTransition.finished.finally(function () { target.style.viewTransitionName = ''; });
+		}
+	});
+
 	/* ---------- Boot ---------- */
 
 	function initBlock(root) {
@@ -1494,6 +1859,8 @@
 		loadCardPrices(root);
 		markCachedImages(root);
 		$(root).find('.om-catalog-grid').addClass('om-fade-in');
+		observeInfinite(root);
+		syncCompare();
 	}
 
 	// Record a product shown in the quick view as recently viewed too.

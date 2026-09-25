@@ -707,7 +707,7 @@ class OM_Inquiry {
 		$site    = get_bloginfo( 'name' );
 		$font    = 'font-family:Helvetica,Arial,sans-serif;';
 		$serif   = 'font-family:Georgia,"Times New Roman",serif;';
-		$muted   = 'color:#8a8a8a;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;';
+		$muted   = 'color:#6e6e6e;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;';
 
 		$details = array_filter(
 			array(
@@ -752,13 +752,13 @@ class OM_Inquiry {
 				<?php endif; ?>
 				<div style="<?php echo $serif; // phpcs:ignore WordPress.Security.EscapeOutput ?>font-size:20px;line-height:1.3;color:<?php echo esc_attr( $primary ); ?>;margin:6px 0 12px;"><?php echo esc_html( $data['title'] ); ?></div>
 				<?php foreach ( $details as $label => $value ) : ?>
-					<div style="font-size:13px;line-height:1.5;margin:0 0 4px;"><span style="color:#8a8a8a;"><?php echo esc_html( $label ); ?>:</span> <?php echo nl2br( esc_html( $value ) ); ?></div>
+					<div style="font-size:13px;line-height:1.5;margin:0 0 4px;"><span style="color:#6e6e6e;"><?php echo esc_html( $label ); ?>:</span> <?php echo nl2br( esc_html( $value ) ); ?></div>
 				<?php endforeach; ?>
 				<?php if ( '' !== $data['link'] ) : ?>
 					<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr><td style="background:<?php echo esc_attr( $primary ); ?>;">
 						<a href="<?php echo esc_url( $data['link'] ); ?>" style="display:inline-block;padding:11px 20px;color:#ffffff;text-decoration:none;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;"><?php esc_html_e( 'View this piece', 'om-catalog' ); ?></a>
 					</td></tr></table>
-					<div style="font-size:11px;color:#8a8a8a;margin-top:8px;word-break:break-all;"><a href="<?php echo esc_url( $data['link'] ); ?>" style="color:#8a8a8a;"><?php echo esc_html( $data['link'] ); ?></a></div>
+					<div style="font-size:11px;color:#6e6e6e;margin-top:8px;word-break:break-all;"><a href="<?php echo esc_url( $data['link'] ); ?>" style="color:#6e6e6e;"><?php echo esc_html( $data['link'] ); ?></a></div>
 				<?php endif; ?>
 			</td></tr>
 		</table>
@@ -771,14 +771,14 @@ class OM_Inquiry {
 			<?php foreach ( $values as $pair ) : ?>
 				<?php if ( '' === $pair[1] ) { continue; } ?>
 				<tr>
-					<td valign="top" style="padding:8px 12px 8px 0;border-top:1px solid #f0f0f0;color:#8a8a8a;width:34%;"><?php echo esc_html( $pair[0] ); ?></td>
+					<td valign="top" style="padding:8px 12px 8px 0;border-top:1px solid #f0f0f0;color:#6e6e6e;width:34%;"><?php echo esc_html( $pair[0] ); ?></td>
 					<td valign="top" style="padding:8px 0;border-top:1px solid #f0f0f0;color:#222222;"><?php echo nl2br( esc_html( $pair[1] ) ); ?></td>
 				</tr>
 			<?php endforeach; ?>
 		</table>
 	</td></tr>
 	<?php endif; ?>
-	<tr><td style="padding:16px 32px 26px;border-top:1px solid #eeeeee;font-size:12px;color:#8a8a8a;line-height:1.5;">
+	<tr><td style="padding:16px 32px 26px;border-top:1px solid #eeeeee;font-size:12px;color:#6e6e6e;line-height:1.5;">
 		<?php
 		echo esc_html(
 			$customer

@@ -72,6 +72,7 @@ class OM_Related {
 				'video_badge_pos'  => 'tr',
 				// Card hover: lift, zoom, none; '' = Settings default.
 				'card_hover'       => '',
+				'compare'          => '',
 			),
 			$atts,
 			'om_related'

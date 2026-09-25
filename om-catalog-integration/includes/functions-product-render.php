@@ -1149,6 +1149,7 @@ function om_card_options( $atts ) {
 		'video_preview'    => 'no' !== ( $atts['card_video'] ?? 'yes' ),
 		// Card hover for this widget; '' = Settings default.
 		'hover'            => $pick( $atts['card_hover'] ?? '', array( 'lift', 'zoom', 'none' ), '' ),
+		'compare'          => 'yes' === ( $atts['compare'] ?? '' ),
 	);
 }
 
@@ -1182,8 +1183,9 @@ function om_render_card( $product, $line, $o ) {
 		om_card_options( array() ) + array(
 			'link'   => '',
 			'prices' => false,
-			'badges' => array(),
-			'color'  => '',
+			'badges'  => array(),
+			'color'   => '',
+			'compare' => false,
 		)
 	);
 	$style_number = (string) ( $product['style_number'] ?? '' );
@@ -1209,13 +1211,6 @@ function om_render_card( $product, $line, $o ) {
 				<?php if ( $video_class && 'none' !== $o['video_badge'] ) : ?>
 					<span class="om-card-play om-card-play--<?php echo esc_attr( $o['video_badge'] ); ?> om-card-play--<?php echo esc_attr( $o['video_badge_pos'] ); ?>"<?php echo 'icon' === $o['video_badge'] ? ' role="img" aria-label="' . esc_attr( $badge_text ) . '"' : ''; ?>><?php echo 'label' === $o['video_badge'] ? '<span class="om-card-play-text">' . esc_html( $badge_text ) . '</span>' : ''; ?></span>
 				<?php endif; ?>
-				<?php if ( $o['badges'] ) : ?>
-					<span class="om-badges">
-						<?php foreach ( $o['badges'] as $badge ) : ?>
-							<span class="om-badge om-badge--<?php echo esc_attr( sanitize_title( $badge ) ); ?>"><?php echo esc_html( $badge ); ?></span>
-						<?php endforeach; ?>
-					</span>
-				<?php endif; ?>
 				<?php if ( $image ) : ?>
 					<img src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $title ); ?>" loading="lazy" decoding="async" />
 				<?php endif; ?>
@@ -1233,6 +1228,26 @@ function om_render_card( $product, $line, $o ) {
 				<?php endif; ?>
 			</div>
 		</a>
+		<?php if ( $o['badges'] ) : ?>
+			<?php // Outside the card link, so a badge can itself be a link (a quick filter). ?>
+			<span class="om-badges">
+				<?php
+				foreach ( $o['badges'] as $badge ) {
+					list( $label, $href ) = is_array( $badge ) ? array_pad( $badge, 2, '' ) : array( (string) $badge, '' );
+					$class = 'om-badge om-badge--' . sanitize_title( $label );
+					if ( '' !== $href ) {
+						/* translators: %s: badge, e.g. Oval. */
+						printf( '<a class="%s om-badge--link" href="%s" title="%s">%s</a>', esc_attr( $class ), esc_url( $href ), esc_attr( sprintf( __( 'Show all: %s', 'om-catalog' ), $label ) ), esc_html( $label ) );
+					} else {
+						printf( '<span class="%s">%s</span>', esc_attr( $class ), esc_html( $label ) );
+					}
+				}
+				?>
+			</span>
+		<?php endif; ?>
+		<?php if ( $o['compare'] ) : ?>
+			<button type="button" class="om-compare-toggle" aria-pressed="false" data-om-compare="<?php echo esc_attr( wp_json_encode( array( 'l' => $line, 's' => $style_number, 't' => $title, 'i' => $image, 'u' => $link ) ) ); ?>"><span class="om-compare-box" aria-hidden="true"></span><?php esc_html_e( 'Compare', 'om-catalog' ); ?><span class="om-visually-hidden"> <?php echo esc_html( $title ); ?></span></button>
+		<?php endif; ?>
 		<?php if ( $o['quick_view'] ) : ?>
 			<?php $qv_text = '' !== $o['qv_text'] ? $o['qv_text'] : __( 'Quick view', 'om-catalog' ); ?>
 			<span class="om-qv-slot om-qv-slot--<?php echo esc_attr( $o['qv_style'] ); ?>"><button type="button" class="om-qv-btn om-qv-btn--<?php echo esc_attr( $o['qv_style'] ); ?>" data-om-qv-line="<?php echo esc_attr( $line ); ?>" data-om-qv-style="<?php echo esc_attr( $style_number ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: 1: button text, 2: product. */ __( '%1$s: %2$s', 'om-catalog' ), $qv_text, $title ) ); ?>"><?php echo 'icon' === $o['qv_style'] ? '<span class="om-qv-icon" aria-hidden="true"></span>' : esc_html( $qv_text ); ?></button></span>

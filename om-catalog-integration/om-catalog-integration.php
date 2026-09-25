@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.13.0
+ * Version: 1.14.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.13.0' );
+define( 'OM_CATALOG_VERSION', '1.14.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -23,6 +23,7 @@ require_once OM_CATALOG_DIR . 'includes/class-om-shortcodes.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-ajax.php';
 require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-search.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-engage.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-ring-builder.php';
@@ -41,6 +42,7 @@ function om_catalog_init() {
 	OM_Shortcodes::instance();
 	OM_Ajax::instance();
 	OM_Search::instance();
+	OM_Engage::instance();
 	OM_Inquiry::instance();
 	OM_Diamonds::instance();
 	OM_Ring_Builder::instance();
@@ -96,9 +98,19 @@ function om_catalog_enqueue_assets() {
 				'clearRecent' => __( 'Clear', 'om-catalog' ),
 				'removeSearch' => __( 'Remove', 'om-catalog' ),
 				'copied'     => __( 'Copied', 'om-catalog' ),
+				'zoom'       => __( 'Zoom', 'om-catalog' ),
+				'zoomIn'     => __( 'Zoom in', 'om-catalog' ),
+				'zoomOut'    => __( 'Zoom out', 'om-catalog' ),
+				'compare'    => __( 'Compare', 'om-catalog' ),
+				'compareNow' => __( 'Compare now', 'om-catalog' ),
+				'compareMore' => __( 'Add one more', 'om-catalog' ),
+				'compareFull' => __( 'You can compare up to 4 designs.', 'om-catalog' ),
+				'compareAdded' => __( 'Added to compare', 'om-catalog' ),
+				'compareRemoved' => __( 'Removed from compare', 'om-catalog' ),
 				'inLine'     => __( 'in %s', 'om-catalog' ),
 			),
 			'cardHover' => (string) get_option( 'om_card_hover', 'lift' ),
+			'pageTransitions' => '0' !== get_option( 'om_page_transitions', '1' ),
 			'popular'   => om_popular_searches(),
 		)
 	);
@@ -244,6 +256,11 @@ function om_catalog_look_css() {
 		return $out;
 	};
 	$css = ':root{' . $line( $vars ) . '}';
+	// Smooth page transitions between listing and product pages (browsers
+	// with cross-document view transitions; others navigate as usual).
+	if ( '0' !== get_option( 'om_page_transitions', '1' ) ) {
+		$css .= '@view-transition{navigation:auto}::view-transition-old(root),::view-transition-new(root){animation-duration:.28s}::view-transition-group(om-hero){animation-duration:.42s;animation-timing-function:cubic-bezier(.22,1,.36,1)}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}';
+	}
 	if ( '' !== $line( $phone ) ) {
 		$css .= '@media (max-width:600px){:root{' . $line( $phone ) . '}}';
 	}

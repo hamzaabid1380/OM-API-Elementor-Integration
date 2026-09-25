@@ -18,7 +18,18 @@ trait OM_Elementor_Card_Controls {
 	protected function register_quick_view_content( $default_on = 'yes' ) {
 		$this->start_controls_section(
 			'section_quick_view',
-			array( 'label' => __( 'Quick View', 'om-catalog' ) )
+			array( 'label' => __( 'Quick View & Compare', 'om-catalog' ) )
+		);
+
+		$this->add_control(
+			'compare',
+			array(
+				'label'       => __( 'Compare toggle on cards', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes' === $default_on ? 'yes' : '',
+				'description' => __( 'Visitors tick up to 4 designs; a tray opens a side-by-side table (carat, stones, metals, price…). The picks follow them across pages.', 'om-catalog' ),
+				'separator'   => 'after',
+			)
 		);
 
 		$this->add_control(
@@ -559,6 +570,7 @@ trait OM_Elementor_Card_Controls {
 			'video_badge_text' => (string) ( $s['video_badge_text'] ?? '' ),
 			'video_badge_pos'  => (string) ( $s['video_badge_pos'] ?? 'tr' ),
 			'card_hover'       => (string) ( $s['card_hover'] ?? '' ),
+			'compare'          => 'yes' === ( $s['compare'] ?? '' ) ? 'yes' : '',
 		);
 	}
 }

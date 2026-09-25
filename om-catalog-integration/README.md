@@ -440,7 +440,51 @@ Settings > OM Catalog > Inquiries:
 - Only listed subjects are accepted (the list is signed); anything else
   falls back to the first.
 
+## Browsing extras (1.14)
+
+- **Zoom** — on product pages open the photo viewer, then double-click /
+  double-tap, scroll-wheel or pinch to zoom, drag to pan; the + / − / 0 keys
+  and the on-screen buttons work too.
+- **Quick filters from badges** — shape and "Popular" badges on cards are
+  links: tapping "Oval" filters the listing to ovals, "Popular" sorts by most
+  viewed (widget > Cards: Clickable badges).
+- **Show more / infinite scroll** — widget > Pagination style: Page numbers,
+  "Show more" button, or Infinite scroll. The address remembers how far the
+  visitor got (`om_upto`), so Back from a product returns to the same spot.
+- **Compare** — a "Compare" toggle on each card collects up to 4 designs
+  (from any line) in a tray at the bottom of the page; "Compare now" opens a
+  side-by-side table (photo, starting price, carat, centre stone, stones,
+  metals, colours, settings, video). The tray persists across pages.
+  Shortcode `compare="no"` or the widget switch turns it off.
+- **Most viewed** — a sort option ordered by real product page views
+  (counted once per visitor session; rate-limited). The 12 most viewed
+  designs per line (5+ views) get a "Popular" badge; "New" badges still
+  come from the API.
+- **Smooth page transitions** — the clicked card photo glides into the
+  product page (Chrome, Edge, Safari 18+). Settings > OM Catalog > Look &
+  feel to turn off.
+- **Accessibility** — keyboard support throughout (Escape closes the filter
+  sheet, dialogs trap and return focus), results changes are announced to
+  screen readers, suggestion lists expose the active item, and small grey
+  text was darkened to meet WCAG AA contrast (checked with axe: 0 issues).
+
 ## Changelog
+
+### 1.14.0
+- Photo viewer zoom: double-click/tap, wheel, pinch, drag to pan, keys and
+  buttons.
+- Card badges are quick-filter links (shape → filter, Popular → Most
+  viewed).
+- Pagination styles: Show more button and infinite scroll, with position
+  remembered in the URL.
+- Compare tray (up to 4 designs, persists across pages) and comparison
+  table.
+- "Most viewed" sort with privacy-light view counting; automatic Popular
+  badges.
+- Cross-page view transitions (photo carries over into the product page).
+- Accessibility pass: live announcements, Escape for the filter sheet,
+  aria-selected suggestions, labelled dialogs, darker secondary text
+  (#6e6e6e), readable photo labels, larger copy-style button.
 
 ### 1.13.0
 - Catalog pages "Modern" design (default; widget > Page design): framed

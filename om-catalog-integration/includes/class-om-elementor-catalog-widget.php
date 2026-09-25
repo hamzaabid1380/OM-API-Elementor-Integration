@@ -404,6 +404,26 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'badge_popular',
+			array(
+				'label'       => __( '"Popular" badge', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'On the most viewed designs of the line (views counted on this site).', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'badge_links',
+			array(
+				'label'       => __( 'Badges filter the grid', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Tap "Oval" to show oval designs, "New" for newest, "Popular" for most viewed.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
 			'show_count',
 			array(
 				'label'   => __( 'Show result count', 'om-catalog' ),
@@ -536,12 +556,28 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 				'type'      => Controls_Manager::SWITCHER,
 				'default'   => 'yes',
 				'selectors' => array(
-					'{{WRAPPER}} .om-pagination' => 'display: {{VALUE}};',
+					'{{WRAPPER}} .om-pagination, {{WRAPPER}} .om-load-more, {{WRAPPER}} .om-progress' => 'display: {{VALUE}};',
 				),
 				'selectors_dictionary' => array(
 					'yes' => 'flex',
 					''    => 'none',
 				),
+			)
+		);
+
+		$this->add_control(
+			'pagination_style',
+			array(
+				'label'     => __( 'More designs', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'numbers',
+				'options'   => array(
+					'numbers'  => __( 'Page numbers', 'om-catalog' ),
+					'loadmore' => __( '"Show more" button', 'om-catalog' ),
+					'infinite' => __( 'Infinite scroll', 'om-catalog' ),
+				),
+				'description' => __( '"Show more" and infinite scroll add designs below; coming back to the page restores the longer list.', 'om-catalog' ),
+				'condition' => array( 'show_pagination' => 'yes' ),
 			)
 		);
 
@@ -1431,6 +1467,9 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'search_placeholder' => (string) ( $settings['search_placeholder'] ?? '' ),
 			'suggest_prices'  => 'yes' === ( $settings['suggest_prices'] ?? 'yes' ) ? 'yes' : 'no',
 			'design'          => 'classic' === ( $settings['design'] ?? 'modern' ) ? 'classic' : 'modern',
+			'pagination_style' => in_array( $settings['pagination_style'] ?? 'numbers', array( 'numbers', 'loadmore', 'infinite' ), true ) ? $settings['pagination_style'] : 'numbers',
+			'badge_popular'   => 'yes' === ( $settings['badge_popular'] ?? 'yes' ) ? 'yes' : '',
+			'badge_links'     => 'yes' === ( $settings['badge_links'] ?? 'yes' ) ? 'yes' : '',
 			'search_scope'    => in_array( $settings['search_scope'] ?? 'line', array( 'line', 'block', 'all' ), true ) ? $settings['search_scope'] : 'line',
 			'show_sort'       => (string) ( $settings['show_sort'] ?? 'yes' ),
 			'sort'            => (string) ( $settings['default_sort'] ?? '' ),
