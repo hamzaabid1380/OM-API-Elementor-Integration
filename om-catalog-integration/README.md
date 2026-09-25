@@ -543,7 +543,41 @@ intro_page_title="" head="yes" head_eyebrow="" head_title="{line}"
 head_text="" head_rule="yes" head_tag="h2" head_align="center"]`
 (the intro is off by default in shortcodes, on by default in the widget).
 
+## End-of-results card (1.18)
+
+When a visitor reaches the last design (last page, or when "Show more" /
+infinite scroll runs out), a closing card offers a next step instead of a
+dead end: "You've seen them all — Haven't found the one?".
+
+- **Main button** — opens the built-in inquiry form in a pop-up (subject
+  "Custom design" preselected; the email notes the listing they were on),
+  or goes to a link (e.g. a booking page), or none.
+- **Second button** — *Smart*: "See all designs" (clears the filters, in
+  place) when the listing is filtered, otherwise "Back to top"; or a link,
+  or none.
+- **Layout** — a card in the grid, or a full-width banner. **Look** — soft
+  tint, outline, dark (brand colour) or a photo background with overlay.
+- Eyebrow, title and text are editable; `{count}` and `{line}` fill in,
+  e.g. "All {count} {line}, seen."
+
+All of it is in the **OM Catalog** widget (Content > End of results, Style
+> End of results: colours, typography, alignment, padding, minimum height,
+corner radii). Shortcode: `end_card="yes|no" end_layout="cell|banner"
+end_theme="soft|outline|dark|image" end_image="" end_eyebrow="" end_title=""
+end_text="" end_primary="inquiry|link|none" end_primary_text=""
+end_primary_url="" end_subject="Custom design"
+end_secondary="auto|top|link|none" end_secondary_text=""
+end_secondary_url=""`.
+
 ## Changelog
+
+### 1.18.0
+- End-of-results card after the last design (numbers, Show more,
+  infinite scroll): inquiry pop-up or link, smart "See all designs" /
+  "Back to top", grid card or banner, four looks, full widget controls.
+- Inquiries without a piece get a clean subject ("Custom design — Sam")
+  and record the listing page they came from.
+- Inquiry form without a heading no longer prints an empty heading.
 
 ### 1.17.0
 - Quiet page intro for catalog pages: heading, filters/toolbar and cards

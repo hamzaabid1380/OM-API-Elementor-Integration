@@ -218,7 +218,9 @@ class OM_Inquiry {
 		if ( '' === trim( (string) $tpl ) ) {
 			$tpl = '' !== ( $data['subject'] ?? '' ) ? '{subject}: {piece} — {name}' : __( 'New inquiry', 'om-catalog' ) . ': {piece} — {name}';
 		}
-		$piece = '' !== $data['title'] ? $data['title'] . ( '' !== $data['style'] ? ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['style'] ) . ')' : '' ) : __( 'General question', 'om-catalog' );
+		// No piece (e.g. from a listing page): "Custom design — Sam" rather
+		// than naming a piece that isn't there.
+		$piece = '' !== $data['title'] ? $data['title'] . ( '' !== $data['style'] ? ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['style'] ) . ')' : '' ) : ( '' !== ( $data['subject'] ?? '' ) ? '' : __( 'General question', 'om-catalog' ) );
 		$pair  = ! empty( $data['pair'] ) ? $data['pair']['title'] . ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) . ')' : '';
 		if ( '' !== $pair && false === strpos( $tpl, '{pair}' ) ) {
 			$piece .= ' + ' . $pair;
@@ -238,7 +240,7 @@ class OM_Inquiry {
 				'{site}'    => (string) get_bloginfo( 'name' ),
 			)
 		);
-		$line = preg_replace( array( '/^\s*[:\-—–|·]+\s*/u', '/\s*[:\-—–|·]+\s*$/u', '/\(\s*\)/', '/\s{2,}/' ), array( '', '', '', ' ' ), $line );
+		$line = preg_replace( array( '/\s*[:|·]\s*(?=[—–-]\s)/u', '/^\s*[:\-—–|·]+\s*/u', '/\s*[:\-—–|·]+\s*$/u', '/\(\s*\)/', '/\s{2,}/' ), array( ' ', '', '', '', ' ' ), $line );
 		return trim( (string) $line );
 	}
 
@@ -369,7 +371,7 @@ class OM_Inquiry {
 		if ( $context['collapsible'] ) {
 			echo '<details class="om-inquiry"' . ( $context['open'] || $sent ? ' open' : '' ) . '><summary class="om-inquiry-toggle">' . esc_html( $context['heading'] ) . '</summary>';
 		} else {
-			echo '<div class="om-inquiry om-inquiry--open"><h3 class="om-inquiry-heading">' . esc_html( $context['heading'] ) . '</h3>';
+			echo '<div class="om-inquiry om-inquiry--open">' . ( '' !== trim( (string) $context['heading'] ) ? '<h3 class="om-inquiry-heading">' . esc_html( $context['heading'] ) . '</h3>' : '' );
 		}
 		?>
 		<div class="om-inquiry-body">

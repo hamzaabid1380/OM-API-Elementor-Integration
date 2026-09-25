@@ -678,7 +678,7 @@
 		var href = this.getAttribute('href') || '';
 		var hash = href.slice(href.indexOf('#om-inquiry'));
 		var $scope = $(this).closest('.om-product-wrap');
-		var $box = ($scope.length ? $scope : $(document)).find('.om-product-inquiry, .om-inquiry').first();
+		var $box = ($scope.length ? $scope : $(document)).find('.om-product-inquiry, .om-inquiry').not('.om-end-dialog .om-inquiry').first();
 		if (!$box.length) { return; } // Nothing here: let the link work as usual.
 		e.preventDefault();
 		var match = /[?&]subject=([^&]*)/.exec(hash);
@@ -715,6 +715,51 @@
 		var $form = $(this).closest('.om-inquiry-form');
 		setPair($form, '', '');
 		$form.find('.om-fields input:not([type=hidden]), .om-fields textarea').first().trigger('focus');
+	});
+
+	/* ---------- End-of-results card ---------- */
+
+	// "Ask us to make it": the built-in inquiry form in a dialog.
+	$(document).on('click', '[data-om-end-dialog]', function () {
+		var dlg = document.getElementById(this.getAttribute('data-om-end-dialog'));
+		if (!dlg) { return; }
+		// Out of the grid (and any transformed card) so it layers above all.
+		if (dlg.parentNode !== document.body) {
+			$('body > .om-end-dialog').not(dlg).remove(); // Left over from an earlier results page.
+			document.body.appendChild(dlg);
+		}
+		dlg.omOpener = this;
+		if (dlg.showModal) { dlg.showModal(); } else { dlg.setAttribute('open', ''); }
+		$('html').addClass('om-dialog-open');
+		var first = $(dlg).find('.om-fields input:not([type=hidden]):not([type=radio]), .om-fields textarea').first()[0];
+		if (first) { setTimeout(function () { first.focus(); }, 60); }
+	});
+
+	function closeEndDialog(dlg) {
+		if (dlg.close) { dlg.close(); } else { dlg.removeAttribute('open'); }
+	}
+
+	$(document).on('click', '.om-end-dialog-close', function () {
+		closeEndDialog($(this).closest('dialog')[0]);
+	});
+
+	// A click on the backdrop (outside the panel) closes it.
+	$(document).on('click', '.om-end-dialog', function (e) {
+		if (e.target === this) { closeEndDialog(this); }
+	});
+
+	$(document).on('close', '.om-end-dialog', function () {
+		$('html').removeClass('om-dialog-open');
+		if (this.omOpener && document.contains(this.omOpener)) { this.omOpener.focus(); }
+	});
+
+	// "Back to top": the start of the results.
+	$(document).on('click', '.om-end-top', function () {
+		var $wrap = $(this).closest('.om-catalog-wrap');
+		var top = $wrap.offset().top - 24;
+		window.scrollTo({ top: Math.max(0, top), behavior: reduceMotion ? 'auto' : 'smooth' });
+		var target = $wrap.find('.om-search-input, a.om-card').first()[0];
+		if (target) { setTimeout(function () { target.focus({ preventScroll: true }); }, reduceMotion ? 0 : 500); }
 	});
 
 	$(document).on('submit', '.om-inquiry-form', function (e) {
@@ -881,7 +926,7 @@
 
 	var blockLinks = [
 		'.om-catalog-wrap .om-filter-pill', '.om-catalog-wrap .om-filter-link', '.om-catalog-wrap .om-chip',
-		'.om-catalog-wrap .om-clear-filters', '.om-catalog-wrap .om-clear-filters-btn', '.om-catalog-wrap .om-pagination a',
+		'.om-catalog-wrap .om-clear-filters', '.om-catalog-wrap .om-end-clear', '.om-catalog-wrap .om-clear-filters-btn', '.om-catalog-wrap .om-pagination a',
 		'.om-diamonds .om-pagination a', '.om-diamonds .om-df-reset'
 	].join(', ');
 

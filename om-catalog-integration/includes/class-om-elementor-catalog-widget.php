@@ -802,6 +802,177 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 
 		$this->end_controls_section();
 
+		/* ---------- Content: end of results ---------- */
+
+		$this->start_controls_section( 'section_end', array( 'label' => __( 'End of results', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'end_card',
+			array(
+				'label'       => __( 'Card after the last design', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Shown once the visitor reaches the end of the results (last page, or when "Show more" / infinite scroll runs out), with a next step.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'end_layout',
+			array(
+				'label'     => __( 'Layout', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'cell',
+				'options'   => array(
+					'cell'   => __( 'A card in the grid', 'om-catalog' ),
+					'banner' => __( 'Full-width banner', 'om-catalog' ),
+				),
+				'condition' => array( 'end_card' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'end_theme',
+			array(
+				'label'     => __( 'Look', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'soft',
+				'options'   => array(
+					'soft'    => __( 'Soft tint', 'om-catalog' ),
+					'outline' => __( 'Outline (dashed frame)', 'om-catalog' ),
+					'dark'    => __( 'Dark (brand colour)', 'om-catalog' ),
+					'image'   => __( 'Photo background', 'om-catalog' ),
+				),
+				'condition' => array( 'end_card' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'end_image',
+			array(
+				'label'     => __( 'Background photo', 'om-catalog' ),
+				'type'      => Controls_Manager::MEDIA,
+				'condition' => array( 'end_card' => 'yes', 'end_theme' => 'image' ),
+			)
+		);
+
+		$this->add_control(
+			'end_eyebrow',
+			array(
+				'label'       => __( 'Eyebrow', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( "You've seen them all", 'om-catalog' ),
+				'separator'   => 'before',
+				'condition'   => array( 'end_card' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'end_title',
+			array(
+				'label'       => __( 'Title', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( "Haven't found the one?", 'om-catalog' ),
+				'condition'   => array( 'end_card' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'end_text',
+			array(
+				'label'       => __( 'Text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 3,
+				'placeholder' => __( 'Tell us what you have in mind and we will design it with you, or show you more in person.', 'om-catalog' ),
+				'description' => __( '{count} = number of designs, {line} = the product line.', 'om-catalog' ),
+				'condition'   => array( 'end_card' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'end_primary',
+			array(
+				'label'     => __( 'Main button', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'inquiry',
+				'separator' => 'before',
+				'options'   => array(
+					'inquiry' => __( 'Opens the inquiry form (pop-up)', 'om-catalog' ),
+					'link'    => __( 'Goes to a link', 'om-catalog' ),
+					'none'    => __( 'None', 'om-catalog' ),
+				),
+				'condition' => array( 'end_card' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'end_primary_text',
+			array(
+				'label'       => __( 'Main button text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Ask us to make it', 'om-catalog' ),
+				'condition'   => array( 'end_card' => 'yes', 'end_primary!' => 'none' ),
+			)
+		);
+
+		$this->add_control(
+			'end_primary_url',
+			array(
+				'label'       => __( 'Main button link', 'om-catalog' ),
+				'type'        => Controls_Manager::URL,
+				'placeholder' => home_url( '/book-a-viewing/' ),
+				'condition'   => array( 'end_card' => 'yes', 'end_primary' => 'link' ),
+			)
+		);
+
+		$this->add_control(
+			'end_subject',
+			array(
+				'label'       => __( 'Inquiry subject', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => 'Custom design',
+				'description' => __( 'Preselected in the form; must be one of the inquiry subjects (Settings > OM Catalog > Inquiries).', 'om-catalog' ),
+				'condition'   => array( 'end_card' => 'yes', 'end_primary' => 'inquiry' ),
+			)
+		);
+
+		$this->add_control(
+			'end_secondary',
+			array(
+				'label'     => __( 'Second button', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'auto',
+				'separator' => 'before',
+				'options'   => array(
+					'auto' => __( 'Smart: "See all designs" when filtered, else "Back to top"', 'om-catalog' ),
+					'top'  => __( 'Back to top', 'om-catalog' ),
+					'link' => __( 'Goes to a link', 'om-catalog' ),
+					'none' => __( 'None', 'om-catalog' ),
+				),
+				'condition' => array( 'end_card' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'end_secondary_text',
+			array(
+				'label'       => __( 'Second button text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'description' => __( 'Leave empty for the default wording.', 'om-catalog' ),
+				'condition'   => array( 'end_card' => 'yes', 'end_secondary!' => 'none' ),
+			)
+		);
+
+		$this->add_control(
+			'end_secondary_url',
+			array(
+				'label'     => __( 'Second button link', 'om-catalog' ),
+				'type'      => Controls_Manager::URL,
+				'condition' => array( 'end_card' => 'yes', 'end_secondary' => 'link' ),
+			)
+		);
+
+		$this->end_controls_section();
+
 		$this->register_quick_view_content();
 		$this->register_card_video_content();
 
@@ -864,6 +1035,86 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 				'range'      => array( 'px' => array( 'min' => 0, 'max' => 120 ) ),
 				'separator'  => 'before',
 				'selectors'  => array( '{{WRAPPER}} .om-intro-head' => '--om-head-gap: {{SIZE}}px;' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Style: end of results ---------- */
+
+		$this->start_controls_section(
+			'section_style_end',
+			array(
+				'label'     => __( 'End of results', 'om-catalog' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'end_card' => 'yes' ),
+			)
+		);
+
+		$this->add_control( 'end_bg', array( 'label' => __( 'Background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-end-card' => '--om-end-bg: {{VALUE}}; --om-end-bg-solid: {{VALUE}};' ), 'condition' => array( 'end_theme!' => 'image' ) ) );
+		$this->add_control( 'end_overlay', array( 'label' => __( 'Photo overlay', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-end-card' => '--om-end-overlay: {{VALUE}};' ), 'condition' => array( 'end_theme' => 'image' ) ) );
+		$this->add_control( 'end_fg', array( 'label' => __( 'Title & button colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-end-card' => '--om-end-fg: {{VALUE}};' ) ) );
+		$this->add_control( 'end_muted', array( 'label' => __( 'Eyebrow & text colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-end-card' => '--om-end-muted: {{VALUE}};' ) ) );
+		$this->add_control( 'end_border', array( 'label' => __( 'Border colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-end-card' => '--om-end-line: {{VALUE}};' ) ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'end_eyebrow_typo', 'label' => __( 'Eyebrow typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-end-eyebrow', 'separator' => 'before' ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'end_title_typo', 'label' => __( 'Title typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-end-title' ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'end_text_typo', 'label' => __( 'Text typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-end-text' ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'end_btn_typo', 'label' => __( 'Button typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-end-card .om-end-btn.om-end-btn' ) );
+		$this->add_responsive_control(
+			'end_align',
+			array(
+				'label'     => __( 'Alignment', 'om-catalog' ),
+				'type'      => Controls_Manager::CHOOSE,
+				'separator' => 'before',
+				'options'   => array(
+					'left'   => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
+					'center' => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
+				),
+				'selectors_dictionary' => array(
+					'left'   => '--om-end-align: left; --om-end-items: flex-start; justify-content: flex-start;',
+					'center' => '--om-end-align: center; --om-end-items: center; justify-content: center;',
+				),
+				'selectors' => array( '{{WRAPPER}} .om-end-card' => '{{VALUE}}' ),
+			)
+		);
+		$this->add_responsive_control(
+			'end_padding',
+			array(
+				'label'      => __( 'Padding', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 12, 'max' => 120 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-end-card' => '--om-end-pad: {{SIZE}}px;' ),
+			)
+		);
+		$this->add_responsive_control(
+			'end_min_h',
+			array(
+				'label'      => __( 'Minimum height', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 700 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-end-card' => '--om-end-min-h: {{SIZE}}px;' ),
+			)
+		);
+		$this->add_control(
+			'end_radius',
+			array(
+				'label'      => __( 'Corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-end-card' => 'border-radius: {{SIZE}}px;' ),
+			)
+		);
+		$this->add_control(
+			'end_btn_radius',
+			array(
+				'label'      => __( 'Button corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-end-card' => '--om-end-btn-radius: {{SIZE}}px;' ),
 			)
 		);
 
@@ -1783,6 +2034,20 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'head_rule'       => 'yes' === ( $settings['head_rule'] ?? 'yes' ) ? 'yes' : '',
 			'head_tag'        => (string) ( $settings['head_tag'] ?? 'h2' ),
 			'head_align'      => (string) ( $settings['head_align'] ?? 'center' ),
+			'end_card'           => 'yes' === ( $settings['end_card'] ?? 'yes' ) ? 'yes' : '',
+			'end_layout'         => (string) ( $settings['end_layout'] ?? 'cell' ),
+			'end_theme'          => (string) ( $settings['end_theme'] ?? 'soft' ),
+			'end_image'          => (string) ( $settings['end_image']['url'] ?? '' ),
+			'end_eyebrow'        => (string) ( $settings['end_eyebrow'] ?? '' ),
+			'end_title'          => (string) ( $settings['end_title'] ?? '' ),
+			'end_text'           => (string) ( $settings['end_text'] ?? '' ),
+			'end_primary'        => (string) ( $settings['end_primary'] ?? 'inquiry' ),
+			'end_primary_text'   => (string) ( $settings['end_primary_text'] ?? '' ),
+			'end_primary_url'    => (string) ( $settings['end_primary_url']['url'] ?? '' ),
+			'end_subject'        => (string) ( $settings['end_subject'] ?? 'Custom design' ),
+			'end_secondary'      => (string) ( $settings['end_secondary'] ?? 'auto' ),
+			'end_secondary_text' => (string) ( $settings['end_secondary_text'] ?? '' ),
+			'end_secondary_url'  => (string) ( $settings['end_secondary_url']['url'] ?? '' ),
 			// The responsive Columns control owns the column count via CSS.
 			'inline_columns'  => 'no',
 		) + $this->card_extras_atts( $settings );

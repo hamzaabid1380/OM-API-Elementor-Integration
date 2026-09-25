@@ -7148,3 +7148,268 @@ html.om-has-compare.om-has-sticky-bar .om-compare-tray {
 		animation: none !important;
 	}
 }
+
+/* =========================================================
+   1.18 — End-of-results card
+   ========================================================= */
+
+.om-end-card {
+	--om-end-bg: var(--om-soft, #f7f5f1);
+	--om-end-fg: var(--om-color-primary, #00111C);
+	--om-end-muted: #5f5f5f;
+	--om-end-line: rgba(0, 17, 28, 0.1);
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--om-end-min-h, 0);
+	padding: var(--om-end-pad, clamp(28px, 4vw, 44px));
+	overflow: hidden;
+	border: 1px solid var(--om-end-line);
+	border-radius: var(--om-radius-lg, var(--om-radius-lg-d, 0));
+	background: var(--om-end-bg);
+	color: var(--om-end-fg);
+	text-align: var(--om-end-align, center);
+	font-family: var(--om-font-body, Inter, sans-serif);
+}
+
+.om-end-card--cell {
+	align-self: stretch;
+}
+
+.om-end-card--banner {
+	grid-column: 1 / -1;
+	min-height: 0;
+	padding-block: clamp(36px, 5vw, 64px);
+}
+
+.om-end-card--outline {
+	--om-end-bg: transparent;
+	border-style: dashed;
+	--om-end-line: rgba(0, 17, 28, 0.22);
+}
+
+.om-end-card--dark {
+	--om-end-bg: var(--om-color-primary, #00111C);
+	--om-end-fg: #fff;
+	--om-end-muted: rgba(255, 255, 255, 0.78);
+	--om-end-line: transparent;
+}
+
+.om-end-card--image {
+	--om-end-fg: #fff;
+	--om-end-muted: rgba(255, 255, 255, 0.85);
+	--om-end-line: transparent;
+	background: var(--om-color-primary, #00111C) var(--om-end-image) center / cover no-repeat;
+}
+
+.om-end-card--image::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: var(--om-end-overlay, rgba(0, 17, 28, 0.55));
+}
+
+.om-end-inner {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: var(--om-end-items, center);
+	gap: 0;
+	max-width: 44ch;
+}
+
+.om-end-card--banner .om-end-inner {
+	max-width: 60ch;
+}
+
+.om-end-eyebrow {
+	margin: 0 0 12px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--om-end-muted);
+}
+
+.om-end-title {
+	margin: 0;
+	font-family: var(--om-font-heading, Arapey, Georgia, serif);
+	font-size: clamp(22px, 2.4vw, 30px);
+	line-height: 1.2;
+	color: var(--om-end-fg);
+}
+
+.om-end-text {
+	margin: 12px 0 0;
+	font-size: 14px;
+	line-height: 1.65;
+	color: var(--om-end-muted);
+}
+
+.om-end-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: var(--om-end-items, center);
+	gap: 10px;
+	margin-top: 22px;
+}
+
+/* Buttons: theme-proof (Hello Elementor restyles buttons and links). */
+.om-end-card .om-end-btn.om-end-btn,
+.om-end-card .om-end-btn.om-end-btn:visited {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	margin: 0;
+	padding: 12px 22px;
+	border: 1px solid var(--om-end-fg);
+	border-radius: var(--om-end-btn-radius, var(--om-radius, var(--om-radius-d, 0)));
+	box-shadow: none;
+	font: inherit;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.2;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.om-end-card .om-end-btn--primary.om-end-btn--primary {
+	background: var(--om-end-fg);
+	color: var(--om-end-bg-solid, #fff);
+}
+
+.om-end-card--dark .om-end-btn--primary.om-end-btn--primary,
+.om-end-card--image .om-end-btn--primary.om-end-btn--primary {
+	--om-end-bg-solid: var(--om-color-primary, #00111C);
+}
+
+.om-end-card .om-end-btn--secondary.om-end-btn--secondary {
+	background: transparent;
+	color: var(--om-end-fg);
+}
+
+.om-end-card .om-end-btn--primary.om-end-btn--primary:is(:hover, :focus-visible) {
+	background: transparent;
+	color: var(--om-end-fg);
+	border-color: var(--om-end-fg);
+}
+
+.om-end-card .om-end-btn--secondary.om-end-btn--secondary:is(:hover, :focus-visible) {
+	background: var(--om-end-fg);
+	color: var(--om-end-bg-solid, #fff);
+	border-color: var(--om-end-fg);
+}
+
+.om-end-card--dark .om-end-btn--secondary.om-end-btn--secondary:is(:hover, :focus-visible),
+.om-end-card--image .om-end-btn--secondary.om-end-btn--secondary:is(:hover, :focus-visible) {
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-end-card .om-end-btn.om-end-btn:focus-visible {
+	outline: 2px solid var(--om-end-fg);
+	outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+	.om-end-card--cell {
+		grid-column: 1 / -1;
+	}
+
+	.om-end-card .om-end-btn.om-end-btn {
+		flex: 1 1 100%;
+		white-space: normal;
+	}
+}
+
+/* ---------- The inquiry dialog ---------- */
+
+.om-end-dialog {
+	width: min(560px, calc(100vw - 32px));
+	max-height: calc(100dvh - 48px);
+	padding: 0;
+	border: 0;
+	border-radius: var(--om-radius-lg, 14px);
+	background: #fff;
+	color: var(--om-color-text, #464646);
+	box-shadow: 0 30px 80px rgba(0, 17, 28, 0.25);
+	overflow: auto;
+}
+
+.om-end-dialog::backdrop {
+	background: rgba(0, 17, 28, 0.45);
+	-webkit-backdrop-filter: blur(3px);
+	backdrop-filter: blur(3px);
+}
+
+.om-end-dialog[open] {
+	animation: om-end-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes om-end-in {
+	from { opacity: 0; transform: translateY(14px) scale(0.98); }
+}
+
+.om-end-dialog-inner {
+	position: relative;
+	padding: 30px 28px 26px;
+}
+
+.om-end-dialog-title {
+	margin: 0 40px 6px 0;
+	font-family: var(--om-font-heading, Arapey, Georgia, serif);
+	font-size: 24px;
+	line-height: 1.25;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-end-dialog .om-end-dialog-close.om-end-dialog-close,
+.om-end-dialog .om-end-dialog-close.om-end-dialog-close:is(:hover, :focus) {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 1px solid rgba(0, 17, 28, 0.12);
+	border-radius: 50%;
+	background: #fff;
+	color: var(--om-color-primary, #00111C);
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+	box-shadow: none;
+}
+
+.om-end-dialog .om-end-dialog-close.om-end-dialog-close:is(:hover, :focus-visible) {
+	border-color: var(--om-color-primary, #00111C);
+}
+
+.om-end-dialog .om-inquiry {
+	margin: 0;
+	border: 0;
+}
+
+.om-end-dialog .om-inquiry-intro {
+	margin-top: 0;
+}
+
+html.om-dialog-open {
+	overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-end-dialog[open] {
+		animation: none;
+	}
+}

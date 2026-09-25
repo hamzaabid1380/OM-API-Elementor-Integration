@@ -260,6 +260,26 @@ class OM_Shortcodes {
 				'head_rule'        => 'yes',
 				'head_tag'         => 'h2',
 				'head_align'       => 'center',
+				// End-of-results card after the last design: layout cell or
+				// banner; theme soft, outline, dark or image; eyebrow, title
+				// and text ({count}, {line}); a primary action (inquiry opens
+				// the built-in form in a dialog, link, none) and a secondary
+				// one (auto = "See all" when filtered, else back to top;
+				// top, link, none).
+				'end_card'           => 'yes',
+				'end_layout'         => 'cell',
+				'end_theme'          => 'soft',
+				'end_image'          => '',
+				'end_eyebrow'        => '',
+				'end_title'          => '',
+				'end_text'           => '',
+				'end_primary'        => 'inquiry',
+				'end_primary_text'   => '',
+				'end_primary_url'    => '',
+				'end_subject'        => 'Custom design',
+				'end_secondary'      => 'auto',
+				'end_secondary_text' => '',
+				'end_secondary_url'  => '',
 				// Visitor sort dropdown, and the default order.
 				'show_sort'       => 'yes',
 				'sort'            => '',
@@ -604,6 +624,90 @@ class OM_Shortcodes {
 		}
 
 		return ob_get_clean();
+	}
+
+	/**
+	 * The card after the last design: "You've seen them all" with a next
+	 * step (an inquiry in a dialog, or links).
+	 */
+	private function render_end_card( $atts, $state, $chips, $clear_url, $active_line, $total, $page_url = '' ) {
+		$labels = self::line_labels();
+		$line   = $labels[ $active_line ] ?? ucwords( str_replace( '-', ' ', $active_line ) );
+		$fill   = static function ( $text ) use ( $line, $total ) {
+			return trim( strtr( (string) $text, array( '{line}' => $line, '{count}' => number_format_i18n( $total ) ) ) );
+		};
+		$eyebrow = '' !== trim( (string) $atts['end_eyebrow'] ) ? $fill( $atts['end_eyebrow'] ) : __( "You've seen them all", 'om-catalog' );
+		$title   = '' !== trim( (string) $atts['end_title'] ) ? $fill( $atts['end_title'] ) : __( "Haven't found the one?", 'om-catalog' );
+		$text    = '' !== trim( (string) $atts['end_text'] ) ? $fill( $atts['end_text'] ) : __( 'Tell us what you have in mind and we will design it with you, or show you more in person.', 'om-catalog' );
+		$layout  = 'banner' === $atts['end_layout'] ? 'banner' : 'cell';
+		$theme   = in_array( $atts['end_theme'], array( 'soft', 'outline', 'dark', 'image' ), true ) ? $atts['end_theme'] : 'soft';
+		$image   = 'image' === $theme ? esc_url_raw( (string) $atts['end_image'] ) : '';
+		if ( 'image' === $theme && '' === $image ) {
+			$theme = 'dark';
+		}
+
+		// Primary action.
+		$primary = '';
+		$dialog  = '';
+		if ( 'inquiry' === $atts['end_primary'] && class_exists( 'OM_Inquiry' ) ) {
+			$id      = 'om-end-dlg-' . wp_rand( 1000, 9999 );
+			$label   = '' !== trim( (string) $atts['end_primary_text'] ) ? $atts['end_primary_text'] : __( 'Ask us to make it', 'om-catalog' );
+			$primary = '<button type="button" class="om-end-btn om-end-btn--primary" data-om-end-dialog="' . esc_attr( $id ) . '" aria-haspopup="dialog">' . esc_html( $label ) . '</button>';
+			$dialog  = '<dialog class="om-end-dialog" id="' . esc_attr( $id ) . '" aria-labelledby="' . esc_attr( $id ) . '-t"><div class="om-end-dialog-inner"><button type="button" class="om-end-dialog-close" aria-label="' . esc_attr__( 'Close', 'om-catalog' ) . '">&times;</button><p class="om-end-dialog-title" id="' . esc_attr( $id ) . '-t">' . esc_html( $title ) . '</p>'
+				. OM_Inquiry::render_form(
+					array(
+						'collapsible' => false,
+						'heading'     => '',
+						'intro'       => $text,
+						'subject'     => (string) $atts['end_subject'],
+						// The listing they were on (with its filters), for the email.
+						'url'         => 0 === strpos( $page_url, '/' ) ? preg_replace( '#^(https?://[^/]+).*$#', '$1', home_url() ) . $page_url : $page_url,
+						'button'      => __( 'Send', 'om-catalog' ),
+					)
+				)
+				. '</div></dialog>';
+		} elseif ( 'link' === $atts['end_primary'] && '' !== trim( (string) $atts['end_primary_url'] ) ) {
+			$label   = '' !== trim( (string) $atts['end_primary_text'] ) ? $atts['end_primary_text'] : __( 'Book a private viewing', 'om-catalog' );
+			$primary = '<a class="om-end-btn om-end-btn--primary" href="' . esc_url( $atts['end_primary_url'] ) . '">' . esc_html( $label ) . '</a>';
+		}
+
+		// Secondary action.
+		$secondary = '';
+		$mode      = in_array( $atts['end_secondary'], array( 'auto', 'top', 'link', 'none' ), true ) ? $atts['end_secondary'] : 'auto';
+		if ( 'auto' === $mode ) {
+			$mode = $chips ? 'clear' : 'top';
+		}
+		if ( 'clear' === $mode ) {
+			$secondary = '<a class="om-end-btn om-end-btn--secondary om-end-clear" href="' . esc_url( $clear_url ) . '">' . esc_html( '' !== trim( (string) $atts['end_secondary_text'] ) ? $atts['end_secondary_text'] : __( 'See all designs', 'om-catalog' ) ) . '</a>';
+		} elseif ( 'top' === $mode ) {
+			$secondary = '<button type="button" class="om-end-btn om-end-btn--secondary om-end-top">' . esc_html( '' !== trim( (string) $atts['end_secondary_text'] ) ? $atts['end_secondary_text'] : __( 'Back to top', 'om-catalog' ) ) . '</button>';
+		} elseif ( 'link' === $mode && '' !== trim( (string) $atts['end_secondary_url'] ) ) {
+			$secondary = '<a class="om-end-btn om-end-btn--secondary" href="' . esc_url( $atts['end_secondary_url'] ) . '">' . esc_html( '' !== trim( (string) $atts['end_secondary_text'] ) ? $atts['end_secondary_text'] : __( 'Browse more', 'om-catalog' ) ) . '</a>';
+		}
+
+		printf(
+			'<aside class="om-end-card om-end-card--%s om-end-card--%s" aria-label="%s"%s>',
+			esc_attr( $layout ),
+			esc_attr( $theme ),
+			esc_attr__( 'End of results', 'om-catalog' ),
+			'' !== $image ? ' style="--om-end-image:url(\'' . esc_url( $image ) . '\');"' : ''
+		);
+		echo '<div class="om-end-inner">';
+		if ( '' !== $eyebrow ) {
+			echo '<p class="om-end-eyebrow">' . esc_html( $eyebrow ) . '</p>';
+		}
+		if ( '' !== $title ) {
+			echo '<p class="om-end-title">' . esc_html( $title ) . '</p>';
+		}
+		if ( '' !== $text ) {
+			echo '<p class="om-end-text">' . esc_html( $text ) . '</p>';
+		}
+		if ( $primary || $secondary ) {
+			echo '<div class="om-end-actions">' . $primary . $secondary . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+		}
+		echo '</div>';
+		echo $dialog; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above / in the inquiry renderer.
+		echo '</aside>';
 	}
 
 	/** The heading above the catalog: eyebrow, title, rule, text. */
@@ -1116,9 +1220,13 @@ class OM_Shortcodes {
 				) + $card_opts
 			);
 		}
+		$total_pages = (int) ceil( $total / $per_page );
+		// The last design is on screen: close the grid with the end card.
+		if ( 'yes' === $atts['end_card'] && $paged >= $total_pages ) {
+			$this->render_end_card( $atts, $state, $chips, $clear_url, $active_line, $total, $url( array( 'q' => $state['q'] ) ) );
+		}
 		echo '</div>';
 
-		$total_pages = (int) ceil( $total / $per_page );
 		if ( $total_pages > 1 && 'classic' !== $atts['design'] ) {
 			// "You've viewed 9 of 40" with a progress bar.
 			$seen = min( $total, $paged * $per_page );
