@@ -439,8 +439,54 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 					'related' => __( 'You might also like (related designs)', 'om-catalog' ),
 					'recent'  => __( 'Recently viewed by this visitor', 'om-catalog' ),
 					'picked'  => __( 'Hand-picked style numbers', 'om-catalog' ),
+					'set'     => __( 'Complete the set (matching bands / rings)', 'om-catalog' ),
 				),
-				'description' => __( 'On a product page, "related" follows the product being viewed. "Recently viewed" stays hidden until the visitor has looked at other pieces.', 'om-catalog' ),
+				'description' => __( 'On a product page, "related" follows the product being viewed. "Recently viewed" stays hidden until the visitor has looked at other pieces. "Complete the set" shows matching wedding bands on a ring page (and rings on a band page); exact pairs can be listed in Settings > OM Catalog.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'set_line',
+			array(
+				'label'       => __( 'Pair with line', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => '',
+				'options'     => array( '' => __( 'Automatic (bands for rings, rings for bands)', 'om-catalog' ) ) + OM_Shortcodes::line_labels( is_admin() ),
+				'condition'   => array( 'source' => 'set' ),
+			)
+		);
+
+		$this->add_control(
+			'subtitle',
+			array(
+				'label'       => __( 'Line under the title', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 2,
+				'placeholder' => __( 'Wedding bands chosen to sit beautifully with this ring. They follow the metal you pick.', 'om-catalog' ),
+				'description' => __( 'Leave empty for the default; type a single space to hide it.', 'om-catalog' ),
+				'condition'   => array( 'source' => 'set' ),
+			)
+		);
+
+		$this->add_control(
+			'set_price',
+			array(
+				'label'       => __( '"Set from" price', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Both pieces together, under each card (needs card prices on).', 'om-catalog' ),
+				'condition'   => array( 'source' => 'set' ),
+			)
+		);
+
+		$this->add_control(
+			'set_inquiry',
+			array(
+				'label'       => __( '"Ask about this set" link', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Opens the page\'s inquiry form with the subject "Bridal set" and both pieces in the email.', 'om-catalog' ),
+				'condition'   => array( 'source' => 'set' ),
 			)
 		);
 
@@ -801,6 +847,10 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 				'show_arrows'  => (string) ( $s['show_arrows'] ?? 'yes' ),
 				'autoplay'     => (int) ( $s['autoplay'] ?? 0 ),
 				'show_prices'  => (string) ( $s['show_prices'] ?? '' ),
+				'set_line'     => (string) ( $s['set_line'] ?? '' ),
+				'subtitle'     => ( '' !== (string) ( $s['subtitle'] ?? '' ) && '' === trim( (string) $s['subtitle'] ) ) ? ' ' : (string) ( $s['subtitle'] ?? '' ),
+				'set_price'    => 'yes' === ( $s['set_price'] ?? 'yes' ) ? 'yes' : '',
+				'set_inquiry'  => 'yes' === ( $s['set_inquiry'] ?? 'yes' ) ? 'yes' : '',
 			) + $this->card_extras_atts( $s )
 		);
 		// Title tag.

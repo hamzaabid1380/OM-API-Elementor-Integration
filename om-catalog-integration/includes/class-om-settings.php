@@ -57,6 +57,8 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_product_layout_page', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_show_related', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_show_recent', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_show_set', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_set_pairs', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'om_catalog_settings', 'om_options_style', array( 'sanitize_callback' => array( $this, 'sanitize_options_style' ) ) );
 		register_setting( 'om_catalog_settings', 'om_details_style', array( 'sanitize_callback' => array( $this, 'sanitize_details_style' ) ) );
 		register_setting( 'om_catalog_settings', 'om_video_mode', array( 'sanitize_callback' => array( $this, 'sanitize_video_mode' ) ) );
@@ -286,7 +288,7 @@ class OM_Settings {
 					</tr>
 					<tr>
 						<th><label for="om_inquiry_subjects">Subjects</label></th>
-						<td><textarea id="om_inquiry_subjects" name="om_inquiry_subjects" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_inquiry_subjects', "General question\nPrice request\nBook a viewing\nCustom design\nRing sizing" ) ); ?></textarea>
+						<td><textarea id="om_inquiry_subjects" name="om_inquiry_subjects" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_inquiry_subjects', "General question\nPrice request\nBook a viewing\nBridal set\nCustom design\nRing sizing" ) ); ?></textarea>
 						<p class="description">One per line. Visitors pick one at the top of the form; it heads the email and its subject line. Any button can preselect one by linking to <code>#om-inquiry?subject=Book a viewing</code> (e.g. a "Book an appointment" button).</p>
 						<input type="hidden" name="om_inquiry_subject_field" value="0" /><label><input type="checkbox" name="om_inquiry_subject_field" value="1" <?php checked( get_option( 'om_inquiry_subject_field', '1' ), '1' ); ?> /> Show the subject choice on the form (off: the first subject, or the one a button preselects, is used)</label></td>
 					</tr>
@@ -423,8 +425,20 @@ class OM_Settings {
 							<input type="hidden" name="om_show_related" value="0" />
 							<label><input type="checkbox" name="om_show_related" value="1" <?php checked( get_option( 'om_show_related', '1' ), '1' ); ?> /> "You might also like"</label><br />
 							<input type="hidden" name="om_show_recent" value="0" />
-							<label><input type="checkbox" name="om_show_recent" value="1" <?php checked( get_option( 'om_show_recent', '1' ), '1' ); ?> /> "Recently viewed"</label>
+							<label><input type="checkbox" name="om_show_recent" value="1" <?php checked( get_option( 'om_show_recent', '1' ), '1' ); ?> /> "Recently viewed"</label><br />
+							<input type="hidden" name="om_show_set" value="0" />
+							<label><input type="checkbox" name="om_show_set" value="1" <?php checked( get_option( 'om_show_set', '1' ), '1' ); ?> /> "Complete the set" (matching bands on ring pages, rings on band pages)</label>
 						</td>
+					</tr>
+				</table>
+
+				<h2>Complete the set</h2>
+				<p class="description">Overnight Mountings doesn't say which band matches which ring, so the "Complete the set" row picks bands of the same design family (style number), then the same style (Halo, Solitaire…) in the metal chosen, then the most viewed bands. List exact matches here to put them first. Used by the built-in product page and the <strong>OM Related Products</strong> widget (Show: Complete the set).</p>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_set_pairs">Matching pairs</label></th>
+						<td><textarea id="om_set_pairs" name="om_set_pairs" rows="5" class="large-text code" placeholder="80285-04 = 12345-01, 12345-02"><?php echo esc_textarea( get_option( 'om_set_pairs', '' ) ); ?></textarea>
+						<p class="description">One per line: ring style number = matching band style numbers (comma-separated). Works both ways: the band's page then suggests the ring.</p></td>
 					</tr>
 				</table>
 

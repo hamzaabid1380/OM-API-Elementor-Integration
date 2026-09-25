@@ -6722,3 +6722,145 @@ html.om-has-compare.om-has-sticky-bar .om-compare-tray {
 .om-thumb--video:not(:has(.om-thumb)) .om-thumb-label {
 	color: #fff;
 }
+
+/* =========================================================
+   1.15 — Complete the set
+   ========================================================= */
+
+.om-related--set .om-related-head {
+	margin-bottom: 6px;
+}
+
+.om-set-sub {
+	margin: 0 0 26px;
+	max-width: 60ch;
+	font-size: 14px;
+	line-height: 1.6;
+	color: #6e6e6e;
+}
+
+.om-card-after {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	margin: 8px 0 0;
+	padding: 0 8px;
+	text-align: center;
+}
+
+.om-layout-editorial .om-card-after {
+	align-items: flex-start;
+	text-align: left;
+	padding: 0;
+}
+
+.om-card-set-price {
+	margin: 0;
+	min-height: 0;
+	font-size: 12px;
+	letter-spacing: 0.04em;
+	color: #6e6e6e;
+}
+
+.om-card-set-price:empty {
+	display: none;
+}
+
+/* Theme-proof link (Hello Elementor colours links on hover). */
+.om-card-after .om-set-ask.om-set-ask,
+.om-card-after .om-set-ask.om-set-ask:visited {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 14px;
+	border: 1px solid var(--om-line, rgba(0, 17, 28, 0.14));
+	border-radius: 999px;
+	background: transparent;
+	color: var(--om-color-primary, #00111C);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.12em;
+	line-height: 1.2;
+	text-transform: uppercase;
+	text-decoration: none;
+	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.om-card-after .om-set-ask.om-set-ask:hover,
+.om-card-after .om-set-ask.om-set-ask:focus-visible {
+	border-color: var(--om-color-primary, #00111C);
+	background: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+.om-card-after .om-set-ask.om-set-ask:focus-visible {
+	outline: 2px solid var(--om-color-primary, #00111C);
+	outline-offset: 2px;
+}
+
+/* The paired design in the inquiry form. */
+.om-inquiry-form .om-pair-chip {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 8px;
+	margin: 0 0 16px;
+	padding: 10px 12px 10px 14px;
+	border: 1px solid var(--om-line, rgba(0, 17, 28, 0.12));
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
+	background: var(--om-soft, #faf9f7);
+	font-size: 13px;
+	color: #464646;
+}
+
+.om-inquiry-form .om-pair-chip[hidden] {
+	display: none;
+}
+
+.om-pair-chip-label {
+	font-size: 11px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: #6e6e6e;
+}
+
+.om-pair-chip-name {
+	flex: 1 1 auto;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-inquiry-form .om-pair-remove.om-pair-remove,
+.om-inquiry-form .om-pair-remove.om-pair-remove:hover,
+.om-inquiry-form .om-pair-remove.om-pair-remove:focus {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 50%;
+	background: transparent;
+	color: #6e6e6e;
+	font-size: 18px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.om-inquiry-form .om-pair-remove.om-pair-remove:hover,
+.om-inquiry-form .om-pair-remove.om-pair-remove:focus-visible {
+	border-color: var(--om-line, rgba(0, 17, 28, 0.14));
+	color: var(--om-color-primary, #00111C);
+}
+
+@media (max-width: 600px) {
+	.om-card-after .om-set-ask.om-set-ask {
+		padding: 7px 10px;
+		font-size: 10px;
+		letter-spacing: 0.06em;
+		white-space: nowrap;
+	}
+}

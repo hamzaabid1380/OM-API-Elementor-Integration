@@ -1173,8 +1173,10 @@ function om_quick_view_attr( $atts ) {
  * @param array  $product Listing record.
  * @param string $line    Product line code.
  * @param array  $o       link, prices (bool), badges (string[]), color
- *                        (photos in this metal colour), plus
- *                        om_card_options().
+ *                        (photos in this metal colour), color_images
+ *                        (bool: carry each colour's photos so the script
+ *                        can switch them), after (HTML under the card
+ *                        body, inside the cell), plus om_card_options().
  * @return string HTML.
  */
 function om_render_card( $product, $line, $o ) {
@@ -1186,6 +1188,8 @@ function om_render_card( $product, $line, $o ) {
 			'badges'  => array(),
 			'color'   => '',
 			'compare' => false,
+			'color_images' => false,
+			'after'   => '',
 		)
 	);
 	$style_number = (string) ( $product['style_number'] ?? '' );
@@ -1203,9 +1207,25 @@ function om_render_card( $product, $line, $o ) {
 	}
 	$badge_text = '' !== $o['video_badge_text'] ? $o['video_badge_text'] : __( 'Video', 'om-catalog' );
 
+	// Each metal colour's photos, for rows that follow the colour picked
+	// on the product page (e.g. "Complete the set").
+	$color_attr = '';
+	if ( $o['color_images'] && om_product_media( $product )['by_color'] ) {
+		$map = array();
+		foreach ( (array) ( $product['colors'] ?? array() ) as $one ) {
+			$pair = om_card_images( $product, (string) $one );
+			if ( $pair[0] ) {
+				$map[ (string) $one ] = $pair;
+			}
+		}
+		if ( count( array_unique( wp_list_pluck( $map, 0 ) ) ) > 1 ) {
+			$color_attr = ' data-om-imgs="' . esc_attr( wp_json_encode( $map ) ) . '"';
+		}
+	}
+
 	ob_start();
 	?>
-	<div class="om-card-cell om-hover-<?php echo esc_attr( '' !== $o['hover'] ? $o['hover'] : om_card_hover_style() ); ?><?php echo $o['qv_mobile'] ? ' om-qv-mobile' : ''; ?>">
+	<div class="om-card-cell om-hover-<?php echo esc_attr( '' !== $o['hover'] ? $o['hover'] : om_card_hover_style() ); ?><?php echo $o['qv_mobile'] ? ' om-qv-mobile' : ''; ?><?php echo '' !== $o['after'] ? ' has-after' : ''; ?>"<?php echo $color_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above. ?>>
 		<a class="om-card" href="<?php echo esc_url( $link ); ?>">
 			<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?><?php echo esc_attr( $video_class ); ?>"<?php echo $video_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_card_video_attrs(). ?>>
 				<?php if ( $video_class && 'none' !== $o['video_badge'] ) : ?>
@@ -1251,6 +1271,9 @@ function om_render_card( $product, $line, $o ) {
 		<?php if ( $o['quick_view'] ) : ?>
 			<?php $qv_text = '' !== $o['qv_text'] ? $o['qv_text'] : __( 'Quick view', 'om-catalog' ); ?>
 			<span class="om-qv-slot om-qv-slot--<?php echo esc_attr( $o['qv_style'] ); ?>"><button type="button" class="om-qv-btn om-qv-btn--<?php echo esc_attr( $o['qv_style'] ); ?>" data-om-qv-line="<?php echo esc_attr( $line ); ?>" data-om-qv-style="<?php echo esc_attr( $style_number ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: 1: button text, 2: product. */ __( '%1$s: %2$s', 'om-catalog' ), $qv_text, $title ) ); ?>"><?php echo 'icon' === $o['qv_style'] ? '<span class="om-qv-icon" aria-hidden="true"></span>' : esc_html( $qv_text ); ?></button></span>
+		<?php endif; ?>
+		<?php if ( '' !== $o['after'] ) : ?>
+			<div class="om-card-after"><?php echo $o['after']; // phpcs:ignore WordPress.Security.EscapeOutput -- built escaped by the caller. ?></div>
 		<?php endif; ?>
 	</div>
 	<?php

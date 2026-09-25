@@ -42,6 +42,9 @@ get_header();
 
 		<?php
 		// Rows below the product (Settings > OM Catalog > Product page rows).
+		if ( get_option( 'om_show_set', '1' ) ) {
+			echo OM_Related::instance()->render( array( 'source' => 'set', 'count' => 4, 'show_prices' => 'yes' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+		}
 		if ( get_option( 'om_show_related', '1' ) ) {
 			echo OM_Related::instance()->render( array( 'source' => 'related', 'count' => 4, 'show_prices' => 'yes' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 		}

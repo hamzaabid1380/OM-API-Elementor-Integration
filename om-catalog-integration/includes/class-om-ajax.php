@@ -113,15 +113,29 @@ class OM_Ajax {
 			wp_send_json_error( array( 'message' => 'Nothing to price.' ) );
 		}
 
+		// "Complete the set": also price each design together with this
+		// one ("line|style"), e.g. the ring being viewed plus each band.
+		$with = isset( $_POST['with'] ) ? sanitize_text_field( wp_unslash( $_POST['with'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$base = null;
+		if ( false !== strpos( $with, '|' ) ) {
+			list( $with_line, $with_style ) = explode( '|', $with, 2 );
+			$base = OM_API_Client::get_card_price( sanitize_title( $with_line ), $with_style );
+		}
+
 		$prices = array();
+		$sets   = array();
 		foreach ( $styles as $style ) {
 			$wholesale = OM_API_Client::get_card_price( $line, $style );
 			if ( null !== $wholesale ) {
 				/* translators: %s: price. */
 				$prices[ $style ] = sprintf( __( 'From %s', 'om-catalog' ), om_format_price_short( om_apply_markup( $wholesale ) ) );
+				if ( null !== $base ) {
+					/* translators: %s: price of both pieces together. */
+					$sets[ $style ] = sprintf( __( 'Set from %s', 'om-catalog' ), om_format_price_short( om_apply_markup( $base ) + om_apply_markup( $wholesale ) ) );
+				}
 			}
 		}
-		wp_send_json_success( array( 'prices' => $prices ) );
+		wp_send_json_success( array( 'prices' => $prices, 'sets' => $sets ) );
 	}
 
 	/**

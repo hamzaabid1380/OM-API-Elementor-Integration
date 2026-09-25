@@ -90,7 +90,9 @@ class OM_Inquiry {
 				echo '<img src="' . esc_url( $img ) . '" alt="" width="44" height="44" style="object-fit:cover;border:1px solid #ddd;background:#fff;" />';
 			}
 			$label = trim( $title . ( $sku ? ' · ' . $sku : '' ) );
-			echo '<span>' . ( $url ? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' . esc_html( $label ? $label : $url ) . '</a>' : esc_html( $label ) ) . '</span></div>';
+			$pair  = get_post_meta( $post_id, '_om_pair', true );
+			$extra = is_array( $pair ) && ! empty( $pair['url'] ) ? '<br /><small>+ <a href="' . esc_url( $pair['url'] ) . '" target="_blank" rel="noopener">' . esc_html( $pair['title'] . ' · ' . $pair['style'] ) . '</a></small>' : '';
+			echo '<span>' . ( $url ? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' . esc_html( $label ? $label : $url ) . '</a>' : esc_html( $label ) ) . $extra . '</span></div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 		}
 	}
 
@@ -189,7 +191,7 @@ class OM_Inquiry {
 	public static function subject_config( $context = array() ) {
 		$list = $context['subjects'] ?? null;
 		if ( null === $list ) {
-			$list = (string) get_option( 'om_inquiry_subjects', "General question\nPrice request\nBook a viewing\nCustom design\nRing sizing" );
+			$list = (string) get_option( 'om_inquiry_subjects', "General question\nPrice request\nBook a viewing\nBridal set\nCustom design\nRing sizing" );
 		}
 		if ( is_string( $list ) ) {
 			$list = preg_split( '/\r\n|\r|\n|,/', $list );
@@ -208,7 +210,8 @@ class OM_Inquiry {
 
 	/**
 	 * The email subject from a template: {subject} {piece} {title} {style}
-	 * {name} {email} {phone} {price} {site}. Empty parts and the separators
+	 * {pair} {name} {email} {phone} {price} {site}. {piece} includes a
+	 * paired design ("Complete the set"). Empty parts and the separators
 	 * they leave behind are tidied away.
 	 */
 	public static function subject_line( $tpl, $data ) {
@@ -216,6 +219,10 @@ class OM_Inquiry {
 			$tpl = '' !== ( $data['subject'] ?? '' ) ? '{subject}: {piece} — {name}' : __( 'New inquiry', 'om-catalog' ) . ': {piece} — {name}';
 		}
 		$piece = '' !== $data['title'] ? $data['title'] . ( '' !== $data['style'] ? ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['style'] ) . ')' : '' ) : __( 'General question', 'om-catalog' );
+		$pair  = ! empty( $data['pair'] ) ? $data['pair']['title'] . ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) . ')' : '';
+		if ( '' !== $pair && false === strpos( $tpl, '{pair}' ) ) {
+			$piece .= ' + ' . $pair;
+		}
 		$line  = strtr(
 			$tpl,
 			array(
@@ -227,6 +234,7 @@ class OM_Inquiry {
 				'{email}'   => (string) $data['email'],
 				'{phone}'   => (string) $data['phone'],
 				'{price}'   => (string) $data['price'],
+				'{pair}'    => $pair,
 				'{site}'    => (string) get_bloginfo( 'name' ),
 			)
 		);
@@ -383,6 +391,8 @@ class OM_Inquiry {
 					<input type="hidden" name="om_ctx_<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $context[ $field ] ); ?>" />
 				<?php endforeach; ?>
 				<input type="hidden" name="om_config" value="" class="om-inquiry-config" />
+				<?php // "Ask about this set": the design paired with this one (line|style), set by the script. ?>
+				<input type="hidden" name="om_pair" value="" class="om-inquiry-pair" />
 				<?php
 				if ( $custom_fields ) {
 					// This form's own field list, signed so the server can trust it.
@@ -407,6 +417,7 @@ class OM_Inquiry {
 					echo '<input type="hidden" name="om_subject" value="' . esc_attr( $preselect ) . '" class="om-subject-hidden" />';
 				}
 				?>
+				<p class="om-pair-chip" hidden><span class="om-pair-chip-label"><?php esc_html_e( 'Together with', 'om-catalog' ); ?></span> <span class="om-pair-chip-name"></span><button type="button" class="om-pair-remove" aria-label="<?php esc_attr_e( 'Remove the paired design', 'om-catalog' ); ?>">&times;</button></p>
 				<div class="om-fields">
 					<?php if ( $subj['list'] && $subj['show'] ) : ?>
 						<fieldset class="om-field om-field--full om-field--subject">
@@ -588,6 +599,25 @@ class OM_Inquiry {
 				}
 			}
 		}
+		// "Ask about this set": the paired design, looked up the same way.
+		$data['pair'] = array();
+		$pair_raw     = $f( 'om_pair' );
+		if ( false !== strpos( $pair_raw, '|' ) ) {
+			list( $pair_line, $pair_style ) = explode( '|', $pair_raw, 2 );
+			$pair_line  = sanitize_title( $pair_line );
+			$pair_style = mb_substr( trim( $pair_style ), 0, 60 );
+			$paired     = '' !== $pair_line && '' !== $pair_style ? OM_API_Client::get_product_by_style( $pair_line, $pair_style ) : null;
+			if ( is_array( $paired ) && ! is_wp_error( $paired ) ) {
+				require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
+				$data['pair'] = array(
+					'title' => mb_substr( (string) ( $paired['title'] ?? $pair_style ), 0, 200 ),
+					'style' => (string) ( $paired['style_number'] ?? $pair_style ),
+					'url'   => om_product_url( $pair_line, (string) ( $paired['style_number'] ?? $pair_style ) ),
+					'image' => om_card_images( $paired, mb_substr( $f( 'om_ctx_color' ), 0, 30 ) )[0],
+				);
+			}
+		}
+
 		// The page with the customer's options (?om_metal=…), when it is
 		// that same page on this site.
 		$link = isset( $_POST['om_ctx_link'] ) && is_scalar( $_POST['om_ctx_link'] ) ? esc_url_raw( wp_unslash( $_POST['om_ctx_link'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -607,6 +637,7 @@ class OM_Inquiry {
 				__( 'Diamond', 'om-catalog' )        => $data['diamond'],
 				__( 'Ring builder', 'om-catalog' )   => $data['summary'],
 				__( 'Page', 'om-catalog' )           => $data['link'],
+				__( 'Together with', 'om-catalog' )  => $data['pair'] ? $data['pair']['title'] . ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) . ') ' . $data['pair']['url'] : '',
 			),
 			'strlen'
 		);
@@ -642,6 +673,9 @@ class OM_Inquiry {
 		if ( $post_id && ! is_wp_error( $post_id ) ) {
 			foreach ( array( 'email', 'phone', 'style', 'url', 'link', 'image', 'title', 'diamond', 'subject' ) as $key ) {
 				update_post_meta( $post_id, '_om_' . $key, $data[ $key ] );
+			}
+			if ( $data['pair'] ) {
+				update_post_meta( $post_id, '_om_pair', $data['pair'] );
 			}
 		}
 
@@ -762,6 +796,21 @@ class OM_Inquiry {
 				<?php endif; ?>
 			</td></tr>
 		</table>
+	</td></tr>
+	<?php endif; ?>
+	<?php if ( ! empty( $data['pair'] ) ) : ?>
+	<tr><td style="padding:<?php echo '' !== $data['title'] ? '0' : '24px'; ?> 32px 24px;">
+		<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>margin-bottom:8px;"><?php esc_html_e( 'Together with', 'om-catalog' ); ?></div>
+		<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eeeeee;"><tr>
+			<?php if ( '' !== $data['pair']['image'] ) : ?>
+				<td width="110" valign="middle" style="padding:12px;background:#fafafa;"><a href="<?php echo esc_url( $data['pair']['url'] ); ?>"><img src="<?php echo esc_url( $data['pair']['image'] ); ?>" width="86" alt="<?php echo esc_attr( $data['pair']['title'] ); ?>" style="display:block;width:86px;height:auto;border:0;"></a></td>
+			<?php endif; ?>
+			<td valign="middle" style="padding:12px 18px;">
+				<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>"><?php echo esc_html( sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) ); ?></div>
+				<div style="<?php echo $serif; // phpcs:ignore WordPress.Security.EscapeOutput ?>font-size:17px;line-height:1.3;color:<?php echo esc_attr( $primary ); ?>;margin:4px 0 6px;"><a href="<?php echo esc_url( $data['pair']['url'] ); ?>" style="color:<?php echo esc_attr( $primary ); ?>;text-decoration:none;"><?php echo esc_html( $data['pair']['title'] ); ?></a></div>
+				<a href="<?php echo esc_url( $data['pair']['url'] ); ?>" style="font-size:12px;color:#6e6e6e;"><?php esc_html_e( 'View this piece', 'om-catalog' ); ?></a>
+			</td>
+		</tr></table>
 	</td></tr>
 	<?php endif; ?>
 	<?php if ( ! $customer && $values ) : ?>

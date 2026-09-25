@@ -105,6 +105,7 @@
 					if (value) { setOpt($wrap, name, value); }
 				});
 				applyMediaColor($wrap);
+				applySetColor($wrap);
 			} else {
 				setPriceState($wrap, '');
 			}
@@ -349,7 +350,35 @@
 
 	$(document).on('change', '.om-option[name="color"], .om-option[name="metal"]', function () {
 		applyMediaColor($(this).closest('.om-product-wrap'));
+		applySetColor($(this).closest('.om-product-wrap'));
 	});
+
+	// "Complete the set" follows the metal picked: each design's photos in
+	// that colour, and its link opens in the same metal and colour.
+	function applySetColor($wrap) {
+		var metal = optVal($wrap, 'metal');
+		var color = optVal($wrap, 'color');
+		if (!color && /platinum/i.test(metal)) { color = 'White'; }
+		$('.om-related--set .om-card-cell').each(function () {
+			var $cell = $(this);
+			var map = {};
+			try { map = JSON.parse($cell.attr('data-om-imgs') || '{}') || {}; } catch (err) { map = {}; }
+			var key = Object.keys(map).filter(function (k) { return k.toLowerCase() === (color || '').toLowerCase(); })[0];
+			if (key) {
+				var $imgs = $cell.find('.om-card-image img');
+				$imgs.filter(':not(.om-card-hover)').attr('src', map[key][0]);
+				if (map[key][1]) { $imgs.filter('.om-card-hover').attr('src', map[key][1]); }
+			}
+			$cell.find('a.om-card').each(function () {
+				try {
+					var url = new URL(this.href, window.location.href);
+					if (color) { url.searchParams.set('om_color', color); } else { url.searchParams.delete('om_color'); }
+					if (metal) { url.searchParams.set('om_metal', metal); } else { url.searchParams.delete('om_metal'); }
+					this.href = url.toString();
+				} catch (err) { /* keep the link */ }
+			});
+		});
+	}
 
 	// The product page URL with the chosen options, so a link reopens the
 	// exact configuration (used by inquiries and carat switches).
@@ -654,6 +683,11 @@
 		e.preventDefault();
 		var match = /[?&]subject=([^&]*)/.exec(hash);
 		var subject = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+		// "Ask about this set": carry the paired design into the form.
+		var pair = /[?&]pair=([^&]*)/.exec(hash);
+		if (pair) {
+			setPair($box, decodeURIComponent(pair[1]), $(this).attr('data-om-pair-title') || '');
+		}
 		var details = $box.is('details') ? $box[0] : $box.find('details.om-inquiry')[0];
 		if (details) { details.open = true; }
 		if (subject) {
@@ -666,6 +700,21 @@
 		$box[0].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
 		var first = $box.find('.om-fields input:not([type=hidden]):not([type=radio]), .om-fields textarea').first()[0];
 		if (first) { setTimeout(function () { first.focus({ preventScroll: true }); }, 450); }
+	});
+
+	function setPair($box, value, title) {
+		var $input = $box.find('.om-inquiry-pair');
+		var $chip = $box.find('.om-pair-chip');
+		if (!$input.length) { return; }
+		$input.val(value || '');
+		$chip.find('.om-pair-chip-name').text(title || (value || '').split('|').pop());
+		$chip.prop('hidden', !value);
+	}
+
+	$(document).on('click', '.om-pair-remove', function () {
+		var $form = $(this).closest('.om-inquiry-form');
+		setPair($form, '', '');
+		$form.find('.om-fields input:not([type=hidden]), .om-fields textarea').first().trigger('focus');
 	});
 
 	$(document).on('submit', '.om-inquiry-form', function (e) {
@@ -702,6 +751,7 @@
 					.addClass(ok ? 'is-success' : 'is-error').prop('hidden', false);
 				if (ok) {
 					form.reset();
+					setPair($form, '', '');
 					$form.find('.om-field, .om-field-row, .om-inquiry-submit').prop('hidden', true);
 				}
 			})
@@ -1210,16 +1260,21 @@
 	function loadCardPrices(root) {
 		$(root || document).find('.om-catalog-grid[data-om-prices]').each(function () {
 			var line = $(this).attr('data-om-prices');
+			// "Complete the set": also price each design with this one.
+			var withPiece = $(this).attr('data-om-set-with') || '';
+			var $sets = $(this).find('.om-card-set-price[data-om-style]');
 			var $cells = $(this).find('.om-card-price[data-om-style]').not('.is-loaded');
 			var styles = $cells.map(function () { return $(this).attr('data-om-style'); }).get();
 			// A few cards per request, several requests at once.
 			for (var i = 0; i < styles.length; i += 4) {
 				(function (chunk) {
-					$.post(cfg.ajaxUrl, { action: 'om_card_prices', line: line, styles: chunk }).done(function (response) {
+					$.post(cfg.ajaxUrl, { action: 'om_card_prices', line: line, styles: chunk, 'with': withPiece }).done(function (response) {
 						var prices = (response && response.success && response.data.prices) || {};
+						var sets = (response && response.success && response.data.sets) || {};
 						chunk.forEach(function (style) {
 							var $cell = $cells.filter(function () { return $(this).attr('data-om-style') === style; });
 							$cell.addClass('is-loaded').text(prices[style] || '');
+							$sets.filter(function () { return $(this).attr('data-om-style') === style; }).text(sets[style] || '').toggleClass('is-loaded', !!sets[style]);
 						});
 					}).fail(function () {
 						$cells.filter(function () { return chunk.indexOf($(this).attr('data-om-style')) > -1; }).addClass('is-loaded').empty();

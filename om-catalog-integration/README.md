@@ -468,7 +468,45 @@ Settings > OM Catalog > Inquiries:
   screen readers, suggestion lists expose the active item, and small grey
   text was darkened to meet WCAG AA contrast (checked with axe: 0 issues).
 
+## Complete the set (1.15)
+
+A "Complete the set" row pairs a ring with matching wedding bands (and a
+band with the engagement rings it suits).
+
+- **Where** — on the built-in product page it sits above "You might also
+  like" (Settings > OM Catalog > Built-in product page rows). In an
+  Elementor product layout add **OM Related Products** and set
+  *Show: Complete the set*. Shortcode: `[om_related source="set"]`.
+- **Which designs** — Overnight Mountings has no "matching band" field, so
+  the row takes, in order:
+  1. pairs listed in Settings > OM Catalog > Complete the set, one per
+     line: `80285-04 = 12345-01, 12345-02` (works both ways);
+  2. designs of the same family (same style-number root) in the other line;
+  3. the same style (Halo, Solitaire…) in the metal colour picked;
+  4. the other line's most viewed designs, then its own order.
+- **Follows the metal** — pick Yellow on the ring and the bands' photos
+  switch to yellow, and their links open in the same metal and colour.
+- **Set price** — each card shows the band's "From" price and "Set from"
+  (ring + band), when card prices are on.
+- **Ask about this set** — opens the page's inquiry form with the subject
+  "Bridal set" and the band attached ("Together with…", removable). The
+  email shows both pieces with photos and links, and the subject reads
+  "Bridal set: Halo Ring (Style 80285-04) + Band (Style 12345-01) — Jane".
+  The `{pair}` token is available in the subject template.
+- **Widget options** — Pair with line (automatic or a specific line), line
+  under the title, "Set from" price and "Ask about this set" switches, plus
+  all the usual card, quick view and style controls.
+
 ## Changelog
+
+### 1.15.0
+- "Complete the set" row: matching bands on ring pages (rings on band
+  pages) from listed pairs, design family, style and colour, then most
+  viewed; photos and links follow the metal picked; "Set from" price.
+- "Ask about this set": the paired design travels into the inquiry form
+  and the email (both pieces, photos, links; {pair} subject token);
+  shown in the Inquiries list.
+- "Bridal set" added to the default inquiry subjects.
 
 ### 1.14.0
 - Photo viewer zoom: double-click/tap, wheel, pinch, drag to pan, keys and
