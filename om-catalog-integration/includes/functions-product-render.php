@@ -184,7 +184,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 		data-line="<?php echo esc_attr( $product_line ); ?>"
 		data-style="<?php echo esc_attr( $style_number ); ?>"
 		data-priced="<?php echo $can_requote ? '1' : '0'; ?>"
-		data-om-recent-item="<?php echo esc_attr( wp_json_encode( array( 'u' => om_product_url( $product_line, $style_number ), 't' => $title, 'v' => (string) ( $product['variant_name'] ?? '' ), 's' => $style_number, 'i' => ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '' ) ) ); ?>">
+		data-om-recent-item="<?php echo esc_attr( wp_json_encode( array( 'u' => om_product_url( $product_line, $style_number ), 'l' => $product_line, 't' => $title, 'v' => (string) ( $product['variant_name'] ?? '' ), 's' => $style_number, 'i' => ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '' ) ) ); ?>">
 
 		<?php
 		if ( $args['show_gallery'] ) {

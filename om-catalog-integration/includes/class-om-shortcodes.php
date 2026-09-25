@@ -219,6 +219,9 @@ class OM_Shortcodes {
 				'search_placeholder' => '',
 				// "From $X" beside each search suggestion (once a markup is set).
 				'suggest_prices'  => 'yes',
+				// The visitor's recently viewed designs in the search panel
+				// (how many; 0 = off).
+				'suggest_viewed'  => 4,
 				// What suggestions search: line (the line being browsed),
 				// block (all of this block's lines, grouped) or all (every
 				// product line, grouped).
@@ -785,7 +788,7 @@ class OM_Shortcodes {
 		$placeholder = '' !== trim( (string) $atts['search_placeholder'] ) ? $atts['search_placeholder'] : __( 'Search by name or style number', 'om-catalog' );
 		$input_id    = 'om-q-' . wp_rand( 1000, 9999 );
 		?>
-		<form class="om-search" role="search" action="<?php echo esc_url( $action ); ?>" method="get" data-om-line="<?php echo esc_attr( $active_line ); ?>">
+		<form class="om-search" role="search" action="<?php echo esc_url( $action ); ?>" method="get" data-om-line="<?php echo esc_attr( $active_line ); ?>" data-om-viewed="<?php echo esc_attr( (string) max( 0, min( 8, (int) $atts['suggest_viewed'] ) ) ); ?>"<?php echo 'no' !== $atts['suggest_prices'] && om_markup_is_configured() ? ' data-om-priced="1"' : ''; ?>>
 			<?php foreach ( $query as $key => $value ) : ?>
 				<?php if ( is_scalar( $value ) ) : ?>
 					<input type="hidden" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $value ); ?>" />

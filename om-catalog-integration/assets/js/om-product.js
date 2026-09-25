@@ -1025,12 +1025,59 @@
 		return $('<li role="presentation"></li>').append($a);
 	}
 
-	// Empty box focused: recent searches (this visitor) and popular ones.
+	// The designs this visitor looked at last (newest first), without the
+	// one on screen, up to the box's data-om-viewed count.
+	function viewedFor($form) {
+		var max = parseInt($form.attr('data-om-viewed'), 10);
+		if (isNaN(max)) { max = 4; }
+		if (max <= 0) { return []; }
+		var current = $('.om-product-wrap[data-style]').not('.om-quick-view .om-product-wrap').first().attr('data-style') || '';
+		return readRecent().filter(function (x) { return x && x.u && x.s && x.s !== current; }).slice(0, max);
+	}
+
+	// "Recently viewed": a strip of photo cards, each a suggestion option
+	// (arrow keys reach them like any other).
+	function viewedSection($list, $form, items) {
+		var priced = $form.attr('data-om-priced') === '1';
+		var $strip = $('<div class="om-suggest-viewed" role="listbox"></div>').attr('aria-label', t('viewed', 'Recently viewed'));
+		items.forEach(function (x, i) {
+			var $a = $('<a class="om-suggest-item om-suggest-card" role="option" aria-selected="false"></a>')
+				.attr({ href: x.u, id: $list.attr('id') + '-v' + i });
+			var $img = $('<span class="om-suggest-card-img"></span>');
+			if (x.i) { $img.append($('<img alt="" loading="lazy" decoding="async" />').attr('src', x.i)); }
+			var $text = $('<span class="om-suggest-card-text"></span>')
+				.append($('<span class="om-suggest-card-title"></span>').text(x.t || x.s))
+				.append($('<span class="om-suggest-card-style"></span>').text(t('style', 'Style') + ' ' + x.s));
+			if (priced && x.l) {
+				$text.append($('<span class="om-suggest-price is-loading"></span>').attr({ 'data-om-style': x.s, 'data-om-line': x.l }));
+			}
+			$strip.append($a.append($img, $text));
+		});
+		return $('<li class="om-suggest-section om-suggest-section--viewed" role="presentation"></li>')
+			.append($('<div class="om-suggest-head"></div>')
+				.append($('<span></span>').text(t('viewed', 'Recently viewed')))
+				.append($('<button type="button" class="om-suggest-clear-viewed"></button>').text(t('clearRecent', 'Clear'))))
+			.append($strip);
+	}
+
+	// The panel is a listbox of suggestions, or (with buttons in it: the
+	// starters, recently viewed) a small dialog holding its own listbox.
+	function panelRole($form, dialog) {
+		$form.find('.om-suggest').attr('role', dialog ? 'dialog' : 'listbox').attr('aria-label', dialog ? t('searchHelp', 'Search suggestions') : null);
+		$form.find('.om-search-input').attr('aria-haspopup', dialog ? 'dialog' : 'listbox');
+	}
+
+	// Empty box focused: recently viewed designs, recent searches (this
+	// visitor) and popular ones.
 	function showSearchStarters($form) {
 		var $list = $form.find('.om-suggest').empty();
+		var viewed = viewedFor($form);
 		var recent = readRecentSearches();
 		var popular = (cfg.popular || []).filter(function (p) { return recent.map(function (r) { return r.toLowerCase(); }).indexOf(String(p).toLowerCase()) === -1; });
-		if (!recent.length && !popular.length) { closeSuggest($form); return; }
+		if (!viewed.length && !recent.length && !popular.length) { closeSuggest($form); return; }
+		if (viewed.length) {
+			$list.append(viewedSection($list, $form, viewed));
+		}
 		if (recent.length) {
 			var $chips = $('<div class="om-suggest-chips"></div>');
 			recent.forEach(function (q) {
@@ -1053,9 +1100,20 @@
 				.append($('<div class="om-suggest-head"></div>').append($('<span></span>').text(t('popular', 'Popular searches'))))
 				.append($pop));
 		}
+		panelRole($form, true);
 		$list.addClass('is-starters').prop('hidden', false);
 		$form.find('.om-search-input').attr('aria-expanded', 'true');
+		if (viewed.length) { fillSuggestPrices($list); }
 	}
+
+	$(document).on('click', '.om-suggest .om-suggest-clear-viewed', function (e) {
+		e.stopPropagation();
+		try { window.localStorage.removeItem(RECENT_KEY); } catch (err) { /* storage unavailable */ }
+		var $form = $(this).closest('.om-search');
+		showSearchStarters($form);
+		$form.find('.om-search-input').trigger('focus');
+		renderRecent();
+	});
 
 	// Pick a recent/popular search: run it.
 	$(document).on('click', '.om-suggest .om-suggest-q', function () {
@@ -1165,12 +1223,17 @@
 						));
 					}
 				}
+				var viewedShown = false;
 				if (!n) {
 					$list.append($('<li class="om-suggest-empty" role="presentation"></li>').text(data.message || t('noMatches', 'No matching designs')));
+					// Nothing found: offer the way back to what they looked at.
+					var viewed = viewedFor($form);
+					if (viewed.length) { $list.append(viewedSection($list, $form, viewed)); viewedShown = true; }
 				}
+				panelRole($form, viewedShown);
 				$list.prop('hidden', false);
 				$(input).attr('aria-expanded', 'true');
-				if (data.prices) { fillSuggestPrices($list); }
+				if (data.prices || viewedShown) { fillSuggestPrices($list); }
 			});
 		}, 220);
 	});

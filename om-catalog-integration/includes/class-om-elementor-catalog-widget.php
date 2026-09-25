@@ -330,6 +330,19 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'suggest_viewed',
+			array(
+				'label'       => __( 'Recently viewed in search', 'om-catalog' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 4,
+				'min'         => 0,
+				'max'         => 8,
+				'description' => __( 'When the box is clicked (and when a search finds nothing), show the last designs this visitor looked at. 0 = off.', 'om-catalog' ),
+				'condition'   => array( 'show_search' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
 			'show_sort',
 			array(
 				'label'   => __( 'Sort dropdown', 'om-catalog' ),
@@ -1466,6 +1479,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'show_search'     => (string) ( $settings['show_search'] ?? 'yes' ),
 			'search_placeholder' => (string) ( $settings['search_placeholder'] ?? '' ),
 			'suggest_prices'  => 'yes' === ( $settings['suggest_prices'] ?? 'yes' ) ? 'yes' : 'no',
+			'suggest_viewed'  => max( 0, min( 8, (int) ( $settings['suggest_viewed'] ?? 4 ) ) ),
 			'design'          => 'classic' === ( $settings['design'] ?? 'modern' ) ? 'classic' : 'modern',
 			'pagination_style' => in_array( $settings['pagination_style'] ?? 'numbers', array( 'numbers', 'loadmore', 'infinite' ), true ) ? $settings['pagination_style'] : 'numbers',
 			'badge_popular'   => 'yes' === ( $settings['badge_popular'] ?? 'yes' ) ? 'yes' : '',

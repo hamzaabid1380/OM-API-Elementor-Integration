@@ -954,6 +954,18 @@ class OM_Elementor_Search_Widget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'suggest_viewed',
+			array(
+				'label'       => __( 'Recently viewed in search', 'om-catalog' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 4,
+				'min'         => 0,
+				'max'         => 8,
+				'description' => __( 'When the box is clicked (and when a search finds nothing), show the last designs this visitor looked at. 0 = off.', 'om-catalog' ),
+			)
+		);
+
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_style_box', array( 'label' => __( 'Search Box', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
@@ -1019,6 +1031,7 @@ class OM_Elementor_Search_Widget extends Widget_Base {
 				'results_page'   => (string) ( $s['results_page'] ?? '' ),
 				'placeholder'    => (string) ( $s['placeholder'] ?? '' ),
 				'suggest_prices' => 'yes' === ( $s['suggest_prices'] ?? 'yes' ) ? 'yes' : 'no',
+				'suggest_viewed' => max( 0, min( 8, (int) ( $s['suggest_viewed'] ?? 4 ) ) ),
 				'button'         => 'yes' === ( $s['button'] ?? 'yes' ) ? 'yes' : 'no',
 			)
 		);

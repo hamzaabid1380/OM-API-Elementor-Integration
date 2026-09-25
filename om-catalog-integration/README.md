@@ -497,7 +497,32 @@ band with the engagement rings it suits).
   under the title, "Set from" price and "Ask about this set" switches, plus
   all the usual card, quick view and style controls.
 
+## Recently viewed in search (1.16)
+
+Clicking into an empty search box opens a "Recently viewed" strip above
+the recent and popular searches: the last designs this visitor looked at
+(newest first, the one on screen left out), each with its photo, name,
+style number and "From" price. The same strip appears when a search finds
+nothing, so the visitor can go straight back to a piece they liked.
+
+- Arrow keys move through the cards like any suggestion; Enter opens one.
+- "Clear" forgets the history (it's kept only in the visitor's browser —
+  the same list as the "Recently viewed" product row).
+- How many cards: **OM Catalog** widget > Search > *Recently viewed in
+  search*, **OM Search** widget > *Recently viewed in search* (0 = off,
+  up to 8; default 4). Shortcodes: `suggest_viewed="4"` on `[om_catalog]`
+  and `[om_search]`.
+- Prices follow the *Prices in suggestions* switch.
+
 ## Changelog
+
+### 1.16.0
+- "Recently viewed" photo strip in the search panel (empty box and
+  no-results), with prices, keyboard support and a Clear link; count set
+  per widget / shortcode (suggest_viewed).
+- Search panel semantics: a dialog holding its listbox whenever it
+  contains buttons (starters, recently viewed), so screen readers get a
+  valid structure.
 
 ### 1.15.0
 - "Complete the set" row: matching bands on ring pages (rings on band

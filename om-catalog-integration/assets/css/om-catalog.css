@@ -6864,3 +6864,141 @@ html.om-has-compare.om-has-sticky-bar .om-compare-tray {
 		white-space: nowrap;
 	}
 }
+
+/* =========================================================
+   1.16 — Recently viewed in the search panel
+   ========================================================= */
+
+.om-catalog-wrap .om-suggest .om-suggest-clear-viewed.om-suggest-clear-viewed {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	color: #6e6e6e;
+	font: inherit;
+	font-size: 11px;
+	line-height: 1.2;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+}
+
+.om-catalog-wrap .om-suggest .om-suggest-clear-viewed.om-suggest-clear-viewed:is(:hover, :focus-visible) {
+	background: transparent;
+	color: var(--om-color-primary, #00111C);
+}
+
+/* A row of small photo cards; scrolls sideways when there are more. */
+.om-suggest-viewed {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: 136px;
+	justify-content: start;
+	gap: 10px;
+	margin: 0 -16px;
+	padding: 2px 16px 4px;
+	overflow-x: auto;
+	scroll-snap-type: x proximity;
+	scrollbar-width: thin;
+	overscroll-behavior-x: contain;
+}
+
+.om-catalog-wrap .om-suggest .om-suggest-item.om-suggest-card {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+	min-width: 0;
+	padding: 8px;
+	border: 1px solid rgba(0, 0, 0, 0.07);
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
+	background: #fff;
+	scroll-snap-align: start;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.om-catalog-wrap .om-suggest .om-suggest-item.om-suggest-card:hover,
+.om-catalog-wrap .om-suggest .om-suggest-item.om-suggest-card.is-active {
+	background: #fff;
+	border-color: var(--om-color-primary, #00111C);
+	box-shadow: 0 8px 18px rgba(0, 17, 28, 0.08);
+	color: var(--om-color-text, #464646);
+}
+
+.om-catalog-wrap .om-suggest .om-suggest-item.om-suggest-card:focus-visible {
+	outline: 2px solid var(--om-color-primary, #00111C);
+	outline-offset: 2px;
+}
+
+.om-suggest-card-img {
+	display: block;
+	aspect-ratio: 1 / 1;
+	overflow: hidden;
+	border-radius: calc(var(--om-radius, var(--om-radius-d, 0px)) * 0.7);
+	background: #f4f3f1;
+}
+
+.om-suggest-card-img img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.3s ease;
+}
+
+.om-suggest-card:hover .om-suggest-card-img img,
+.om-suggest-card.is-active .om-suggest-card-img img {
+	transform: scale(1.06);
+}
+
+.om-suggest-card-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	line-height: 1.3;
+}
+
+.om-suggest-card-title {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	font-size: 13px;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-suggest-card-style {
+	font-size: 11px;
+	letter-spacing: 0.04em;
+	color: #6e6e6e;
+}
+
+.om-suggest-card .om-suggest-price {
+	justify-self: start;
+	margin-top: 2px;
+	font-size: 12px;
+}
+
+/* After "Nothing found": the strip gets its own divider. */
+.om-suggest-empty + .om-suggest-section--viewed {
+	border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+@media (max-width: 600px) {
+	.om-suggest-viewed {
+		grid-auto-columns: 104px;
+		margin: 0 -12px;
+		padding: 2px 12px 4px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-suggest-card-img img,
+	.om-catalog-wrap .om-suggest .om-suggest-item.om-suggest-card {
+		transition: none;
+	}
+}
