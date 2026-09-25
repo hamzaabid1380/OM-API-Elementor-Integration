@@ -90,8 +90,11 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			// Short promises under the price ("Free resizing | …"); null =
 			// Settings > Look & feel, '' = none.
 			'trust_line'          => null,
+			// Page design: modern (framed panels, cards, motion) or classic.
+			'design'              => 'modern',
 		)
 	);
+	$design = 'classic' === $args['design'] ? 'classic' : 'modern';
 
 	$default_metal   = $product['default_metal'] ?? '';
 	$default_color   = $product['default_color'] ?? '';
@@ -177,7 +180,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 
 	ob_start();
 	?>
-	<div class="om-product-wrap<?php echo $args['sticky_gallery'] ? ' om-sticky-gallery' : ''; ?><?php echo $args['compact'] ? ' om-product-wrap--compact' : ''; ?>"
+	<div class="om-product-wrap om-design-<?php echo esc_attr( $design ); ?><?php echo $args['sticky_gallery'] ? ' om-sticky-gallery' : ''; ?><?php echo $args['compact'] ? ' om-product-wrap--compact' : ''; ?>"
 		data-line="<?php echo esc_attr( $product_line ); ?>"
 		data-style="<?php echo esc_attr( $style_number ); ?>"
 		data-priced="<?php echo $can_requote ? '1' : '0'; ?>"
@@ -185,7 +188,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 
 		<?php
 		if ( $args['show_gallery'] ) {
-			echo om_render_gallery( $product, $title, array( 'video_mode' => $args['video_mode'], 'color' => $default_color ) + (array) $args['gallery'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+			echo om_render_gallery( $product, $title, array( 'video_mode' => $args['video_mode'], 'color' => $default_color, 'line' => $product_line ) + (array) $args['gallery'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 		}
 		?>
 
@@ -205,6 +208,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 						<span class="om-meta-sep">&middot;</span>
 					<?php endif; ?>
 					<span class="om-style-number"><?php echo esc_html( 'Style ' . $style_number ); ?></span>
+					<button type="button" class="om-copy-style" data-om-copy="<?php echo esc_attr( $style_number ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: style number. */ __( 'Copy style number %s', 'om-catalog' ), $style_number ) ); ?>"><span class="om-copy-icon" aria-hidden="true"></span><span class="om-copy-done" aria-live="polite"></span></button>
 				</p>
 			<?php endif; ?>
 
@@ -230,6 +234,9 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 					<div class="om-price<?php echo $has_price ? '' : ' is-fallback'; ?>" aria-live="polite">
 						<?php if ( $can_requote ) : ?>
 							<span class="om-price-amount"<?php echo $has_price ? '' : ' hidden'; ?>><?php echo esc_html( $price_text ); ?></span>
+							<?php if ( $has_price && $args['show_options'] && ! $args['compact'] ) : ?>
+								<span class="om-price-note"><?php esc_html_e( 'Updates with your choices', 'om-catalog' ); ?></span>
+							<?php endif; ?>
 						<?php endif; ?>
 						<?php if ( '' !== $fallback_html ) : ?>
 							<span class="om-price-fallback"<?php echo $has_price ? ' hidden' : ''; ?>><?php echo $fallback_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above. ?></span>
@@ -265,6 +272,21 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			$size_lines = array_filter( array_map( 'trim', explode( ',', (string) get_option( 'om_size_lines', 'engagement-rings,wedding-bands,fashion-rings' ) ) ) );
 			$show_size  = $args['show_size'] && in_array( $product_line, $size_lines, true );
 			$variants   = ( $args['show_variants'] && ! empty( $product['product_variants'] ) && count( $product['product_variants'] ) > 1 ) ? $product['product_variants'] : array();
+			// One link per carat: colour variants of the same size (their own
+			// style numbers at OM) would otherwise repeat "1 ct".
+			if ( $variants ) {
+				$by_name = array();
+				foreach ( $variants as $variant ) {
+					if ( empty( $variant['style_number'] ) ) {
+						continue;
+					}
+					$name = strtolower( trim( (string) ( $variant['variant_name'] ?? $variant['style_number'] ) ) );
+					if ( ! isset( $by_name[ $name ] ) || $variant['style_number'] === $style_number ) {
+						$by_name[ $name ] = $variant;
+					}
+				}
+				$variants = count( $by_name ) > 1 ? array_values( $by_name ) : array();
+			}
 			?>
 			<?php if ( $args['show_options'] || $variants || $show_size ) : ?>
 				<div class="om-options-form om-options--<?php echo esc_attr( $args['options_style'] ); ?>" data-om-options>
@@ -285,7 +307,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 					?>
 					<?php if ( $variants ) : ?>
 						<div class="om-opt om-opt--variants">
-							<p class="om-opt-label"><?php esc_html_e( 'Carat', 'om-catalog' ); ?></p>
+							<p class="om-opt-label"><span class="om-opt-name"><?php esc_html_e( 'Carat', 'om-catalog' ); ?></span><?php if ( ! empty( $product['variant_name'] ) ) : ?><span class="om-opt-sep">: </span><span class="om-opt-current"><?php echo esc_html( $product['variant_name'] ); ?></span><?php endif; ?></p>
 							<div class="om-variants">
 								<?php foreach ( $variants as $variant ) :
 									if ( empty( $variant['style_number'] ) ) {
@@ -499,6 +521,14 @@ function om_media_entry_color( $entry, $url, $tokens ) {
 	}
 	$name  = strtolower( (string) pathinfo( (string) wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_FILENAME ) );
 	$words = array_filter( preg_split( '/[^a-z0-9]+/', $name ) );
+	// Also read codes glued to numbers: 14KY, 18kw, W1, YG2, 2Y (a style
+	// suffix) -> y, w, w, yg, y.
+	foreach ( $words as $word ) {
+		$bare = preg_replace( '/^\d+k?|\d+$/', '', $word );
+		if ( '' !== $bare && $bare !== $word ) {
+			$words[] = $bare;
+		}
+	}
 	$found = array();
 	foreach ( $tokens as $color => $list ) {
 		if ( array_intersect( $list, $words ) ) {
@@ -518,7 +548,7 @@ function om_media_entry_color( $entry, $url, $tokens ) {
  *
  * @return array [ 'images' => [ [url, color] ], 'videos' => [ [url, color] ], 'by_color' => bool ]
  */
-function om_product_media( $product ) {
+function om_product_media( $product, $extra = array() ) {
 	$colors = (array) ( $product['colors'] ?? array() );
 	$tokens = om_color_tokens( $colors );
 	$images = array();
@@ -560,6 +590,25 @@ function om_product_media( $product ) {
 		$videos[] = array( 'url' => $url, 'color' => $tokens ? om_media_entry_color( $url, $url, $tokens ) : '' );
 	}
 
+	// Photos of the colour variants (separate designs at OM): the parent's
+	// own untagged photos then show its default colour.
+	if ( $extra ) {
+		$default = (string) ( $product['default_color'] ?? '' );
+		foreach ( $images as &$image ) {
+			if ( '' === $image['color'] && '' !== $default ) {
+				$image['color'] = $default;
+			}
+		}
+		unset( $image );
+		$known = wp_list_pluck( $images, 'url' );
+		foreach ( $extra as $entry ) {
+			if ( ! in_array( $entry['url'], $known, true ) ) {
+				$images[] = $entry;
+				$known[]  = $entry['url'];
+			}
+		}
+	}
+
 	$seen = array_unique( array_filter( wp_list_pluck( $images, 'color' ) ) );
 	$by_color = count( $seen ) >= 2;
 	if ( ! $by_color ) {
@@ -576,10 +625,77 @@ function om_product_media( $product ) {
 	}
 
 	return array(
-		'images'   => array_slice( $images, 0, 24 ),
+		'images'   => array_slice( $images, 0, 36 ),
 		'videos'   => array_slice( $videos, 0, 6 ),
 		'by_color' => $by_color,
 	);
+}
+
+/**
+ * Photos of a product's metal-colour variants. At Overnight Mountings a
+ * colour is often its own design (style number) — hidden from listings by
+ * parentsOnly — with its own photos, while the product itself only has its
+ * default colour's. This looks the variants up (one cached call) and tags
+ * each variant's photos with its colour. Variants in the default colour
+ * (e.g. carat sizes) are ignored.
+ *
+ * @return array[] [ url, color ] entries, [] when there are none.
+ */
+function om_colour_variant_images( $product, $line ) {
+	$colors  = (array) ( $product['colors'] ?? array() );
+	$default = (string) ( $product['default_color'] ?? '' );
+	$parent  = strtoupper( (string) ( $product['style_number'] ?? '' ) );
+	$tokens  = om_color_tokens( $colors );
+	if ( '' === (string) $line || count( $tokens ) < 2 ) {
+		return array();
+	}
+	$hints = array();
+	foreach ( (array) ( $product['product_variants'] ?? array() ) as $variant ) {
+		$sn = is_array( $variant ) ? (string) ( $variant['style_number'] ?? '' ) : '';
+		if ( '' === $sn || strtoupper( $sn ) === $parent ) {
+			continue;
+		}
+		// A colour on the variant, in its name ("Yellow Gold") or in its
+		// style number's suffix (…-Y, …2Y).
+		$hints[ $sn ] = om_media_entry_color( $variant, trim( ( $variant['variant_name'] ?? '' ) . ' ' . $sn ), $tokens );
+	}
+	if ( ! $hints ) {
+		return array();
+	}
+	$styles = array_slice( array_keys( $hints ), 0, 24 );
+	$key    = 'om_varmedia_' . md5( $line . '|' . $parent . '|' . implode( ',', $styles ) );
+	$cached = get_transient( $key );
+	if ( is_array( $cached ) ) {
+		return $cached;
+	}
+	$result  = OM_API_Client::get_products( $line, array( 'styleNumber' => implode( ',', $styles ), 'parentsOnly' => 'false', 'limit' => 50 ) );
+	$entries = array();
+	foreach ( is_wp_error( $result ) ? array() : (array) ( $result['products'] ?? array() ) as $variant ) {
+		$sn     = (string) ( $variant['style_number'] ?? '' );
+		$vcols  = (array) ( $variant['colors'] ?? array() );
+		$colour = $hints[ $sn ] ?? '';
+		if ( '' === $colour ) {
+			$colour = 1 === count( $vcols ) ? (string) reset( $vcols ) : (string) ( $variant['default_color'] ?? '' );
+		}
+		// Only real colour variants, in a colour this product offers.
+		$match = '';
+		foreach ( array_keys( $tokens ) as $offered ) {
+			if ( 0 === strcasecmp( $offered, $colour ) ) {
+				$match = $offered;
+			}
+		}
+		if ( '' === $match || 0 === strcasecmp( $match, $default ) ) {
+			continue;
+		}
+		foreach ( array_slice( (array) ( $variant['images'] ?? array() ), 0, 8 ) as $image ) {
+			$url = om_image_url( $image );
+			if ( '' !== $url ) {
+				$entries[] = array( 'url' => $url, 'color' => $match );
+			}
+		}
+	}
+	set_transient( $key, $entries, ( is_wp_error( $result ) ? 10 : 12 * 60 ) * MINUTE_IN_SECONDS );
+	return $entries;
 }
 
 /** Media entries for one colour: that colour's plus the neutral ones, colour first. */
@@ -651,10 +767,11 @@ function om_render_gallery( $product, $title, $opts = array() ) {
 			'lightbox'     => true,
 			'follow'       => true,
 			'color'        => '',
+			'line'         => '',
 		)
 	);
 
-	$media  = om_product_media( $product );
+	$media  = om_product_media( $product, $o['follow'] ? om_colour_variant_images( $product, $o['line'] ) : array() );
 	$follow = $o['follow'] && $media['by_color'];
 	$color  = $follow ? (string) ( '' !== $o['color'] ? $o['color'] : ( $product['default_color'] ?? '' ) ) : '';
 
@@ -703,10 +820,37 @@ function om_render_gallery( $product, $title, $opts = array() ) {
 			<?php if ( $media['videos'] && $o['fullscreen'] && $o['lightbox'] ) : ?>
 				<button type="button" class="om-media-expand" aria-label="<?php esc_attr_e( 'Full screen', 'om-catalog' ); ?>"<?php echo $video_first ? '' : ' hidden'; ?>><span aria-hidden="true"></span></button>
 			<?php endif; ?>
+			<?php $count = count( array_filter( $media['images'], $shown ) ) + count( array_filter( $media['videos'], $shown ) ); ?>
+			<?php if ( $count > 1 ) : ?>
+				<span class="om-media-count" aria-hidden="true"><span class="om-media-index">1</span> / <span class="om-media-total"><?php echo (int) $count; ?></span></span>
+			<?php endif; ?>
 			<?php if ( $media['videos'] && $media['images'] && $o['watch_button'] ) : ?>
 				<button type="button" class="om-watch-video"<?php echo $video_first ? ' hidden' : ''; ?>><span class="om-watch-icon" aria-hidden="true"></span><span class="om-watch-text"><?php echo esc_html( $watch_text ); ?></span></button>
 			<?php endif; ?>
 		</div>
+		<?php
+		// Admins only: why photos don't follow the metal colour, with the
+		// names OM uses, so the matching can be tuned to the real data.
+		if ( $o['follow'] && ! $follow && count( (array) ( $product['colors'] ?? array() ) ) > 1 && current_user_can( 'manage_options' ) ) {
+			$names = array();
+			foreach ( array_slice( (array) ( $product['images'] ?? array() ), 0, 3 ) as $img ) {
+				$names[] = is_array( $img ) ? wp_json_encode( $img ) : basename( (string) wp_parse_url( om_image_url( $img ), PHP_URL_PATH ) );
+			}
+			$variants = array();
+			foreach ( array_slice( (array) ( $product['product_variants'] ?? array() ), 0, 4 ) as $variant ) {
+				$variants[] = is_array( $variant ) ? trim( ( $variant['style_number'] ?? '' ) . ' ' . ( $variant['variant_name'] ?? '' ) ) : '';
+			}
+			printf(
+				'<p class="om-admin-note om-admin-note--media"><strong>%s</strong> %s <br /><small>%s %s<br />%s %s</small></p>',
+				esc_html__( 'Only admins see this:', 'om-catalog' ),
+				esc_html__( 'the photos don\'t switch with the metal colour because Overnight Mountings\' data for this design doesn\'t tell the colours apart.', 'om-catalog' ),
+				esc_html__( 'Image names:', 'om-catalog' ),
+				esc_html( implode( ' | ', $names ) ),
+				esc_html__( 'Variants:', 'om-catalog' ),
+				esc_html( $variants ? implode( ' | ', array_filter( $variants ) ) : '—' )
+			);
+		}
+		?>
 		<?php if ( count( $media['images'] ) + count( $media['videos'] ) > 1 ) : ?>
 			<div class="om-thumbs" role="list"<?php echo 'none' === $thumbs_pos ? ' hidden' : ''; ?>>
 				<?php
@@ -880,7 +1024,7 @@ function om_render_option_group( $name, $label, $values, $default, $style ) {
 	}
 
 	$as_swatch = 'swatches' === $style && 'color' === $name;
-	$html      = '<fieldset class="om-opt om-opt--' . ( $as_swatch ? 'swatches' : 'pills' ) . '" data-om-opt="' . esc_attr( $name ) . '" data-om-label="' . esc_attr( $label ) . '"><legend class="om-opt-label">' . esc_html( $label ) . ': <span class="om-opt-current">' . esc_html( $default ) . '</span></legend><div class="om-opt-choices">';
+	$html      = '<fieldset class="om-opt om-opt--' . ( $as_swatch ? 'swatches' : 'pills' ) . '" data-om-opt="' . esc_attr( $name ) . '" data-om-label="' . esc_attr( $label ) . '"><legend class="om-opt-label"><span class="om-opt-name">' . esc_html( $label ) . '</span><span class="om-opt-sep">: </span><span class="om-opt-current">' . esc_html( $default ) . '</span></legend><div class="om-opt-choices">';
 	foreach ( $values as $value ) {
 		$inner = $as_swatch
 			? '<span class="om-swatch ' . esc_attr( om_swatch_class( $value ) ) . '" aria-hidden="true"></span><span class="om-visually-hidden">' . esc_html( $value ) . '</span>'
@@ -1003,6 +1147,8 @@ function om_card_options( $atts ) {
 		'video_badge_text' => trim( (string) ( $atts['video_badge_text'] ?? '' ) ),
 		'video_badge_pos'  => $pick( $atts['video_badge_pos'] ?? '', array( 'tr', 'tl', 'br', 'bl' ), 'tr' ),
 		'video_preview'    => 'no' !== ( $atts['card_video'] ?? 'yes' ),
+		// Card hover for this widget; '' = Settings default.
+		'hover'            => $pick( $atts['card_hover'] ?? '', array( 'lift', 'zoom', 'none' ), '' ),
 	);
 }
 
@@ -1057,7 +1203,7 @@ function om_render_card( $product, $line, $o ) {
 
 	ob_start();
 	?>
-	<div class="om-card-cell om-hover-<?php echo esc_attr( om_card_hover_style() ); ?><?php echo $o['qv_mobile'] ? ' om-qv-mobile' : ''; ?>">
+	<div class="om-card-cell om-hover-<?php echo esc_attr( '' !== $o['hover'] ? $o['hover'] : om_card_hover_style() ); ?><?php echo $o['qv_mobile'] ? ' om-qv-mobile' : ''; ?>">
 		<a class="om-card" href="<?php echo esc_url( $link ); ?>">
 			<div class="om-card-image<?php echo $hover ? ' has-hover' : ''; ?><?php echo esc_attr( $video_class ); ?>"<?php echo $video_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_card_video_attrs(). ?>>
 				<?php if ( $video_class && 'none' !== $o['video_badge'] ) : ?>

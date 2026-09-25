@@ -1137,6 +1137,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		$this->register_card_extras_style();
+		$this->register_card_look_style();
 
 		/* ---------- Style: card price ---------- */
 		$this->start_controls_section(

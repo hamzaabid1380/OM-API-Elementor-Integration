@@ -423,6 +423,25 @@ Natural, and the column headings stay in view while scrolling.
 
 ## Changelog
 
+### 1.12.0
+- Photos follow the metal colour for designs whose colours are separate
+  style numbers at Overnight Mountings (colour variants are looked up once
+  and cached); more file-name patterns recognised (14KY, W1, 2Y…). Admins
+  see a note under the gallery when a design's photos can't be matched,
+  with the image and variant names OM sends. Carat links no longer repeat.
+- Related carousel: hovered cards are no longer cut off at the top.
+- Card hover, lift distance, photo shadow (soft / stronger / none), corner
+  radii and spacing are now set per widget (Style > Card Hover, Corners &
+  Spacing; Single Product > Corners & Spacing). Settings > OM Catalog only
+  holds the site defaults.
+- Product page "Modern" design (default; Page design control): framed
+  gallery with a photo counter and swipe on phones, price row that animates
+  on change, options panel with values on the right, full-width buttons
+  with a sliding arrow, card-style details and inquiry, copy-style-number
+  button, sections that fade in on scroll. "Classic" keeps the old look.
+- Popular searches only learn from searches that found something.
+- Overlay cards: price readable on the dark scrim.
+
 ### 1.11.0
 - Look & feel settings: shared corner radii, spacing scale, card hover
   (lift / zoom / none), trust line under the price, phone text sizes.

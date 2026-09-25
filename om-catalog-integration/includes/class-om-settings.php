@@ -455,8 +455,8 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Look &amp; feel</h2>
-				<p class="description">One set of corners, spacing and hover behaviour for every OM widget and page, so they stay consistent. A widget's own Style settings still override these.</p>
+				<h2>Look &amp; feel: site defaults</h2>
+				<p class="description">Each OM widget has these options itself (Style tab: <em>Card Hover, Corners &amp; Spacing</em> / <em>Corners &amp; Spacing</em>; the trust line under <em>Price &amp; Buttons</em>) — configure them there. The values here are only the starting point for widgets left on "Site default", and for the built-in product page (no Elementor layout).</p>
 				<table class="form-table">
 					<tr>
 						<th><label for="om_radius">Corner radius: buttons, pills, fields</label></th>

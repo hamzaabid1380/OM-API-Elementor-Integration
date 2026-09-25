@@ -21,7 +21,15 @@
 		var hasPrice = !!priceText;
 		var $price = $wrap.find('.om-price');
 		$price.toggleClass('is-fallback', !hasPrice);
-		$price.find('.om-price-amount').prop('hidden', !hasPrice).text(priceText || '');
+		var $amount = $price.find('.om-price-amount');
+		var changed = hasPrice && $amount.text() !== priceText && !$amount.prop('hidden');
+		$amount.prop('hidden', !hasPrice).text(priceText || '');
+		// A new price settles in gently so the change is noticed.
+		if (changed && $amount[0]) {
+			$amount.removeClass('is-updated');
+			void $amount[0].offsetWidth;
+			$amount.addClass('is-updated');
+		}
 		$price.find('.om-price-fallback').prop('hidden', hasPrice);
 		$wrap.find('.om-btn[data-om-show="no_price"]').prop('hidden', hasPrice);
 		$wrap.find('.om-btn[data-om-show="with_price"]').prop('hidden', !hasPrice);
@@ -226,7 +234,90 @@
 			$gallery.find('.om-watch-video').prop('hidden', false);
 			showImage($gallery, $btn.attr('data-full'));
 		}
+		updateMediaCount($gallery);
 	});
+
+	// "2 / 5" on the photo: position among the thumbnails shown.
+	function updateMediaCount($gallery) {
+		var $visible = $gallery.find('.om-thumb-btn:not([hidden])');
+		var index = $visible.index($visible.filter('.is-active'));
+		$gallery.find('.om-media-index').text(Math.max(0, index) + 1);
+		$gallery.find('.om-media-total').text($visible.length || 1);
+	}
+
+	// Phones: swipe the main photo to move through the gallery.
+	var swipeStart = null;
+	$(document).on('touchstart', '.om-main-media', function (e) {
+		var t = e.originalEvent.touches && e.originalEvent.touches[0];
+		swipeStart = t ? { x: t.clientX, y: t.clientY } : null;
+	});
+	$(document).on('touchend', '.om-main-media', function (e) {
+		var t = e.originalEvent.changedTouches && e.originalEvent.changedTouches[0];
+		if (!swipeStart || !t) { return; }
+		var dx = t.clientX - swipeStart.x;
+		var dy = t.clientY - swipeStart.y;
+		swipeStart = null;
+		if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.4) { return; }
+		var $gallery = $(this).closest('.om-product-gallery');
+		var $visible = $gallery.find('.om-thumb-btn:not([hidden])');
+		if ($visible.length < 2) { return; }
+		var index = $visible.index($visible.filter('.is-active'));
+		var next = (Math.max(0, index) + (dx < 0 ? 1 : -1) + $visible.length) % $visible.length;
+		$visible.eq(next).trigger('click');
+	});
+
+	// Copy the style number (handy when calling or emailing the store).
+	$(document).on('click', '.om-copy-style', function () {
+		var btn = this;
+		var text = btn.getAttribute('data-om-copy') || '';
+		var done = function () {
+			$(btn).find('.om-copy-done').text(t('copied', 'Copied'));
+			clearTimeout(btn._omCopy);
+			btn._omCopy = setTimeout(function () { $(btn).find('.om-copy-done').text(''); }, 1600);
+		};
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(text).then(done, function () {});
+		} else {
+			var area = document.createElement('textarea');
+			area.value = text; document.body.appendChild(area); area.select();
+			try { document.execCommand('copy'); done(); } catch (err) { /* nothing */ }
+			area.remove();
+		}
+	});
+
+	// Modern design: sections below the fold fade up as they come into view.
+	var revealBound = false;
+	function initReveal(root) {
+		if (reduceMotion || !window.IntersectionObserver) { return; }
+		var io = new IntersectionObserver(function (entries) {
+			entries.forEach(function (entry) {
+				if (entry.isIntersecting) { entry.target.classList.add('is-in'); io.unobserve(entry.target); }
+			});
+		}, { threshold: 0.12 });
+		// Anything already scrolled past (a jump to the form, a fast
+		// fling) is shown too, so nothing can stay invisible.
+		if (!revealBound) {
+			revealBound = true;
+			var ticking = false;
+			$(window).on('scroll.omReveal', function () {
+				if (ticking) { return; }
+				ticking = true;
+				window.requestAnimationFrame(function () {
+					ticking = false;
+					$('.om-reveal:not(.is-in)').each(function () {
+						if (this.getBoundingClientRect().top < window.innerHeight * 0.95) { this.classList.add('is-in'); }
+					});
+				});
+			});
+		}
+		$(root).find('.om-design-modern').not('.om-quick-view .om-design-modern').each(function () {
+			$(this).find('.om-options-form, .om-product-details > .om-actions, .om-details, .om-product-inquiry').each(function () {
+				if (this.getBoundingClientRect().top < window.innerHeight * 0.92) { return; } // Already on screen: no effect.
+				this.classList.add('om-reveal');
+				io.observe(this);
+			});
+		});
+	}
 
 	// Photos follow the metal colour: show the picked colour's photos and
 	// videos (plus the ones that aren't colour-specific), and bring its
@@ -247,6 +338,7 @@
 		var cover = $own.filter(':not(.om-thumb--video)').first().attr('data-full');
 		if (cover) { $gallery.find('.om-thumb--video .om-thumb').attr('src', cover); }
 		var $active = $thumbs.filter('.is-active');
+		updateMediaCount($gallery);
 		if ($active.length && same($active[0])) { return; }
 		// Same kind as what was showing: a video for a video, else a photo.
 		var wantVideo = $active.hasClass('om-thumb--video') || (!$active.length && $gallery.hasClass('is-video-first'));
@@ -1181,7 +1273,7 @@
 
 	// Pop-up look set on the widget (CSS variables on the grid), carried
 	// over to the dialog, which lives at the end of the page.
-	var QV_VARS = ['--om-qv-modal-bg', '--om-qv-backdrop', '--om-qv-width', '--om-qv-radius', '--om-qv-pad', '--om-qv-close'];
+	var QV_VARS = ['--om-qv-modal-bg', '--om-qv-backdrop', '--om-qv-width', '--om-qv-radius', '--om-qv-pad', '--om-qv-close', '--om-radius', '--om-radius-lg', '--om-space'];
 
 	function openQuickView(line, style, trigger) {
 		if (!qv) {
@@ -1367,6 +1459,8 @@
 		initAutoplay(document);
 		initStickyBar();
 		$('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
+		$('.om-product-gallery').each(function () { updateMediaCount($(this)); });
+		initReveal(document);
 		initTouchPreviews(document);
 		if (mobileQuery) {
 			var onChange = function () { syncPanels(document); };

@@ -239,6 +239,8 @@ class OM_Shortcodes {
 				'video_badge'      => 'icon',
 				'video_badge_text' => '',
 				'video_badge_pos'  => 'tr',
+				// Card hover: lift, zoom, none; '' = Settings default.
+				'card_hover'       => '',
 				// Quick view button: text, look (bar, button, icon), shown
 				// on phones/tablets too, and what the pop-up includes.
 				'qv_text'         => '',
@@ -306,11 +308,7 @@ class OM_Shortcodes {
 		);
 		$default_sort = isset( self::SORTS[ $atts['sort'] ] ) ? (string) $atts['sort'] : '';
 
-		// Count visitor searches for "Popular searches" (first page only,
-		// never the background refresh or the editor).
-		if ( '' !== $state['q'] && 1 === max( 1, (int) $request['page'] ) && ! wp_doing_cron() && ( wp_doing_ajax() || ! is_admin() ) ) {
-			om_record_search( $state['q'] );
-		}
+
 
 		$style_filter = '' !== $state['style'] ? $state['style'] : $admin_base;
 		$shape_filter = '' !== $state['shape'] ? $state['shape'] : self::normalize_style_list( $atts['shape'] );
@@ -897,6 +895,12 @@ class OM_Shortcodes {
 		if ( empty( $products ) ) {
 			$this->render_empty( $atts, $state, $chips, $clear_url, $url );
 			return;
+		}
+
+		// Count visitor searches that found something, for "Popular
+		// searches" (first page only, never the background refresh).
+		if ( '' !== $state['q'] && 1 === (int) $paged && ! wp_doing_cron() && ( wp_doing_ajax() || ! is_admin() ) ) {
+			om_record_search( $state['q'] );
 		}
 
 		$card_query = is_array( $atts['card_query'] ) ? $atts['card_query'] : wp_parse_args( (string) $atts['card_query'] );

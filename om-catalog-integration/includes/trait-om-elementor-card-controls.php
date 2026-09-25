@@ -439,6 +439,110 @@ trait OM_Elementor_Card_Controls {
 		$this->end_controls_section();
 	}
 
+	/**
+	 * Style tab: card hover (lift / zoom / none, lift distance, photo
+	 * shadow) and this widget's corners and spacing. Empty = the site
+	 * defaults from Settings > OM Catalog.
+	 */
+	protected function register_card_look_style() {
+		$this->start_controls_section(
+			'section_style_card_look',
+			array(
+				'label' => __( 'Card Hover, Corners & Spacing', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'card_hover',
+			array(
+				'label'   => __( 'Hover effect', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => '',
+				'options' => array(
+					''     => __( 'Site default', 'om-catalog' ),
+					'lift' => __( 'Lift (card rises, name underlines)', 'om-catalog' ),
+					'zoom' => __( 'Zoom (photo zooms slowly)', 'om-catalog' ),
+					'none' => __( 'None', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'card_lift',
+			array(
+				'label'      => __( 'Lift distance', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 16 ) ),
+				'selectors'  => array( '{{WRAPPER}}' => '--om-card-lift: {{SIZE}}{{UNIT}};' ),
+				'condition'  => array( 'card_hover!' => array( 'zoom', 'none' ) ),
+			)
+		);
+
+		$this->add_control(
+			'card_shadow',
+			array(
+				'label'                => __( 'Photo shadow on hover', 'om-catalog' ),
+				'type'                 => Controls_Manager::SELECT,
+				'default'              => '',
+				'options'              => array(
+					''       => __( 'Soft (default)', 'om-catalog' ),
+					'strong' => __( 'Stronger', 'om-catalog' ),
+					'none'   => __( 'None', 'om-catalog' ),
+				),
+				'selectors_dictionary' => array(
+					''       => '',
+					'strong' => '--om-card-shadow: 0 22px 44px -18px rgba(0, 17, 28, 0.45);',
+					'none'   => '--om-card-shadow: none;',
+				),
+				'selectors'            => array( '{{WRAPPER}}' => '{{VALUE}}' ),
+				'condition'            => array( 'card_hover!' => array( 'zoom', 'none' ) ),
+			)
+		);
+
+		$this->add_control(
+			'look_radius',
+			array(
+				'label'      => __( 'Corner radius: buttons & pills', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'separator'  => 'before',
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}}' => '--om-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'look_radius_lg',
+			array(
+				'label'      => __( 'Corner radius: photos & cards', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}}' => '--om-radius-lg: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_control(
+			'look_space',
+			array(
+				'label'     => __( 'Spacing', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '',
+				'options'   => array(
+					''     => __( 'Site default', 'om-catalog' ),
+					'0.8'  => __( 'Compact', 'om-catalog' ),
+					'1'    => __( 'Comfortable', 'om-catalog' ),
+					'1.3'  => __( 'Airy', 'om-catalog' ),
+				),
+				'selectors' => array( '{{WRAPPER}}' => '--om-space: {{VALUE}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
 	/** The card attributes these controls produce, for the renderers. */
 	protected function card_extras_atts( $s ) {
 		$parts = $s['qv_parts'] ?? array( 'price', 'options', 'description', 'meta', 'builder' );
@@ -454,6 +558,7 @@ trait OM_Elementor_Card_Controls {
 			'video_badge'      => (string) ( $s['video_badge'] ?? 'icon' ),
 			'video_badge_text' => (string) ( $s['video_badge_text'] ?? '' ),
 			'video_badge_pos'  => (string) ( $s['video_badge_pos'] ?? 'tr' ),
+			'card_hover'       => (string) ( $s['card_hover'] ?? '' ),
 		);
 	}
 }

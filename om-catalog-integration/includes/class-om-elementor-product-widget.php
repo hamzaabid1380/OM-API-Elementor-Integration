@@ -134,6 +134,19 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'design',
+			array(
+				'label'       => __( 'Page design', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'modern',
+				'options'     => array(
+					'modern'  => __( 'Modern: framed panels, cards, gentle motion', 'om-catalog' ),
+					'classic' => __( 'Classic: open, lines only', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_control(
 			'options_style',
 			array(
 				'label'   => __( 'Options display', 'om-catalog' ),
@@ -816,6 +829,77 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		/* ---------- Style ---------- */
+
+		/* ---------- Style: corners & spacing ---------- */
+		$this->start_controls_section(
+			'section_style_look',
+			array(
+				'label' => __( 'Corners & Spacing', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
+			)
+		);
+
+		$this->add_control(
+			'look_radius',
+			array(
+				'label'       => __( 'Corner radius: buttons, pills, fields', 'om-catalog' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => array( 'px' ),
+				'range'       => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'   => array( '{{WRAPPER}}' => '--om-radius: {{SIZE}}{{UNIT}};' ),
+				'description' => __( 'Empty = site default (Modern design: 6px).', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'look_radius_lg',
+			array(
+				'label'       => __( 'Corner radius: photos & panels', 'om-catalog' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => array( 'px' ),
+				'range'       => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'   => array( '{{WRAPPER}}' => '--om-radius-lg: {{SIZE}}{{UNIT}};' ),
+				'description' => __( 'Empty = site default (Modern design: 14px).', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'look_space',
+			array(
+				'label'     => __( 'Spacing', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '',
+				'options'   => array(
+					''    => __( 'Site default', 'om-catalog' ),
+					'0.8' => __( 'Compact', 'om-catalog' ),
+					'1'   => __( 'Comfortable', 'om-catalog' ),
+					'1.3' => __( 'Airy', 'om-catalog' ),
+				),
+				'selectors' => array( '{{WRAPPER}}' => '--om-space: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control(
+			'look_line',
+			array(
+				'label'     => __( 'Panel border colour', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-design-modern' => '--om-line: {{VALUE}};' ),
+				'condition' => array( 'design' => 'modern' ),
+			)
+		);
+
+		$this->add_control(
+			'look_soft',
+			array(
+				'label'     => __( 'Row hover tint', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-design-modern' => '--om-soft: {{VALUE}};' ),
+				'condition' => array( 'design' => 'modern' ),
+			)
+		);
+
+		$this->end_controls_section();
 
 		/* ---------- Style: gallery ---------- */
 		$this->start_controls_section(
@@ -1829,6 +1913,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['buttons_layout']   = 'stacked' === ( $settings['buttons_layout'] ?? 'inline' ) ? 'stacked' : 'inline';
 		$args['options_style']    = in_array( $settings['options_style'] ?? 'swatches', array( 'swatches', 'pills', 'dropdowns' ), true ) ? $settings['options_style'] : 'swatches';
 		$args['details_style']    = 'open' === ( $settings['details_style'] ?? 'accordion' ) ? 'open' : 'accordion';
+		$args['design']           = 'classic' === ( $settings['design'] ?? 'modern' ) ? 'classic' : 'modern';
 		$args['video_mode']       = 'thumb' === ( $settings['video_mode'] ?? 'first' ) ? 'thumb' : 'first';
 		$trust_source             = (string) ( $settings['trust_source'] ?? 'global' );
 		$args['trust_line']       = 'custom' === $trust_source ? (string) ( $settings['trust_text'] ?? '' ) : ( 'none' === $trust_source ? '' : null );

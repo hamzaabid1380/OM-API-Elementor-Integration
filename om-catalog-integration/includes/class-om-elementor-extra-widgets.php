@@ -756,6 +756,7 @@ class OM_Elementor_Related_Widget extends Widget_Base {
 		/* ---------- Style: arrows ---------- */
 
 		$this->register_card_extras_style();
+		$this->register_card_look_style();
 
 		$this->start_controls_section(
 			'section_style_arrows',

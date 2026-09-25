@@ -4761,11 +4761,11 @@ details.om-acc[open] > .om-acc-title::after {
 	/* Lift: the card rises, the photo gains a soft shadow, the name
 	   underlines. The photo itself no longer zooms. */
 	.om-hover-lift:hover {
-		transform: translateY(-4px);
+		transform: translateY(calc(-1 * var(--om-card-lift, 4px)));
 	}
 
 	.om-hover-lift:hover .om-card-image {
-		box-shadow: 0 16px 34px -18px rgba(0, 17, 28, 0.35);
+		box-shadow: var(--om-card-shadow, 0 16px 34px -18px rgba(0, 17, 28, 0.35));
 	}
 
 	.om-hover-lift .om-card:hover .om-card-image img,
@@ -5235,4 +5235,483 @@ details.om-acc[open] > .om-acc-title::after {
 	.om-catalog-wrap .om-suggest-group-all {
 		padding-left: 72px;
 	}
+}
+
+/* Carousel rows scroll sideways, which clips anything outside the track:
+   leave room above for the hover lift and below for the shadow. */
+.om-related--carousel .om-related-track {
+	padding-top: calc(var(--om-card-lift, 4px) + 6px);
+	margin-top: calc(-1 * (var(--om-card-lift, 4px) + 6px));
+	padding-bottom: 28px;
+	margin-bottom: -28px;
+}
+
+/* Boxed cards lift as a whole: the frame carries the shadow. */
+@media (hover: hover) {
+	.om-layout-boxed .om-hover-lift:hover .om-card-image {
+		box-shadow: none;
+	}
+
+	.om-layout-boxed .om-hover-lift:hover .om-card {
+		box-shadow: var(--om-card-shadow, 0 16px 34px -18px rgba(0, 17, 28, 0.35));
+	}
+}
+
+.om-product-gallery .om-admin-note--media {
+	grid-column: 1 / -1;
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+/* =========================================================
+   1.12 Product page: Modern design (default; widget > Page design)
+   ========================================================= */
+
+.om-design-modern {
+	--om-line: rgba(0, 17, 28, 0.09);
+	--om-soft: #faf9f7;
+	--om-r: var(--om-radius, 6px);
+	--om-r-lg: var(--om-radius-lg, 14px);
+}
+
+.om-layout-overlay .om-card-price {
+	color: #fff;
+}
+
+@media (min-width: 801px) {
+	.om-product-wrap.om-design-modern {
+		grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+		gap: clamp(36px, 5vw, 84px);
+	}
+}
+
+/* Gallery: framed photo, soft corners, counter. */
+.om-design-modern .om-product-gallery {
+	--om-media-radius: var(--om-r-lg);
+	--om-thumb-radius: var(--om-r);
+}
+
+.om-design-modern .om-main-media {
+	border: 1px solid var(--om-line);
+}
+
+.om-design-modern .om-product-gallery .om-thumb-btn.om-thumb-btn {
+	border-color: var(--om-line);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.om-design-modern .om-product-gallery .om-thumb-btn.om-thumb-btn:hover {
+	transform: translateY(-1px);
+}
+
+.om-design-modern .om-product-gallery .om-thumb-btn.om-thumb-btn.is-active {
+	border-color: var(--om-color-primary, #00111C);
+	box-shadow: 0 0 0 1px var(--om-color-primary, #00111C);
+}
+
+.om-media-count {
+	display: none;
+}
+
+.om-design-modern .om-media-count {
+	position: absolute;
+	top: 14px;
+	left: 14px;
+	z-index: 2;
+	display: inline-flex;
+	gap: 3px;
+	padding: 5px 11px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.9);
+	box-shadow: 0 1px 6px rgba(0, 17, 28, 0.08);
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 11px;
+	letter-spacing: 0.08em;
+	color: var(--om-color-primary, #00111C);
+	pointer-events: none;
+}
+
+/* Header: eyebrow, title, meta, price row. */
+.om-design-modern .om-line-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.om-design-modern .om-line-label::before {
+	content: "";
+	width: 22px;
+	height: 1px;
+	background: currentColor;
+	opacity: 0.6;
+}
+
+.om-design-modern .om-product-title {
+	margin-bottom: 12px;
+	font-size: clamp(30px, 3vw, 40px);
+	line-height: 1.15;
+	letter-spacing: -0.005em;
+}
+
+.om-design-modern .om-style-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0 8px;
+}
+
+.om-design-modern .om-price {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 6px 16px;
+	margin-bottom: calc(22px * var(--om-space, 1));
+	padding: calc(20px * var(--om-space, 1)) 0;
+	border-top: 1px solid var(--om-line);
+	border-bottom: 1px solid var(--om-line);
+}
+
+.om-price-note {
+	display: none;
+}
+
+.om-design-modern .om-price-note {
+	display: inline;
+	font-family: var(--om-font-body, Inter, sans-serif);
+	font-size: 12px;
+	letter-spacing: 0.02em;
+	color: #8a8a8a;
+}
+
+.om-price-amount.is-updated {
+	animation: om-price-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes om-price-in {
+	from { opacity: 0.25; transform: translateY(5px); }
+	to { opacity: 1; transform: none; }
+}
+
+.om-design-modern .om-price-amount {
+	display: inline-block;
+}
+
+.om-design-modern .om-trust {
+	margin: 0 0 calc(26px * var(--om-space, 1));
+}
+
+/* Buttons: full width, arrow that slides on hover. */
+.om-design-modern .om-actions--inline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.om-design-modern .om-actions .om-btn--solid.om-btn--solid,
+.om-design-modern .om-actions .om-btn--outline.om-btn--outline {
+	flex: 1 1 200px;
+	min-height: 52px;
+	border-radius: var(--om-r);
+}
+
+.om-design-modern .om-actions--builder .om-btn.om-btn {
+	width: 100%;
+	min-height: 54px;
+	border-radius: var(--om-r);
+}
+
+.om-design-modern .om-actions .om-btn--solid::after,
+.om-design-modern .om-builder-btn::after {
+	content: "";
+	flex: 0 0 auto;
+	width: 16px;
+	height: 10px;
+	background-color: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' fill='none' stroke='black' stroke-width='1.4'%3E%3Cpath d='M0 5h15M11 1l4 4-4 4'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' fill='none' stroke='black' stroke-width='1.4'%3E%3Cpath d='M0 5h15M11 1l4 4-4 4'/%3E%3C/svg%3E") center / contain no-repeat;
+	transition: transform 0.25s ease;
+}
+
+.om-design-modern .om-actions .om-btn--solid:hover::after,
+.om-design-modern .om-builder-btn:hover::after {
+	transform: translateX(4px);
+}
+
+.om-design-modern .om-actions .om-btn:active {
+	transform: scale(0.985);
+}
+
+/* Options: one framed panel, a hairline between groups, label left and
+   the current choice right. */
+.om-design-modern .om-options-form[data-om-options] {
+	gap: 0;
+	padding: 4px 22px;
+	border: 1px solid var(--om-line);
+	border-radius: var(--om-r-lg);
+	background: var(--om-color-background, #fff);
+}
+
+.om-design-modern .om-options-form[data-om-options] > .om-opt {
+	padding: 18px 0;
+}
+
+.om-design-modern .om-options-form[data-om-options] > .om-opt + .om-opt {
+	border-top: 1px solid var(--om-line);
+}
+
+.om-design-modern .om-options-form legend.om-opt-label,
+.om-design-modern .om-options-form p.om-opt-label,
+.om-design-modern .om-options-form .om-opt--select > .om-opt-label {
+	float: left;
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 12px;
+	width: 100%;
+	margin-bottom: 12px;
+}
+
+.om-design-modern .om-options-form .om-opt-choices,
+.om-design-modern .om-options-form .om-variants {
+	clear: both;
+}
+
+.om-design-modern .om-opt-sep {
+	display: none;
+}
+
+.om-design-modern .om-opt-current {
+	font-size: 13px;
+	letter-spacing: 0.02em;
+	color: var(--om-color-text, #464646);
+}
+
+.om-design-modern .om-opt-head {
+	max-width: none;
+}
+
+.om-design-modern .om-options-form[data-om-options] .om-opt--size select,
+.om-design-modern .om-options-form[data-om-options] .om-opt--select select {
+	max-width: none;
+	border-radius: var(--om-r);
+}
+
+.om-design-modern .om-options-form .om-choice-pill span {
+	min-height: 42px;
+	padding: 0 18px;
+	border-color: rgba(0, 17, 28, 0.14);
+	border-radius: var(--om-r);
+	transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.om-design-modern .om-options-form .om-choice-pill:hover span {
+	transform: translateY(-1px);
+	box-shadow: 0 6px 14px -10px rgba(0, 17, 28, 0.5);
+}
+
+.om-design-modern .om-options-form .om-choice-pill:active span {
+	transform: scale(0.97);
+}
+
+.om-design-modern .om-options-form .om-choice-swatch .om-swatch {
+	width: 34px;
+	height: 34px;
+	transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.om-design-modern .om-options-form .om-choice-swatch:hover .om-swatch {
+	transform: scale(1.08);
+}
+
+.om-design-modern .om-variant-link.om-variant-link {
+	border-color: rgba(0, 17, 28, 0.14);
+	border-radius: var(--om-r);
+	transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.om-design-modern .om-variant-link.om-variant-link:hover {
+	transform: translateY(-1px);
+}
+
+/* Details and inquiry: framed cards; rows tint on hover and open softly. */
+.om-design-modern .om-details {
+	margin-top: calc(28px * var(--om-space, 1));
+	border: 1px solid var(--om-line);
+	border-radius: var(--om-r-lg);
+	overflow: hidden;
+}
+
+.om-design-modern .om-acc {
+	border-bottom: 1px solid var(--om-line);
+}
+
+.om-design-modern .om-acc:last-child {
+	border-bottom: 0;
+}
+
+.om-design-modern.om-product-wrap .om-acc-title.om-acc-title {
+	padding: 18px 20px;
+	transition: background-color 0.2s ease;
+}
+
+.om-design-modern details.om-acc > .om-acc-title:hover {
+	background: var(--om-soft);
+	opacity: 1;
+}
+
+.om-design-modern details.om-acc > .om-acc-title::after,
+.om-design-modern .om-inquiry > .om-inquiry-toggle::after {
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border: 1px solid var(--om-line);
+	border-radius: 50%;
+	font-size: 16px;
+	line-height: 1;
+	transition: transform 0.25s ease, border-color 0.2s ease;
+}
+
+.om-design-modern details.om-acc > .om-acc-title:hover::after,
+.om-design-modern .om-inquiry > .om-inquiry-toggle:hover::after {
+	border-color: var(--om-color-primary, #00111C);
+}
+
+.om-design-modern .om-acc-body {
+	padding: 0 20px 20px;
+}
+
+.om-design-modern details.om-acc[open] > .om-acc-body,
+.om-design-modern .om-inquiry[open] > .om-inquiry-body {
+	animation: om-acc-in 0.35s ease;
+}
+
+@keyframes om-acc-in {
+	from { opacity: 0; transform: translateY(-4px); }
+	to { opacity: 1; transform: none; }
+}
+
+.om-design-modern .om-product-inquiry .om-inquiry {
+	margin-top: calc(16px * var(--om-space, 1));
+	padding: 0 20px;
+	border: 1px solid var(--om-line);
+	border-radius: var(--om-r-lg);
+}
+
+.om-design-modern .om-product-inquiry .om-inquiry-toggle.om-inquiry-toggle {
+	padding: 18px 0;
+}
+
+.om-design-modern .om-product-inquiry .om-inquiry-body {
+	padding-bottom: 20px;
+}
+
+/* Copy the style number (both designs). */
+.om-product-wrap .om-copy-style.om-copy-style {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	margin: 0 0 0 2px;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: #9a9a9a;
+	cursor: pointer;
+	vertical-align: middle;
+	transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.om-product-wrap .om-copy-style.om-copy-style:is(:hover, :focus-visible) {
+	background: #f1efec;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-copy-icon {
+	width: 12px;
+	height: 12px;
+	background-color: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'%3E%3Crect x='8' y='8' width='13' height='13' rx='2'/%3E%3Cpath d='M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'%3E%3Crect x='8' y='8' width='13' height='13' rx='2'/%3E%3Cpath d='M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.om-copy-done:empty {
+	display: none;
+}
+
+.om-copy-done {
+	position: absolute;
+	left: 50%;
+	bottom: calc(100% + 6px);
+	transform: translateX(-50%);
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: var(--om-color-primary, #00111C);
+	color: #fff;
+	font-size: 11px;
+	letter-spacing: 0.04em;
+	text-transform: none;
+	white-space: nowrap;
+	pointer-events: none;
+}
+
+/* Sections fade up as they scroll into view (JS adds the classes). */
+.om-js .om-reveal {
+	opacity: 0;
+	transform: translateY(14px);
+	transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.om-js .om-reveal.is-in {
+	opacity: 1;
+	transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-js .om-reveal {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+
+	.om-price-amount.is-updated,
+	.om-design-modern details.om-acc[open] > .om-acc-body {
+		animation: none;
+	}
+}
+
+@media (max-width: 600px) {
+	.om-design-modern .om-options-form[data-om-options] {
+		padding: 2px 16px;
+	}
+
+	.om-design-modern.om-product-wrap .om-acc-title.om-acc-title {
+		padding: 16px;
+	}
+
+	.om-design-modern .om-acc-body {
+		padding: 0 16px 16px;
+	}
+}
+
+@media print {
+	.om-js .om-reveal {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@media (max-width: 600px) {
+	.om-design-modern .om-product-title {
+		font-size: var(--om-m-title, 28px);
+	}
+}
+
+.om-design-modern .om-opt--size .om-opt-label {
+	color: var(--om-color-primary, #00111C);
+	font-weight: 500;
 }
