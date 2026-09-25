@@ -7002,3 +7002,149 @@ html.om-has-compare.om-has-sticky-bar .om-compare-tray {
 		transition: none;
 	}
 }
+
+/* =========================================================
+   1.17 — Catalog heading and the quiet page intro
+   ========================================================= */
+
+.om-intro-head {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0;
+	margin: 0 auto calc(var(--om-head-gap, 36px) * var(--om-space, 1));
+	text-align: center;
+}
+
+.om-intro-head--left {
+	align-items: flex-start;
+	text-align: left;
+}
+
+.om-intro-head--right {
+	align-items: flex-end;
+	text-align: right;
+}
+
+.om-intro-eyebrow {
+	margin: 0 0 10px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: #6e6e6e;
+}
+
+.om-catalog-wrap .om-intro-title {
+	margin: 0;
+	font-family: var(--om-font-heading, Arapey, Georgia, serif);
+	font-size: clamp(30px, 4vw, 46px);
+	font-weight: 400;
+	line-height: 1.1;
+	letter-spacing: 0.01em;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-intro-rule {
+	display: block;
+	width: var(--om-head-rule-w, 56px);
+	height: var(--om-head-rule-h, 1px);
+	margin: 18px 0 0;
+	background: var(--om-head-rule-c, var(--om-color-primary, #00111C));
+	opacity: 0.5;
+	transform-origin: var(--om-rule-origin, center);
+}
+
+.om-intro-head--left { --om-rule-origin: left; }
+.om-intro-head--right { --om-rule-origin: right; }
+
+.om-intro-text {
+	max-width: 62ch;
+	margin: 16px 0 0;
+	font-size: 15px;
+	line-height: 1.7;
+	color: #5a5a5a;
+}
+
+/* ---------- The intro ---------- */
+
+.om-intro--rise { --om-intro-k: om-intro-rise; }
+.om-intro--fade { --om-intro-k: om-intro-fade; }
+.om-intro--blur { --om-intro-k: om-intro-blur; }
+.om-intro--zoom { --om-intro-k: om-intro-zoom; }
+
+@keyframes om-intro-rise {
+	from { opacity: 0; transform: translateY(var(--om-intro-dist, 18px)); }
+}
+
+@keyframes om-intro-fade {
+	from { opacity: 0; }
+}
+
+@keyframes om-intro-blur {
+	from { opacity: 0; filter: blur(10px); }
+}
+
+@keyframes om-intro-zoom {
+	from { opacity: 0; transform: scale(0.95); }
+}
+
+/* Titles also settle their letter spacing: a quiet, luxurious touch. */
+@keyframes om-intro-spacing {
+	from { letter-spacing: 0.12em; }
+}
+
+@keyframes om-intro-rule {
+	from { transform: scaleX(0); }
+}
+
+.om-catalog-wrap.om-intro .om-intro-head > *,
+.om-catalog-wrap.om-intro:not(.om-intro-no-toolbar) :is(.om-filter-sidebar, .om-filter-bar, .om-filter-dropdowns, .om-catalog-toolbar),
+.om-catalog-wrap.om-intro:not(.om-intro-no-cards) .om-catalog-grid.om-catalog-grid > *:nth-child(n) {
+	animation: var(--om-intro-k, om-intro-rise) var(--om-intro-d, 700ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.om-catalog-wrap.om-intro .om-intro-head > .om-intro-title,
+.om-intro-page-title.om-intro-page-title {
+	animation:
+		var(--om-intro-k, om-intro-rise) var(--om-intro-d, 700ms) cubic-bezier(0.22, 1, 0.36, 1) backwards,
+		om-intro-spacing calc(var(--om-intro-d, 700ms) * 1.6) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+	animation-delay: calc(var(--om-intro-d, 700ms) * 0.08);
+}
+
+.om-catalog-wrap.om-intro .om-intro-head > .om-intro-rule {
+	animation: om-intro-rule calc(var(--om-intro-d, 700ms) * 1.2) cubic-bezier(0.65, 0, 0.35, 1) backwards;
+	animation-delay: calc(var(--om-intro-d, 700ms) * 0.3);
+}
+
+.om-catalog-wrap.om-intro .om-intro-head > .om-intro-text {
+	animation-delay: calc(var(--om-intro-d, 700ms) * 0.35);
+}
+
+.om-catalog-wrap.om-intro:not(.om-intro-no-toolbar) :is(.om-filter-sidebar, .om-filter-bar, .om-filter-dropdowns, .om-catalog-toolbar) {
+	animation-delay: calc(var(--om-intro-d, 700ms) * 0.4);
+}
+
+.om-catalog-wrap.om-intro:not(.om-intro-no-cards) .om-catalog-grid.om-catalog-grid > *:nth-child(n) {
+	animation-delay: calc(var(--om-intro-d, 700ms) * 0.55 + var(--om-i, 0) * var(--om-intro-s, 70ms));
+}
+
+/* Played: nothing replays when classes change (e.g. the grid's own fade). */
+.om-catalog-wrap.om-intro-done .om-intro-head > *,
+.om-catalog-wrap.om-intro-done :is(.om-filter-sidebar, .om-filter-bar, .om-filter-dropdowns, .om-catalog-toolbar),
+.om-catalog-wrap.om-intro-done .om-catalog-grid.om-catalog-grid > *:nth-child(n) {
+	animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-catalog-wrap.om-intro *,
+	.om-intro-page-title.om-intro-page-title {
+		animation: none !important;
+	}
+}
+
+@media print {
+	.om-catalog-wrap.om-intro * {
+		animation: none !important;
+	}
+}

@@ -238,6 +238,28 @@ class OM_Shortcodes {
 				'badge_popular'    => 'yes',
 				// Badges double as quick filters (shape, New, Popular).
 				'badge_links'      => 'yes',
+				// Quiet page intro: the heading, toolbar and first cards ease
+				// in one after another. intro_when: first (a visitor's first
+				// visit to the page), session (once per visit) or always;
+				// intro_style: rise, fade, blur or zoom; speed and stagger in
+				// ms; intro_cards: how many cards take part.
+				'intro'            => '',
+				'intro_when'       => 'first',
+				'intro_style'      => 'rise',
+				'intro_speed'      => 700,
+				'intro_stagger'    => 70,
+				'intro_cards'      => 8,
+				'intro_toolbar'    => 'yes',
+				'intro_page_title' => '',
+				// Optional heading above the catalog (eyebrow, title with
+				// {line}, rule, text); part of the intro when it plays.
+				'head'             => '',
+				'head_eyebrow'     => '',
+				'head_title'       => '{line}',
+				'head_text'        => '',
+				'head_rule'        => 'yes',
+				'head_tag'         => 'h2',
+				'head_align'       => 'center',
 				// Visitor sort dropdown, and the default order.
 				'show_sort'       => 'yes',
 				'sort'            => '',
@@ -541,13 +563,20 @@ class OM_Shortcodes {
 			$classes[] = 'om-has-sidebar';
 		}
 
+		$intro_id = 'yes' === $atts['intro'] ? 'om-intro-' . substr( md5( $atts_json ), 0, 10 ) : '';
+
 		ob_start();
 		printf(
-			'<div class="%s" data-om-atts="%s" data-om-sig="%s">',
+			'<div class="%s" data-om-atts="%s" data-om-sig="%s"%s>',
 			esc_attr( implode( ' ', $classes ) ),
 			esc_attr( $atts_json ),
-			esc_attr( self::sign_atts( $atts_json ) )
+			esc_attr( self::sign_atts( $atts_json ) ),
+			'' !== $intro_id ? ' data-om-intro="' . esc_attr( $intro_id ) . '"' : ''
 		);
+
+		if ( 'yes' === $atts['head'] ) {
+			$this->render_head( $atts, $active_line );
+		}
 
 		if ( $has_side ) {
 			echo '<div class="om-catalog-layout">';
@@ -567,7 +596,66 @@ class OM_Shortcodes {
 		}
 		echo '</div>';
 
+		// The intro starts from a tiny inline script right after the block,
+		// before the first paint, so nothing flashes in and out. Filtering
+		// (the AJAX re-render) never replays it.
+		if ( '' !== $intro_id && ! wp_doing_ajax() ) {
+			echo self::intro_script( $intro_id, $atts, $url( array() ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- built from ints / JSON.
+		}
+
 		return ob_get_clean();
+	}
+
+	/** The heading above the catalog: eyebrow, title, rule, text. */
+	private function render_head( $atts, $active_line ) {
+		$labels = self::line_labels();
+		$line   = $labels[ $active_line ] ?? ucwords( str_replace( '-', ' ', $active_line ) );
+		$title  = trim( str_replace( '{line}', $line, (string) $atts['head_title'] ) );
+		$tag    = in_array( $atts['head_tag'], array( 'h1', 'h2', 'h3', 'p' ), true ) ? $atts['head_tag'] : 'h2';
+		$align  = in_array( $atts['head_align'], array( 'left', 'center', 'right' ), true ) ? $atts['head_align'] : 'center';
+		echo '<header class="om-intro-head om-intro-head--' . esc_attr( $align ) . '">';
+		if ( '' !== trim( (string) $atts['head_eyebrow'] ) ) {
+			echo '<p class="om-intro-eyebrow">' . esc_html( str_replace( '{line}', $line, (string) $atts['head_eyebrow'] ) ) . '</p>';
+		}
+		if ( '' !== $title ) {
+			echo '<' . $tag . ' class="om-intro-title">' . esc_html( $title ) . '</' . $tag . '>'; // phpcs:ignore WordPress.Security.EscapeOutput -- whitelisted tag.
+		}
+		if ( 'yes' === $atts['head_rule'] ) {
+			echo '<span class="om-intro-rule" aria-hidden="true"></span>';
+		}
+		if ( '' !== trim( (string) $atts['head_text'] ) ) {
+			echo '<p class="om-intro-text">' . esc_html( str_replace( '{line}', $line, (string) $atts['head_text'] ) ) . '</p>';
+		}
+		echo '</header>';
+	}
+
+	/**
+	 * The script that plays the intro once, per the block's settings. It
+	 * stays out for visitors who prefer reduced motion, and always plays in
+	 * the Elementor editor so changes can be previewed.
+	 */
+	private static function intro_script( $id, $atts, $page_url ) {
+		$cfg = array(
+			'id'      => $id,
+			'when'    => in_array( $atts['intro_when'], array( 'first', 'session', 'always' ), true ) ? $atts['intro_when'] : 'first',
+			'style'   => in_array( $atts['intro_style'], array( 'rise', 'fade', 'blur', 'zoom' ), true ) ? $atts['intro_style'] : 'rise',
+			'speed'   => max( 200, min( 2000, (int) $atts['intro_speed'] ) ),
+			'stagger' => max( 0, min( 400, (int) $atts['intro_stagger'] ) ),
+			'cards'   => max( 0, min( 24, (int) $atts['intro_cards'] ) ),
+			'toolbar' => 'yes' === $atts['intro_toolbar'],
+			'page'    => 'yes' === $atts['intro_page_title'],
+			// One "seen" mark per page (and per block on it).
+			'key'     => substr( md5( (string) wp_parse_url( $page_url, PHP_URL_PATH ) . '|' . $id ), 0, 12 ),
+		);
+		return '<script>(function(w,d,c){var el=d.querySelector(\'[data-om-intro="\'+c.id+\'"]\');if(!el||el.getAttribute("data-om-intro-ran"))return;el.setAttribute("data-om-intro-ran","1");'
+			. 'var edit=d.body&&d.body.classList.contains("elementor-editor-active")||!!(w.elementorFrontend&&w.elementorFrontend.isEditMode&&w.elementorFrontend.isEditMode());'
+			. 'try{if(w.matchMedia&&w.matchMedia("(prefers-reduced-motion: reduce)").matches)return;if(!edit&&c.when!=="always"){var st=c.when==="session"?w.sessionStorage:w.localStorage,k="om_intro_"+c.key;if(st.getItem(k))return;st.setItem(k,"1");}}catch(e){}'
+			. 'el.style.setProperty("--om-intro-d",c.speed+"ms");el.style.setProperty("--om-intro-s",c.stagger+"ms");'
+			. 'var cells=el.querySelectorAll(".om-catalog-grid > *"),last=0;for(var i=0;i<cells.length;i++){var n=Math.min(i,Math.max(c.cards-1,0));cells[i].style.setProperty("--om-i",n);if(i<c.cards)last=n;}'
+			. 'var h=null;if(c.page){h=d.querySelector("h1");if(h&&(el.contains(h)||h.closest(".site-header,.elementor-location-header,#masthead,[role=banner]")))h=null;if(h)h.classList.add("om-intro-page-title","om-intro--"+c.style);}'
+			. 'el.classList.add("om-intro","om-intro--"+c.style);if(!c.toolbar)el.classList.add("om-intro-no-toolbar");if(!c.cards)el.classList.add("om-intro-no-cards");'
+			. 'setTimeout(function(){el.classList.remove("om-intro");el.classList.add("om-intro-done");if(h)h.classList.remove("om-intro-page-title");},c.speed*1.6+last*c.stagger+300);'
+			. '})(window,document,' . wp_json_encode( $cfg ) . ');</script>';
 	}
 
 	/**

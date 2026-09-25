@@ -514,7 +514,45 @@ nothing, so the visitor can go straight back to a piece they liked.
   and `[om_search]`.
 - Prices follow the *Prices in suggestions* switch.
 
+## Quiet page intro & catalog heading (1.17)
+
+The first time a visitor lands on a listing, the page settles in: the
+heading eases into place (its letter spacing gently tightens, the rule
+draws in), then the filters and toolbar, then the cards one after another.
+Filtering or paging afterwards is instant, and visitors who prefer reduced
+motion never see it.
+
+Everything is in the **OM Catalog** widget:
+
+- **Content > Page intro** — on/off; *Play*: first visit to the page,
+  once per visit, or every load; *Motion*: rise, fade, blur to sharp,
+  settle (zoom); duration; delay between cards; rise distance; how many
+  cards take part (0 = none); whether the filters & toolbar take part;
+  whether the page's own H1 (e.g. an Elementor Heading) joins in — the site
+  header and logo are never touched. In the editor it always replays so
+  changes can be previewed.
+- **Content > Heading** — an optional heading above the catalog: eyebrow,
+  title (`{line}` = the product line shown), HTML tag, thin rule, text,
+  responsive alignment.
+- **Style > Heading** — colours and typography for eyebrow, title and
+  text, text width, rule colour/width/thickness, space below.
+
+Shortcode: `[om_catalog intro="yes" intro_when="first" intro_style="rise"
+intro_speed="700" intro_stagger="70" intro_cards="8" intro_toolbar="yes"
+intro_page_title="" head="yes" head_eyebrow="" head_title="{line}"
+head_text="" head_rule="yes" head_tag="h2" head_align="center"]`
+(the intro is off by default in shortcodes, on by default in the widget).
+
 ## Changelog
+
+### 1.17.0
+- Quiet page intro for catalog pages: heading, filters/toolbar and cards
+  ease in one after another (rise, fade, blur, zoom); first visit / once
+  per visit / always; optional page H1; never for reduced motion; no
+  flash (starts before first paint); filtering never replays it.
+- Optional catalog heading (eyebrow, {line} title, rule, text) with full
+  style controls.
+- All intro and heading settings live in the OM Catalog widget.
 
 ### 1.16.0
 - "Recently viewed" photo strip in the search panel (empty box and

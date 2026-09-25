@@ -596,8 +596,278 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 
 		$this->end_controls_section();
 
+		/* ---------- Content: heading ---------- */
+
+		$this->start_controls_section( 'section_head', array( 'label' => __( 'Heading', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'head',
+			array(
+				'label'       => __( 'Show a heading above the catalog', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => '',
+				'description' => __( 'Eyebrow, title, a thin rule and a short text. Takes part in the page intro. Leave off if the page already has its own heading.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'head_eyebrow',
+			array(
+				'label'       => __( 'Eyebrow', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'The bridal collection', 'om-catalog' ),
+				'condition'   => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'head_title',
+			array(
+				'label'       => __( 'Title', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => '{line}',
+				'description' => __( '{line} = the product line being shown, e.g. Engagement Rings.', 'om-catalog' ),
+				'condition'   => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'head_tag',
+			array(
+				'label'     => __( 'Title HTML tag', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'h2',
+				'options'   => array( 'h1' => 'H1', 'h2' => 'H2', 'h3' => 'H3', 'p' => 'p' ),
+				'condition' => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'head_rule',
+			array(
+				'label'     => __( 'Thin rule under the title', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'head_text',
+			array(
+				'label'       => __( 'Text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 3,
+				'placeholder' => __( 'Hand-finished settings, made to order for your diamond.', 'om-catalog' ),
+				'condition'   => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'head_align',
+			array(
+				'label'     => __( 'Alignment', 'om-catalog' ),
+				'type'      => Controls_Manager::CHOOSE,
+				'default'   => 'center',
+				'options'   => array(
+					'left'   => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
+					'center' => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
+					'right'  => array( 'title' => __( 'Right', 'om-catalog' ), 'icon' => 'eicon-text-align-right' ),
+				),
+				'selectors_dictionary' => array(
+					'left'   => 'align-items: flex-start; text-align: left; --om-rule-origin: left;',
+					'center' => 'align-items: center; text-align: center; --om-rule-origin: center;',
+					'right'  => 'align-items: flex-end; text-align: right; --om-rule-origin: right;',
+				),
+				'selectors' => array( '{{WRAPPER}} .om-intro-head' => '{{VALUE}}' ),
+				'condition' => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Content: page intro ---------- */
+
+		$this->start_controls_section( 'section_intro', array( 'label' => __( 'Page intro', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'intro',
+			array(
+				'label'       => __( 'Quiet page intro', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'The heading, filters and first cards ease in one after another. Never shown to visitors who prefer reduced motion; filtering afterwards is instant. Always replays here in the editor.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'intro_when',
+			array(
+				'label'     => __( 'Play', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'first',
+				'options'   => array(
+					'first'   => __( 'On a visitor\'s first visit to this page', 'om-catalog' ),
+					'session' => __( 'Once per visit', 'om-catalog' ),
+					'always'  => __( 'Every time the page loads', 'om-catalog' ),
+				),
+				'condition' => array( 'intro' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'intro_style',
+			array(
+				'label'     => __( 'Motion', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'rise',
+				'options'   => array(
+					'rise' => __( 'Rise (gentle lift)', 'om-catalog' ),
+					'fade' => __( 'Fade', 'om-catalog' ),
+					'blur' => __( 'Blur to sharp', 'om-catalog' ),
+					'zoom' => __( 'Settle (slight zoom)', 'om-catalog' ),
+				),
+				'condition' => array( 'intro' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'intro_speed',
+			array(
+				'label'     => __( 'Duration (ms)', 'om-catalog' ),
+				'type'      => Controls_Manager::SLIDER,
+				'default'   => array( 'size' => 700 ),
+				'range'     => array( 'px' => array( 'min' => 200, 'max' => 2000, 'step' => 50 ) ),
+				'condition' => array( 'intro' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'intro_stagger',
+			array(
+				'label'       => __( 'Delay between cards (ms)', 'om-catalog' ),
+				'type'        => Controls_Manager::SLIDER,
+				'default'     => array( 'size' => 70 ),
+				'range'       => array( 'px' => array( 'min' => 0, 'max' => 400, 'step' => 10 ) ),
+				'condition'   => array( 'intro' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'intro_distance',
+			array(
+				'label'      => __( 'Rise distance', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'default'    => array( 'size' => 18, 'unit' => 'px' ),
+				'range'      => array( 'px' => array( 'min' => 4, 'max' => 60 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-catalog-wrap' => '--om-intro-dist: {{SIZE}}{{UNIT}};' ),
+				'condition'  => array( 'intro' => 'yes', 'intro_style' => 'rise' ),
+			)
+		);
+
+		$this->add_control(
+			'intro_cards',
+			array(
+				'label'       => __( 'Cards in the sequence', 'om-catalog' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 8,
+				'min'         => 0,
+				'max'         => 24,
+				'description' => __( 'The rest appear together with the last one. 0 = cards don\'t take part.', 'om-catalog' ),
+				'condition'   => array( 'intro' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'intro_toolbar',
+			array(
+				'label'     => __( 'Filters & toolbar take part', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array( 'intro' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'intro_page_title',
+			array(
+				'label'       => __( 'Include the page\'s own title', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => '',
+				'description' => __( 'Also eases in the page\'s main heading (H1), e.g. an Elementor Heading above this widget. The site header and logo are left alone.', 'om-catalog' ),
+				'condition'   => array( 'intro' => 'yes' ),
+			)
+		);
+
+		$this->end_controls_section();
+
 		$this->register_quick_view_content();
 		$this->register_card_video_content();
+
+		/* ---------- Style: heading ---------- */
+
+		$this->start_controls_section(
+			'section_style_head',
+			array(
+				'label'     => __( 'Heading', 'om-catalog' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->add_control( 'head_eyebrow_color', array( 'label' => __( 'Eyebrow colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-intro-eyebrow' => 'color: {{VALUE}};' ) ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'head_eyebrow_typo', 'label' => __( 'Eyebrow typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-intro-eyebrow' ) );
+		$this->add_control( 'head_title_color', array( 'label' => __( 'Title colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'separator' => 'before', 'selectors' => array( '{{WRAPPER}} .om-catalog-wrap .om-intro-title' => 'color: {{VALUE}};' ) ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'head_title_typo', 'label' => __( 'Title typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-catalog-wrap .om-intro-title' ) );
+		$this->add_control( 'head_text_color', array( 'label' => __( 'Text colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'separator' => 'before', 'selectors' => array( '{{WRAPPER}} .om-intro-text' => 'color: {{VALUE}};' ) ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'head_text_typo', 'label' => __( 'Text typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-intro-text' ) );
+		$this->add_responsive_control(
+			'head_text_width',
+			array(
+				'label'      => __( 'Text max width', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', 'ch', '%' ),
+				'range'      => array( 'px' => array( 'min' => 200, 'max' => 1200 ), 'ch' => array( 'min' => 20, 'max' => 120 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-intro-text' => 'max-width: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+		$this->add_control( 'head_rule_color', array( 'label' => __( 'Rule colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'separator' => 'before', 'selectors' => array( '{{WRAPPER}} .om-intro-rule' => '--om-head-rule-c: {{VALUE}}; opacity: 1;' ), 'condition' => array( 'head_rule' => 'yes' ) ) );
+		$this->add_control(
+			'head_rule_width',
+			array(
+				'label'      => __( 'Rule width', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px', '%' ),
+				'range'      => array( 'px' => array( 'min' => 10, 'max' => 400 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-intro-rule' => '--om-head-rule-w: {{SIZE}}{{UNIT}};' ),
+				'condition'  => array( 'head_rule' => 'yes' ),
+			)
+		);
+		$this->add_control(
+			'head_rule_height',
+			array(
+				'label'      => __( 'Rule thickness', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 1, 'max' => 6 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-intro-rule' => '--om-head-rule-h: {{SIZE}}{{UNIT}};' ),
+				'condition'  => array( 'head_rule' => 'yes' ),
+			)
+		);
+		$this->add_responsive_control(
+			'head_gap',
+			array(
+				'label'      => __( 'Space below the heading', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 120 ) ),
+				'separator'  => 'before',
+				'selectors'  => array( '{{WRAPPER}} .om-intro-head' => '--om-head-gap: {{SIZE}}px;' ),
+			)
+		);
+
+		$this->end_controls_section();
 
 		/* ---------- Style: Grid ---------- */
 
@@ -1498,6 +1768,21 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'in_stock'        => (string) $settings['in_stock_only'],
 			'include'         => trim( preg_replace( '/\s+/', ' ', (string) $settings['include_styles'] ) ),
 			'exclude'         => trim( preg_replace( '/\s+/', ' ', (string) $settings['exclude_styles'] ) ),
+			'intro'           => 'yes' === ( $settings['intro'] ?? 'yes' ) ? 'yes' : '',
+			'intro_when'      => (string) ( $settings['intro_when'] ?? 'first' ),
+			'intro_style'     => (string) ( $settings['intro_style'] ?? 'rise' ),
+			'intro_speed'     => (int) ( $settings['intro_speed']['size'] ?? 700 ),
+			'intro_stagger'   => (int) ( $settings['intro_stagger']['size'] ?? 70 ),
+			'intro_cards'     => (int) ( $settings['intro_cards'] ?? 8 ),
+			'intro_toolbar'   => 'yes' === ( $settings['intro_toolbar'] ?? 'yes' ) ? 'yes' : '',
+			'intro_page_title' => 'yes' === ( $settings['intro_page_title'] ?? '' ) ? 'yes' : '',
+			'head'            => 'yes' === ( $settings['head'] ?? '' ) ? 'yes' : '',
+			'head_eyebrow'    => (string) ( $settings['head_eyebrow'] ?? '' ),
+			'head_title'      => (string) ( $settings['head_title'] ?? '{line}' ),
+			'head_text'       => (string) ( $settings['head_text'] ?? '' ),
+			'head_rule'       => 'yes' === ( $settings['head_rule'] ?? 'yes' ) ? 'yes' : '',
+			'head_tag'        => (string) ( $settings['head_tag'] ?? 'h2' ),
+			'head_align'      => (string) ( $settings['head_align'] ?? 'center' ),
 			// The responsive Columns control owns the column count via CSS.
 			'inline_columns'  => 'no',
 		) + $this->card_extras_atts( $settings );
