@@ -421,7 +421,38 @@ Colour, clarity and cut appear as small badges (top grades — D–F, FL–VVS2,
 Ideal/Excellent — highlighted), the report shows the lab and Lab-grown /
 Natural, and the column headings stay in view while scrolling.
 
+## Inquiry subjects (1.13)
+
+Settings > OM Catalog > Inquiries:
+
+- **Subjects** — one per line (default: General question, Price request,
+  Book a viewing, Custom design, Ring sizing). Visitors pick one as pills
+  at the top of the form; it heads the email and its subject line.
+- **Email subject line** template with `{subject}` `{piece}` `{title}`
+  `{style}` `{name}` `{email}` `{phone}` `{price}` `{site}` — default
+  `{subject}: {piece} — {name}`, e.g. "Book a viewing: Halo Ring (Style
+  80285-04) — Jane". The customer's copy says "We received your inquiry:
+  Book a viewing".
+- **Preselect from any button**: link it to `#om-inquiry?subject=Book a
+  viewing` — the form opens, scrolls into view with that subject chosen.
+- The OM Single Product widget can show/hide the choice, use its own list,
+  preselect one and use its own subject template (Inquiry section).
+- Only listed subjects are accepted (the list is signed); anything else
+  falls back to the first.
+
 ## Changelog
+
+### 1.13.0
+- Catalog pages "Modern" design (default; widget > Page design): framed
+  filter sidebar with tinted rows, sentence-case pills that scroll on
+  phones, tidy toolbar, framed card photos with glassy badges, staggered
+  card entrance, "You've viewed 9 of 40" progress with pill pagination,
+  and on phones a bottom-sheet filter panel (stays open while filtering,
+  Show results button, tap outside to close).
+- Inquiry subjects: predefined choices, subject-line template, button
+  preselect via #om-inquiry?subject=…, widget overrides.
+- Corner defaults per design: Modern uses soft corners unless a radius is
+  set in the widget or Settings.
 
 ### 1.12.0
 - Photos follow the metal colour for designs whose colours are separate

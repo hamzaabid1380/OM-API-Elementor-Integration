@@ -518,6 +518,31 @@
 	   Inquiry form
 	   ========================================================= */
 
+	// Any link to "#om-inquiry" (optionally "#om-inquiry?subject=Book a
+	// viewing") opens the page's inquiry form with that subject chosen.
+	$(document).on('click', 'a[href*="#om-inquiry"]', function (e) {
+		var href = this.getAttribute('href') || '';
+		var hash = href.slice(href.indexOf('#om-inquiry'));
+		var $scope = $(this).closest('.om-product-wrap');
+		var $box = ($scope.length ? $scope : $(document)).find('.om-product-inquiry, .om-inquiry').first();
+		if (!$box.length) { return; } // Nothing here: let the link work as usual.
+		e.preventDefault();
+		var match = /[?&]subject=([^&]*)/.exec(hash);
+		var subject = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+		var details = $box.is('details') ? $box[0] : $box.find('details.om-inquiry')[0];
+		if (details) { details.open = true; }
+		if (subject) {
+			var $radio = $box.find('input[name="om_subject"]').filter(function () { return this.value.toLowerCase() === subject.toLowerCase(); });
+			if ($radio.length) { $radio.prop('checked', true); } else {
+				var $hidden = $box.find('.om-subject-hidden');
+				if ($hidden.length) { $hidden.val(subject); }
+			}
+		}
+		$box[0].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+		var first = $box.find('.om-fields input:not([type=hidden]):not([type=radio]), .om-fields textarea').first()[0];
+		if (first) { setTimeout(function () { first.focus({ preventScroll: true }); }, 450); }
+	});
+
 	$(document).on('submit', '.om-inquiry-form', function (e) {
 		if (!cfg.ajaxUrl || !window.FormData) {
 			return; // Normal form post.
@@ -581,6 +606,38 @@
 		$(root || document).find('.om-filter-list--collapsible').addClass('is-collapsed');
 	}
 
+	// Modern design on phones: the filters are a bottom sheet.
+	function isSheet($wrap) {
+		return !!(mobileQuery && mobileQuery.matches && $wrap.hasClass('om-cdesign-modern'));
+	}
+
+	function lockSheet(on) {
+		$('html').toggleClass('om-sheet-open', !!on);
+	}
+
+	// "toggle" doesn't bubble, so listen in the capture phase.
+	document.addEventListener('toggle', function (e) {
+		var panel = e.target;
+		if (panel && panel.classList && panel.classList.contains('om-filter-panel')) {
+			var $wrap = $(panel).closest('.om-catalog-wrap');
+			if (isSheet($wrap)) { lockSheet(panel.open); }
+		}
+	}, true);
+
+	$(document).on('click', '.om-filter-close, .om-filter-done', function () {
+		var panel = $(this).closest('.om-filter-panel')[0];
+		if (panel) { panel.open = false; }
+		lockSheet(false);
+	});
+
+	// A tap on the dimmed page behind the sheet closes it.
+	$(document).on('click', function (e) {
+		if (!$('html').hasClass('om-sheet-open')) { return; }
+		if ($(e.target).closest('.om-filter-panel-body, .om-filter-toggle').length) { return; }
+		$('.om-cdesign-modern .om-filter-panel[open]').each(function () { this.open = false; });
+		lockSheet(false);
+	});
+
 	$(document).on('click', '.om-filter-more-btn', function () {
 		$(this).closest('.om-filter-list').removeClass('is-collapsed');
 	});
@@ -599,6 +656,9 @@
 		var seq = ++blockSeq;
 		var isDiamonds = $wrap.hasClass('om-diamonds');
 		var focusSearch = $wrap.find('.om-search-input').is(':focus');
+		// The phone filter sheet stays open while filters are tapped.
+		var sheetOpen = isSheet($wrap) && $wrap.find('.om-filter-panel').prop('open');
+		var sheetScroll = sheetOpen ? $wrap.find('.om-filter-panel-body').scrollTop() : 0;
 		$wrap.addClass('om-loading').attr('aria-busy', 'true');
 		if (!isDiamonds) { showSkeleton($wrap); }
 
@@ -616,6 +676,11 @@
 			var $fresh = $($.parseHTML($.trim(response.data.html)));
 			$wrap.replaceWith($fresh);
 			initBlock($fresh);
+			if (sheetOpen) {
+				$fresh.find('.om-filter-panel').prop('open', true);
+				$fresh.find('.om-filter-panel-body').scrollTop(sheetScroll);
+				lockSheet(true);
+			}
 			if (window.history && window.history.pushState) {
 				window.history.pushState({ omCatalog: true }, '', href);
 				omPushed = true;

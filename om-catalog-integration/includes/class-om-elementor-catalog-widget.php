@@ -186,6 +186,20 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'design',
+			array(
+				'label'   => __( 'Page design', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'modern',
+				'options' => array(
+					'modern'  => __( 'Modern: framed panels, soft corners, motion', 'om-catalog' ),
+					'classic' => __( 'Classic: open, lines only', 'om-catalog' ),
+				),
+				'description' => __( 'Modern also turns the phone filters into a bottom sheet.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
 			'show_filter_bar',
 			array(
 				'label'       => __( 'Collection filter', 'om-catalog' ),
@@ -1416,6 +1430,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'show_search'     => (string) ( $settings['show_search'] ?? 'yes' ),
 			'search_placeholder' => (string) ( $settings['search_placeholder'] ?? '' ),
 			'suggest_prices'  => 'yes' === ( $settings['suggest_prices'] ?? 'yes' ) ? 'yes' : 'no',
+			'design'          => 'classic' === ( $settings['design'] ?? 'modern' ) ? 'classic' : 'modern',
 			'search_scope'    => in_array( $settings['search_scope'] ?? 'line', array( 'line', 'block', 'all' ), true ) ? $settings['search_scope'] : 'line',
 			'show_sort'       => (string) ( $settings['show_sort'] ?? 'yes' ),
 			'sort'            => (string) ( $settings['default_sort'] ?? '' ),

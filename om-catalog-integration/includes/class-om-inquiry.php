@@ -180,6 +180,60 @@ class OM_Inquiry {
 		return hash_hmac( 'sha256', (string) $json, wp_salt( 'nonce' ) . '|om_inquiry_fields' );
 	}
 
+	/**
+	 * The subject setup for a form: choices, whether the visitor picks one,
+	 * and the email subject template. Context values win over Settings.
+	 *
+	 * @return array [ list => string[], show => bool, tpl => string ]
+	 */
+	public static function subject_config( $context = array() ) {
+		$list = $context['subjects'] ?? null;
+		if ( null === $list ) {
+			$list = (string) get_option( 'om_inquiry_subjects', "General question\nPrice request\nBook a viewing\nCustom design\nRing sizing" );
+		}
+		if ( is_string( $list ) ) {
+			$list = preg_split( '/\r\n|\r|\n|,/', $list );
+		}
+		$list = array_values( array_unique( array_filter( array_map( static function ( $item ) { return mb_substr( sanitize_text_field( (string) $item ), 0, 80 ); }, (array) $list ), 'strlen' ) ) );
+		$show = $context['subject_field'] ?? null;
+		$show = null === $show ? '0' !== get_option( 'om_inquiry_subject_field', '1' ) : (bool) $show;
+		$tpl  = $context['subject_tpl'] ?? null;
+		$tpl  = null === $tpl || '' === trim( (string) $tpl ) ? (string) get_option( 'om_inquiry_subject_tpl', '' ) : (string) $tpl;
+		return array(
+			'list' => array_slice( $list, 0, 12 ),
+			'show' => $show,
+			'tpl'  => mb_substr( sanitize_text_field( $tpl ), 0, 200 ),
+		);
+	}
+
+	/**
+	 * The email subject from a template: {subject} {piece} {title} {style}
+	 * {name} {email} {phone} {price} {site}. Empty parts and the separators
+	 * they leave behind are tidied away.
+	 */
+	public static function subject_line( $tpl, $data ) {
+		if ( '' === trim( (string) $tpl ) ) {
+			$tpl = '' !== ( $data['subject'] ?? '' ) ? '{subject}: {piece} — {name}' : __( 'New inquiry', 'om-catalog' ) . ': {piece} — {name}';
+		}
+		$piece = '' !== $data['title'] ? $data['title'] . ( '' !== $data['style'] ? ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['style'] ) . ')' : '' ) : __( 'General question', 'om-catalog' );
+		$line  = strtr(
+			$tpl,
+			array(
+				'{subject}' => (string) ( $data['subject'] ?? '' ),
+				'{piece}'   => $piece,
+				'{title}'   => (string) $data['title'],
+				'{style}'   => (string) $data['style'],
+				'{name}'    => (string) $data['name'],
+				'{email}'   => (string) $data['email'],
+				'{phone}'   => (string) $data['phone'],
+				'{price}'   => (string) $data['price'],
+				'{site}'    => (string) get_bloginfo( 'name' ),
+			)
+		);
+		$line = preg_replace( array( '/^\s*[:\-—–|·]+\s*/u', '/\s*[:\-—–|·]+\s*$/u', '/\(\s*\)/', '/\s{2,}/' ), array( '', '', '', ' ' ), $line );
+		return trim( (string) $line );
+	}
+
 	/** One field's markup. */
 	private static function render_field( $field, $prefix ) {
 		$id       = $prefix . '-' . $field['key'];
@@ -285,6 +339,13 @@ class OM_Inquiry {
 				// that form's hidden fields named om_product, om_style,
 				// om_price, om_options, om_url, om_diamond or om_summary.
 				'custom_form'    => '',
+				// Subject: the choices (null = Settings list), whether the
+				// visitor picks one (null = Settings), which is preselected,
+				// and the email subject template (null = Settings).
+				'subjects'       => null,
+				'subject_field'  => null,
+				'subject'        => '',
+				'subject_tpl'    => null,
 			)
 		);
 		$custom_fields = self::normalize_fields( $context['fields'] );
@@ -333,7 +394,30 @@ class OM_Inquiry {
 				<div class="om-hp" aria-hidden="true">
 					<label><?php esc_html_e( 'Leave this empty', 'om-catalog' ); ?><input type="text" name="om_website" value="" tabindex="-1" autocomplete="off" /></label>
 				</div>
+				<?php
+				$subj = self::subject_config( $context );
+				if ( $subj['list'] || '' !== $subj['tpl'] ) {
+					// The subject setup is signed so the server can trust it.
+					$subj_json = wp_json_encode( $subj );
+					echo '<input type="hidden" name="om_subj_cfg" value="' . esc_attr( $subj_json ) . '" />';
+					echo '<input type="hidden" name="om_subj_sig" value="' . esc_attr( self::sign_fields( 'subject|' . $subj_json ) ) . '" />';
+				}
+				$preselect = '' !== trim( (string) $context['subject'] ) && in_array( trim( (string) $context['subject'] ), $subj['list'], true ) ? trim( (string) $context['subject'] ) : ( $subj['list'][0] ?? '' );
+				if ( $subj['list'] && ! $subj['show'] ) {
+					echo '<input type="hidden" name="om_subject" value="' . esc_attr( $preselect ) . '" class="om-subject-hidden" />';
+				}
+				?>
 				<div class="om-fields">
+					<?php if ( $subj['list'] && $subj['show'] ) : ?>
+						<fieldset class="om-field om-field--full om-field--subject">
+							<legend class="om-field-label"><?php esc_html_e( 'What is it about?', 'om-catalog' ); ?></legend>
+							<div class="om-subject-choices">
+								<?php foreach ( $subj['list'] as $choice ) : ?>
+									<label class="om-subject-choice"><input type="radio" name="om_subject" value="<?php echo esc_attr( $choice ); ?>" <?php checked( $choice, $preselect ); ?> /><span><?php echo esc_html( $choice ); ?></span></label>
+								<?php endforeach; ?>
+							</div>
+						</fieldset>
+					<?php endif; ?>
 					<?php
 					foreach ( $fields as $field ) {
 						self::render_field( $field, $id );
@@ -453,7 +537,21 @@ class OM_Inquiry {
 		}
 		set_transient( $rate_key, $count + 1, HOUR_IN_SECONDS );
 
+		// The subject: one of the signed choices (or the form's default).
+		$subject     = '';
+		$subject_tpl = (string) get_option( 'om_inquiry_subject_tpl', '' );
+		$subj_json   = isset( $_POST['om_subj_cfg'] ) && is_scalar( $_POST['om_subj_cfg'] ) ? (string) wp_unslash( $_POST['om_subj_cfg'] ) : '';
+		$subj_sig    = isset( $_POST['om_subj_sig'] ) && is_scalar( $_POST['om_subj_sig'] ) ? (string) wp_unslash( $_POST['om_subj_sig'] ) : '';
+		if ( '' !== $subj_json && hash_equals( self::sign_fields( 'subject|' . $subj_json ), $subj_sig ) ) {
+			$cfg         = json_decode( $subj_json, true );
+			$choices     = is_array( $cfg['list'] ?? null ) ? $cfg['list'] : array();
+			$subject_tpl = (string) ( $cfg['tpl'] ?? '' );
+			$wanted      = $f( 'om_subject' );
+			$subject     = in_array( $wanted, $choices, true ) ? $wanted : ( $choices[0] ?? '' );
+		}
+
 		$data = array(
+			'subject' => $subject,
 			'name'    => mb_substr( $name, 0, 120 ),
 			'email'   => $email,
 			'phone'   => $phone,
@@ -501,6 +599,7 @@ class OM_Inquiry {
 
 		$lines = array_filter(
 			array(
+				__( 'Subject', 'om-catalog' )        => $data['subject'],
 				__( 'Piece', 'om-catalog' )          => $data['title'],
 				__( 'Style number', 'om-catalog' )   => $data['style'],
 				__( 'Options chosen', 'om-catalog' ) => $data['config'],
@@ -523,9 +622,7 @@ class OM_Inquiry {
 			$body .= false !== strpos( $pair[1], "\n" ) ? $pair[0] . ":\n" . $pair[1] . "\n" : $pair[0] . ': ' . $pair[1] . "\n";
 		}
 
-		$piece = '' !== $data['title'] ? $data['title'] . ( '' !== $data['style'] ? ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['style'] ) . ')' : '' ) : __( 'General question', 'om-catalog' );
-		/* translators: 1: piece and style number, 2: customer name. */
-		$subject = sprintf( __( 'New inquiry: %1$s — %2$s', 'om-catalog' ), $piece, $data['name'] );
+		$subject = self::subject_line( $subject_tpl, $data );
 		/**
 		 * Filters the inquiry email subject.
 		 *
@@ -543,7 +640,7 @@ class OM_Inquiry {
 			)
 		);
 		if ( $post_id && ! is_wp_error( $post_id ) ) {
-			foreach ( array( 'email', 'phone', 'style', 'url', 'link', 'image', 'title', 'diamond' ) as $key ) {
+			foreach ( array( 'email', 'phone', 'style', 'url', 'link', 'image', 'title', 'diamond', 'subject' ) as $key ) {
 				update_post_meta( $post_id, '_om_' . $key, $data[ $key ] );
 			}
 		}
@@ -572,7 +669,7 @@ class OM_Inquiry {
 			self::send_html(
 				$data['email'],
 				/* translators: %s: site name. */
-				wp_specialchars_decode( sprintf( __( 'We received your inquiry — %s', 'om-catalog' ), get_bloginfo( 'name' ) ), ENT_QUOTES ),
+				wp_specialchars_decode( '' !== $data['subject'] ? sprintf( /* translators: 1: subject, 2: site name. */ __( 'We received your inquiry: %1$s — %2$s', 'om-catalog' ), $data['subject'], get_bloginfo( 'name' ) ) : sprintf( __( 'We received your inquiry — %s', 'om-catalog' ), get_bloginfo( 'name' ) ), ENT_QUOTES ),
 				self::email_html( $data, array(), true, $reply ),
 				$reply_text,
 				array( 'Content-Type: text/html; charset=UTF-8' )
@@ -632,7 +729,7 @@ class OM_Inquiry {
 	<tr><td style="padding:28px 32px 18px;border-bottom:1px solid #eeeeee;">
 		<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>"><?php echo esc_html( $site ); ?></div>
 		<div style="<?php echo $serif; // phpcs:ignore WordPress.Security.EscapeOutput ?>font-size:24px;color:<?php echo esc_attr( $primary ); ?>;margin-top:6px;">
-			<?php echo esc_html( $customer ? __( 'Thank you for your inquiry', 'om-catalog' ) : __( 'New inquiry', 'om-catalog' ) ); ?>
+			<?php echo esc_html( $customer ? __( 'Thank you for your inquiry', 'om-catalog' ) : ( '' !== ( $data['subject'] ?? '' ) ? $data['subject'] : __( 'New inquiry', 'om-catalog' ) ) ); ?>
 		</div>
 		<?php if ( ! $customer ) : ?>
 			<div style="font-size:14px;margin-top:6px;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'From %s', 'om-catalog' ), $data['name'] ) ); ?><?php echo '' !== $data['email'] ? ' &middot; <a href="mailto:' . esc_attr( $data['email'] ) . '" style="color:' . esc_attr( $primary ) . ';">' . esc_html( $data['email'] ) . '</a>' : ''; ?><?php echo '' !== $data['phone'] ? ' &middot; <a href="tel:' . esc_attr( preg_replace( '/[^0-9+]/', '', $data['phone'] ) ) . '" style="color:' . esc_attr( $primary ) . ';">' . esc_html( $data['phone'] ) . '</a>' : ''; ?></div>

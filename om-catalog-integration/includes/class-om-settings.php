@@ -76,6 +76,9 @@ class OM_Settings {
 		// Inquiries.
 		register_setting( 'om_catalog_settings', 'om_inquiry_email', array( 'sanitize_callback' => 'sanitize_email' ) );
 		register_setting( 'om_catalog_settings', 'om_inquiry_success', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_inquiry_subjects', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_catalog_settings', 'om_inquiry_subject_field', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_inquiry_subject_tpl', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_inquiry_fields', array( 'sanitize_callback' => array( 'OM_Inquiry', 'normalize_fields' ) ) );
 		register_setting( 'om_catalog_settings', 'om_inquiry_autoreply', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_inquiry_autoreply_text', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
@@ -279,6 +282,17 @@ class OM_Settings {
 					<tr>
 						<th><label for="om_inquiry_success">Thank-you message</label></th>
 						<td><input type="text" id="om_inquiry_success" name="om_inquiry_success" value="<?php echo esc_attr( get_option( 'om_inquiry_success', '' ) ); ?>" class="large-text" placeholder="Thank you! Your inquiry has been sent. We will be in touch soon." /></td>
+					</tr>
+					<tr>
+						<th><label for="om_inquiry_subjects">Subjects</label></th>
+						<td><textarea id="om_inquiry_subjects" name="om_inquiry_subjects" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_inquiry_subjects', "General question\nPrice request\nBook a viewing\nCustom design\nRing sizing" ) ); ?></textarea>
+						<p class="description">One per line. Visitors pick one at the top of the form; it heads the email and its subject line. Any button can preselect one by linking to <code>#om-inquiry?subject=Book a viewing</code> (e.g. a "Book an appointment" button).</p>
+						<input type="hidden" name="om_inquiry_subject_field" value="0" /><label><input type="checkbox" name="om_inquiry_subject_field" value="1" <?php checked( get_option( 'om_inquiry_subject_field', '1' ), '1' ); ?> /> Show the subject choice on the form (off: the first subject, or the one a button preselects, is used)</label></td>
+					</tr>
+					<tr>
+						<th><label for="om_inquiry_subject_tpl">Email subject line</label></th>
+						<td><input type="text" id="om_inquiry_subject_tpl" name="om_inquiry_subject_tpl" value="<?php echo esc_attr( get_option( 'om_inquiry_subject_tpl', '' ) ); ?>" class="large-text" placeholder="{subject}: {piece} — {name}" />
+						<p class="description">Tokens: <code>{subject}</code> <code>{piece}</code> (title + style number) <code>{title}</code> <code>{style}</code> <code>{name}</code> <code>{email}</code> <code>{phone}</code> <code>{price}</code> <code>{site}</code>. Empty = <code>{subject}: {piece} — {name}</code>, e.g. "Book a viewing: Halo Ring (Style 80285-04) — Jane".</p></td>
 					</tr>
 				</table>
 

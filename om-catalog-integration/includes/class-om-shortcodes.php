@@ -215,6 +215,9 @@ class OM_Shortcodes {
 				// block (all of this block's lines, grouped) or all (every
 				// product line, grouped).
 				'search_scope'    => 'line',
+				// Page design: modern (framed panels, soft corners, motion,
+				// bottom-sheet filters on phones) or classic.
+				'design'          => 'modern',
 				// Visitor sort dropdown, and the default order.
 				'show_sort'       => 'yes',
 				'sort'            => '',
@@ -484,7 +487,7 @@ class OM_Shortcodes {
 		$atts_json = wp_json_encode( $atts );
 		$has_side  = in_array( $filter_position, array( 'left', 'right' ), true ) && ! empty( $facets );
 
-		$classes = array( 'om-catalog-wrap', 'om-filterpos-' . $filter_position );
+		$classes = array( 'om-catalog-wrap', 'om-filterpos-' . $filter_position, 'om-cdesign-' . ( 'classic' === $atts['design'] ? 'classic' : 'modern' ) );
 		if ( $has_side ) {
 			$classes[] = 'om-has-sidebar';
 		}
@@ -682,6 +685,9 @@ class OM_Shortcodes {
 		if ( $chips ) {
 			echo '<a class="om-clear-filters" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Clear all', 'om-catalog' ) . '</a>';
 		}
+		// Phones (modern design): the panel is a bottom sheet with a close
+		// button; the head row carries it.
+		echo '<button type="button" class="om-filter-close" aria-label="' . esc_attr__( 'Close filters', 'om-catalog' ) . '">&times;</button>';
 		echo '</div>';
 
 		foreach ( $facets as $facet ) {
@@ -701,6 +707,7 @@ class OM_Shortcodes {
 			}
 			echo '</ul></div>';
 		}
+		echo '<div class="om-filter-sheet-foot"><button type="button" class="om-filter-done">' . esc_html__( 'Show results', 'om-catalog' ) . '</button></div>';
 		echo '</div></details></aside>';
 	}
 
@@ -938,6 +945,16 @@ class OM_Shortcodes {
 		echo '</div>';
 
 		$total_pages = (int) ceil( $total / $per_page );
+		if ( $total_pages > 1 && 'classic' !== $atts['design'] ) {
+			// "You've viewed 9 of 40" with a progress bar.
+			$seen = min( $total, $paged * $per_page );
+			printf(
+				'<div class="om-progress"><p class="om-progress-text">%s</p><span class="om-progress-bar" aria-hidden="true"><span style="width:%s%%"></span></span></div>',
+				/* translators: 1: designs seen so far, 2: total. */
+				esc_html( sprintf( __( "You've viewed %1\$s of %2\$s designs", 'om-catalog' ), number_format_i18n( $seen ), number_format_i18n( $total ) ) ),
+				esc_attr( round( 100 * $seen / max( 1, $total ), 1 ) )
+			);
+		}
 		if ( $total_pages > 1 ) {
 			echo '<nav class="om-pagination" aria-label="' . esc_attr__( 'Pages', 'om-catalog' ) . '">';
 			echo paginate_links( // phpcs:ignore WordPress.Security.EscapeOutput -- core function, escaped internally.

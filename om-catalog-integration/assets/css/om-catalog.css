@@ -4437,7 +4437,7 @@ details.om-acc[open] > .om-acc-title::after {
 	padding: 11px 12px;
 	border-width: 0;
 	border-style: solid;
-	border-radius: var(--om-radius, 0);
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
 	font-size: 11px;
 	font-weight: 500;
 	line-height: 1.2;
@@ -4662,7 +4662,7 @@ details.om-acc[open] > .om-acc-title::after {
 .om-catalog-wrap select,
 .om-diamonds select,
 .om-diamonds input[type="number"] {
-	border-radius: var(--om-radius, 0);
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
 }
 
 .om-single-product .om-btn--text.om-btn--text {
@@ -4671,11 +4671,11 @@ details.om-acc[open] > .om-acc-title::after {
 
 /* Search box + button read as one joined control. */
 .om-catalog-wrap .om-search-input.om-search-input {
-	border-radius: var(--om-radius, 0) 0 0 var(--om-radius, 0);
+	border-radius: var(--om-radius, var(--om-radius-d, 0)) 0 0 var(--om-radius, var(--om-radius-d, 0));
 }
 
 .om-catalog-wrap .om-search-submit.om-search-submit {
-	border-radius: 0 var(--om-radius, 0) var(--om-radius, 0) 0;
+	border-radius: 0 var(--om-radius, var(--om-radius-d, 0)) var(--om-radius, var(--om-radius-d, 0)) 0;
 }
 
 /* Photos, cards, panels, pop-ups. */
@@ -4685,7 +4685,7 @@ details.om-acc[open] > .om-acc-title::after {
 .om-review-summary,
 .om-catalog-wrap .om-suggest,
 .om-empty-state {
-	border-radius: var(--om-radius-lg, 0);
+	border-radius: var(--om-radius-lg, var(--om-radius-lg-d, 0));
 }
 
 .om-catalog-grid .om-card-image {
@@ -4694,13 +4694,13 @@ details.om-acc[open] > .om-acc-title::after {
 }
 
 .om-product-gallery {
-	--om-media-radius: var(--om-radius-lg, 0);
-	--om-thumb-radius: var(--om-radius, 0);
+	--om-media-radius: var(--om-radius-lg, var(--om-radius-lg-d, 0));
+	--om-thumb-radius: var(--om-radius, var(--om-radius-d, 0));
 }
 
 .om-quick-view,
 .om-size-guide {
-	border-radius: var(--om-qv-radius, var(--om-radius-lg, 0));
+	border-radius: var(--om-qv-radius, var(--om-radius-lg, var(--om-radius-lg-d, 0)));
 }
 
 /* Spacing scale on the product page. */
@@ -4944,7 +4944,7 @@ details.om-acc[open] > .om-acc-title::after {
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	text-decoration: none;
-	border-radius: var(--om-radius, 0);
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
 }
 
 .om-catalog-wrap .om-empty-actions .om-btn--solid,
@@ -5007,7 +5007,7 @@ details.om-acc[open] > .om-acc-title::after {
 	min-width: 34px;
 	padding: 3px 8px;
 	border: 1px solid rgba(0, 0, 0, 0.1);
-	border-radius: var(--om-radius, 0);
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
 	background: #fff;
 	font-size: 12px;
 	letter-spacing: 0.04em;
@@ -5165,7 +5165,7 @@ details.om-acc[open] > .om-acc-title::after {
 	display: inline-flex;
 	align-items: center;
 	padding: 7px 14px;
-	border-radius: var(--om-radius, 0);
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
 	background: #f4f3f1;
 }
 
@@ -5224,7 +5224,7 @@ details.om-acc[open] > .om-acc-title::after {
 
 .om-search-standalone .om-search--no-button .om-search-input.om-search-input {
 	border-right: 1px solid #d8d8d8;
-	border-radius: var(--om-radius, 0);
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
 }
 
 .om-search-standalone .om-suggest {
@@ -5271,6 +5271,8 @@ details.om-acc[open] > .om-acc-title::after {
 .om-design-modern {
 	--om-line: rgba(0, 17, 28, 0.09);
 	--om-soft: #faf9f7;
+	--om-radius-d: 6px;
+	--om-radius-lg-d: 14px;
 	--om-r: var(--om-radius, 6px);
 	--om-r-lg: var(--om-radius-lg, 14px);
 }
@@ -5714,4 +5716,424 @@ details.om-acc[open] > .om-acc-title::after {
 .om-design-modern .om-opt--size .om-opt-label {
 	color: var(--om-color-primary, #00111C);
 	font-weight: 500;
+}
+
+/* =========================================================
+   1.13 Catalog pages: Modern design (default; widget > Page design)
+   ========================================================= */
+
+.om-cdesign-modern {
+	--om-line: rgba(0, 17, 28, 0.09);
+	--om-soft: #faf9f7;
+	--om-radius-d: 6px;
+	--om-radius-lg-d: 14px;
+}
+
+.om-filter-close,
+.om-filter-sheet-foot {
+	display: none;
+}
+
+/* Sidebar: one framed panel, rows tint on hover. */
+@media (min-width: 901px) {
+	.om-cdesign-modern .om-filter-panel-body {
+		padding: 22px 20px;
+		border: 1px solid var(--om-line);
+		border-radius: var(--om-radius-lg, var(--om-radius-lg-d, 14px));
+		background: var(--om-color-background, #fff);
+	}
+}
+
+.om-cdesign-modern .om-filter-panel-head {
+	border-bottom-color: var(--om-line);
+}
+
+.om-cdesign-modern .om-filter-group + .om-filter-group {
+	border-top-color: var(--om-line);
+}
+
+.om-cdesign-modern .om-filter-link {
+	margin: 0 -8px;
+	padding: 7px 8px;
+	border-radius: var(--om-radius, var(--om-radius-d, 6px));
+	transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.om-cdesign-modern .om-filter-link:hover {
+	background: var(--om-soft);
+}
+
+.om-cdesign-modern .om-filter-link.is-active {
+	background: var(--om-soft);
+}
+
+.om-cdesign-modern .om-filter-link.is-sub {
+	padding-left: 33px;
+}
+
+/* Top bars: sentence-case pills; on phones one scrollable row each. */
+.om-cdesign-modern .om-filter-pill.om-filter-pill {
+	padding: 8px 16px;
+	border-color: rgba(0, 17, 28, 0.14);
+	border-radius: var(--om-radius, var(--om-radius-d, 6px));
+	font-size: 13px;
+	letter-spacing: 0.02em;
+	text-transform: none;
+	transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.om-cdesign-modern .om-filter-pill.om-filter-pill:hover {
+	transform: translateY(-1px);
+}
+
+.om-cdesign-modern .om-line-bar .om-filter-pill.om-filter-pill {
+	padding: 10px 20px;
+	font-size: 14px;
+}
+
+@media (max-width: 900px) {
+	.om-cdesign-modern .om-filter-bar {
+		flex-wrap: nowrap;
+		justify-content: flex-start;
+		overflow-x: auto;
+		margin-left: -16px;
+		margin-right: -16px;
+		padding: 2px 16px 6px;
+		scrollbar-width: none;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.om-cdesign-modern .om-filter-bar::-webkit-scrollbar {
+		display: none;
+	}
+
+	.om-cdesign-modern .om-filter-bar .om-filter-pill {
+		flex: 0 0 auto;
+		white-space: nowrap;
+	}
+}
+
+/* Dropdown filters, search, sort. */
+.om-cdesign-modern .om-filter-select select,
+.om-cdesign-modern .om-sort-select {
+	border-color: rgba(0, 17, 28, 0.14);
+}
+
+.om-cdesign-modern .om-search-input.om-search-input {
+	border-color: rgba(0, 17, 28, 0.14);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.om-cdesign-modern .om-search-input.om-search-input:focus {
+	border-color: var(--om-color-primary, #00111C);
+	box-shadow: 0 0 0 3px rgba(0, 17, 28, 0.06);
+	outline: none;
+}
+
+.om-cdesign-modern .om-catalog-toolbar {
+	padding-bottom: 14px;
+	border-bottom: 1px solid var(--om-line);
+}
+
+.om-cdesign-modern .om-chip.om-chip {
+	border-radius: 999px;
+	padding: 6px 10px 6px 14px;
+}
+
+/* Cards: framed photos, glassy pill badges, staggered entrance. */
+.om-cdesign-modern .om-catalog-grid .om-card-image {
+	box-shadow: inset 0 0 0 1px var(--om-line);
+}
+
+.om-cdesign-modern .om-catalog-grid .om-card-image img {
+	position: relative;
+	z-index: -1;
+}
+
+.om-cdesign-modern .om-catalog-grid .om-card-image.has-hover .om-card-hover,
+.om-cdesign-modern .om-catalog-grid .om-card-image .om-card-video {
+	z-index: 0;
+}
+
+.om-cdesign-modern .om-card-image .om-badge {
+	padding: 5px 10px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.86);
+	-webkit-backdrop-filter: blur(6px);
+	backdrop-filter: blur(6px);
+	box-shadow: 0 1px 4px rgba(0, 17, 28, 0.08);
+}
+
+.om-cdesign-modern .om-card-title {
+	margin-top: 2px;
+}
+
+.om-cdesign-modern .om-card-price {
+	font-weight: 500;
+}
+
+.om-cdesign-modern .om-catalog-grid.om-fade-in > :nth-child(2) { animation-delay: 0.05s; }
+.om-cdesign-modern .om-catalog-grid.om-fade-in > :nth-child(3) { animation-delay: 0.1s; }
+.om-cdesign-modern .om-catalog-grid.om-fade-in > :nth-child(4) { animation-delay: 0.15s; }
+.om-cdesign-modern .om-catalog-grid.om-fade-in > :nth-child(5) { animation-delay: 0.2s; }
+.om-cdesign-modern .om-catalog-grid.om-fade-in > :nth-child(6) { animation-delay: 0.25s; }
+.om-cdesign-modern .om-catalog-grid.om-fade-in > :nth-child(n+7) { animation-delay: 0.3s; }
+
+/* Progress + pagination. */
+.om-progress {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	margin: calc(48px * var(--om-space, 1)) 0 0;
+	font-family: var(--om-font-body, Inter, sans-serif);
+}
+
+.om-progress-text {
+	margin: 0;
+	font-size: 13px;
+	letter-spacing: 0.02em;
+	color: #8a8a8a;
+}
+
+.om-progress-bar {
+	position: relative;
+	width: min(240px, 60%);
+	height: 2px;
+	overflow: hidden;
+	border-radius: 2px;
+	background: var(--om-line, rgba(0, 17, 28, 0.09));
+}
+
+.om-progress-bar > span {
+	position: absolute;
+	inset: 0 auto 0 0;
+	background: var(--om-color-primary, #00111C);
+	transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.om-cdesign-modern .om-progress + .om-pagination {
+	margin-top: 18px;
+}
+
+.om-cdesign-modern .om-pagination a.page-numbers,
+.om-cdesign-modern .om-pagination span {
+	min-width: 42px;
+	border-color: var(--om-line);
+	border-radius: var(--om-radius, var(--om-radius-d, 6px));
+}
+
+.om-cdesign-modern .om-pagination span.dots {
+	border-color: transparent;
+}
+
+/* Empty state card matches the panels. */
+.om-cdesign-modern .om-empty-state {
+	border: 1px solid var(--om-line);
+}
+
+/* ---------- Phones: filters as a bottom sheet ---------- */
+
+@media (max-width: 900px) {
+	.om-cdesign-modern .om-filter-toggle {
+		border-color: rgba(0, 17, 28, 0.2);
+		border-radius: var(--om-radius, var(--om-radius-d, 6px));
+		text-transform: none;
+		letter-spacing: 0.02em;
+		font-size: 14px;
+	}
+
+	.om-cdesign-modern .om-filter-panel[open] .om-filter-panel-body {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 100001;
+		max-height: 82vh;
+		margin: 0;
+		padding: 8px 20px 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		border: 0;
+		border-radius: 18px 18px 0 0;
+		background: var(--om-color-background, #fff);
+		box-shadow: 0 0 0 100vmax rgba(0, 17, 28, 0.42), 0 -8px 30px rgba(0, 17, 28, 0.2);
+		animation: om-sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.om-cdesign-modern .om-filter-panel[open] .om-filter-panel-body::before {
+		content: "";
+		display: block;
+		width: 40px;
+		height: 4px;
+		margin: 4px auto 14px;
+		border-radius: 2px;
+		background: rgba(0, 17, 28, 0.18);
+	}
+
+	.om-cdesign-modern .om-filter-panel-head {
+		position: sticky;
+		top: -8px;
+		z-index: 1;
+		align-items: center;
+		margin: 0 -20px 16px;
+		padding: 8px 20px 14px;
+		background: var(--om-color-background, #fff);
+	}
+
+	.om-cdesign-modern .om-filter-panel-head .om-clear-filters {
+		margin-left: auto;
+	}
+
+	.om-cdesign-modern .om-filter-panel-body .om-filter-close.om-filter-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		margin: 0 -6px 0 6px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: var(--om-soft);
+		color: var(--om-color-primary, #00111C);
+		font-size: 22px;
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	.om-cdesign-modern .om-filter-sheet-foot {
+		position: sticky;
+		bottom: 0;
+		display: block;
+		margin: 18px -20px 0;
+		padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+		border-top: 1px solid var(--om-line);
+		background: var(--om-color-background, #fff);
+	}
+
+	.om-cdesign-modern .om-filter-sheet-foot .om-filter-done.om-filter-done {
+		width: 100%;
+		min-height: 50px;
+		margin: 0;
+		padding: 0 20px;
+		border: 1px solid var(--om-color-primary, #00111C);
+		border-radius: var(--om-radius, var(--om-radius-d, 6px));
+		background: var(--om-color-primary, #00111C);
+		color: #fff;
+		font-family: inherit;
+		font-size: 13px;
+		font-weight: 500;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+
+	html.om-sheet-open,
+	html.om-sheet-open body {
+		overflow: hidden;
+	}
+}
+
+@keyframes om-sheet-up {
+	from { transform: translateY(40px); opacity: 0.4; }
+	to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-cdesign-modern .om-catalog-grid.om-fade-in > * {
+		animation-delay: 0s !important;
+	}
+
+	.om-cdesign-modern .om-filter-panel[open] .om-filter-panel-body {
+		animation: none;
+	}
+}
+
+/* Sheet-only controls stay hidden outside the phone sheet, whatever the
+   theme does to buttons. */
+.om-catalog-wrap .om-filter-close.om-filter-close,
+.om-catalog-wrap .om-filter-sheet-foot.om-filter-sheet-foot {
+	display: none;
+}
+
+@media (max-width: 900px) {
+	.om-cdesign-modern .om-filter-panel[open] .om-filter-close.om-filter-close {
+		display: inline-flex;
+	}
+
+	.om-cdesign-modern .om-filter-panel[open] .om-filter-sheet-foot.om-filter-sheet-foot {
+		display: block;
+	}
+
+	/* A sticky sidebar keeps the fixed sheet inside its own layer; lift
+	   the sidebar above the page while the sheet is open. */
+	html.om-sheet-open .om-cdesign-modern .om-filter-sidebar {
+		position: relative !important;
+		top: auto !important;
+		z-index: 100001;
+	}
+}
+
+/* ---------- Inquiry: subject choice ---------- */
+
+.om-inquiry .om-field--subject {
+	min-width: 0;
+	margin: 0 0 18px;
+	padding: 0;
+	border: 0;
+}
+
+.om-subject-choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.om-subject-choice {
+	position: relative;
+	display: inline-flex;
+	margin: 0;
+	cursor: pointer;
+}
+
+.om-subject-choice input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.om-subject-choice span {
+	display: inline-flex;
+	align-items: center;
+	min-height: 38px;
+	padding: 0 14px;
+	border: 1px solid rgba(0, 17, 28, 0.14);
+	border-radius: var(--om-radius, var(--om-radius-d, 0));
+	font-size: 13px;
+	letter-spacing: 0.01em;
+	text-transform: none;
+	color: var(--om-color-text, #464646);
+	transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.om-subject-choice:hover span {
+	border-color: var(--om-color-primary, #00111C);
+}
+
+.om-subject-choice:active span {
+	transform: scale(0.97);
+}
+
+.om-subject-choice input:checked + span {
+	background: var(--om-color-primary, #00111C);
+	border-color: var(--om-color-primary, #00111C);
+	color: #fff;
+}
+
+.om-subject-choice input:focus-visible + span {
+	outline: 2px solid var(--om-color-primary, #00111C);
+	outline-offset: 2px;
 }

@@ -714,6 +714,56 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'inquiry_subject_mode',
+			array(
+				'label'     => __( 'Subject choice', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '',
+				'separator' => 'before',
+				'options'   => array(
+					''     => __( 'As in Settings', 'om-catalog' ),
+					'show' => __( 'Show on the form', 'om-catalog' ),
+					'hide' => __( 'Hide (use the preselected one)', 'om-catalog' ),
+				),
+				'condition' => array( 'inquiry_source' => 'builtin' ),
+			)
+		);
+
+		$this->add_control(
+			'inquiry_subjects',
+			array(
+				'label'       => __( 'Subjects', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 4,
+				'placeholder' => "Price request\nBook a viewing\nCustom design",
+				'description' => __( 'One per line. Empty = the list in Settings.', 'om-catalog' ),
+				'condition'   => array( 'inquiry_source' => 'builtin' ),
+			)
+		);
+
+		$this->add_control(
+			'inquiry_subject',
+			array(
+				'label'       => __( 'Preselected subject', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'description' => __( 'Must match one of the subjects. Buttons can also preselect: link to #om-inquiry?subject=Book a viewing', 'om-catalog' ),
+				'condition'   => array( 'inquiry_source' => 'builtin' ),
+			)
+		);
+
+		$this->add_control(
+			'inquiry_subject_tpl',
+			array(
+				'label'       => __( 'Email subject line', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'label_block' => true,
+				'placeholder' => '{subject}: {piece} — {name}',
+				'description' => __( 'Tokens: {subject} {piece} {title} {style} {name} {email} {phone} {price} {site}. Empty = Settings.', 'om-catalog' ),
+				'condition'   => array( 'inquiry_source' => 'builtin' ),
+			)
+		);
+
+		$this->add_control(
 			'inquiry_fields_source',
 			array(
 				'label'       => __( 'Form fields', 'om-catalog' ),
@@ -1946,6 +1996,17 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		}
 		if ( '' !== trim( (string) ( $settings['inquiry_button'] ?? '' ) ) ) {
 			$inquiry['button'] = (string) $settings['inquiry_button'];
+		}
+		$subject_mode = (string) ( $settings['inquiry_subject_mode'] ?? '' );
+		if ( '' !== $subject_mode ) {
+			$inquiry['subject_field'] = 'show' === $subject_mode;
+		}
+		if ( '' !== trim( (string) ( $settings['inquiry_subjects'] ?? '' ) ) ) {
+			$inquiry['subjects'] = (string) $settings['inquiry_subjects'];
+		}
+		$inquiry['subject'] = (string) ( $settings['inquiry_subject'] ?? '' );
+		if ( '' !== trim( (string) ( $settings['inquiry_subject_tpl'] ?? '' ) ) ) {
+			$inquiry['subject_tpl'] = (string) $settings['inquiry_subject_tpl'];
 		}
 		if ( 'custom' === ( $settings['inquiry_source'] ?? 'builtin' ) ) {
 			$inquiry['custom_form'] = (string) ( $settings['inquiry_shortcode'] ?? '' );
