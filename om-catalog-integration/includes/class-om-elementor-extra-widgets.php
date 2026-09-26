@@ -1255,6 +1255,64 @@ class OM_Elementor_Reels_Widget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'colors',
+			array(
+				'label'       => __( 'Metal colour dots', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'separator'   => 'before',
+				'description' => __( 'Yellow / White / Rose dots that switch the story to that metal (its video, or its photo) where a design has them, and open the design in that metal.', 'om-catalog' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Content: end screen ---------- */
+
+		$this->start_controls_section( 'section_end', array( 'label' => __( 'After the last story', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'end_screen',
+			array(
+				'label'       => __( '"More like this" screen', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Instead of closing, the player ends with 4 more designs, Watch again and Browse all.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'more_title',
+			array(
+				'label'       => __( 'Title', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'More like this', 'om-catalog' ),
+				'condition'   => array( 'end_screen' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'browse_text',
+			array(
+				'label'       => __( '"Browse all" text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Browse all', 'om-catalog' ),
+				'condition'   => array( 'end_screen' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'browse_url',
+			array(
+				'label'       => __( '"Browse all" link', 'om-catalog' ),
+				'type'        => Controls_Manager::URL,
+				'placeholder' => home_url( '/engagement-rings/' ),
+				'description' => __( 'Empty: the search results page for this line (Settings > OM Catalog > Search), if one is set; otherwise the button is left out.', 'om-catalog' ),
+				'condition'   => array( 'end_screen' => 'yes' ),
+			)
+		);
+
 		$this->end_controls_section();
 
 		/* ---------- Style: bubbles ---------- */
@@ -1359,6 +1417,11 @@ class OM_Elementor_Reels_Widget extends Widget_Base {
 				'max_length'  => (int) ( $s['max_length'] ?? 15 ),
 				'sound'       => 'yes' === ( $s['sound'] ?? '' ) ? 'yes' : '',
 				'auto_next'   => 'yes' === ( $s['auto_next'] ?? 'yes' ) ? 'yes' : '',
+				'colors'      => 'yes' === ( $s['colors'] ?? 'yes' ) ? 'yes' : '',
+				'end_screen'  => 'yes' === ( $s['end_screen'] ?? 'yes' ) ? 'yes' : '',
+				'more_title'  => (string) ( $s['more_title'] ?? '' ),
+				'browse_text' => (string) ( $s['browse_text'] ?? '' ),
+				'browse_url'  => (string) ( $s['browse_url']['url'] ?? '' ),
 			)
 		);
 	}

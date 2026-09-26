@@ -61,6 +61,9 @@ class OM_Engage {
 			$counts = array_slice( $counts, 0, self::MAX_TRACKED, true );
 		}
 		update_option( self::VIEWS_OPTION, $counts, false );
+		if ( class_exists( 'OM_Stats' ) ) {
+			OM_Stats::add( 'view', $key );
+		}
 		wp_send_json_success();
 	}
 
@@ -190,6 +193,19 @@ class OM_Engage {
 		}
 		if ( ! $items ) {
 			wp_send_json_error( array( 'message' => __( 'Nothing to compare yet.', 'om-catalog' ) ) );
+		}
+		if ( class_exists( 'OM_Stats' ) ) {
+			$keys = array();
+			foreach ( $items as $item ) {
+				$keys[] = $item[0] . '|' . strtoupper( $item[1] );
+				OM_Stats::add( 'compare', end( $keys ) );
+			}
+			sort( $keys );
+			for ( $a = 0; $a < count( $keys ); $a++ ) {
+				for ( $b = $a + 1; $b < count( $keys ); $b++ ) {
+					OM_Stats::add( 'compare_pair', $keys[ $a ] . ' + ' . $keys[ $b ] );
+				}
+			}
 		}
 
 		$priced = om_markup_is_configured();

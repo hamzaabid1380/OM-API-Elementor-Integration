@@ -200,6 +200,7 @@ class OM_Settings {
 		?>
 		<div class="wrap">
 			<h1>Overnight Mountings Catalog Settings</h1>
+			<p><a class="button" href="<?php echo esc_url( admin_url( 'index.php?page=om-insights' ) ); ?>">See what visitors do: Catalog insights →</a></p>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'om_catalog_settings' ); ?>
 

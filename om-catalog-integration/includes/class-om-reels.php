@@ -59,6 +59,16 @@ class OM_Reels {
 			'max_length'  => 15,
 			'sound'       => '',
 			'auto_next'   => 'yes',
+			// Metal colour dots in the player (where a design has photos or
+			// videos per colour).
+			'colors'      => 'yes',
+			// After the last story: "More like this" (4 designs), Watch
+			// again and Browse all (browse_url; empty = the search results
+			// page for the line, when one is set).
+			'end_screen'  => 'yes',
+			'more_title'  => '',
+			'browse_text' => '',
+			'browse_url'  => '',
 		);
 	}
 
@@ -71,7 +81,9 @@ class OM_Reels {
 		$line  = sanitize_title( (string) $atts['line'] );
 		$line  = '' !== $line ? $line : 'engagement-rings';
 		$count = max( 1, min( 16, (int) $atts['count'] ) );
-		$items = $this->items( $atts, $line, $count );
+		$set   = $this->items( $atts, $line, $count );
+		$items = $set['items'];
+		$more  = 'yes' === $atts['end_screen'] ? $set['more'] : array();
 		if ( ! $items ) {
 			// Nothing with a video: the editor says so, visitors see nothing.
 			return class_exists( '\Elementor\Plugin' ) && \Elementor\Plugin::$instance->editor && \Elementor\Plugin::$instance->editor->is_edit_mode()
@@ -90,6 +102,13 @@ class OM_Reels {
 			'max'    => max( 5, min( 60, (int) $atts['max_length'] ) ),
 			'sound'  => 'yes' === $atts['sound'],
 			'next'   => 'yes' === $atts['auto_next'],
+			'more'   => $more,
+			'end'    => ! empty( $more ),
+			'moreTitle'  => '' !== trim( (string) $atts['more_title'] ) ? (string) $atts['more_title'] : __( 'More like this', 'om-catalog' ),
+			'browse'     => $this->browse_url( $atts, $line ),
+			'browseText' => '' !== trim( (string) $atts['browse_text'] ) ? (string) $atts['browse_text'] : __( 'Browse all', 'om-catalog' ),
+			'again'      => __( 'Watch again', 'om-catalog' ),
+			'metal'      => __( 'Metal colour', 'om-catalog' ),
 		);
 
 		ob_start();
@@ -120,6 +139,15 @@ class OM_Reels {
 		return ob_get_clean();
 	}
 
+	/** Where "Browse all" goes: the widget's link, else the search results page for the line. */
+	private function browse_url( $atts, $line ) {
+		if ( '' !== trim( (string) $atts['browse_url'] ) ) {
+			return esc_url_raw( (string) $atts['browse_url'] );
+		}
+		$page = (int) get_option( 'om_search_results_page', 0 );
+		return $page ? add_query_arg( 'om_line', $line, get_permalink( $page ) ) : '';
+	}
+
 	/** The words under a bubble. */
 	private function label( $item, $mode ) {
 		switch ( $mode ) {
@@ -139,11 +167,13 @@ class OM_Reels {
 	/**
 	 * The designs for the row, each with a playable video.
 	 *
-	 * @return array[] { l line, s style, t title, v variant, sh shape,
-	 *                 u url, i image, src video, k file|embed }
+	 * @return array { items: { l line, s style, t title, v variant, sh shape,
+	 *               u url, i image, src video, k file|embed|photo,
+	 *               c colours [ { n, sw, k, src, i } ] }[], more: { l, s, t,
+	 *               u, i }[] (designs for "More like this") }
 	 */
 	private function items( $atts, $line, $count ) {
-		$key    = 'om_reels_' . md5( wp_json_encode( array( $atts['source'], $line, $atts['style'], $atts['shape'], $atts['styles'], $count ) ) );
+		$key    = 'om_reels2_' . md5( wp_json_encode( array( $atts['source'], $line, $atts['style'], $atts['shape'], $atts['styles'], $count, $atts['colors'] ) ) );
 		$cached = get_transient( $key );
 		if ( is_array( $cached ) ) {
 			return $cached;
@@ -204,7 +234,7 @@ class OM_Reels {
 					break;
 				}
 			}
-			$items[] = array(
+			$item = array(
 				'l'   => $line,
 				's'   => $sn,
 				't'   => (string) ( $product['title'] ?? $sn ),
@@ -215,12 +245,85 @@ class OM_Reels {
 				'src' => $video[0],
 				'k'   => $video[1],
 			);
+			if ( 'yes' === $atts['colors'] ) {
+				$colours = $this->colours( $product, $line, $item );
+				if ( $colours ) {
+					$item['c'] = $colours;
+				}
+			}
+			$items[] = $item;
 			if ( count( $items ) >= $count ) {
 				break;
 			}
 		}
-		set_transient( $key, $items, 30 * MINUTE_IN_SECONDS );
-		return $items;
+
+		// "More like this": designs from the same pool that aren't stories.
+		$more = array();
+		$pool = $products;
+		if ( count( $pool ) - count( $items ) < 4 ) {
+			$data = OM_Shortcodes::fetch_listing( $line, array( 'limit' => 24 ) );
+			$pool = array_merge( $pool, is_wp_error( $data ) ? array() : (array) ( $data['products'] ?? array() ) );
+		}
+		foreach ( $pool as $product ) {
+			$sn = (string) ( $product['style_number'] ?? '' );
+			if ( '' === $sn || isset( $seen[ strtoupper( $sn ) ] ) ) {
+				continue;
+			}
+			$seen[ strtoupper( $sn ) ] = true;
+			$more[]                    = array(
+				'l' => $line,
+				's' => $sn,
+				't' => (string) ( $product['title'] ?? $sn ),
+				'u' => om_product_url( $line, $sn ),
+				'i' => (string) om_card_images( $product )[0],
+			);
+			if ( count( $more ) >= 4 ) {
+				break;
+			}
+		}
+
+		$set = array( 'items' => $items, 'more' => $more );
+		set_transient( $key, $set, 30 * MINUTE_IN_SECONDS );
+		return $set;
+	}
+
+	/**
+	 * A story's metal colours: each with its own video when there is one,
+	 * else its first photo; the default colour keeps the story's video.
+	 * Empty when fewer than two colours have their own media.
+	 */
+	private function colours( $product, $line, $item ) {
+		$default = (string) ( $product['default_color'] ?? '' );
+		$media   = om_product_media( $product, om_colour_variant_images( $product, $line ) );
+		$out     = array();
+		$own     = 0;
+		foreach ( (array) ( $product['colors'] ?? array() ) as $colour ) {
+			$colour = (string) $colour;
+			$entry  = null;
+			foreach ( $media['videos'] as $video ) {
+				if ( 0 === strcasecmp( $video['color'], $colour ) ) {
+					$pick  = $this->video_from( array( $video['url'] ) );
+					$entry = $pick ? array( 'k' => $pick[1], 'src' => $pick[0], 'i' => $item['i'] ) : null;
+					break;
+				}
+			}
+			if ( ! $entry && $media['by_color'] ) {
+				foreach ( $media['images'] as $image ) {
+					if ( 0 === strcasecmp( $image['color'], $colour ) ) {
+						$entry = 0 === strcasecmp( $colour, $default ) ? array( 'k' => $item['k'], 'src' => $item['src'], 'i' => $image['url'] ) : array( 'k' => 'photo', 'src' => '', 'i' => $image['url'] );
+						break;
+					}
+				}
+			}
+			if ( ! $entry && 0 === strcasecmp( $colour, $default ) ) {
+				$entry = array( 'k' => $item['k'], 'src' => $item['src'], 'i' => $item['i'] );
+			}
+			if ( $entry ) {
+				$own++;
+				$out[] = array( 'n' => $colour, 'sw' => om_swatch_class( $colour ), 'd' => 0 === strcasecmp( $colour, $default ) ) + $entry;
+			}
+		}
+		return $own >= 2 ? $out : array();
 	}
 
 	/**
@@ -230,7 +333,11 @@ class OM_Reels {
 	 * @return array|null [ src, file|embed ]
 	 */
 	private function video( $product ) {
-		$videos = om_product_videos( $product );
+		return $this->video_from( om_product_videos( $product ) );
+	}
+
+	/** The best of a list of video URLs (see video()). */
+	private function video_from( $videos ) {
 		foreach ( $videos as $url ) {
 			if ( om_is_video_file( $url ) ) {
 				return array( $url, 'file' );

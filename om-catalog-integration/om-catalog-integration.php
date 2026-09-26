@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.19.0
+ * Version: 1.20.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.19.0' );
+define( 'OM_CATALOG_VERSION', '1.20.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -29,6 +29,7 @@ require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-ring-builder.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-related.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-reels.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-stats.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-warmer.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-elementor-widgets.php';
 
@@ -49,6 +50,7 @@ function om_catalog_init() {
 	OM_Ring_Builder::instance();
 	OM_Related::instance();
 	OM_Reels::instance();
+	OM_Stats::instance();
 	OM_Warmer::instance();
 	OM_Elementor_Widgets::instance();
 }
@@ -312,6 +314,9 @@ function om_popular_searches() {
  */
 function om_record_search( $query ) {
 	$query = trim( mb_strtolower( preg_replace( '/\s+/', ' ', (string) $query ) ) );
+	if ( class_exists( 'OM_Stats' ) && mb_strlen( $query ) >= 2 ) {
+		OM_Stats::add( 'search', $query );
+	}
 	if ( '0' === get_option( 'om_track_searches', '1' ) || mb_strlen( $query ) < 2 || mb_strlen( $query ) > 40 ) {
 		return;
 	}

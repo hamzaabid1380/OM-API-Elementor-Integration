@@ -1098,6 +1098,10 @@ class OM_Shortcodes {
 	 */
 	private function render_empty( $atts, $state, $chips, $clear_url, $url ) {
 		$searching = '' !== $state['q'];
+		// A search that found nothing: worth knowing (Catalog insights).
+		if ( $searching && class_exists( 'OM_Stats' ) && ! wp_doing_cron() && ( wp_doing_ajax() || ! is_admin() ) ) {
+			OM_Stats::add( 'search_zero', mb_strtolower( trim( preg_replace( '/\s+/', ' ', (string) $state['q'] ) ) ) );
+		}
 		echo '<div class="om-empty-state om-empty" role="status">';
 		echo '<span class="om-empty-icon" aria-hidden="true"></span>';
 		echo '<h3 class="om-empty-title">' . esc_html(

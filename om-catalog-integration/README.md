@@ -611,7 +611,49 @@ max_length="15" sound="" auto_next="yes"]`
   width, shadow. Shortcode: `sticky_tools="yes|no" sticky_on="all|mobile|desktop"
   sticky_parts="filters,search,count,chips,sort,top"`.
 
+## Catalog insights (1.20)
+
+**Dashboard > Catalog insights** shows what visitors do, for the last 7,
+30 or 90 days, with the change against the period before:
+
+- Headline numbers: product views, searches, searches with no results,
+  inquiries, reel views and reel taps to the product.
+- Daily charts of product views and inquiries (hover for the day's
+  number, or "Show as table").
+- **Most viewed designs** — with their inquiries and inquiry rate.
+- **Searches with no results** — what people look for and don't find,
+  with a "Try it" link (ideas for designs to add or words for titles).
+- **Top searches**, **designs that get inquiries** (and the subjects
+  chosen), **most compared pairs**, and **story reels** (views, taps, tap
+  rate).
+- **Download CSV**, **Pause counting** and **Reset data**. A small "last 7
+  days" box also appears on the WordPress Dashboard.
+
+Only anonymous counts are kept (no visitor, IP or personal data), in daily
+buckets for 120 days.
+
+## Reels: metal colours & "More like this" (1.20)
+
+- **Metal colour dots** in the story player (Yellow / White / Rose): the
+  story switches to that metal — its own video where there is one, else
+  its photo — the choice carries on to the next stories, and "View this
+  design" opens the design in that metal. Widget: Player > Metal colour
+  dots (`colors="yes"`).
+- **After the last story** the player shows "More like this": 4 more
+  designs with prices, **Watch again** and **Browse all** (to your link, or
+  the search results page for the line). Widget: After the last story —
+  on/off, title, button text and link (`end_screen`, `more_title`,
+  `browse_text`, `browse_url`).
+
 ## Changelog
+
+### 1.20.0
+- Catalog insights dashboard (views, searches, no-result searches,
+  inquiries and subjects, compares and pairs, reel views and taps;
+  charts, tables, CSV, pause/reset, Dashboard summary box). Counts only.
+- Story reels: metal colour dots (video/photo per metal, carried to the
+  product page) and a "More like this" end screen with Watch again and
+  Browse all.
 
 ### 1.19.0
 - New OM Story Reels widget / [om_reels]: video stories of designs with a

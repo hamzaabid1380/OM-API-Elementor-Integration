@@ -679,6 +679,12 @@ class OM_Inquiry {
 			if ( $data['pair'] ) {
 				update_post_meta( $post_id, '_om_pair', $data['pair'] );
 			}
+			if ( class_exists( 'OM_Stats' ) ) {
+				OM_Stats::add( 'inquiry', '' !== $data['line'] && '' !== $data['style'] ? $data['line'] . '|' . strtoupper( $data['style'] ) : '(general)' );
+				if ( '' !== $data['subject'] ) {
+					OM_Stats::add( 'inquiry_subject', $data['subject'] );
+				}
+			}
 		}
 
 		$to      = sanitize_email( (string) get_option( 'om_inquiry_email', '' ) );

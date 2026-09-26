@@ -2101,6 +2101,7 @@
 			.append('<div class="om-rv-media"></div>')
 			.append(reelButton('om-rv-nav om-rv-prev', t('prevStory', 'Previous')), reelButton('om-rv-nav om-rv-next', t('nextStory', 'Next')));
 		var $foot = $('<div class="om-rv-foot"></div>')
+			.append($('<div class="om-rv-colors" role="group" hidden></div>').attr('aria-label', conf.metal || 'Metal colour'))
 			.append('<p class="om-rv-style"></p><p class="om-rv-title"></p><p class="om-rv-price"></p>')
 			.append($('<a class="om-rv-cta"></a>').text(conf.button || 'View this design'));
 		$panel.append($bars, $top, $stage, $foot, '<p class="om-visually-hidden om-rv-live" aria-live="polite"></p>');
@@ -2112,7 +2113,7 @@
 		});
 		$v.append($panel).appendTo(document.body);
 		$('html').addClass('om-dialog-open');
-		reel = { $v: $v, conf: conf, i: -1, opener: opener, muted: !conf.sound, paused: false, elapsed: 0, last: 0, raf: 0, held: false };
+		reel = { $v: $v, conf: conf, i: -1, opener: opener, muted: !conf.sound, paused: false, elapsed: 0, last: 0, raf: 0, held: false, color: '' };
 		showReel(index);
 		setTimeout(function () { $v.find('.om-rv-close').trigger('focus'); }, 30);
 		requestAnimationFrame(function () { $v.addClass('is-open'); });
@@ -2122,11 +2123,42 @@
 		return reel ? reel.$v.find('.om-rv-media video')[0] : null;
 	}
 
+	// The media for a story in the metal colour picked (when it has one).
+	function reelEntry(item) {
+		if (reel.color && item.c) {
+			for (var n = 0; n < item.c.length; n++) {
+				if (item.c[n].n.toLowerCase() === reel.color.toLowerCase()) { return item.c[n]; }
+			}
+		}
+		return { k: item.k, src: item.src, i: item.i };
+	}
+
+	function reelLink(item) {
+		var entry = item.c && reel.color ? reelEntry(item) : null;
+		if (!entry || !entry.n) { return item.u; }
+		try { var url = new URL(item.u, window.location.href); url.searchParams.set('om_color', entry.n); return url.toString(); } catch (err) { return item.u; }
+	}
+
+	// Anonymous counts for Catalog insights: a story seen (once per visit)
+	// or its button tapped.
+	function trackReel(item, kind) {
+		if (!cfg.ajaxUrl) { return; }
+		var key = 'om_reel_' + kind + '_' + item.l + '|' + item.s;
+		try { if (kind === 'view') { if (window.sessionStorage.getItem(key)) { return; } window.sessionStorage.setItem(key, '1'); } } catch (err) { /* count anyway */ }
+		var data = new FormData();
+		data.append('action', 'om_track_reel'); data.append('line', item.l); data.append('style', item.s); data.append('kind', kind);
+		if (navigator.sendBeacon) { navigator.sendBeacon(cfg.ajaxUrl, data); } else { $.post(cfg.ajaxUrl, { action: 'om_track_reel', line: item.l, style: item.s, kind: kind }); }
+	}
+
 	function showReel(i) {
 		if (!reel) { return; }
 		var items = reel.conf.items;
 		if (i < 0) { i = 0; }
-		if (i >= items.length) { closeReels(); return; }
+		if (i >= items.length) {
+			if (reel.conf.end) { showReelEnd(); } else { closeReels(); }
+			return;
+		}
+		reel.$v.removeClass('is-end').find('.om-rv-end').remove();
 		reel.i = i;
 		reel.elapsed = 0;
 		reel.last = 0;
@@ -2140,34 +2172,43 @@
 		$v.find('.om-rv-name').text(item.t);
 		$v.find('.om-rv-title').text(item.t);
 		$v.find('.om-rv-style').text(reel.conf.style ? t('style', 'Style') + ' ' + item.s : '').prop('hidden', !reel.conf.style);
-		$v.find('.om-rv-cta').attr('href', item.u);
+		$v.find('.om-rv-cta').attr('href', reelLink(item));
+		// Metal colour dots.
+		var $colors = $v.find('.om-rv-colors').empty().prop('hidden', !item.c);
+		if (item.c) {
+			var current = reelEntry(item).n || (item.c.filter(function (c) { return c.d; })[0] || item.c[0]).n;
+			item.c.forEach(function (c) {
+				$colors.append($('<button type="button" class="om-rv-color"></button>').addClass(c.sw).attr({ 'data-om-color': c.n, 'aria-label': c.n, title: c.n, 'aria-pressed': c.n === current ? 'true' : 'false' }));
+			});
+		}
 		$v.find('.om-rv-live').text(t('storyOf', 'Story %1$s of %2$s').replace('%1$s', i + 1).replace('%2$s', items.length) + ': ' + item.t);
 		$v.find('.om-rv-prev').prop('disabled', i === 0);
 		syncReelTools();
 
 		// The media: a file plays in <video> (timed by its own length), an
 		// embed in an iframe (timed by the story duration).
+		var entry = reelEntry(item);
 		var $media = $v.find('.om-rv-media').empty();
-		if (item.k === 'file') {
+		if (entry.k === 'file') {
 			var video = document.createElement('video');
 			video.className = 'om-rv-video';
 			video.playsInline = true;
 			video.setAttribute('playsinline', '');
 			video.muted = reel.muted;
 			video.preload = 'auto';
-			if (item.i) { video.poster = item.i; }
-			video.src = item.src;
+			if (entry.i) { video.poster = entry.i; }
+			video.src = entry.src;
 			video.addEventListener('ended', function () { if (reel && reel.conf.next) { showReel(reel.i + 1); } else if (reel) { video.currentTime = 0; video.play(); } });
-			video.addEventListener('error', function () { item.k = 'photo'; showReel(reel ? reel.i : 0); });
+			video.addEventListener('error', function () { if (entry === item || !item.c) { item.k = 'photo'; } else { entry.k = 'photo'; } showReel(reel ? reel.i : 0); });
 			$media.append(video);
 			var p = video.play();
 			if (p && p.catch) { p.catch(function () { /* autoplay refused: the poster shows, tap to play */ }); }
-		} else if (item.k === 'embed') {
-			var src = item.src;
+		} else if (entry.k === 'embed') {
+			var src = entry.src;
 			if (!reel.muted) { src = src.replace('mute=1', 'mute=0').replace('muted=1', 'muted=0'); }
 			$media.append($('<iframe class="om-rv-embed" allow="autoplay; fullscreen; picture-in-picture" tabindex="-1"></iframe>').attr({ src: src, title: item.t }));
 		} else {
-			$media.append($('<img class="om-rv-photo" alt="" />').attr('src', item.i));
+			$media.append($('<img class="om-rv-photo" alt="" />').attr('src', entry.i || item.i));
 		}
 
 		// Price, once per design.
@@ -2193,6 +2234,7 @@
 		}
 
 		markReelSeen(item.l + '|' + item.s);
+		trackReel(item, 'view');
 		cancelAnimationFrame(reel.raf);
 		reel.raf = requestAnimationFrame(tickReel);
 	}
@@ -2202,9 +2244,10 @@
 	function tickReel(now) {
 		if (!reel) { return; }
 		var item = reel.conf.items[reel.i];
+		if (!item) { return; }
 		var pct = 0;
 		var video = reelMedia();
-		if (item.k === 'file' && video) {
+		if (reelEntry(item).k === 'file' && video) {
 			var length = Math.min(video.duration || reel.conf.max, reel.conf.max);
 			pct = length ? video.currentTime / length : 0;
 			if (video.currentTime >= reel.conf.max && reel.conf.next) { showReel(reel.i + 1); return; }
@@ -2253,12 +2296,63 @@
 	});
 
 	$(document).on('click', '.om-rv-close', function () { closeReels(); });
+
+	// Metal colour: this story (and the next ones) in that colour.
+	$(document).on('click', '.om-rv-color', function () {
+		if (!reel) { return; }
+		reel.color = this.getAttribute('data-om-color') || '';
+		showReel(reel.i);
+		reel.$v.find('.om-rv-color[data-om-color="' + reel.color + '"]').trigger('focus');
+	});
+
+	$(document).on('click', '.om-rv-cta', function () {
+		if (reel && reel.conf.items[reel.i]) { trackReel(reel.conf.items[reel.i], 'tap'); }
+	});
+
+	$(document).on('click', '.om-rv-again', function () { showReel(0); });
+
+	// After the last story: "More like this", Watch again, Browse all.
+	function showReelEnd() {
+		var conf = reel.conf;
+		var $v = reel.$v;
+		cancelAnimationFrame(reel.raf);
+		var video = reelMedia();
+		if (video) { video.pause(); }
+		reel.i = conf.items.length;
+		$v.find('.om-rv-media').empty();
+		$v.find('.om-rv-bar').addClass('is-done').removeClass('is-active').find('.om-rv-fill').css('transform', 'scaleX(1)');
+		$v.addClass('is-end').removeClass('is-paused').find('.om-rv-end').remove();
+		var $grid = $('<div class="om-rv-more-grid"></div>');
+		conf.more.forEach(function (m) {
+			$grid.append($('<a class="om-rv-more"></a>').attr('href', m.u)
+				.append($('<span class="om-rv-more-img"></span>').append(m.i ? $('<img alt="" loading="lazy" />').attr('src', m.i) : null))
+				.append($('<span class="om-rv-more-title"></span>').text(m.t))
+				.append(conf.price ? $('<span class="om-rv-more-price"></span>').attr({ 'data-om-line': m.l, 'data-om-style': m.s }) : null));
+		});
+		var $actions = $('<div class="om-rv-end-actions"></div>').append($('<button type="button" class="om-rv-again"></button>').text(conf.again || 'Watch again'));
+		if (conf.browse) { $actions.append($('<a class="om-rv-browse"></a>').attr('href', conf.browse).text(conf.browseText || 'Browse all')); }
+		var $end = $('<div class="om-rv-end" role="group"></div>').attr('aria-labelledby', 'om-rv-end-title')
+			.append($('<p class="om-rv-end-title" id="om-rv-end-title"></p>').text(conf.moreTitle || 'More like this'), $grid, $actions);
+		$v.find('.om-rv-panel').append($end);
+		$v.find('.om-rv-live').text(conf.moreTitle || 'More like this');
+		setTimeout(function () { $end.find('a, button').first().trigger('focus'); }, 30);
+		if (conf.price && cfg.ajaxUrl) {
+			var byLine = {};
+			conf.more.forEach(function (m) { (byLine[m.l] = byLine[m.l] || []).push(m.s); });
+			$.each(byLine, function (line, styles) {
+				$.post(cfg.ajaxUrl, { action: 'om_card_prices', line: line, styles: styles }).done(function (r) {
+					var prices = (r && r.success && r.data.prices) || {};
+					$end.find('.om-rv-more-price[data-om-line="' + line + '"]').each(function () { $(this).text(prices[$(this).attr('data-om-style')] || ''); });
+				});
+			});
+		}
+	}
 	$(document).on('click', '.om-rv-pause', function () { pauseReel(!(reel && reel.paused)); });
 	$(document).on('click', '.om-rv-sound', function () {
 		if (!reel) { return; }
 		reel.muted = !reel.muted;
 		var video = reelMedia();
-		if (video) { video.muted = reel.muted; } else if (reel.conf.items[reel.i].k === 'embed') { showReel(reel.i); }
+		if (video) { video.muted = reel.muted; } else if (reel.conf.items[reel.i] && reelEntry(reel.conf.items[reel.i]).k === 'embed') { showReel(reel.i); }
 		syncReelTools();
 	});
 	$(document).on('click', '.om-rv-prev, .om-rv-next', function () {
@@ -2297,7 +2391,7 @@
 	$(document).on('keydown', function (e) {
 		if (!reel) { return; }
 		if (e.key === 'Escape') { e.preventDefault(); closeReels(); return; }
-		if (e.key === 'ArrowRight') { e.preventDefault(); showReel(reel.i + 1); return; }
+		if (e.key === 'ArrowRight') { e.preventDefault(); if (reel.i < reel.conf.items.length) { showReel(reel.i + 1); } return; }
 		if (e.key === 'ArrowLeft') { e.preventDefault(); showReel(reel.i - 1); return; }
 		if (e.key === ' ' && !$(e.target).is('a, button')) { e.preventDefault(); pauseReel(!reel.paused); return; }
 		if (e.key === 'Tab') {
