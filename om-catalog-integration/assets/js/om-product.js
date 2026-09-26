@@ -1653,7 +1653,7 @@
 
 	function openQuickView(line, style, trigger) {
 		if (!qv) {
-			qv = $('<dialog class="om-quick-view" aria-label="' + t('quickView', 'Quick view') + '"><div class="om-qv-inner"><button type="button" class="om-qv-close" aria-label="' + t('close', 'Close') + '">&times;</button><div class="om-qv-body"></div></div></dialog>').appendTo(document.body);
+			qv = $('<dialog class="om-quick-view' + (cfg.refined ? ' om-refined' : '') + '" aria-label="' + t('quickView', 'Quick view') + '"><div class="om-qv-inner"><button type="button" class="om-qv-close" aria-label="' + t('close', 'Close') + '">&times;</button><div class="om-qv-body"></div></div></dialog>').appendTo(document.body);
 			qv.on('click', function (e) { if (e.target === qv[0]) { closeQuickView(); } });
 			qv.find('.om-qv-close').on('click', closeQuickView);
 			qv[0].addEventListener('close', function () {
@@ -1903,7 +1903,7 @@
 			return;
 		}
 		if (!compareTray) {
-			compareTray = $('<div class="om-compare-tray" role="region"></div>').attr('aria-label', t('compare', 'Compare')).appendTo(document.body);
+			compareTray = $('<div class="om-compare-tray' + (cfg.refined ? ' om-refined' : '') + '" role="region"></div>').attr('aria-label', t('compare', 'Compare')).appendTo(document.body);
 		}
 		var $items = $('<ul class="om-compare-items"></ul>');
 		list.forEach(function (x) {
@@ -1982,7 +1982,7 @@
 
 	function openCompare() {
 		if (!compareDialog) {
-			compareDialog = $('<dialog class="om-compare-dialog" aria-labelledby="om-compare-title"><div class="om-compare-inner"><div class="om-compare-head"><h2 class="om-compare-title" id="om-compare-title"></h2><button type="button" class="om-compare-close">&times;</button></div><div class="om-compare-body"></div></div></dialog>').appendTo(document.body);
+			compareDialog = $('<dialog class="om-compare-dialog' + (cfg.refined ? ' om-refined' : '') + '" aria-labelledby="om-compare-title"><div class="om-compare-inner"><div class="om-compare-head"><h2 class="om-compare-title" id="om-compare-title"></h2><button type="button" class="om-compare-close">&times;</button></div><div class="om-compare-body"></div></div></dialog>').appendTo(document.body);
 			compareDialog.find('.om-compare-title').text(t('compare', 'Compare'));
 			compareDialog.find('.om-compare-close').attr('aria-label', t('close', 'Close')).on('click', function () { compareDialog[0].close(); });
 			compareDialog.on('click', function (e) { if (e.target === compareDialog[0]) { compareDialog[0].close(); } });
@@ -2086,7 +2086,7 @@
 		try { conf = JSON.parse($section.attr('data-om-reels') || '{}'); } catch (err) { return; }
 		if (!conf.items || !conf.items.length) { return; }
 		closeReels(true);
-		var $v = $('<div class="om-reels-viewer" role="dialog" aria-modal="true"></div>').attr('aria-label', t('stories', 'Video stories'));
+		var $v = $('<div class="om-reels-viewer" role="dialog" aria-modal="true"></div>').toggleClass('om-refined', !!cfg.refined).attr('aria-label', t('stories', 'Video stories'));
 		var $panel = $('<div class="om-rv-panel"></div>');
 		var $bars = $('<div class="om-rv-bars" aria-hidden="true"></div>');
 		conf.items.forEach(function () { $bars.append('<span class="om-rv-bar"><span class="om-rv-fill"></span></span>'); });
@@ -2552,6 +2552,33 @@
 		scrollToWrap($wrap, function () { var c = $wrap.find('a.om-card')[0]; if (c) { c.focus({ preventScroll: true }); } });
 	});
 
+	/* ---------- Grid size on phones (Refined) ---------- */
+
+	var GRID_KEY = 'om_grid_size';
+
+	function applyGridSize(root) {
+		var pref = '';
+		try { pref = window.localStorage.getItem(GRID_KEY) || ''; } catch (err) { pref = ''; }
+		$(root || document).find('.om-grid-size').each(function () {
+			var $wrap = $(this).closest('.om-catalog-wrap');
+			var $grid = $wrap.find('.om-catalog-grid').first();
+			if (pref) { $grid.toggleClass('is-one-per-row', pref === '1').toggleClass('is-two-per-row', pref === '2'); }
+			// Which is showing now (the widget's phone columns, or the choice).
+			var cols = pref || (($grid[0] && window.getComputedStyle($grid[0]).gridTemplateColumns.split(' ').length === 1) ? '1' : '2');
+			$(this).find('.om-grid-size-btn').each(function () {
+				this.setAttribute('aria-pressed', this.getAttribute('data-om-grid') === cols ? 'true' : 'false');
+			});
+		});
+	}
+
+	$(document).on('click', '.om-grid-size-btn', function () {
+		var value = this.getAttribute('data-om-grid');
+		try { window.localStorage.setItem(GRID_KEY, value); } catch (err) { /* this page only */ }
+		var $grid = $(this).closest('.om-catalog-wrap').find('.om-catalog-grid').first();
+		$grid.toggleClass('is-one-per-row', value === '1').toggleClass('is-two-per-row', value === '2');
+		applyGridSize($(this).closest('.om-catalog-wrap'));
+	});
+
 	/* ---------- Boot ---------- */
 
 	function initBlock(root) {
@@ -2563,6 +2590,7 @@
 		observeInfinite(root);
 		syncCompare();
 		queueStickyTools();
+		applyGridSize(root);
 	}
 
 	// Record a product shown in the quick view as recently viewed too.

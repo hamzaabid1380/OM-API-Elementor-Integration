@@ -190,12 +190,13 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			array(
 				'label'   => __( 'Page design', 'om-catalog' ),
 				'type'    => Controls_Manager::SELECT,
-				'default' => 'modern',
+				'default' => 'refined',
 				'options' => array(
+					'refined' => __( 'Refined: calm cards, one button family, gold accents', 'om-catalog' ),
 					'modern'  => __( 'Modern: framed panels, soft corners, motion', 'om-catalog' ),
 					'classic' => __( 'Classic: open, lines only', 'om-catalog' ),
 				),
-				'description' => __( 'Modern also turns the phone filters into a bottom sheet.', 'om-catalog' ),
+				'description' => __( 'Refined and Modern also turn the phone filters into a bottom sheet.', 'om-catalog' ),
 			)
 		);
 
@@ -553,7 +554,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 				'type'      => Controls_Manager::SWITCHER,
 				'default'   => 'yes',
 				'selectors' => array(
-					'{{WRAPPER}} .om-card-variant' => 'display: {{VALUE}};',
+					'{{WRAPPER}}' => '--om-variant-display: {{VALUE}};',
 				),
 				'selectors_dictionary' => array(
 					'yes' => 'block',
@@ -660,6 +661,29 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 				'rows'        => 3,
 				'placeholder' => __( 'Hand-finished settings, made to order for your diamond.', 'om-catalog' ),
 				'condition'   => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'head_reels',
+			array(
+				'label'       => __( 'Story reels under the heading', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => '',
+				'description' => __( 'Video stories of this line\'s designs, like the top of a brand page. For more control, use the OM Story Reels widget instead.', 'om-catalog' ),
+				'condition'   => array( 'head' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'head_reels_count',
+			array(
+				'label'     => __( 'Number of stories', 'om-catalog' ),
+				'type'      => Controls_Manager::NUMBER,
+				'default'   => 8,
+				'min'       => 1,
+				'max'       => 16,
+				'condition' => array( 'head' => 'yes', 'head_reels' => 'yes' ),
 			)
 		);
 
@@ -2111,7 +2135,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'search_placeholder' => (string) ( $settings['search_placeholder'] ?? '' ),
 			'suggest_prices'  => 'yes' === ( $settings['suggest_prices'] ?? 'yes' ) ? 'yes' : 'no',
 			'suggest_viewed'  => max( 0, min( 8, (int) ( $settings['suggest_viewed'] ?? 4 ) ) ),
-			'design'          => 'classic' === ( $settings['design'] ?? 'modern' ) ? 'classic' : 'modern',
+			'design'          => in_array( $settings['design'] ?? 'refined', array( 'refined', 'modern', 'classic' ), true ) ? $settings['design'] : 'refined',
 			'pagination_style' => in_array( $settings['pagination_style'] ?? 'numbers', array( 'numbers', 'loadmore', 'infinite' ), true ) ? $settings['pagination_style'] : 'numbers',
 			'badge_popular'   => 'yes' === ( $settings['badge_popular'] ?? 'yes' ) ? 'yes' : '',
 			'badge_links'     => 'yes' === ( $settings['badge_links'] ?? 'yes' ) ? 'yes' : '',
@@ -2144,6 +2168,8 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'head_rule'       => 'yes' === ( $settings['head_rule'] ?? 'yes' ) ? 'yes' : '',
 			'head_tag'        => (string) ( $settings['head_tag'] ?? 'h2' ),
 			'head_align'      => (string) ( $settings['head_align'] ?? 'center' ),
+			'head_reels'      => 'yes' === ( $settings['head_reels'] ?? '' ) ? 'yes' : '',
+			'head_reels_count' => (int) ( $settings['head_reels_count'] ?? 8 ),
 			'sticky_tools'       => 'yes' === ( $settings['sticky_tools'] ?? 'yes' ) ? 'yes' : '',
 			'sticky_on'          => (string) ( $settings['sticky_on'] ?? 'all' ),
 			'sticky_parts'       => implode( ',', (array) ( $settings['sticky_parts'] ?? array( 'filters', 'search', 'count', 'chips', 'sort', 'top' ) ) ),

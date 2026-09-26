@@ -138,8 +138,9 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			array(
 				'label'       => __( 'Page design', 'om-catalog' ),
 				'type'        => Controls_Manager::SELECT,
-				'default'     => 'modern',
+				'default'     => 'refined',
 				'options'     => array(
+					'refined' => __( 'Refined: large gallery, quiet details, one button family', 'om-catalog' ),
 					'modern'  => __( 'Modern: framed panels, cards, gentle motion', 'om-catalog' ),
 					'classic' => __( 'Classic: open, lines only', 'om-catalog' ),
 				),
@@ -165,10 +166,10 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			array(
 				'label'   => __( 'Description & details', 'om-catalog' ),
 				'type'    => Controls_Manager::SELECT,
-				'default' => 'accordion',
+				'default' => 'open',
 				'options' => array(
+					'open'      => __( 'Always open (specifications as a two-column list)', 'om-catalog' ),
 					'accordion' => __( 'Collapsible sections', 'om-catalog' ),
-					'open'      => __( 'Always open', 'om-catalog' ),
 				),
 			)
 		);
@@ -496,6 +497,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 				'options' => array(
 					'solid'   => __( 'Solid', 'om-catalog' ),
 					'outline' => __( 'Outline', 'om-catalog' ),
+					'gold'    => __( 'Gold (your site\'s gold button)', 'om-catalog' ),
 					'text'    => __( 'Text link', 'om-catalog' ),
 				),
 			)
@@ -949,6 +951,39 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'btn_shape',
+			array(
+				'label'                => __( 'Button shape (Refined)', 'om-catalog' ),
+				'type'                 => Controls_Manager::SELECT,
+				'default'              => '',
+				'options'              => array(
+					''       => __( 'Site default', 'om-catalog' ),
+					'pill'   => __( 'Pill', 'om-catalog' ),
+					'soft'   => __( 'Soft', 'om-catalog' ),
+					'square' => __( 'Square', 'om-catalog' ),
+				),
+				'selectors_dictionary' => array( 'pill' => '999px', 'soft' => '10px', 'square' => '0px' ),
+				'selectors'            => array( '{{WRAPPER}}' => '--om-btn-radius: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control( 'gold_light', array( 'label' => __( 'Gold (fills)', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}}' => '--om-gold-light: {{VALUE}};' ) ) );
+		$this->add_control( 'gold_deep', array( 'label' => __( 'Gold (lines & rings)', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}}' => '--om-gold: {{VALUE}};' ) ) );
+		$this->add_control( 'photo_tone', array( 'label' => __( 'Photo background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}}' => '--om-photo-tone: {{VALUE}};' ) ) );
+		$this->add_control(
+			'photo_blend',
+			array(
+				'label'                => __( 'Blend photo backgrounds into it', 'om-catalog' ),
+				'type'                 => Controls_Manager::SELECT,
+				'default'              => '',
+				'options'              => array( '' => __( 'Site default', 'om-catalog' ), 'on' => __( 'On', 'om-catalog' ), 'off' => __( 'Off', 'om-catalog' ) ),
+				'selectors_dictionary' => array( 'on' => 'multiply', 'off' => 'normal' ),
+				'selectors'            => array( '{{WRAPPER}}' => '--om-photo-blend: {{VALUE}};' ),
+				'separator'            => 'after',
+			)
+		);
+
+		$this->add_control(
 			'look_radius',
 			array(
 				'label'       => __( 'Corner radius: buttons, pills, fields', 'om-catalog' ),
@@ -994,7 +1029,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 				'label'     => __( 'Panel border colour', 'om-catalog' ),
 				'type'      => Controls_Manager::COLOR,
 				'selectors' => array( '{{WRAPPER}} .om-design-modern' => '--om-line: {{VALUE}};' ),
-				'condition' => array( 'design' => 'modern' ),
+				'condition' => array( 'design' => array( 'modern', 'refined' ) ),
 			)
 		);
 
@@ -1004,7 +1039,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 				'label'     => __( 'Row hover tint', 'om-catalog' ),
 				'type'      => Controls_Manager::COLOR,
 				'selectors' => array( '{{WRAPPER}} .om-design-modern' => '--om-soft: {{VALUE}};' ),
-				'condition' => array( 'design' => 'modern' ),
+				'condition' => array( 'design' => array( 'modern', 'refined' ) ),
 			)
 		);
 
@@ -2021,8 +2056,8 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['buttons_position'] = in_array( $settings['buttons_position'] ?? 'price', array( 'price', 'after_description', 'after_options' ), true ) ? $settings['buttons_position'] : 'price';
 		$args['buttons_layout']   = 'stacked' === ( $settings['buttons_layout'] ?? 'inline' ) ? 'stacked' : 'inline';
 		$args['options_style']    = in_array( $settings['options_style'] ?? 'swatches', array( 'swatches', 'pills', 'dropdowns' ), true ) ? $settings['options_style'] : 'swatches';
-		$args['details_style']    = 'open' === ( $settings['details_style'] ?? 'accordion' ) ? 'open' : 'accordion';
-		$args['design']           = 'classic' === ( $settings['design'] ?? 'modern' ) ? 'classic' : 'modern';
+		$args['details_style']    = 'accordion' === ( $settings['details_style'] ?? 'open' ) ? 'accordion' : 'open';
+		$args['design']           = in_array( $settings['design'] ?? 'refined', array( 'refined', 'modern', 'classic' ), true ) ? $settings['design'] : 'refined';
 		$args['video_mode']       = 'thumb' === ( $settings['video_mode'] ?? 'first' ) ? 'thumb' : 'first';
 		$args['back_link']        = 'yes' === ( $settings['back_link'] ?? 'yes' );
 		$args['back_text']        = (string) ( $settings['back_text'] ?? '' );

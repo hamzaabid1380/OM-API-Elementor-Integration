@@ -465,6 +465,39 @@ trait OM_Elementor_Card_Controls {
 		);
 
 		$this->add_control(
+			'btn_shape',
+			array(
+				'label'                => __( 'Button shape (Refined)', 'om-catalog' ),
+				'type'                 => Controls_Manager::SELECT,
+				'default'              => '',
+				'options'              => array(
+					''       => __( 'Site default', 'om-catalog' ),
+					'pill'   => __( 'Pill', 'om-catalog' ),
+					'soft'   => __( 'Soft', 'om-catalog' ),
+					'square' => __( 'Square', 'om-catalog' ),
+				),
+				'selectors_dictionary' => array( 'pill' => '999px', 'soft' => '10px', 'square' => '0px' ),
+				'selectors'            => array( '{{WRAPPER}}' => '--om-btn-radius: {{VALUE}};' ),
+			)
+		);
+
+		$this->add_control( 'gold_light', array( 'label' => __( 'Gold (fills)', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}}' => '--om-gold-light: {{VALUE}};' ) ) );
+		$this->add_control( 'gold_deep', array( 'label' => __( 'Gold (lines & rings)', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}}' => '--om-gold: {{VALUE}};' ) ) );
+		$this->add_control( 'photo_tone', array( 'label' => __( 'Photo background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}}' => '--om-photo-tone: {{VALUE}};' ) ) );
+		$this->add_control(
+			'photo_blend',
+			array(
+				'label'                => __( 'Blend photo backgrounds into it', 'om-catalog' ),
+				'type'                 => Controls_Manager::SELECT,
+				'default'              => '',
+				'options'              => array( '' => __( 'Site default', 'om-catalog' ), 'on' => __( 'On', 'om-catalog' ), 'off' => __( 'Off', 'om-catalog' ) ),
+				'selectors_dictionary' => array( 'on' => 'multiply', 'off' => 'normal' ),
+				'selectors'            => array( '{{WRAPPER}}' => '--om-photo-blend: {{VALUE}};' ),
+				'separator'            => 'after',
+			)
+		);
+
+		$this->add_control(
 			'card_hover',
 			array(
 				'label'   => __( 'Hover effect', 'om-catalog' ),

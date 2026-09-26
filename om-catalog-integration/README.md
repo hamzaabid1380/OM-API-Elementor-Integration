@@ -645,7 +645,60 @@ buckets for 120 days.
   on/off, title, button text and link (`end_screen`, `more_title`,
   `browse_text`, `browse_url`).
 
+## Refined design (1.21)
+
+A calmer, more consistent look — the design approved on the mock-up canvas —
+applied across the catalog, product page, related rows, reels, quick view
+and compare. It is the new default ("Refined", in Settings > OM Catalog >
+Look & feel and in each widget's Page design); Modern and Classic remain.
+
+- **One visual language**: five text sizes (headings in your brand serif,
+  Arapey by default; text in Inter), capitals only for eyebrows and
+  buttons, one button family (pill / soft / square — *Button shape*),
+  your navy (#00111C), text grey (#464646) and your site's gold
+  (#F4DC9C fills, #B8925A thin lines), one motion curve.
+- **Calm cards**: photo corners have fixed jobs — top-left one badge
+  (Popular in gold), top-right the compare tick (on hover on desktop,
+  always on phones), bottom-left a small video mark (fades while the
+  video plays), bottom-centre Quick view on hover. Extra badges and the
+  carat move under the name as one quiet line ("2 ct · Staff pick").
+  Photos sit on one tone and white backgrounds blend into it, so the grid
+  looks like one photoshoot (*Photo background*).
+- **Listing**: pill search and sort, sentence-case counts, filter
+  sections in sentence case with **shape tiles** (line drawings) and
+  larger metal dots, gold progress line, brand-tone loading cards and a
+  friendlier empty state. The catalog heading can show **story reels**
+  under it (OM Catalog > Heading > Story reels under the heading).
+- **Product page**: large gallery (7/5 split), serif title with a gold
+  eyebrow, sentence-case options, larger metal swatches, the promises as
+  three tiles, details open with the specifications as a two-column list
+  and a clean stone table. Buttons gain a **Gold** style (your site's
+  gold button) in the OM Single Product widget.
+- **Phones**: a one/two-per-row switch above the grid (remembered), and
+  the slim sticky toolbar becomes a floating **Filter · Sort** pill at the
+  bottom of the screen.
+
+Settings > OM Catalog > Look & feel: Design, Button shape, Gold (fills and
+lines), Photo background and Blend. Each OM widget can override them
+(Style > Card Hover, Corners & Spacing / Corners & Spacing).
+
+After updating, regenerate Elementor's CSS once (Elementor > Tools >
+Regenerate Files & Data) so the widgets pick up the new styles.
+
 ## Changelog
+
+### 1.21.0
+- New default "Refined" design (catalog, product page, rows, reels,
+  quick view, compare): type scale, one button family with a Button
+  shape setting, brand gold accents, photo tone with background blend,
+  corner rule for card overlays, quiet sub-line under card names, shape
+  tiles in filters, pill search/sort, open details with a two-column
+  specifications list, promise tiles, gold button style, phone grid-size
+  switch and floating Filter · Sort pill, reels under the catalog heading.
+- Look & feel settings: Design, Button shape, Gold (fills/lines), Photo
+  background + blend; per-widget overrides.
+- The carat line switch now works through a CSS variable (so layouts can
+  move it); product details default to open sections.
 
 ### 1.20.0
 - Catalog insights dashboard (views, searches, no-result searches,

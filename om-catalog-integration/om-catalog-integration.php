@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.20.0
+ * Version: 1.21.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.20.0' );
+define( 'OM_CATALOG_VERSION', '1.21.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -126,6 +126,7 @@ function om_catalog_enqueue_assets() {
 				'inLine'     => __( 'in %s', 'om-catalog' ),
 			),
 			'cardHover' => (string) get_option( 'om_card_hover', 'lift' ),
+			'refined'   => 'refined' === om_design(),
 			'pageTransitions' => '0' !== get_option( 'om_page_transitions', '1' ),
 			'popular'   => om_popular_searches(),
 		)
@@ -246,6 +247,17 @@ function om_catalog_style_tokens() {
  * Look & feel settings as CSS variables: corner radii, spacing scale and
  * phone text sizes. Empty settings keep the stylesheet's defaults.
  */
+/** The site's design (Settings > Look & feel): refined, modern or classic. */
+function om_design() {
+	$design = (string) get_option( 'om_design', 'refined' );
+	return in_array( $design, array( 'refined', 'modern', 'classic' ), true ) ? $design : 'refined';
+}
+
+/** " om-refined" when the site uses the Refined design (for rows and pop-ups). */
+function om_refined_class() {
+	return 'refined' === om_design() ? ' om-refined' : '';
+}
+
 function om_catalog_look_css() {
 	$px = static function ( $option ) {
 		$value = get_option( $option, '' );
@@ -271,6 +283,19 @@ function om_catalog_look_css() {
 		}
 		return $out;
 	};
+	// Refined design tokens (widgets can override them on their own box).
+	$hex    = static function ( $option, $default ) {
+		$value = sanitize_hex_color( (string) get_option( $option, $default ) );
+		return $value ? $value : $default;
+	};
+	$shapes = array( 'pill' => '999px', 'soft' => '10px', 'square' => '0px' );
+	$vars  += array(
+		'--om-btn-radius'  => $shapes[ get_option( 'om_button_shape', 'pill' ) ] ?? '999px',
+		'--om-gold'        => $hex( 'om_color_gold', '#B8925A' ),
+		'--om-gold-light'  => $hex( 'om_color_gold_light', '#F4DC9C' ),
+		'--om-photo-tone'  => $hex( 'om_photo_tone', '#F3EFE8' ),
+		'--om-photo-blend' => '0' === get_option( 'om_photo_blend', '1' ) ? 'normal' : 'multiply',
+	);
 	$css = ':root{' . $line( $vars ) . '}';
 	// Smooth page transitions between listing and product pages (browsers
 	// with cross-document view transitions; others navigate as usual).

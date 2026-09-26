@@ -338,7 +338,7 @@ class OM_Search {
 
 		ob_start();
 		?>
-		<div class="om-catalog-wrap om-search-standalone" data-om-atts="<?php echo esc_attr( $json ); ?>" data-om-sig="<?php echo esc_attr( OM_Shortcodes::sign_atts( $json ) ); ?>">
+		<div class="om-catalog-wrap om-search-standalone<?php echo esc_attr( om_refined_class() ); ?>" data-om-atts="<?php echo esc_attr( $json ); ?>" data-om-sig="<?php echo esc_attr( OM_Shortcodes::sign_atts( $json ) ); ?>">
 			<form class="om-search<?php echo 'no' === $atts['button'] ? ' om-search--no-button' : ''; ?>" role="search" action="<?php echo esc_url( $action ); ?>" method="get" data-om-line="" data-om-scope="<?php echo esc_attr( $signed['search_scope'] ); ?>" data-om-viewed="<?php echo esc_attr( (string) max( 0, min( 8, (int) $atts['suggest_viewed'] ) ) ); ?>"<?php echo 'no' !== $signed['suggest_prices'] && om_markup_is_configured() ? ' data-om-priced="1"' : ''; ?>>
 				<input type="hidden" name="om_line" value="" class="om-search-line" disabled />
 				<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>"><?php esc_html_e( 'Search the catalog', 'om-catalog' ); ?></label>

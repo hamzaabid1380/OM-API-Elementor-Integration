@@ -113,7 +113,7 @@ class OM_Reels {
 
 		ob_start();
 		printf(
-			'<section class="om-reels om-reels--%s om-reels--on-%s" data-om-reels="%s" aria-label="%s">',
+			'<section class="om-reels' . om_refined_class() . ' om-reels--%s om-reels--on-%s" data-om-reels="%s" aria-label="%s">',
 			esc_attr( $bubble ),
 			esc_attr( $show_on ),
 			esc_attr( wp_json_encode( $config ) ),

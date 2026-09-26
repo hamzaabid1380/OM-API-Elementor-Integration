@@ -102,6 +102,12 @@ class OM_Settings {
 		}
 		register_setting( 'om_catalog_settings', 'om_spacing', array( 'sanitize_callback' => array( $this, 'sanitize_spacing' ) ) );
 		register_setting( 'om_catalog_settings', 'om_card_hover', array( 'sanitize_callback' => array( $this, 'sanitize_card_hover' ) ) );
+		register_setting( 'om_catalog_settings', 'om_design', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, array( 'refined', 'modern', 'classic' ), true ) ? $v : 'refined'; } ) );
+		register_setting( 'om_catalog_settings', 'om_button_shape', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, array( 'pill', 'soft', 'square' ), true ) ? $v : 'pill'; } ) );
+		register_setting( 'om_catalog_settings', 'om_color_gold', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
+		register_setting( 'om_catalog_settings', 'om_color_gold_light', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
+		register_setting( 'om_catalog_settings', 'om_photo_tone', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
+		register_setting( 'om_catalog_settings', 'om_photo_blend', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_page_transitions', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_trust_line', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_popular_searches', array( 'sanitize_callback' => 'sanitize_text_field' ) );
@@ -491,6 +497,36 @@ class OM_Settings {
 				<h2>Look &amp; feel: site defaults</h2>
 				<p class="description">Each OM widget has these options itself (Style tab: <em>Card Hover, Corners &amp; Spacing</em> / <em>Corners &amp; Spacing</em>; the trust line under <em>Price &amp; Buttons</em>) — configure them there. The values here are only the starting point for widgets left on "Site default", and for the built-in product page (no Elementor layout).</p>
 				<table class="form-table">
+					<tr>
+						<th><label for="om_design">Design</label></th>
+						<td><select id="om_design" name="om_design">
+							<?php $design = get_option( 'om_design', 'refined' ); ?>
+							<option value="refined" <?php selected( $design, 'refined' ); ?>>Refined — calm cards, one button family, gold accents (recommended)</option>
+							<option value="modern" <?php selected( $design, 'modern' ); ?>>Modern</option>
+							<option value="classic" <?php selected( $design, 'classic' ); ?>>Classic</option>
+						</select>
+						<p class="description">For the built-in product page, related rows, reels, quick view and compare. Catalog and product widgets choose their own (Page design).</p></td>
+					</tr>
+					<tr>
+						<th><label for="om_button_shape">Button shape</label></th>
+						<td><select id="om_button_shape" name="om_button_shape">
+							<?php $shape = get_option( 'om_button_shape', 'pill' ); ?>
+							<option value="pill" <?php selected( $shape, 'pill' ); ?>>Pill (fully rounded)</option>
+							<option value="soft" <?php selected( $shape, 'soft' ); ?>>Soft (slightly rounded)</option>
+							<option value="square" <?php selected( $shape, 'square' ); ?>>Square</option>
+						</select> <span class="description">Refined design: every button, field and chip uses it.</span></td>
+					</tr>
+					<tr>
+						<th><label for="om_color_gold_light">Gold</label></th>
+						<td><input type="text" id="om_color_gold_light" name="om_color_gold_light" value="<?php echo esc_attr( get_option( 'om_color_gold_light', '#F4DC9C' ) ); ?>" class="om-color-field" /> fills (gold buttons, highlights) &nbsp;
+						<input type="text" id="om_color_gold" name="om_color_gold" value="<?php echo esc_attr( get_option( 'om_color_gold', '#B8925A' ) ); ?>" class="om-color-field" /> lines &amp; rings (reels, progress, dividers)</td>
+					</tr>
+					<tr>
+						<th><label for="om_photo_tone">Photo background</label></th>
+						<td><input type="text" id="om_photo_tone" name="om_photo_tone" value="<?php echo esc_attr( get_option( 'om_photo_tone', '#F3EFE8' ) ); ?>" class="om-color-field" />
+						<input type="hidden" name="om_photo_blend" value="0" />
+						<label><input type="checkbox" name="om_photo_blend" value="1" <?php checked( get_option( 'om_photo_blend', '1' ), '1' ); ?> /> Blend photos' white backgrounds into this tone, so every card looks like one photoshoot</label></td>
+					</tr>
 					<tr>
 						<th><label for="om_radius">Corner radius: buttons, pills, fields</label></th>
 						<td><input type="number" min="0" max="60" id="om_radius" name="om_radius" value="<?php echo esc_attr( get_option( 'om_radius', '' ) ); ?>" class="small-text" /> px <span class="description">0 = square (default). 4–8 = soft. 30+ = fully rounded pills.</span></td>

@@ -120,7 +120,7 @@ class OM_Related {
 		$arrows      = 'carousel' === $layout && 'yes' === $atts['show_arrows'];
 		$autoplay    = 'carousel' === $layout ? max( 0, min( 30, (int) $atts['autoplay'] ) ) : 0;
 
-		$classes = 'om-related om-related--' . $source . ' om-related--' . $layout . ( 'yes' === $atts['show_variant'] ? '' : ' om-related--no-variant' );
+		$classes = 'om-related' . om_refined_class() . ' om-related--' . $source . ' om-related--' . $layout . ( 'yes' === $atts['show_variant'] ? '' : ' om-related--no-variant' );
 		$attrs   = ( $columns ? ' style="--om-related-columns:' . (int) $columns . ';"' : '' ) . ( $autoplay ? ' data-om-autoplay="' . (int) $autoplay . '"' : '' );
 
 		if ( 'recent' === $source ) {

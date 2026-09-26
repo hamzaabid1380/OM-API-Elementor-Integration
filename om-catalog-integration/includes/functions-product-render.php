@@ -95,10 +95,13 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			// Settings > Look & feel, '' = none.
 			'trust_line'          => null,
 			// Page design: modern (framed panels, cards, motion) or classic.
-			'design'              => 'modern',
+			// refined (builds on modern), modern or classic; '' = Settings.
+			'design'              => '',
 		)
 	);
-	$design = 'classic' === $args['design'] ? 'classic' : 'modern';
+	$chosen  = '' !== (string) $args['design'] ? (string) $args['design'] : om_design();
+	$design  = 'classic' === $chosen ? 'classic' : 'modern';
+	$refined = 'refined' === $chosen;
 
 	$default_metal   = $product['default_metal'] ?? '';
 	$default_color   = $product['default_color'] ?? '';
@@ -191,7 +194,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 		);
 	}
 	?>
-	<div class="om-product-wrap om-design-<?php echo esc_attr( $design ); ?><?php echo $args['sticky_gallery'] ? ' om-sticky-gallery' : ''; ?><?php echo $args['compact'] ? ' om-product-wrap--compact' : ''; ?>"
+	<div class="om-product-wrap om-design-<?php echo esc_attr( $design ); ?><?php echo $refined ? ' om-design-refined om-refined' : ''; ?><?php echo $args['sticky_gallery'] ? ' om-sticky-gallery' : ''; ?><?php echo $args['compact'] ? ' om-product-wrap--compact' : ''; ?>"
 		data-line="<?php echo esc_attr( $product_line ); ?>"
 		data-style="<?php echo esc_attr( $style_number ); ?>"
 		data-priced="<?php echo $can_requote ? '1' : '0'; ?>"
@@ -971,7 +974,7 @@ function om_video_embed( $url, $title = '', $autoplay = false, $poster = '' ) {
 function om_render_action_buttons( $buttons, $has_price, $layout = 'inline' ) {
 	$html = '';
 	foreach ( $buttons as $btn ) {
-		$style = in_array( $btn['style'] ?? 'solid', array( 'solid', 'outline', 'text' ), true ) ? $btn['style'] : 'solid';
+		$style = in_array( $btn['style'] ?? 'solid', array( 'solid', 'outline', 'gold', 'text' ), true ) ? $btn['style'] : 'solid';
 		$show  = in_array( $btn['show'] ?? 'always', array( 'always', 'no_price', 'with_price' ), true ) ? $btn['show'] : 'always';
 		$rel   = trim( ( ! empty( $btn['external'] ) ? 'noopener ' : '' ) . ( ! empty( $btn['nofollow'] ) ? 'nofollow' : '' ) );
 		$hide  = ( 'no_price' === $show && $has_price ) || ( 'with_price' === $show && ! $has_price );
@@ -1253,6 +1256,21 @@ function om_render_card( $product, $line, $o ) {
 				<h3 class="om-card-title"><?php echo esc_html( $title ); ?></h3>
 				<?php if ( ! empty( $product['variant_name'] ) ) : ?>
 					<p class="om-card-variant"><?php echo esc_html( $product['variant_name'] ); ?></p>
+				<?php endif; ?>
+				<?php
+				// Refined design: the carat and any badges beyond the first, as
+				// one quiet line ("2 ct · Staff pick"); the photo keeps one badge.
+				$sub = array();
+				if ( ! empty( $product['variant_name'] ) ) {
+					$sub[] = (string) $product['variant_name'];
+				}
+				foreach ( array_slice( (array) $o['badges'], 1 ) as $extra ) {
+					$sub[] = is_array( $extra ) ? (string) ( $extra[0] ?? '' ) : (string) $extra;
+				}
+				$sub = array_filter( $sub, 'strlen' );
+				?>
+				<?php if ( $sub ) : ?>
+					<p class="om-card-sub"><?php echo esc_html( implode( ' · ', $sub ) ); ?></p>
 				<?php endif; ?>
 				<?php if ( $o['prices'] ) : ?>
 					<p class="om-card-price" data-om-style="<?php echo esc_attr( $style_number ); ?>"><span class="om-card-price-skeleton" aria-hidden="true"></span></p>

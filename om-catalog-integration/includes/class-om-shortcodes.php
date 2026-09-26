@@ -13,6 +13,9 @@ class OM_Shortcodes {
 	/** What the slim sticky toolbar repeats: count, chips, sort options. */
 	private $sticky = array();
 
+	/** Rendering the shape filter's links (they get shape icons). */
+	private $sidebar_shapes = false;
+
 	/**
 	 * The API hard-rejects (400) any limit over 500 on product routes rather
 	 * than capping it silently.
@@ -231,7 +234,7 @@ class OM_Shortcodes {
 				'search_scope'    => 'line',
 				// Page design: modern (framed panels, soft corners, motion,
 				// bottom-sheet filters on phones) or classic.
-				'design'          => 'modern',
+				'design'          => 'refined',
 				// numbers, loadmore (a "Show more" button) or infinite
 				// (loads as the visitor nears the end).
 				'pagination_style' => 'numbers',
@@ -263,6 +266,9 @@ class OM_Shortcodes {
 				'head_rule'        => 'yes',
 				'head_tag'         => 'h2',
 				'head_align'       => 'center',
+				// Story reels of this line under the heading (count 0 = none).
+				'head_reels'       => '',
+				'head_reels_count' => 8,
 				// End-of-results card after the last design: layout cell or
 				// banner; theme soft, outline, dark or image; eyebrow, title
 				// and text ({count}, {line}); a primary action (inquiry opens
@@ -587,7 +593,12 @@ class OM_Shortcodes {
 		$atts_json = wp_json_encode( $atts );
 		$has_side  = in_array( $filter_position, array( 'left', 'right' ), true ) && ! empty( $facets );
 
+		// Refined builds on Modern (bottom sheet, framed panels...).
 		$classes = array( 'om-catalog-wrap', 'om-filterpos-' . $filter_position, 'om-cdesign-' . ( 'classic' === $atts['design'] ? 'classic' : 'modern' ) );
+		if ( 'refined' === $atts['design'] ) {
+			$classes[] = 'om-cdesign-refined';
+			$classes[] = 'om-refined';
+		}
 		if ( $has_side ) {
 			$classes[] = 'om-has-sidebar';
 		}
@@ -784,6 +795,9 @@ class OM_Shortcodes {
 		}
 		if ( '' !== trim( (string) $atts['head_text'] ) ) {
 			echo '<p class="om-intro-text">' . esc_html( str_replace( '{line}', $line, (string) $atts['head_text'] ) ) . '</p>';
+		}
+		if ( 'yes' === $atts['head_reels'] && class_exists( 'OM_Reels' ) && (int) $atts['head_reels_count'] > 0 ) {
+			echo '<div class="om-intro-reels">' . OM_Reels::instance()->render( array( 'line' => $active_line, 'count' => (int) $atts['head_reels_count'] ) ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 		}
 		echo '</header>';
 	}
@@ -988,6 +1002,7 @@ class OM_Shortcodes {
 		echo '</div>';
 
 		foreach ( $facets as $facet ) {
+			$this->sidebar_shapes = 'shape' === $facet['key'];
 			echo '<div class="om-filter-group om-filter-group--' . esc_attr( $facet['key'] ) . '">';
 			// Long lists show the first few options plus "Show all".
 			$collapsible = count( $facet['items'] ) > 8;
@@ -1004,6 +1019,7 @@ class OM_Shortcodes {
 			}
 			echo '</ul></div>';
 		}
+		$this->sidebar_shapes = false;
 		echo '<div class="om-filter-sheet-foot"><button type="button" class="om-filter-done">' . esc_html__( 'Show results', 'om-catalog' ) . '</button></div>';
 		echo '</div></details></aside>';
 	}
@@ -1011,6 +1027,13 @@ class OM_Shortcodes {
 	private function sidebar_link( $item, $extra = false ) {
 		$classes = 'om-filter-link' . ( $item['active'] ? ' is-active' : '' ) . ( ! empty( $item['depth'] ) ? ' is-sub' : '' ) . ( ! empty( $item['swatch'] ) ? ' has-swatch' : '' );
 		$swatch  = ! empty( $item['swatch'] ) ? '<span class="om-swatch om-swatch--' . esc_attr( $item['swatch'] ) . '" aria-hidden="true"></span>' : '';
+		if ( $this->sidebar_shapes ) {
+			// A line drawing of the shape (shown as tiles in the Refined design).
+			$known  = array( 'round', 'oval', 'cushion', 'princess', 'emerald', 'pear', 'marquise', 'radiant', 'asscher', 'heart' );
+			$slug   = sanitize_title( (string) $item['label'] );
+			$icon   = in_array( $slug, $known, true ) ? $slug : ( false !== strpos( $slug, 'all' ) ? 'all' : 'other' );
+			$swatch = '<span class="om-shape-icon om-shape-icon--' . esc_attr( $icon ) . '" aria-hidden="true"></span>' . $swatch;
+		}
 		printf(
 			'<li%s><a class="%s" href="%s"%s>%s<span class="om-filter-link-text">%s</span></a></li>',
 			$extra ? ' class="om-more-item"' : '',
@@ -1220,6 +1243,13 @@ class OM_Shortcodes {
 				echo '</div>';
 			}
 			echo '</div>';
+			if ( 'refined' === $atts['design'] && $products ) {
+				// Phones: one large photo per row, or two (remembered).
+				echo '<div class="om-grid-size" role="group" aria-label="' . esc_attr__( 'Grid size', 'om-catalog' ) . '">'
+					. '<button type="button" class="om-grid-size-btn" data-om-grid="1" aria-pressed="false" aria-label="' . esc_attr__( 'One per row', 'om-catalog' ) . '"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>'
+					. '<button type="button" class="om-grid-size-btn" data-om-grid="2" aria-pressed="false" aria-label="' . esc_attr__( 'Two per row', 'om-catalog' ) . '"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="5" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="8" y="1" width="5" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>'
+					. '</div>';
+			}
 			if ( $show_sort ) {
 				$labels = array(
 					''       => __( 'Featured', 'om-catalog' ),

@@ -33,7 +33,7 @@ get_header();
 			$style_number,
 			array(
 				'options_style' => (string) get_option( 'om_options_style', 'swatches' ),
-				'details_style' => (string) get_option( 'om_details_style', 'accordion' ),
+				'details_style' => (string) get_option( 'om_details_style', 'refined' === om_design() ? 'open' : 'accordion' ),
 				'video_mode'    => (string) get_option( 'om_video_mode', 'first' ),
 				'gallery'       => array( 'follow' => '0' !== get_option( 'om_media_follow', '1' ) ),
 				'back_link'     => '0' !== get_option( 'om_back_link', '1' ),
