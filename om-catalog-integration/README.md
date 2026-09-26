@@ -717,6 +717,13 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.22.3
+- Layout no longer shifts under Elementor's global paragraph and heading
+  spacing (Site Settings › Typography). That setting outranked the
+  plugin's own spacing, so the result count sat above the filter chips
+  and sort, and card lines, form rows, size guide and diamond details
+  drifted apart. Widget Style controls still take precedence.
+
 ### 1.22.2
 - The quick view now uses the product page's price text and buttons. When
   product pages use an Elementor layout (Settings › OM Catalog), the

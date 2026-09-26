@@ -9348,3 +9348,41 @@ html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 .om-product-wrap .om-price.is-fallback:not(:has(.om-price-fallback)) {
 	display: none;
 }
+
+/* =========================================================
+   1.22.3 Shield from Elementor's global paragraph & heading spacing
+   ---------------------------------------------------------
+   Site Settings › Typography › Paragraph spacing (and the heading
+   margins some kits set) arrive as ".elementor-kit-N p", which outranks
+   the plugin's one-class rules: the result count rose above the chips,
+   card lines drifted apart. These restate the plugin's own margins one
+   notch stronger (html + tag + class), still below every widget Style
+   control ({{WRAPPER}} …) and the plugin's two-class rules.
+   ========================================================= */
+
+html p:is(.om-result-count, .om-progress-text, .om-card-variant, .om-card-price, .om-card-set-price, .om-rv-title, .om-rv-price) { margin-bottom: 0; }
+html :where(.om-refined) p.om-card-sub { margin-bottom: 0; }
+html p.om-line-label { margin-bottom: 14px; }
+html p:is(.om-field, .om-inquiry-status, .om-sg-sizer-title) { margin-bottom: 14px; }
+html p.om-inquiry-intro { margin-bottom: 18px; }
+html p:is(.om-sg-small, .om-dd-title) { margin-bottom: 6px; }
+html p.om-dd-price { margin-bottom: 18px; }
+html p.om-set-sub { margin-bottom: 26px; }
+html p.om-intro-eyebrow { margin-bottom: 10px; }
+html p.om-rv-style { margin-bottom: 4px; }
+html p.om-filter-heading { margin-bottom: 12px; }
+
+html :is(h1, h2, h3, h4, h5, h6, p, div).om-card-title { margin-top: 0; margin-bottom: 7px; }
+html :where(.om-refined) :is(h1, h2, h3, h4, h5, h6, p, div).om-card-title { margin-bottom: 4px; }
+html :is(h1, h2, h3, h4, h5, h6).om-product-title { margin-top: 0; margin-bottom: 10px; }
+html :where(.om-design-modern) :is(h1, h2, h3, h4, h5, h6).om-product-title { margin-bottom: 12px; }
+html :is(h1, h2, h3, h4, h5, h6).om-related-title { margin-top: 0; margin-bottom: 0; }
+html :is(h1, h2, h3, h4, h5, h6).om-builder-heading { margin-top: 0; margin-bottom: 24px; }
+html :is(h1, h2, h3, h4, h5, h6).om-reels-heading { margin-top: 0; margin-bottom: 14px; }
+html :is(h1, h2, h3, h4, h5, h6).om-sg-title { margin-top: 0; margin-bottom: 12px; }
+/* Two-part rules that only tie with the kit's (".x p" = ".elementor-kit-N p"). */
+html body .om-product-details h3 { margin: 0 0 16px; }
+html body .om-empty p { margin: 0 0 8px; }
+html body .om-review-info p { margin: 0 0 6px; }
+html body .om-sg-methods h3 { margin: 0 0 6px; }
+html body .om-sg-methods p { margin: 0; }
