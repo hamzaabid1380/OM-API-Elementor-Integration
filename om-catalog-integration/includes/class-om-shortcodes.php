@@ -219,6 +219,20 @@ class OM_Shortcodes {
 				// Top-bar design: pills, underline, buttons, minimal.
 				'filter_style'    => 'pills',
 				'filters_title'   => '',
+				// Filter groups: order, hidden, start closed, own headings.
+				// Tokens: line, collections, shape, metal, or a collection
+				// group's name as a slug (e.g. peg-heads).
+				'filter_order'    => '',
+				'filter_hide'     => '',
+				'filter_collapsed' => '',
+				// token=Heading pairs separated by "|".
+				'filter_labels'   => '',
+				// Sidebar display.
+				'filter_accordion' => 'yes',
+				'filter_picked'   => 'yes',
+				'filter_shape_look' => 'tiles',
+				'filter_metal_look' => 'swatches',
+				'filter_visible'  => 6,
 				'show_count'      => 'yes',
 				// Keyword search box with as-you-type suggestions.
 				'show_search'     => 'yes',
@@ -526,7 +540,6 @@ class OM_Shortcodes {
 			}
 			$facets[] = array( 'key' => 'line', 'title' => __( 'Product Type', 'om-catalog' ), 'items' => $items, 'all' => null );
 		}
-		$first_group = true;
 		foreach ( $collection_groups as $group ) {
 			$items = array();
 			foreach ( $group['options'] as $value => $label ) {
@@ -541,10 +554,10 @@ class OM_Shortcodes {
 				'key'   => 'style',
 				'title' => $group['title'],
 				'items' => $items,
-				// One "All" for collections, in the first group only.
-				'all'   => $first_group ? array( 'label' => __( 'All', 'om-catalog' ), 'url' => $url( array( 'style' => '' ) ), 'active' => '' === $state['style'] ) : null,
+				// One "All" for collections, kept on the first group shown
+				// (see arrange_facets).
+				'all'   => array( 'label' => __( 'All', 'om-catalog' ), 'url' => $url( array( 'style' => '' ) ), 'active' => '' === $state['style'] ),
 			);
-			$first_group = false;
 		}
 		if ( $shape_options ) {
 			$items = array();
@@ -570,6 +583,8 @@ class OM_Shortcodes {
 				'all'   => array( 'label' => __( 'All metals', 'om-catalog' ), 'url' => $url( array( 'metal' => '' ) ), 'active' => '' === $state['metal'] ),
 			);
 		}
+
+		$facets = $this->arrange_facets( $facets, $atts );
 
 		// Active filter chips (each removes one pick) + "Clear all".
 		$chips = array();
@@ -620,7 +635,7 @@ class OM_Shortcodes {
 
 		if ( $has_side ) {
 			echo '<div class="om-catalog-layout">';
-			$this->render_sidebar( $facets, $chips, $clear_url, $atts['filters_title'] );
+			$this->render_sidebar( $facets, $chips, $clear_url, $atts );
 			echo '<div class="om-catalog-main">';
 		} elseif ( 'dropdown' === $filter_position ) {
 			$this->render_dropdowns( $facets );
@@ -881,6 +896,98 @@ class OM_Shortcodes {
 		return $out;
 	}
 
+	/** Name(s) a facet answers to in filter_order / filter_hide / ... */
+	private static function facet_token( $facet ) {
+		return 'style' === $facet['key'] ? sanitize_title( $facet['title'] ) : $facet['key'];
+	}
+
+	/**
+	 * Applies the widget's filter order, hidden groups, start-closed groups
+	 * and custom headings. "collections" stands for every collection group
+	 * not named on its own; groups not listed keep their place at the end.
+	 */
+	private function arrange_facets( $facets, $atts ) {
+		$tokens = static function ( $list ) {
+			return array_values( array_filter( array_map( 'sanitize_title', self::csv( $list ) ) ) );
+		};
+		$order     = $tokens( $atts['filter_order'] );
+		$hide      = $tokens( $atts['filter_hide'] );
+		$collapsed = $tokens( $atts['filter_collapsed'] );
+		$labels    = array();
+		foreach ( explode( '|', (string) $atts['filter_labels'] ) as $pair ) {
+			$bits = explode( '=', $pair, 2 );
+			if ( 2 === count( $bits ) && '' !== trim( $bits[1] ) ) {
+				$labels[ sanitize_title( $bits[0] ) ] = trim( $bits[1] );
+			}
+		}
+
+		// "product-type" reads naturally too.
+		$alias = array( 'product-type' => 'line', 'type' => 'line', 'collection' => 'collections', 'shapes' => 'shape', 'metals' => 'metal' );
+		foreach ( array( 'order', 'hide', 'collapsed' ) as $name ) {
+			$$name = array_map(
+				static function ( $t ) use ( $alias ) {
+					return isset( $alias[ $t ] ) ? $alias[ $t ] : $t;
+				},
+				$$name
+			);
+		}
+		foreach ( $alias as $from => $to ) {
+			if ( isset( $labels[ $from ] ) && ! isset( $labels[ $to ] ) ) {
+				$labels[ $to ] = $labels[ $from ];
+			}
+		}
+
+		$named = array();
+		foreach ( $facets as $i => $facet ) {
+			$facets[ $i ]['token'] = self::facet_token( $facet );
+			if ( 'style' === $facet['key'] && in_array( $facets[ $i ]['token'], $order, true ) ) {
+				$named[] = $i;
+			}
+		}
+
+		$out    = array();
+		$placed = array();
+		$take   = static function ( $i ) use ( &$out, &$placed, $facets ) {
+			if ( ! isset( $placed[ $i ] ) ) {
+				$placed[ $i ] = true;
+				$out[]        = $facets[ $i ];
+			}
+		};
+		foreach ( $order as $token ) {
+			foreach ( $facets as $i => $facet ) {
+				if ( $facet['token'] === $token || ( 'collections' === $token && 'style' === $facet['key'] && ! in_array( $i, $named, true ) ) ) {
+					$take( $i );
+				}
+			}
+		}
+		foreach ( array_keys( $facets ) as $i ) {
+			$take( $i );
+		}
+
+		$first_style = true;
+		$kept        = array();
+		foreach ( $out as $facet ) {
+			$token   = $facet['token'];
+			$generic = 'style' === $facet['key'] ? 'collections' : $token;
+			if ( in_array( $token, $hide, true ) || in_array( $generic, $hide, true ) ) {
+				continue;
+			}
+			if ( isset( $labels[ $token ] ) ) {
+				$facet['title'] = $labels[ $token ];
+			}
+			$facet['collapsed'] = in_array( $token, $collapsed, true ) || in_array( $generic, $collapsed, true );
+			// The collections' "All" goes with whichever group now comes first.
+			if ( 'style' === $facet['key'] ) {
+				if ( ! $first_style ) {
+					$facet['all'] = null;
+				}
+				$first_style = false;
+			}
+			$kept[] = $facet;
+		}
+		return $kept;
+	}
+
 	/**
 	 * For the one-row layouts (top bar, dropdowns) all collection groups
 	 * become one facet. Two groups can share a category name ("Hidden Halo"
@@ -983,8 +1090,8 @@ class OM_Shortcodes {
 	 * screens they collapse behind a "Filters" button (the script opens it
 	 * on wide screens); without JavaScript it simply stays open.
 	 */
-	private function render_sidebar( $facets, $chips, $clear_url, $title ) {
-		$title = '' !== trim( (string) $title ) ? $title : __( 'Filters', 'om-catalog' );
+	private function render_sidebar( $facets, $chips, $clear_url, $atts ) {
+		$title = '' !== trim( (string) $atts['filters_title'] ) ? $atts['filters_title'] : __( 'Filters', 'om-catalog' );
 		echo '<aside class="om-filter-sidebar">';
 		echo '<details class="om-filter-panel" open>';
 		echo '<summary class="om-filter-toggle"><span class="om-filter-toggle-icon" aria-hidden="true"></span>' . esc_html( $title );
@@ -1001,23 +1108,72 @@ class OM_Shortcodes {
 		echo '<button type="button" class="om-filter-close" aria-label="' . esc_attr__( 'Close filters', 'om-catalog' ) . '">&times;</button>';
 		echo '</div>';
 
+		$accordion = 'no' !== $atts['filter_accordion'];
+		$visible   = max( 3, min( 30, (int) $atts['filter_visible'] ) );
 		foreach ( $facets as $facet ) {
+			$look = '';
+			if ( 'shape' === $facet['key'] && 'list' !== $atts['filter_shape_look'] ) {
+				$look = 'tiles';
+			} elseif ( 'metal' === $facet['key'] && 'list' !== $atts['filter_metal_look'] ) {
+				$look = 'swatches';
+			}
 			$this->sidebar_shapes = 'shape' === $facet['key'];
-			echo '<div class="om-filter-group om-filter-group--' . esc_attr( $facet['key'] ) . '">';
-			// Long lists show the first few options plus "Show all".
-			$collapsible = count( $facet['items'] ) > 8;
-			echo '<p class="om-filter-heading">' . esc_html( $facet['title'] ) . '</p><ul class="om-filter-list' . ( $collapsible ? ' om-filter-list--collapsible' : '' ) . '">';
+
+			// The pick shows beside the heading, so a closed group still says it.
+			$picked = '';
+			foreach ( $facet['items'] as $item ) {
+				if ( $item['active'] ) {
+					$picked = $item['label'];
+				}
+			}
+
+			printf(
+				'<div class="om-filter-group om-filter-group--%s%s%s" data-om-group="%s">',
+				esc_attr( $facet['key'] ),
+				'' !== $look ? ' om-filter-group--' . esc_attr( $look ) : '',
+				'' !== $picked ? ' has-pick' : '',
+				esc_attr( $facet['token'] )
+			);
+			$heading = '<span class="om-filter-heading-text">' . esc_html( $facet['title'] ) . '</span>';
+			if ( '' !== $picked && 'no' !== $atts['filter_picked'] ) {
+				$heading .= '<span class="om-filter-picked"><span class="screen-reader-text">' . esc_html__( 'selected:', 'om-catalog' ) . ' </span>' . esc_html( $picked ) . '</span>';
+			}
+			if ( $accordion ) {
+				echo '<details class="om-filter-acc"' . ( empty( $facet['collapsed'] ) ? ' open' : '' ) . '>';
+				echo '<summary class="om-filter-heading">' . $heading . '<span class="om-filter-chev" aria-hidden="true"></span></summary>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+			} else {
+				echo '<p class="om-filter-heading">' . $heading . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+			}
+
+			// Long lists show the first few options plus "Show more"; tiles
+			// and swatches are compact enough to show in full.
+			$collapsible = '' === $look && count( $facet['items'] ) > $visible + 2;
+			$hidden      = 0;
+			echo '<ul class="om-filter-list' . ( $collapsible ? ' om-filter-list--collapsible' : '' ) . '">';
 			if ( $facet['all'] ) {
-				$this->sidebar_link( $facet['all'] );
+				$all = $facet['all'];
+				if ( 'swatches' === $look ) {
+					$all['swatch'] = 'all';
+					$all['label']  = __( 'All', 'om-catalog' );
+				}
+				$this->sidebar_link( $all );
 			}
 			foreach ( $facet['items'] as $i => $item ) {
-				$this->sidebar_link( $item, $collapsible && $i >= 6 && ! $item['active'] );
+				$extra = $collapsible && $i >= $visible && ! $item['active'];
+				$hidden += $extra ? 1 : 0;
+				$this->sidebar_link( $item, $extra );
 			}
-			if ( $collapsible ) {
-				/* translators: %d: number of options. */
-				echo '<li class="om-filter-more"><button type="button" class="om-filter-more-btn">' . esc_html( sprintf( __( 'Show all (%d)', 'om-catalog' ), count( $facet['items'] ) ) ) . '</button></li>';
+			if ( $collapsible && $hidden ) {
+				printf(
+					'<li class="om-filter-more"><button type="button" class="om-filter-more-btn" aria-expanded="false" data-om-less="%s">%s</button></li>',
+					esc_attr__( 'Show fewer', 'om-catalog' ),
+					/* translators: %d: number of hidden options. */
+					esc_html( sprintf( _n( 'Show %d more', 'Show %d more', $hidden, 'om-catalog' ), $hidden ) )
+				);
 			}
-			echo '</ul></div>';
+			echo '</ul>';
+			echo $accordion ? '</details>' : '';
+			echo '</div>';
 		}
 		$this->sidebar_shapes = false;
 		echo '<div class="om-filter-sheet-foot"><button type="button" class="om-filter-done">' . esc_html__( 'Show results', 'om-catalog' ) . '</button></div>';

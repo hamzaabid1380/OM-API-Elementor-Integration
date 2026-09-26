@@ -823,7 +823,38 @@
 		});
 		// Long filter lists start collapsed (only once the script runs, so
 		// without JavaScript every option stays visible).
-		$(root || document).find('.om-filter-list--collapsible').addClass('is-collapsed');
+		$(root || document).find('.om-filter-list--collapsible').addClass('is-collapsed is-js');
+		restoreGroups(root);
+	}
+
+	// Filter groups the visitor opened, closed or expanded are remembered
+	// for the visit (in-place updates re-render the sidebar).
+	var GROUPS_KEY = 'om_filter_groups';
+	function readGroups() {
+		try { return JSON.parse(window.sessionStorage.getItem(GROUPS_KEY) || '{}') || {}; } catch (err) { return {}; }
+	}
+	function saveGroup(name, field, value) {
+		var all = readGroups();
+		all[name] = all[name] || {};
+		all[name][field] = value;
+		try { window.sessionStorage.setItem(GROUPS_KEY, JSON.stringify(all)); } catch (err) { /* ignore */ }
+	}
+	function restoreGroups(root) {
+		var all = readGroups();
+		$(root || document).find('.om-filter-group[data-om-group]').each(function () {
+			var state = all[this.getAttribute('data-om-group')];
+			if (!state) { return; }
+			var acc = $(this).children('.om-filter-acc')[0];
+			if (acc && typeof state.open === 'boolean') { acc.open = state.open; }
+			if (state.more) { setMore($(this).find('.om-filter-list--collapsible'), true); }
+		});
+	}
+	function setMore($list, open) {
+		var $btn = $list.find('.om-filter-more-btn');
+		if (!$btn.length) { return; }
+		if (!$btn.attr('data-om-more')) { $btn.attr('data-om-more', $btn.text()); }
+		$list.toggleClass('is-collapsed', !open);
+		$btn.attr('aria-expanded', open ? 'true' : 'false').text(open ? $btn.attr('data-om-less') : $btn.attr('data-om-more'));
 	}
 
 	// Modern design on phones: the filters are a bottom sheet.
@@ -864,8 +895,20 @@
 		lockSheet(false);
 	});
 
+	// Saved on the visitor's own clicks only: a <details> rendered open
+	// also fires "toggle" as the page loads.
+	$(document).on('click', '.om-filter-acc > summary', function () {
+		var acc = this.parentNode;
+		var group = $(acc).closest('.om-filter-group').attr('data-om-group');
+		if (group) { window.setTimeout(function () { saveGroup(group, 'open', acc.open); }, 0); }
+	});
+
 	$(document).on('click', '.om-filter-more-btn', function () {
-		$(this).closest('.om-filter-list').removeClass('is-collapsed');
+		var $list = $(this).closest('.om-filter-list');
+		var open = $list.hasClass('is-collapsed');
+		setMore($list, open);
+		var group = $(this).closest('.om-filter-group').attr('data-om-group');
+		if (group) { saveGroup(group, 'more', open); }
 	});
 
 	var omPushed = false;

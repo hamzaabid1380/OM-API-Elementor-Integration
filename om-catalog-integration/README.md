@@ -117,6 +117,32 @@ filter_metals="yes" filter_position="left"]`.
 Filtering updates the grid in place. Only the options the widget offers are
 accepted, so visitors can't make the site run arbitrary catalog queries.
 
+### Filter groups: order, headings, open or closed
+
+Under **Filter groups** in the same section:
+
+- **Order (drag to reorder)**: one row per filter, e.g. Product type,
+  Collections, Shape, Metal colour. Drag the rows to reorder them; this
+  applies to the sidebar, top bar and dropdowns. *One collection group, by
+  name* moves a single group (e.g. "Peg Heads") on its own, and
+  *Collections* stands for every group not listed separately. Each row can
+  also set its own **Heading**, **Start closed** or **Hide this filter**.
+- **Groups open and close**: each sidebar heading opens and closes its
+  group. What a visitor opens or closes, and any "Show more" they expand,
+  is remembered while they browse. A closed group shows the current pick
+  beside its heading (**Show the pick on closed groups**).
+- **Shapes look**: tiles with drawings, or a list with small drawings.
+- **Metals look**: a row of colour swatches, or a list.
+- **Options before "Show more"**: how many options long lists show before
+  "Show 16 more".
+
+Shortcode equivalent: `filter_order="shape,metal,peg-heads,collections,line"
+filter_hide="line" filter_collapsed="metal"
+filter_labels="shape=Diamond shape|metal=Metal colour" filter_accordion="yes"
+filter_shape_look="tiles" filter_metal_look="swatches" filter_visible="6"`.
+A collection group is named by its heading in lower case with dashes
+(e.g. `peg-heads`).
+
 ## Price & buttons on product pages
 
 In the **OM Single Product** widget (Content tab > Price & Buttons):
@@ -686,6 +712,19 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.22.0
+- Filter sidebar redesign: each group opens and closes from its heading
+  (remembered while browsing), and a closed group shows its pick. Rows
+  are taller with a clear marker and a tinted pick, and sub-categories sit
+  on a guide line. "Show all (22)" is now "Show 16 more" / "Show fewer".
+- Shape tiles and metal swatches in every design (Refined, Modern and
+  Classic), each switchable back to a list.
+- New **Filter groups** list in the catalog widget: drag to reorder the
+  filters (sidebar, top bar and dropdowns), move a single collection group,
+  rename headings, start groups closed, or hide a filter. Shortcode:
+  `filter_order`, `filter_hide`, `filter_collapsed`, `filter_labels`.
+- A sticky sidebar taller than the screen now scrolls on its own.
 
 ### 1.21.1
 - Card video label keeps its own colour on hover (themes that turn links

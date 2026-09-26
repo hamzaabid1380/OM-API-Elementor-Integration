@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Elementor\Widget_Base;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Typography;
+use Elementor\Repeater;
 use Elementor\Group_Control_Border;
 
 /**
@@ -278,6 +279,157 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 				'label'       => __( 'Sidebar title', 'om-catalog' ),
 				'type'        => Controls_Manager::TEXT,
 				'placeholder' => __( 'Filters', 'om-catalog' ),
+				'condition'   => array( 'filter_position' => array( 'left', 'right' ) ),
+			)
+		);
+
+		$this->add_control(
+			'filter_groups_heading',
+			array(
+				'label'     => __( 'Filter groups', 'om-catalog' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			)
+		);
+
+		$groups = new Repeater();
+		$groups->add_control(
+			'group',
+			array(
+				'label'   => __( 'Filter', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'collections',
+				'options' => array(
+					'line'        => __( 'Product type (line switcher)', 'om-catalog' ),
+					'collections' => __( 'Collections (every group not listed on its own)', 'om-catalog' ),
+					'custom'      => __( 'One collection group, by name', 'om-catalog' ),
+					'shape'       => __( 'Shape', 'om-catalog' ),
+					'metal'       => __( 'Metal colour', 'om-catalog' ),
+				),
+			)
+		);
+		$groups->add_control(
+			'group_name',
+			array(
+				'label'       => __( 'Group name', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'e.g. Peg Heads', 'om-catalog' ),
+				'description' => __( 'As it appears in the sidebar, e.g. "Bridal Rings" or "Peg Heads".', 'om-catalog' ),
+				'condition'   => array( 'group' => 'custom' ),
+			)
+		);
+		$groups->add_control(
+			'label',
+			array(
+				'label'       => __( 'Heading (optional)', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'description' => __( 'Leave blank to keep the standard heading.', 'om-catalog' ),
+				'condition'   => array( 'group!' => 'collections' ),
+			)
+		);
+		$groups->add_control(
+			'collapsed',
+			array(
+				'label'       => __( 'Start closed', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => '',
+				'description' => __( 'Sidebar only. A closed group still shows the pick next to its heading.', 'om-catalog' ),
+			)
+		);
+		$groups->add_control(
+			'hide',
+			array(
+				'label'   => __( 'Hide this filter', 'om-catalog' ),
+				'type'    => Controls_Manager::SWITCHER,
+				'default' => '',
+			)
+		);
+
+		$this->add_control(
+			'filter_groups',
+			array(
+				'label'       => __( 'Order (drag to reorder)', 'om-catalog' ),
+				'type'        => Controls_Manager::REPEATER,
+				'fields'      => $groups->get_controls(),
+				'default'     => array(
+					array( 'group' => 'line' ),
+					array( 'group' => 'collections' ),
+					array( 'group' => 'shape' ),
+					array( 'group' => 'metal' ),
+				),
+				'title_field' => "{{{ ( 'custom' === group ? ( group_name || 'Collection group' ) : ( { line: 'Product type', collections: 'Collections', shape: 'Shape', metal: 'Metal colour' }[ group ] || group ) ) + ( 'yes' === hide ? ' (hidden)' : ( 'yes' === collapsed ? ' (starts closed)' : '' ) ) }}}",
+				'prevent_empty' => false,
+				'description' => __( 'Applies to the sidebar, top bar and dropdowns. Shape and metal only show when switched on above; filters missing from the list keep their place at the end.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'filter_accordion',
+			array(
+				'label'       => __( 'Groups open and close', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Each heading toggles its group; what a visitor opens or closes is remembered while they browse.', 'om-catalog' ),
+				'condition'   => array( 'filter_position' => array( 'left', 'right' ) ),
+			)
+		);
+
+		$this->add_control(
+			'filter_picked',
+			array(
+				'label'     => __( 'Show the pick on closed groups', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'condition' => array(
+					'filter_position'  => array( 'left', 'right' ),
+					'filter_accordion' => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'filter_shape_look',
+			array(
+				'label'     => __( 'Shapes look', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'tiles',
+				'options'   => array(
+					'tiles' => __( 'Tiles with drawings', 'om-catalog' ),
+					'list'  => __( 'List with small drawings', 'om-catalog' ),
+				),
+				'condition' => array(
+					'filter_position' => array( 'left', 'right' ),
+					'filter_shapes'   => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'filter_metal_look',
+			array(
+				'label'     => __( 'Metals look', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'swatches',
+				'options'   => array(
+					'swatches' => __( 'Colour swatches in a row', 'om-catalog' ),
+					'list'     => __( 'List', 'om-catalog' ),
+				),
+				'condition' => array(
+					'filter_position' => array( 'left', 'right' ),
+					'filter_metals'   => 'yes',
+				),
+			)
+		);
+
+		$this->add_control(
+			'filter_visible',
+			array(
+				'label'       => __( 'Options before "Show more"', 'om-catalog' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 6,
+				'min'         => 3,
+				'max'         => 30,
+				'description' => __( 'Long lists show this many, then a "Show more" link. Lists only a couple longer show in full.', 'om-catalog' ),
 				'condition'   => array( 'filter_position' => array( 'left', 'right' ) ),
 			)
 		);
@@ -1695,7 +1847,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 				'default'      => 'yes',
 				'return_value' => 'yes',
 				'selectors'    => array(
-					'{{WRAPPER}} .om-filter-sidebar' => 'position: sticky; top: var(--om-sticky-offset, 24px);',
+					'{{WRAPPER}} .om-filter-sidebar' => 'position: sticky; top: var(--om-sticky-offset, 24px); max-height: calc(100vh - var(--om-sticky-offset, 24px) - 16px); overflow-y: auto;',
 				),
 				'condition'    => array( 'filter_position' => array( 'left', 'right' ) ),
 			)
@@ -2098,6 +2250,38 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 		return $settings;
 	}
 
+	/** The "Filter groups" list as filter_order / hide / collapsed / labels. */
+	private static function filter_group_atts( $rows ) {
+		$order = array();
+		$hide  = array();
+		$shut  = array();
+		$names = array();
+		foreach ( is_array( $rows ) ? $rows : array() as $row ) {
+			$group = (string) ( $row['group'] ?? '' );
+			$token = 'custom' === $group ? sanitize_title( (string) ( $row['group_name'] ?? '' ) ) : sanitize_key( $group );
+			if ( '' === $token || in_array( $token, $order, true ) ) {
+				continue;
+			}
+			$order[] = $token;
+			if ( 'yes' === ( $row['hide'] ?? '' ) ) {
+				$hide[] = $token;
+			}
+			if ( 'yes' === ( $row['collapsed'] ?? '' ) ) {
+				$shut[] = $token;
+			}
+			$label = trim( str_replace( array( '|', '=' ), ' ', (string) ( $row['label'] ?? '' ) ) );
+			if ( '' !== $label && 'collections' !== $token ) {
+				$names[] = $token . '=' . $label;
+			}
+		}
+		return array(
+			'filter_order'     => implode( ',', $order ),
+			'filter_hide'      => implode( ',', $hide ),
+			'filter_collapsed' => implode( ',', $shut ),
+			'filter_labels'    => implode( '|', $names ),
+		);
+	}
+
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
@@ -2130,6 +2314,11 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'shape_options'   => (string) ( $settings['shape_options'] ?? '' ),
 			'filter_metals'   => (string) ( $settings['filter_metals'] ?? '' ),
 			'filters_title'   => (string) ( $settings['filters_title'] ?? '' ),
+			'filter_accordion' => 'yes' === ( $settings['filter_accordion'] ?? 'yes' ) ? 'yes' : 'no',
+			'filter_picked'   => 'yes' === ( $settings['filter_picked'] ?? 'yes' ) ? 'yes' : 'no',
+			'filter_shape_look' => 'list' === ( $settings['filter_shape_look'] ?? '' ) ? 'list' : 'tiles',
+			'filter_metal_look' => 'list' === ( $settings['filter_metal_look'] ?? '' ) ? 'list' : 'swatches',
+			'filter_visible'  => max( 3, min( 30, (int) ( $settings['filter_visible'] ?? 6 ) ) ),
 			'show_count'      => (string) ( $settings['show_count'] ?? 'yes' ),
 			'show_search'     => (string) ( $settings['show_search'] ?? 'yes' ),
 			'search_placeholder' => (string) ( $settings['search_placeholder'] ?? '' ),
@@ -2189,7 +2378,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'end_secondary_url'  => (string) ( $settings['end_secondary_url']['url'] ?? '' ),
 			// The responsive Columns control owns the column count via CSS.
 			'inline_columns'  => 'no',
-		) + $this->card_extras_atts( $settings );
+		) + $this->card_extras_atts( $settings ) + self::filter_group_atts( $settings['filter_groups'] ?? array() );
 
 		echo OM_Shortcodes::instance()->render_grid( $atts, OM_Shortcodes::request_from_globals() ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 	}

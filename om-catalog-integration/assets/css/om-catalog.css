@@ -8674,35 +8674,6 @@ html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 	color: var(--om-color-primary, #00111C);
 }
 
-.om-refined .om-filter-sidebar .om-filter-group--shape .om-filter-list {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 8px;
-}
-
-.om-refined .om-filter-sidebar .om-filter-group--shape .om-filter-list > li { margin: 0; }
-
-.om-refined .om-filter-sidebar .om-filter-group--shape .om-filter-link.om-filter-link {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 6px;
-	min-height: 76px;
-	padding: 12px 4px 10px;
-	border: 1px solid var(--om-hair, #e6e0d6);
-	border-radius: 12px;
-	background: #fff;
-	font-size: 12px;
-	text-align: center;
-}
-
-.om-refined .om-filter-sidebar .om-filter-group--shape .om-filter-link.om-filter-link.is-active {
-	border-color: var(--om-color-primary, #00111C);
-	background: var(--om-photo-tone, #f3efe8);
-}
-
-.om-refined .om-filter-sidebar .om-filter-group--shape .om-filter-link::before { display: none; }
-
 .om-shape-icon {
 	display: none;
 	width: 28px;
@@ -8712,7 +8683,6 @@ html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 	mask: var(--om-shape) center / contain no-repeat;
 }
 
-.om-refined .om-filter-sidebar .om-shape-icon { display: block; }
 
 .om-shape-icon--all { --om-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' fill='none' stroke='black' stroke-width='1.3'%3E%3Ccircle cx='9' cy='9' r='5'/%3E%3Crect x='14' y='14' width='10' height='10'/%3E%3C/svg%3E"); }
 .om-shape-icon--round { --om-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' fill='none' stroke='black' stroke-width='1.3'%3E%3Ccircle cx='14' cy='14' r='10'/%3E%3Cpath d='M4 14h20M14 4l6 10-6 10-6-10z'/%3E%3C/svg%3E"); }
@@ -8726,10 +8696,6 @@ html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 .om-shape-icon--heart { --om-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' fill='none' stroke='black' stroke-width='1.3'%3E%3Cpath d='M14 24S4 17 4 10a5 5 0 0 1 10-1a5 5 0 0 1 10 1c0 7-10 14-10 14z'/%3E%3C/svg%3E"); }
 .om-shape-icon--other { --om-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' fill='none' stroke='black' stroke-width='1.3'%3E%3Cpath d='M14 4l10 10-10 10L4 14z'/%3E%3C/svg%3E"); }
 
-.om-refined .om-filter-sidebar .om-filter-link.has-swatch .om-swatch {
-	width: 22px;
-	height: 22px;
-}
 
 /* ---------- Loading & empty ---------- */
 
@@ -9080,4 +9046,264 @@ html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 .om-refined .om-layout-boxed .om-compare-toggle.om-compare-toggle {
 	top: 27px;
 	right: 27px;
+}
+
+/* =========================================================
+   1.22 Filter sidebar: collapsible groups, rows, tiles, swatches
+   ========================================================= */
+
+.om-filter-list.is-js .om-filter-more { display: block; }
+
+.om-filter-sidebar .om-filter-heading {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.om-filter-sidebar summary.om-filter-heading {
+	min-height: 32px;
+	margin: 0;
+	list-style: none;
+	cursor: pointer;
+	user-select: none;
+}
+
+.om-filter-sidebar summary.om-filter-heading::-webkit-details-marker { display: none; }
+.om-filter-sidebar summary.om-filter-heading::marker { content: ""; }
+
+.om-filter-sidebar summary.om-filter-heading:focus-visible {
+	outline: 2px solid var(--om-color-primary, #00111C);
+	outline-offset: 4px;
+	border-radius: 4px;
+}
+
+.om-filter-acc[open] > summary.om-filter-heading { margin-bottom: 10px; }
+
+.om-filter-heading-text { flex: 0 1 auto; }
+
+.om-filter-chev {
+	flex: 0 0 auto;
+	width: 7px;
+	height: 7px;
+	margin: 0 4px 3px auto;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 0.25s ease, margin 0.25s ease;
+	opacity: 0.7;
+}
+
+.om-filter-acc[open] > summary .om-filter-chev {
+	margin-bottom: -3px;
+	transform: rotate(-135deg);
+}
+
+/* A closed group still says what is picked. */
+.om-filter-picked {
+	display: none;
+	min-width: 0;
+	padding: 2px 9px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: var(--om-photo-tone, #f3efe8);
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0;
+	line-height: 1.5;
+	text-transform: none;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-filter-acc:not([open]) .om-filter-picked { display: inline-block; }
+
+/* Modern & Refined: sentence-case headings, calmer rhythm. */
+:where(.om-cdesign-modern) .om-filter-sidebar .om-filter-heading {
+	font-size: 15px;
+	font-weight: 500;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-cdesign-modern .om-filter-group + .om-filter-group {
+	margin-top: 16px;
+	padding-top: 16px;
+}
+
+.om-cdesign-modern .om-filter-panel-head { margin-bottom: 14px; }
+
+/* Rows: a clear marker, a tinted pick, sub-categories on a guide line. */
+.om-cdesign-modern .om-filter-sidebar .om-filter-link {
+	min-height: 36px;
+	padding: 6px 10px;
+	margin: 0 -10px;
+	box-sizing: border-box;
+	font-size: 14px;
+	font-weight: 400;
+}
+
+.om-cdesign-modern .om-filter-sidebar .om-filter-link::before {
+	width: 16px;
+	height: 16px;
+	border: 1.5px solid #bdb6aa;
+}
+
+.om-cdesign-modern .om-filter-sidebar .om-filter-link.is-active {
+	font-weight: 500;
+	background: var(--om-photo-tone, var(--om-soft));
+}
+
+.om-cdesign-modern .om-filter-sidebar .om-filter-link.is-active::before {
+	border-color: var(--om-color-primary, #00111C);
+	background-color: var(--om-color-primary, #00111C);
+	box-shadow: inset 0 0 0 3.5px var(--om-photo-tone, #fff);
+}
+
+.om-cdesign-modern .om-filter-sidebar .om-filter-link.is-sub {
+	min-height: 32px;
+	margin-left: 7px;
+	padding-left: 16px;
+	border-left: 1px solid var(--om-hair, #e6e0d6);
+	border-radius: 0 var(--om-radius, var(--om-radius-d, 6px)) var(--om-radius, var(--om-radius-d, 6px)) 0;
+	font-size: 13px;
+}
+
+.om-cdesign-modern .om-filter-sidebar .om-filter-link.is-sub::before {
+	width: 12px;
+	height: 12px;
+}
+
+.om-cdesign-modern .om-filter-sidebar .om-filter-link.is-sub.is-active {
+	border-left-color: var(--om-color-primary, #00111C);
+}
+
+/* "Show 16 more" with a chevron. */
+.om-catalog-wrap .om-filter-sidebar .om-filter-more-btn.om-filter-more-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 6px 0 0;
+	padding: 6px 0;
+	font-size: 13px;
+	font-weight: 500;
+	letter-spacing: 0;
+	text-decoration: none;
+	color: var(--om-color-primary, #00111C);
+}
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-more-btn::after {
+	content: "";
+	width: 6px;
+	height: 6px;
+	margin-bottom: 3px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+}
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-more-btn[aria-expanded="true"]::after {
+	margin: 3px 0 0;
+	transform: rotate(-135deg);
+}
+
+/* Shape icons in the sidebar (tiles or list). */
+.om-filter-sidebar .om-shape-icon { display: block; }
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-group--shape:not(.om-filter-group--tiles) .om-filter-link::before { display: none; }
+.om-filter-sidebar .om-filter-group--shape:not(.om-filter-group--tiles) .om-shape-icon { width: 22px; height: 22px; }
+
+/* Shape tiles. */
+.om-filter-sidebar .om-filter-group--tiles .om-filter-list {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+}
+
+.om-filter-sidebar .om-filter-group--tiles .om-filter-list > li { margin: 0; }
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-group--tiles .om-filter-link.om-filter-link {
+	flex-direction: column;
+	justify-content: center;
+	gap: 6px;
+	min-height: 76px;
+	height: 100%;
+	margin: 0;
+	padding: 12px 4px 10px;
+	box-sizing: border-box;
+	border: 1px solid var(--om-hair, #e6e0d6);
+	border-radius: var(--om-tile-radius, 12px);
+	background: var(--om-color-background, #fff);
+	font-size: 12px;
+	line-height: 1.2;
+	text-align: center;
+	transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-group--tiles .om-filter-link.om-filter-link:hover {
+	border-color: #a9a39a;
+}
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-group--tiles .om-filter-link.om-filter-link.is-active {
+	border-color: var(--om-color-primary, #00111C);
+	background: var(--om-photo-tone, #f3efe8);
+	font-weight: 500;
+}
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-group--tiles .om-filter-link::before { display: none; }
+
+.om-cdesign-classic .om-filter-sidebar .om-filter-group--tiles { --om-tile-radius: 0; }
+
+/* Metal swatches: a row of circles with the name beneath. */
+.om-filter-sidebar .om-filter-group--swatches .om-filter-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+	gap: 8px 2px;
+}
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-group--swatches .om-filter-link.om-filter-link {
+	flex-direction: column;
+	gap: 6px;
+	width: auto;
+	min-height: 0;
+	margin: 0;
+	padding: 4px 0;
+	border: 0;
+	background: none;
+	font-size: 12px;
+	line-height: 1.2;
+	text-align: center;
+}
+
+.om-filter-sidebar .om-filter-group--swatches .om-swatch {
+	width: 32px;
+	height: 32px;
+	transition: box-shadow 0.2s ease;
+}
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-group--swatches .om-filter-link:hover .om-swatch {
+	box-shadow: 0 0 0 2px var(--om-color-background, #fff), 0 0 0 3px #bdb6aa;
+}
+
+.om-catalog-wrap .om-filter-sidebar .om-filter-group--swatches .om-filter-link.is-active .om-swatch {
+	box-shadow: 0 0 0 2px var(--om-color-background, #fff), 0 0 0 3.5px var(--om-color-primary, #00111C);
+}
+
+.om-swatch--all { background: conic-gradient(from 210deg, #f3dc9c 0 33.3%, #f3cfc2 0 66.6%, #e2e4e7 0); }
+
+.om-cdesign-modern .om-filter-sidebar .om-filter-link.has-swatch .om-swatch { width: 20px; height: 20px; }
+.om-cdesign-modern .om-filter-sidebar .om-filter-group--swatches .om-filter-link.has-swatch .om-swatch { width: 32px; height: 32px; }
+
+/* Sticky sidebar taller than the screen scrolls on its own. */
+.om-filter-sidebar {
+	scrollbar-width: thin;
+	overscroll-behavior: contain;
+}
+
+@media (max-width: 900px) {
+	.om-catalog-wrap .om-filter-sidebar.om-filter-sidebar {
+		max-height: none;
+		overflow: visible;
+	}
 }
