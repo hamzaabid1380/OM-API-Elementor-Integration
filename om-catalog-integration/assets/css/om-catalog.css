@@ -9343,3 +9343,8 @@ html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 		grid-template-columns: minmax(0, 1fr);
 	}
 }
+
+/* No price and the buttons stand in for it: no empty price strip. */
+.om-product-wrap .om-price.is-fallback:not(:has(.om-price-fallback)) {
+	display: none;
+}

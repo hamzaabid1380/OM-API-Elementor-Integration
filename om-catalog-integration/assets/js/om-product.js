@@ -676,17 +676,32 @@
 	// viewing") opens the page's inquiry form with that subject chosen.
 	$(document).on('click', 'a[href*="#om-inquiry"]', function (e) {
 		var href = this.getAttribute('href') || '';
-		var hash = href.slice(href.indexOf('#om-inquiry'));
-		var $scope = $(this).closest('.om-product-wrap');
+		// A link to another page's form (the quick view's buttons): go there.
+		if (href.charAt(0) !== '#') {
+			try { if (new URL(href, window.location.href).pathname !== window.location.pathname) { return; } } catch (err) { return; }
+		}
+		if (openInquiry(href.slice(href.indexOf('#om-inquiry')), $(this).closest('.om-product-wrap'), $(this).attr('data-om-pair-title') || '')) {
+			e.preventDefault();
+		}
+	});
+
+	// Arriving with #om-inquiry?subject=… (e.g. from a quick view button).
+	$(function () {
+		if (window.location.hash.indexOf('#om-inquiry') === 0) {
+			var hash = window.location.hash;
+			window.setTimeout(function () { openInquiry(hash, $(), ''); }, 300);
+		}
+	});
+
+	function openInquiry(hash, $scope, pairTitle) {
 		var $box = ($scope.length ? $scope : $(document)).find('.om-product-inquiry, .om-inquiry').not('.om-end-dialog .om-inquiry').first();
-		if (!$box.length) { return; } // Nothing here: let the link work as usual.
-		e.preventDefault();
+		if (!$box.length) { return false; } // Nothing here: let the link work as usual.
 		var match = /[?&]subject=([^&]*)/.exec(hash);
 		var subject = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
 		// "Ask about this set": carry the paired design into the form.
 		var pair = /[?&]pair=([^&]*)/.exec(hash);
 		if (pair) {
-			setPair($box, decodeURIComponent(pair[1]), $(this).attr('data-om-pair-title') || '');
+			setPair($box, decodeURIComponent(pair[1]), pairTitle);
 		}
 		var details = $box.is('details') ? $box[0] : $box.find('details.om-inquiry')[0];
 		if (details) { details.open = true; }
@@ -700,7 +715,8 @@
 		$box[0].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
 		var first = $box.find('.om-fields input:not([type=hidden]):not([type=radio]), .om-fields textarea').first()[0];
 		if (first) { setTimeout(function () { first.focus({ preventScroll: true }); }, 450); }
-	});
+		return true;
+	}
 
 	function setPair($box, value, title) {
 		var $input = $box.find('.om-inquiry-pair');
@@ -1722,6 +1738,7 @@
 		if (opts.link) { data.link = opts.link; }
 		$.post(cfg.ajaxUrl, data).done(function (response) {
 			if (response && response.success && response.data.html) {
+				loadPageStyles(response.data);
 				$body.html(response.data.html);
 				rememberFrom($body);
 				$body.find('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
@@ -1731,6 +1748,24 @@
 		}).fail(function () {
 			$body.html($('<p class="om-error"></p>').text(t('error', 'Something went wrong. Please try again.')));
 		});
+	}
+
+	// The product page's Elementor styles, so the pop-up's buttons look
+	// like the page's. Loaded once; skipped when the page already has them.
+	function loadPageStyles(data) {
+		var id = data.css_id;
+		if (!id || document.getElementById(id) || document.getElementById(id + '-qv')) { return; }
+		var el;
+		if (data.css_url) {
+			el = document.createElement('link');
+			el.rel = 'stylesheet';
+			el.href = data.css_url;
+		} else if (data.css) {
+			el = document.createElement('style');
+			el.textContent = data.css;
+		} else { return; }
+		el.id = id + '-qv';
+		document.head.appendChild(el);
 	}
 
 	function closeQuickView() {

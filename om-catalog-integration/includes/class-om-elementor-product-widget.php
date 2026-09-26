@@ -1976,6 +1976,57 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->end_controls_section();
 	}
 
+	/**
+	 * Price, fallback and button settings as om_render_product_detail()
+	 * args. Shared with the quick view, so its pop-up offers the same
+	 * buttons as the product page.
+	 */
+	public static function price_args( $settings ) {
+		$args = array();
+		$args['price_display']  = 'never' === ( $settings['price_display'] ?? 'auto' ) ? 'never' : 'auto';
+		$args['price_fallback'] = in_array( $settings['price_fallback'] ?? 'text', array( 'text', 'buttons', 'none' ), true ) ? $settings['price_fallback'] : 'text';
+
+		$args['price_placeholder'] = (string) ( $settings['price_placeholder_text'] ?? '' );
+
+		$price_link = is_array( $settings['price_placeholder_link'] ?? null ) ? $settings['price_placeholder_link'] : array();
+		$args['price_link']          = (string) ( $price_link['url'] ?? '' );
+		$args['price_link_external'] = ! empty( $price_link['is_external'] );
+		$args['price_link_nofollow'] = ! empty( $price_link['nofollow'] );
+
+		$buttons = array();
+		foreach ( (array) ( $settings['action_buttons'] ?? array() ) as $item ) {
+			if ( empty( $item['button_text'] ) ) {
+				continue;
+			}
+			$item_link = is_array( $item['button_link'] ?? null ) ? $item['button_link'] : array();
+
+			$icon_html = '';
+			if ( ! empty( $item['button_icon']['value'] ) ) {
+				ob_start();
+				Icons_Manager::render_icon( $item['button_icon'], array( 'aria-hidden' => 'true' ) );
+				$icon_html = (string) ob_get_clean();
+			}
+
+			$buttons[] = array(
+				'text'          => $item['button_text'],
+				'url'           => (string) ( $item_link['url'] ?? '' ),
+				'external'      => ! empty( $item_link['is_external'] ),
+				'nofollow'      => ! empty( $item_link['nofollow'] ),
+				'style'         => $item['button_style'] ?? 'solid',
+				'show'          => $item['button_show'] ?? 'always',
+				'icon_html'     => $icon_html,
+				'icon_position' => $item['button_icon_position'] ?? 'before',
+				'class'         => ! empty( $item['_id'] ) ? 'elementor-repeater-item-' . $item['_id'] : '',
+			);
+		}
+		$args['buttons']          = $buttons;
+		$args['buttons_position'] = in_array( $settings['buttons_position'] ?? 'price', array( 'price', 'after_description', 'after_options' ), true ) ? $settings['buttons_position'] : 'price';
+		$args['buttons_layout']   = 'stacked' === ( $settings['buttons_layout'] ?? 'inline' ) ? 'stacked' : 'inline';
+		$trust_source       = (string) ( $settings['trust_source'] ?? 'global' );
+		$args['trust_line'] = 'custom' === $trust_source ? (string) ( $settings['trust_text'] ?? '' ) : ( 'none' === $trust_source ? '' : null );
+		return $args;
+	}
+
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
@@ -2016,53 +2067,13 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			$args[ $key ] = 'yes' === ( $settings[ $key ] ?? 'yes' );
 		}
 
-		$args['price_display']  = 'never' === ( $settings['price_display'] ?? 'auto' ) ? 'never' : 'auto';
-		$args['price_fallback'] = in_array( $settings['price_fallback'] ?? 'text', array( 'text', 'buttons', 'none' ), true ) ? $settings['price_fallback'] : 'text';
-
-		$args['price_placeholder'] = (string) ( $settings['price_placeholder_text'] ?? '' );
-
-		$price_link = is_array( $settings['price_placeholder_link'] ?? null ) ? $settings['price_placeholder_link'] : array();
-		$args['price_link']          = (string) ( $price_link['url'] ?? '' );
-		$args['price_link_external'] = ! empty( $price_link['is_external'] );
-		$args['price_link_nofollow'] = ! empty( $price_link['nofollow'] );
-
-		$buttons = array();
-		foreach ( (array) ( $settings['action_buttons'] ?? array() ) as $item ) {
-			if ( empty( $item['button_text'] ) ) {
-				continue;
-			}
-			$item_link = is_array( $item['button_link'] ?? null ) ? $item['button_link'] : array();
-
-			$icon_html = '';
-			if ( ! empty( $item['button_icon']['value'] ) ) {
-				ob_start();
-				Icons_Manager::render_icon( $item['button_icon'], array( 'aria-hidden' => 'true' ) );
-				$icon_html = (string) ob_get_clean();
-			}
-
-			$buttons[] = array(
-				'text'          => $item['button_text'],
-				'url'           => (string) ( $item_link['url'] ?? '' ),
-				'external'      => ! empty( $item_link['is_external'] ),
-				'nofollow'      => ! empty( $item_link['nofollow'] ),
-				'style'         => $item['button_style'] ?? 'solid',
-				'show'          => $item['button_show'] ?? 'always',
-				'icon_html'     => $icon_html,
-				'icon_position' => $item['button_icon_position'] ?? 'before',
-				'class'         => ! empty( $item['_id'] ) ? 'elementor-repeater-item-' . $item['_id'] : '',
-			);
-		}
-		$args['buttons']          = $buttons;
-		$args['buttons_position'] = in_array( $settings['buttons_position'] ?? 'price', array( 'price', 'after_description', 'after_options' ), true ) ? $settings['buttons_position'] : 'price';
-		$args['buttons_layout']   = 'stacked' === ( $settings['buttons_layout'] ?? 'inline' ) ? 'stacked' : 'inline';
+		$args = array_merge( $args, self::price_args( $settings ) );
 		$args['options_style']    = in_array( $settings['options_style'] ?? 'swatches', array( 'swatches', 'pills', 'dropdowns' ), true ) ? $settings['options_style'] : 'swatches';
 		$args['details_style']    = 'accordion' === ( $settings['details_style'] ?? 'open' ) ? 'accordion' : 'open';
 		$args['design']           = in_array( $settings['design'] ?? 'refined', array( 'refined', 'modern', 'classic' ), true ) ? $settings['design'] : 'refined';
 		$args['video_mode']       = 'thumb' === ( $settings['video_mode'] ?? 'first' ) ? 'thumb' : 'first';
 		$args['back_link']        = 'yes' === ( $settings['back_link'] ?? 'yes' );
 		$args['back_text']        = (string) ( $settings['back_text'] ?? '' );
-		$trust_source             = (string) ( $settings['trust_source'] ?? 'global' );
-		$args['trust_line']       = 'custom' === $trust_source ? (string) ( $settings['trust_text'] ?? '' ) : ( 'none' === $trust_source ? '' : null );
 		$args['gallery']          = array(
 			'autoplay'     => 'yes' === ( $settings['video_autoplay'] ?? 'yes' ),
 			'sound'        => 'yes' === ( $settings['video_sound'] ?? 'yes' ),

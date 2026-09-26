@@ -717,6 +717,18 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.22.2
+- The quick view now uses the product page's price text and buttons. When
+  product pages use an Elementor layout (Settings › OM Catalog), the
+  pop-up takes the price fallback, buttons (with their show-when rules,
+  icons and Style-tab colours), trust line, option style and design from
+  that layout's OM Single Product widget, so the listing no longer shows
+  plain "Call for pricing" text while the page shows a button.
+- Buttons that open the inquiry form (`#om-inquiry?subject=…`) take the
+  visitor from the pop-up to the product page with the form open and the
+  subject chosen. Arriving on any page with that link opens the form.
+- No empty price strip when the buttons stand in for the price.
+
 ### 1.22.1
 - Quick view: new **Pop-up thumbnails** setting, with the thumbnails beside
   the photo, under it, or hidden. Under the photo, the photo column

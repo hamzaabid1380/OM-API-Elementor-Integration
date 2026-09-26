@@ -65,38 +65,140 @@ class OM_Ajax {
 		$has = static function ( $part ) use ( $parts ) {
 			return in_array( $part, $parts, true );
 		};
-		wp_send_json_success(
-			array(
-				'html' => '<div class="om-single-product om-single-product--widget om-single-product--qv om-qv-thumbs-' . $thumbs . '">' . om_render_product_detail(
-					$product,
-					$line,
-					$style,
-					array(
-						'compact'          => true,
-						'show_meta'        => $has( 'meta' ),
-						'show_price'       => $has( 'price' ),
-						'show_options'     => $has( 'options' ),
-						'show_variants'    => $has( 'options' ),
-						'show_description' => $has( 'description' ),
-						'show_builder'     => $has( 'builder' ),
-						'show_stones'      => false,
-						'show_specs'       => false,
-						'show_inquiry'     => false,
-						'sticky_bar'       => false,
-						'sticky_gallery'   => false,
-						'show_size'        => false,
-						'read_selection'   => false,
-						'options_style'    => (string) get_option( 'om_options_style', 'swatches' ),
-						'video_mode'       => $video,
-						'full_link_text'   => $link,
-						'gallery'          => array(
-							'follow' => '0' !== get_option( 'om_media_follow', '1' ),
-							'thumbs' => $thumbs,
-						),
-					)
-				) . '</div>',
+
+		// The product page's own price text and buttons (its "OM Single
+		// Product" widget), so the pop-up offers exactly the same.
+		$page      = self::product_page_widget();
+		$page_args = array();
+		if ( $page ) {
+			$page_args = OM_Elementor_Product_Widget::price_args( $page['settings'] );
+			if ( in_array( $page['settings']['options_style'] ?? '', array( 'swatches', 'pills', 'dropdowns' ), true ) ) {
+				$page_args['options_style'] = $page['settings']['options_style'];
+			}
+			if ( in_array( $page['settings']['design'] ?? '', array( 'refined', 'modern', 'classic' ), true ) ) {
+				$page_args['design'] = $page['settings']['design'];
+			}
+			$full_url  = om_product_url( $line, $style );
+			foreach ( $page_args['buttons'] as $i => $button ) {
+				// No inquiry form in the pop-up: open the one on the page.
+				if ( 0 === strpos( (string) $button['url'], '#om-inquiry' ) ) {
+					$page_args['buttons'][ $i ]['url'] = $full_url . $button['url'];
+				}
+			}
+		}
+
+		$html = om_render_product_detail(
+			$product,
+			$line,
+			$style,
+			array_merge(
+				array(
+					'compact'          => true,
+					'show_meta'        => $has( 'meta' ),
+					'show_price'       => $has( 'price' ),
+					'show_options'     => $has( 'options' ),
+					'show_variants'    => $has( 'options' ),
+					'show_description' => $has( 'description' ),
+					'show_builder'     => $has( 'builder' ),
+					'show_stones'      => false,
+					'show_specs'       => false,
+					'show_inquiry'     => false,
+					'sticky_bar'       => false,
+					'sticky_gallery'   => false,
+					'show_size'        => false,
+					'read_selection'   => false,
+					'options_style'    => (string) get_option( 'om_options_style', 'swatches' ),
+					'video_mode'       => $video,
+					'full_link_text'   => $link,
+					'gallery'          => array(
+						'follow' => '0' !== get_option( 'om_media_follow', '1' ),
+						'thumbs' => $thumbs,
+					),
+				),
+				$page_args
 			)
 		);
+		$html = '<div class="om-single-product om-single-product--widget om-single-product--qv om-qv-thumbs-' . $thumbs . '">' . $html . '</div>';
+		$data = array();
+		if ( $page ) {
+			// Wrapped like the widget on that page, so its Style-tab
+			// button colours (and the rest) apply here too.
+			$html = sprintf( '<div class="elementor-%d om-qv-page-style"><div class="elementor-element elementor-element-%s">%s</div></div>', $page['layout'], esc_attr( $page['id'] ), $html );
+			$data = self::layout_css( $page['layout'] );
+		}
+		wp_send_json_success( array( 'html' => $html ) + $data );
+	}
+
+	/**
+	 * The "OM Single Product" widget on the product layout page (Settings >
+	 * OM Catalog), or null when product pages use the plugin's template.
+	 *
+	 * @return array|null [ layout, id, settings ].
+	 */
+	private static function product_page_widget() {
+		$layout = (int) get_option( 'om_product_layout_page', 0 );
+		if ( ! $layout || ! did_action( 'elementor/loaded' ) || 'publish' !== get_post_status( $layout ) ) {
+			return null;
+		}
+		// Widgets (and their classes) load when Elementor first lists them.
+		\Elementor\Plugin::$instance->widgets_manager->get_widget_types();
+		if ( ! class_exists( 'OM_Elementor_Product_Widget' ) ) {
+			return null;
+		}
+		$data = json_decode( (string) get_post_meta( $layout, '_elementor_data', true ), true );
+		$find = static function ( $elements ) use ( &$find ) {
+			foreach ( (array) $elements as $element ) {
+				if ( 'widget' === ( $element['elType'] ?? '' ) && 'om_product_widget' === ( $element['widgetType'] ?? '' ) ) {
+					return $element;
+				}
+				$inner = $find( $element['elements'] ?? array() );
+				if ( $inner ) {
+					return $inner;
+				}
+			}
+			return null;
+		};
+		$element = is_array( $data ) ? $find( $data ) : null;
+		if ( ! $element ) {
+			return null;
+		}
+		// Through Elementor, so unset controls read as their defaults.
+		$settings = (array) ( $element['settings'] ?? array() );
+		try {
+			$widget = \Elementor\Plugin::$instance->elements_manager->create_element_instance( $element );
+			if ( $widget ) {
+				$settings = $widget->get_settings_for_display();
+			}
+		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- raw settings are fine.
+		}
+		return array(
+			'layout'   => $layout,
+			'id'       => (string) $element['id'],
+			'settings' => $settings,
+		);
+	}
+
+	/**
+	 * The layout page's Elementor CSS for the pop-up: a file URL, or the
+	 * CSS itself when Elementor prints styles inline.
+	 */
+	private static function layout_css( $layout ) {
+		if ( ! class_exists( '\Elementor\Core\Files\CSS\Post' ) ) {
+			return array();
+		}
+		$css  = \Elementor\Core\Files\CSS\Post::create( $layout );
+		$meta = $css->get_meta();
+		if ( empty( $meta['status'] ) ) {
+			$css->update();
+			$meta = $css->get_meta();
+		}
+		$out = array( 'css_id' => 'elementor-post-' . (int) $layout . '-css' );
+		if ( 'file' === ( $meta['status'] ?? '' ) ) {
+			$out['css_url'] = $css->get_url();
+		} elseif ( 'inline' === ( $meta['status'] ?? '' ) && ! empty( $meta['css'] ) ) {
+			$out['css'] = (string) $meta['css'];
+		}
+		return $out;
 	}
 
 	/**
