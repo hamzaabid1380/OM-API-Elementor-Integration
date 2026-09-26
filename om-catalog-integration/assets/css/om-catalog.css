@@ -9307,3 +9307,39 @@ html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 		overflow: visible;
 	}
 }
+
+/* =========================================================
+   1.22 Quick view: thumbnails under the photo, photo column width
+   ========================================================= */
+
+.om-qv-body .om-product-wrap.om-product-wrap {
+	grid-template-columns: minmax(0, var(--om-qv-media, 1fr)) minmax(0, 1fr);
+}
+
+.om-qv-body .om-product-wrap.om-design-refined.om-design-refined {
+	grid-template-columns: minmax(0, var(--om-qv-media, 7fr)) minmax(0, 5fr);
+}
+
+/* The strip moves under the photo, so the photo column can be narrower
+   and the details get the room. */
+.om-qv-thumbs-bottom .om-product-wrap.om-product-wrap.om-product-wrap {
+	grid-template-columns: minmax(0, var(--om-qv-media, 44%)) minmax(0, 1fr);
+}
+
+.om-qv-thumbs-bottom .om-product-gallery .om-thumbs {
+	gap: 8px;
+	margin-top: 10px;
+}
+
+.om-qv-thumbs-bottom .om-product-gallery .om-thumb-btn {
+	flex: 0 0 64px;
+	width: 64px;
+	height: 64px;
+	scroll-snap-align: start;
+}
+
+@media (max-width: 800px) {
+	.om-qv-body .om-product-wrap.om-product-wrap.om-product-wrap.om-product-wrap {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}

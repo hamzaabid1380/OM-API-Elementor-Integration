@@ -335,7 +335,11 @@ a line have videos.
   or none), its text and corner, and video previews on/off.
 - **Style › Quick View Button / Quick View Pop-up / Video Badge** — colours
   (normal + hover), borders, radius, padding, sizes; pop-up background,
-  page overlay, width, radius, spacing and close button.
+  page overlay, width, radius, spacing and close button, plus **Photo
+  column width** (the share of the pop-up the photo takes).
+- **Pop-up thumbnails** (Content › Quick View): beside the photo, under it
+  (the photo column narrows to 44% so the details get more room), or
+  hidden.
 - Catalog widget also gets **Style › Card Price** and **Style › Search &
   Sort**.
 
@@ -353,7 +357,7 @@ headings, rows, hover, price, buttons).
 Shortcode equivalents on `[om_catalog]` and `[om_related]`: `quick_view`,
 `qv_text`, `qv_style` (bar|button|icon), `qv_mobile`, `qv_parts`
 (price,options,description,meta,builder), `qv_video` (first|thumb),
-`qv_link_text`, `video_badge` (icon|label|none), `video_badge_text`,
+`qv_thumbs` (left|bottom|none), `qv_link_text`, `video_badge` (icon|label|none), `video_badge_text`,
 `video_badge_pos` (tr|tl|br|bl), `card_video` (yes|no).
 
 ## Photos that follow the selected options (1.8)
@@ -712,6 +716,13 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.22.1
+- Quick view: new **Pop-up thumbnails** setting, with the thumbnails beside
+  the photo, under it, or hidden. Under the photo, the photo column
+  narrows so the details column gets more room.
+- Quick view: new **Photo column width** slider (Style › Quick View Pop-up,
+  per device).
 
 ### 1.22.0
 - Filter sidebar redesign: each group opens and closes from its heading

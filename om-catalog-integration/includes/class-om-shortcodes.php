@@ -342,6 +342,7 @@ class OM_Shortcodes {
 				'qv_mobile'       => '',
 				'qv_parts'        => 'price,options,description,meta,builder',
 				'qv_video'        => 'first',
+				'qv_thumbs'       => 'left',
 				'qv_link_text'    => '',
 			),
 			$atts,

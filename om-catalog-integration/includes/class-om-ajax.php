@@ -51,6 +51,7 @@ class OM_Ajax {
 		// display switches, so there is nothing to sign.
 		$parts = isset( $_POST['parts'] ) ? array_map( 'trim', explode( ',', sanitize_text_field( wp_unslash( $_POST['parts'] ) ) ) ) : array( 'price', 'options', 'description', 'meta', 'builder' );
 		$video = isset( $_POST['video'] ) && 'thumb' === $_POST['video'] ? 'thumb' : 'first';
+		$thumbs = isset( $_POST['thumbs'] ) && in_array( $_POST['thumbs'], array( 'bottom', 'none' ), true ) ? sanitize_key( $_POST['thumbs'] ) : 'left';
 		$link  = isset( $_POST['link'] ) ? mb_substr( sanitize_text_field( wp_unslash( $_POST['link'] ) ), 0, 60 ) : '';
 		// phpcs:enable
 		if ( '' === $line || '' === $style ) {
@@ -66,7 +67,7 @@ class OM_Ajax {
 		};
 		wp_send_json_success(
 			array(
-				'html' => '<div class="om-single-product om-single-product--widget om-single-product--qv">' . om_render_product_detail(
+				'html' => '<div class="om-single-product om-single-product--widget om-single-product--qv om-qv-thumbs-' . $thumbs . '">' . om_render_product_detail(
 					$product,
 					$line,
 					$style,
@@ -88,7 +89,10 @@ class OM_Ajax {
 						'options_style'    => (string) get_option( 'om_options_style', 'swatches' ),
 						'video_mode'       => $video,
 						'full_link_text'   => $link,
-						'gallery'          => array( 'follow' => '0' !== get_option( 'om_media_follow', '1' ) ),
+						'gallery'          => array(
+							'follow' => '0' !== get_option( 'om_media_follow', '1' ),
+							'thumbs' => $thumbs,
+						),
 					)
 				) . '</div>',
 			)

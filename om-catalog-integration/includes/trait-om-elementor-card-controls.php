@@ -114,6 +114,22 @@ trait OM_Elementor_Card_Controls {
 		);
 
 		$this->add_control(
+			'qv_thumbs',
+			array(
+				'label'       => __( 'Pop-up thumbnails', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'left',
+				'options'     => array(
+					'left'   => __( 'Beside the photo (left)', 'om-catalog' ),
+					'bottom' => __( 'Under the photo (more room for details)', 'om-catalog' ),
+					'none'   => __( 'Hidden (arrows / swipe only)', 'om-catalog' ),
+				),
+				'description' => __( 'Under the photo frees the strip on the left, so the photo column can be narrower. Adjust it under Style > Quick View Pop-up > Photo column width.', 'om-catalog' ),
+				'condition'   => $cond,
+			)
+		);
+
+		$this->add_control(
 			'qv_link_text',
 			array(
 				'label'       => __( '"Full details" link text', 'om-catalog' ),
@@ -344,6 +360,18 @@ trait OM_Elementor_Card_Controls {
 				'size_units' => array( 'px' ),
 				'range'      => array( 'px' => array( 'min' => 480, 'max' => 1400 ) ),
 				'selectors'  => array( '{{WRAPPER}}' => '--om-qv-width: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'qv_media_width',
+			array(
+				'label'       => __( 'Photo column width', 'om-catalog' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => array( '%' ),
+				'range'       => array( '%' => array( 'min' => 30, 'max' => 70 ) ),
+				'description' => __( 'Share of the pop-up the photo takes; the details get the rest. Default 50%, or 44% with thumbnails under the photo.', 'om-catalog' ),
+				'selectors'   => array( '{{WRAPPER}}' => '--om-qv-media: {{SIZE}}%;' ),
 			)
 		);
 
@@ -597,6 +625,7 @@ trait OM_Elementor_Card_Controls {
 			'qv_mobile'        => (string) ( $s['qv_mobile'] ?? '' ),
 			'qv_parts'         => implode( ',', is_array( $parts ) ? $parts : array() ),
 			'qv_video'         => (string) ( $s['qv_video'] ?? 'first' ),
+			'qv_thumbs'        => (string) ( $s['qv_thumbs'] ?? 'left' ),
 			'qv_link_text'     => (string) ( $s['qv_link_text'] ?? '' ),
 			'card_video'       => 'yes' === ( $s['card_video'] ?? 'yes' ) ? 'yes' : 'no',
 			'video_badge'      => (string) ( $s['video_badge'] ?? 'icon' ),

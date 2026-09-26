@@ -1176,6 +1176,7 @@ function om_quick_view_attr( $atts ) {
 	$opts  = array(
 		'parts' => implode( ',', $parts ),
 		'video' => 'thumb' === ( $atts['qv_video'] ?? '' ) ? 'thumb' : 'first',
+		'thumbs' => in_array( $atts['qv_thumbs'] ?? '', array( 'bottom', 'none' ), true ) ? $atts['qv_thumbs'] : 'left',
 		'link'  => mb_substr( trim( (string) ( $atts['qv_link_text'] ?? '' ) ), 0, 60 ),
 	);
 	return ' data-om-qv-opts="' . esc_attr( wp_json_encode( $opts ) ) . '"';

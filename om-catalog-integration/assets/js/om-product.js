@@ -1692,7 +1692,7 @@
 
 	// Pop-up look set on the widget (CSS variables on the grid), carried
 	// over to the dialog, which lives at the end of the page.
-	var QV_VARS = ['--om-qv-modal-bg', '--om-qv-backdrop', '--om-qv-width', '--om-qv-radius', '--om-qv-pad', '--om-qv-close', '--om-radius', '--om-radius-lg', '--om-space'];
+	var QV_VARS = ['--om-qv-modal-bg', '--om-qv-backdrop', '--om-qv-width', '--om-qv-radius', '--om-qv-pad', '--om-qv-close', '--om-radius', '--om-radius-lg', '--om-space', '--om-qv-media'];
 
 	function openQuickView(line, style, trigger) {
 		if (!qv) {
@@ -1718,6 +1718,7 @@
 		var data = { action: 'om_quick_view', line: line, style: style };
 		if (typeof opts.parts === 'string') { data.parts = opts.parts; }
 		if (opts.video) { data.video = opts.video; }
+		if (opts.thumbs) { data.thumbs = opts.thumbs; }
 		if (opts.link) { data.link = opts.link; }
 		$.post(cfg.ajaxUrl, data).done(function (response) {
 			if (response && response.success && response.data.html) {
