@@ -2061,20 +2061,43 @@
 
 	function openCompare() {
 		if (!compareDialog) {
-			compareDialog = $('<dialog class="om-compare-dialog' + (cfg.refined ? ' om-refined' : '') + '" aria-labelledby="om-compare-title"><div class="om-compare-inner"><div class="om-compare-head"><h2 class="om-compare-title" id="om-compare-title"></h2><button type="button" class="om-compare-close">&times;</button></div><div class="om-compare-body"></div></div></dialog>').appendTo(document.body);
-			compareDialog.find('.om-compare-title').text(t('compare', 'Compare'));
+			compareDialog = $('<dialog class="om-compare-dialog' + (cfg.refined ? ' om-refined' : '') + '" aria-labelledby="om-compare-title"><div class="om-compare-inner"><div class="om-compare-head"><div class="om-compare-heading"><p class="om-compare-eyebrow"></p><h2 class="om-compare-title" id="om-compare-title"></h2></div><div class="om-compare-tools"><label class="om-compare-diff"><input type="checkbox" /><span></span></label><button type="button" class="om-compare-clear-all"></button><button type="button" class="om-compare-close">&times;</button></div></div><div class="om-compare-body"></div></div></dialog>').appendTo(document.body);
+			compareDialog.find('.om-compare-eyebrow').text(t('compare', 'Compare'));
+			compareDialog.find('.om-compare-diff span').text(t('compareDiff', 'Highlight differences'));
+			compareDialog.find('.om-compare-clear-all').text(t('clearAll', 'Clear all')).on('click', function () { writeCompare([]); compareDialog[0].close(); });
+			var diffOn = false;
+			try { diffOn = window.localStorage.getItem('om_compare_diff') === '1'; } catch (err) { diffOn = false; }
+			compareDialog.find('.om-compare-diff input').prop('checked', diffOn).on('change', function () {
+				compareDialog.toggleClass('is-diff', this.checked);
+				try { window.localStorage.setItem('om_compare_diff', this.checked ? '1' : '0'); } catch (err) { /* nothing */ }
+			});
+			compareDialog.toggleClass('is-diff', diffOn);
 			compareDialog.find('.om-compare-close').attr('aria-label', t('close', 'Close')).on('click', function () { compareDialog[0].close(); });
 			compareDialog.on('click', function (e) { if (e.target === compareDialog[0]) { compareDialog[0].close(); } });
 			compareDialog[0].addEventListener('close', function () { $('html').removeClass('om-lb-open'); });
 		}
 		var list = readCompare();
+		compareDialog.find('.om-compare-title').text(list.length === 1 ? t('compareOne', '1 design') : t('compareMany', '%d designs side by side').replace('%d', list.length));
+		compareDialog.find('.om-compare-diff').prop('hidden', list.length < 2);
 		var $body = compareDialog.find('.om-compare-body').html('<div class="om-qv-loading"><span class="om-qv-skel om-qv-skel--img"></span><span class="om-qv-skel"></span></div>');
 		if (compareDialog[0].showModal && !compareDialog[0].open) { compareDialog[0].showModal(); }
 		$('html').addClass('om-lb-open');
 		$.post(cfg.ajaxUrl, { action: 'om_compare', items: list.map(function (x) { return { line: x.l, style: x.s }; }) }).done(function (response) {
 			$body.html(response && response.success ? response.data.html : $('<p class="om-error"></p>').text((response && response.data && response.data.message) || t('error', 'Something went wrong. Please try again.')));
+			markCompareDiffs($body);
 		}).fail(function () {
 			$body.html($('<p class="om-error"></p>').text(t('error', 'Something went wrong. Please try again.')));
+		});
+	}
+
+	// Rows where every design says the same are marked, so "Highlight
+	// differences" can quiet them.
+	function markCompareDiffs($body) {
+		$body.find('.om-compare-row').each(function () {
+			if (/om-compare-row--(photo|name|link)/.test(this.className)) { return; }
+			var values = $(this).children('td').map(function () { return $.trim($(this).text()); }).get();
+			var same = values.length > 1 && values.every(function (v) { return v === values[0]; });
+			$(this).toggleClass('is-same', same).toggleClass('is-different', !same && values.length > 1);
 		});
 	}
 

@@ -717,6 +717,15 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.22.4
+- Compare pop-up header redesigned: a small "Compare" eyebrow and a
+  title that counts the designs ("3 designs side by side") replace the
+  oversized heading the site's global H2 style produced. The header stays
+  in view while the table scrolls.
+- **Highlight differences**: tints the rows where the designs differ,
+  with a gold mark by the label. The choice is remembered.
+- **Clear all** in the header empties the comparison and closes it.
+
 ### 1.22.3
 - Layout no longer shifts under Elementor's global paragraph and heading
   spacing (Site Settings › Typography). That setting outranked the
