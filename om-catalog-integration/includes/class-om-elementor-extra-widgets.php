@@ -1037,3 +1037,329 @@ class OM_Elementor_Search_Widget extends Widget_Base {
 		);
 	}
 }
+
+/** "OM Story Reels" widget: video stories of designs, Instagram-style. */
+class OM_Elementor_Reels_Widget extends Widget_Base {
+
+	public function get_name() {
+		return 'om_reels_widget';
+	}
+
+	public function get_title() {
+		return __( 'OM Story Reels', 'om-catalog' );
+	}
+
+	public function get_icon() {
+		return 'eicon-video-playlist';
+	}
+
+	public function get_categories() {
+		return array( 'general' );
+	}
+
+	public function get_keywords() {
+		return array( 'stories', 'reels', 'video', 'jewelry', 'rings', 'overnight' );
+	}
+
+	public function get_style_depends() {
+		return array( 'om-catalog-css' );
+	}
+
+	public function get_script_depends() {
+		return array( 'om-catalog-js' );
+	}
+
+	protected function register_controls() {
+
+		/* ---------- Content: stories ---------- */
+
+		$this->start_controls_section( 'section_stories', array( 'label' => __( 'Stories', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'source',
+			array(
+				'label'       => __( 'Designs', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'line',
+				'options'     => array(
+					'line'    => __( 'From a product line', 'om-catalog' ),
+					'popular' => __( 'Most viewed', 'om-catalog' ),
+					'picked'  => __( 'Hand-picked style numbers', 'om-catalog' ),
+				),
+				'description' => __( 'Only designs with a video are shown.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'line',
+			array(
+				'label'   => __( 'Product line', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'engagement-rings',
+				'options' => OM_Shortcodes::line_labels( is_admin() ),
+			)
+		);
+
+		$this->add_control(
+			'style',
+			array(
+				'label'       => __( 'Collection / style (optional)', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => 'Halo',
+				'condition'   => array( 'source' => 'line' ),
+			)
+		);
+
+		$this->add_control(
+			'shape',
+			array(
+				'label'       => __( 'Centre shape (optional)', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => 'Oval',
+				'condition'   => array( 'source' => 'line' ),
+			)
+		);
+
+		$this->add_control(
+			'styles',
+			array(
+				'label'       => __( 'Style numbers', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 2,
+				'placeholder' => '85121-2, 84842-2',
+				'condition'   => array( 'source' => 'picked' ),
+			)
+		);
+
+		$this->add_control(
+			'count',
+			array(
+				'label'   => __( 'Number of stories', 'om-catalog' ),
+				'type'    => Controls_Manager::NUMBER,
+				'default' => 8,
+				'min'     => 1,
+				'max'     => 16,
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Content: row ---------- */
+
+		$this->start_controls_section( 'section_row', array( 'label' => __( 'Bubbles', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'heading',
+			array(
+				'label'       => __( 'Heading (optional)', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'See them move', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'bubble',
+			array(
+				'label'   => __( 'Bubble shape', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'circle',
+				'options' => array(
+					'circle' => __( 'Circles (like stories)', 'om-catalog' ),
+					'card'   => __( 'Tall cards (like reels)', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'label',
+			array(
+				'label'   => __( 'Label under each', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'title',
+				'options' => array(
+					'title'   => __( 'Design name (short)', 'om-catalog' ),
+					'shape'   => __( 'Centre shape', 'om-catalog' ),
+					'variant' => __( 'Carat / variant', 'om-catalog' ),
+					'none'    => __( 'None', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_control(
+			'show_on',
+			array(
+				'label'   => __( 'Show on', 'om-catalog' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'all',
+				'options' => array(
+					'all'     => __( 'All devices', 'om-catalog' ),
+					'mobile'  => __( 'Phones only', 'om-catalog' ),
+					'desktop' => __( 'Tablets & desktops only', 'om-catalog' ),
+				),
+			)
+		);
+
+		$this->add_responsive_control(
+			'row_align',
+			array(
+				'label'     => __( 'Alignment', 'om-catalog' ),
+				'type'      => Controls_Manager::CHOOSE,
+				'options'   => array(
+					'flex-start' => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
+					'center'     => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
+				),
+				'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-reels-justify: {{VALUE}};' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Content: player ---------- */
+
+		$this->start_controls_section( 'section_player', array( 'label' => __( 'Player', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'button_text',
+			array(
+				'label'       => __( 'Button text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'View this design', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control( 'show_price', array( 'label' => __( '"From" price', 'om-catalog' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes' ) );
+		$this->add_control( 'show_style', array( 'label' => __( 'Style number', 'om-catalog' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes' ) );
+		$this->add_control( 'auto_next', array( 'label' => __( 'Go to the next story by itself', 'om-catalog' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes' ) );
+		$this->add_control( 'sound', array( 'label' => __( 'Start with sound on', 'om-catalog' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'description' => __( 'Off: stories start muted with a sound button (recommended).', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'max_length',
+			array(
+				'label'       => __( 'Longest a video plays (seconds)', 'om-catalog' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 15,
+				'min'         => 5,
+				'max'         => 60,
+			)
+		);
+
+		$this->add_control(
+			'duration',
+			array(
+				'label'       => __( 'Embedded video length (seconds)', 'om-catalog' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 8,
+				'min'         => 3,
+				'max'         => 30,
+				'description' => __( 'For YouTube / Vimeo / 360° players, which can\'t report their own length.', 'om-catalog' ),
+			)
+		);
+
+		$this->end_controls_section();
+
+		/* ---------- Style: bubbles ---------- */
+
+		$this->start_controls_section( 'section_style_bubbles', array( 'label' => __( 'Bubbles', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+
+		$this->add_responsive_control(
+			'size',
+			array(
+				'label'      => __( 'Circle size', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 44, 'max' => 160 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-reels' => '--om-reel-size: {{SIZE}}px;' ),
+				'condition'  => array( 'bubble' => 'circle' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'card_w',
+			array(
+				'label'      => __( 'Card width', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 70, 'max' => 260 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-reels' => '--om-reel-card-w: {{SIZE}}px;' ),
+				'condition'  => array( 'bubble' => 'card' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'gap',
+			array(
+				'label'      => __( 'Space between', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 4, 'max' => 48 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-reels' => '--om-reel-gap: {{SIZE}}px;' ),
+			)
+		);
+
+		$this->add_control( 'ring_a', array( 'label' => __( 'Ring colour 1', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'separator' => 'before', 'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-reel-ring-a: {{VALUE}};' ) ) );
+		$this->add_control( 'ring_b', array( 'label' => __( 'Ring colour 2', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-reel-ring-b: {{VALUE}};' ) ) );
+		$this->add_control( 'ring_seen', array( 'label' => __( 'Ring once watched', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-reel-seen: {{VALUE}};' ) ) );
+		$this->add_control(
+			'ring_w',
+			array(
+				'label'      => __( 'Ring thickness', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 6, 'step' => 0.5 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-reels' => '--om-reel-ring-w: {{SIZE}}px;' ),
+			)
+		);
+		$this->add_control( 'label_color', array( 'label' => __( 'Label colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'separator' => 'before', 'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-reel-label: {{VALUE}};' ) ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'label_typo', 'label' => __( 'Label typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-reel-label' ) );
+		$this->add_control( 'heading_color', array( 'label' => __( 'Heading colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'separator' => 'before', 'selectors' => array( '{{WRAPPER}} .om-reels-heading' => 'color: {{VALUE}};' ) ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'heading_typo', 'label' => __( 'Heading typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-reels-heading' ) );
+
+		$this->end_controls_section();
+
+		/* ---------- Style: player ---------- */
+
+		$this->start_controls_section( 'section_style_player', array( 'label' => __( 'Player', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+
+		$this->add_control( 'backdrop', array( 'label' => __( 'Backdrop (desktop)', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-rv-backdrop: {{VALUE}};' ) ) );
+		$this->add_control( 'cta_bg', array( 'label' => __( 'Button background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-rv-cta-bg: {{VALUE}};' ) ) );
+		$this->add_control( 'cta_bg_hover', array( 'label' => __( 'Button background (hover)', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-rv-cta-bg-hover: {{VALUE}};' ) ) );
+		$this->add_control( 'cta_fg', array( 'label' => __( 'Button text', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-rv-cta-fg: {{VALUE}};' ) ) );
+		$this->add_control(
+			'cta_radius',
+			array(
+				'label'      => __( 'Button corner radius', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-reels' => '--om-rv-cta-radius: {{SIZE}}px;' ),
+			)
+		);
+
+		$this->end_controls_section();
+	}
+
+	protected function render() {
+		$s = $this->get_settings_for_display();
+		echo OM_Reels::instance()->render( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+			array(
+				'source'      => (string) ( $s['source'] ?? 'line' ),
+				'line'        => (string) ( $s['line'] ?? 'engagement-rings' ),
+				'style'       => (string) ( $s['style'] ?? '' ),
+				'shape'       => (string) ( $s['shape'] ?? '' ),
+				'styles'      => (string) ( $s['styles'] ?? '' ),
+				'count'       => (int) ( $s['count'] ?? 8 ),
+				'bubble'      => (string) ( $s['bubble'] ?? 'circle' ),
+				'label'       => (string) ( $s['label'] ?? 'title' ),
+				'show_on'     => (string) ( $s['show_on'] ?? 'all' ),
+				'heading'     => (string) ( $s['heading'] ?? '' ),
+				'show_price'  => 'yes' === ( $s['show_price'] ?? 'yes' ) ? 'yes' : '',
+				'show_style'  => 'yes' === ( $s['show_style'] ?? 'yes' ) ? 'yes' : '',
+				'button_text' => (string) ( $s['button_text'] ?? '' ),
+				'duration'    => (int) ( $s['duration'] ?? 8 ),
+				'max_length'  => (int) ( $s['max_length'] ?? 15 ),
+				'sound'       => 'yes' === ( $s['sound'] ?? '' ) ? 'yes' : '',
+				'auto_next'   => 'yes' === ( $s['auto_next'] ?? 'yes' ) ? 'yes' : '',
+			)
+		);
+	}
+}

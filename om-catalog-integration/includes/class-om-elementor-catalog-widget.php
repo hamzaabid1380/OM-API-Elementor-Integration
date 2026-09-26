@@ -802,6 +802,70 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 
 		$this->end_controls_section();
 
+		/* ---------- Content: sticky toolbar ---------- */
+
+		$this->start_controls_section( 'section_sticky_tools', array( 'label' => __( 'Sticky toolbar', 'om-catalog' ) ) );
+
+		$this->add_control(
+			'sticky_tools',
+			array(
+				'label'       => __( 'Slim toolbar while scrolling', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Once the visitor scrolls past the search and sort, a thin bar stays at the top of the screen with filters, search, the result count, active filters and sort.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_on',
+			array(
+				'label'     => __( 'Show on', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'all',
+				'options'   => array(
+					'all'     => __( 'All devices', 'om-catalog' ),
+					'mobile'  => __( 'Phones only', 'om-catalog' ),
+					'desktop' => __( 'Tablets & desktops only', 'om-catalog' ),
+				),
+				'condition' => array( 'sticky_tools' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'sticky_parts',
+			array(
+				'label'       => __( 'In the bar', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'default'     => array( 'filters', 'search', 'count', 'chips', 'sort', 'top' ),
+				'options'     => array(
+					'filters' => __( 'Filters button', 'om-catalog' ),
+					'search'  => __( 'Search button', 'om-catalog' ),
+					'count'   => __( 'Result count', 'om-catalog' ),
+					'chips'   => __( 'Active filters', 'om-catalog' ),
+					'sort'    => __( 'Sort', 'om-catalog' ),
+					'top'     => __( 'Back to top', 'om-catalog' ),
+				),
+				'condition'   => array( 'sticky_tools' => 'yes' ),
+			)
+		);
+
+		$this->add_responsive_control(
+			'sticky_top',
+			array(
+				'label'       => __( 'Distance from the top', 'om-catalog' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => array( 'px' ),
+				'range'       => array( 'px' => array( 'min' => 0, 'max' => 200 ) ),
+				'description' => __( 'If your site header stays on screen, set its height here so the bar sits just below it.', 'om-catalog' ),
+				'selectors'   => array( '{{WRAPPER}} .om-sticky-tools' => '--om-st-top: {{SIZE}}px;' ),
+				'condition'   => array( 'sticky_tools' => 'yes' ),
+			)
+		);
+
+		$this->end_controls_section();
+
 		/* ---------- Content: end of results ---------- */
 
 		$this->start_controls_section( 'section_end', array( 'label' => __( 'End of results', 'om-catalog' ) ) );
@@ -1038,6 +1102,52 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			)
 		);
 
+		$this->end_controls_section();
+
+		/* ---------- Style: sticky toolbar ---------- */
+
+		$this->start_controls_section(
+			'section_style_sticky_tools',
+			array(
+				'label'     => __( 'Sticky toolbar', 'om-catalog' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'sticky_tools' => 'yes' ),
+			)
+		);
+		$this->add_control( 'st_bg', array( 'label' => __( 'Background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-sticky-tools' => '--om-st-bg: {{VALUE}};' ), 'description' => __( 'A little transparency keeps the frosted-glass look.', 'om-catalog' ) ) );
+		$this->add_control( 'st_fg', array( 'label' => __( 'Text & buttons', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-sticky-tools' => '--om-st-fg: {{VALUE}};' ) ) );
+		$this->add_control( 'st_fg_on', array( 'label' => __( 'Button text on hover', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-sticky-tools' => '--om-st-bg-solid: {{VALUE}};' ) ) );
+		$this->add_control( 'st_line', array( 'label' => __( 'Lines & borders', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-sticky-tools' => '--om-st-line: {{VALUE}};' ) ) );
+		$this->add_control(
+			'st_h',
+			array(
+				'label'      => __( 'Height', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 40, 'max' => 90 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-sticky-tools' => '--om-st-h: {{SIZE}}px; --om-st-h-m: {{SIZE}}px;' ),
+			)
+		);
+		$this->add_control(
+			'st_max',
+			array(
+				'label'      => __( 'Content width', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 600, 'max' => 1920 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-sticky-tools' => '--om-st-max: {{SIZE}}px;' ),
+			)
+		);
+		$this->add_control(
+			'st_shadow',
+			array(
+				'label'                => __( 'Shadow', 'om-catalog' ),
+				'type'                 => Controls_Manager::SWITCHER,
+				'default'              => 'yes',
+				'selectors_dictionary' => array( '' => 'box-shadow: none;' ),
+				'selectors'            => array( '{{WRAPPER}} .om-sticky-tools' => '{{VALUE}}' ),
+			)
+		);
 		$this->end_controls_section();
 
 		/* ---------- Style: end of results ---------- */
@@ -2034,6 +2144,9 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'head_rule'       => 'yes' === ( $settings['head_rule'] ?? 'yes' ) ? 'yes' : '',
 			'head_tag'        => (string) ( $settings['head_tag'] ?? 'h2' ),
 			'head_align'      => (string) ( $settings['head_align'] ?? 'center' ),
+			'sticky_tools'       => 'yes' === ( $settings['sticky_tools'] ?? 'yes' ) ? 'yes' : '',
+			'sticky_on'          => (string) ( $settings['sticky_on'] ?? 'all' ),
+			'sticky_parts'       => implode( ',', (array) ( $settings['sticky_parts'] ?? array( 'filters', 'search', 'count', 'chips', 'sort', 'top' ) ) ),
 			'end_card'           => 'yes' === ( $settings['end_card'] ?? 'yes' ) ? 'yes' : '',
 			'end_layout'         => (string) ( $settings['end_layout'] ?? 'cell' ),
 			'end_theme'          => (string) ( $settings['end_theme'] ?? 'soft' ),

@@ -859,7 +859,7 @@
 	// A tap on the dimmed page behind the sheet closes it.
 	$(document).on('click', function (e) {
 		if (!$('html').hasClass('om-sheet-open')) { return; }
-		if ($(e.target).closest('.om-filter-panel-body, .om-filter-toggle').length) { return; }
+		if ($(e.target).closest('.om-filter-panel-body, .om-filter-toggle, .om-st-filters').length) { return; }
 		$('.om-cdesign-modern .om-filter-panel[open]').each(function () { this.open = false; });
 		lockSheet(false);
 	});
@@ -1935,9 +1935,43 @@
 			if (list.length >= 4) { announce(t('compareFull', 'You can compare up to 4 designs.')); $(this).addClass('is-shake'); var el = this; setTimeout(function () { $(el).removeClass('is-shake'); }, 500); return; }
 			list.push(item);
 		}
+		var sourceImg = at === -1 ? $(this).closest('.om-card-cell').find('.om-card-image img').not('.om-card-hover')[0] : null;
 		writeCompare(list);
+		if (sourceImg) { flyToTray(sourceImg, list.length - 1); }
 		announce((at !== -1 ? t('compareRemoved', 'Removed from compare') : t('compareAdded', 'Added to compare')) + ' (' + list.length + '/4)');
 	});
+
+	// The card's photo flies into its slot in the tray, so the visitor sees
+	// where it went; the slot "catches" it with a small pop.
+	function flyToTray(img, index) {
+		if (reduceMotion || !compareTray || !img.animate) { return; }
+		var target = compareTray.find('.om-compare-item').eq(index).find('img')[0];
+		var from = img.getBoundingClientRect();
+		if (!target || !from.width || from.bottom < 0 || from.top > window.innerHeight) { return; }
+		var to = target.getBoundingClientRect();
+		var clone = img.cloneNode();
+		clone.removeAttribute('loading');
+		clone.className = 'om-compare-fly';
+		clone.setAttribute('aria-hidden', 'true');
+		$(clone).css({ left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px' });
+		document.body.appendChild(clone);
+		target.style.opacity = '0';
+		var dx = to.left + to.width / 2 - (from.left + from.width / 2);
+		var dy = to.top + to.height / 2 - (from.top + from.height / 2);
+		var scale = Math.max(to.width / from.width, 0.05);
+		var anim = clone.animate([
+			{ transform: 'translate(0, 0) scale(1)', borderRadius: '12px', opacity: 1 },
+			{ transform: 'translate(' + dx * 0.5 + 'px, ' + (dy * 0.5 - 60) + 'px) scale(' + (1 + scale) / 2 + ')', borderRadius: '30%', opacity: 1, offset: 0.55 },
+			{ transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(' + scale + ')', borderRadius: '50%', opacity: 0.9 }
+		], { duration: 650, easing: 'cubic-bezier(0.5, 0, 0.2, 1)' });
+		var done = function () {
+			clone.remove();
+			target.style.opacity = '';
+			$(target).closest('.om-compare-item').removeClass('is-caught').each(function () { void this.offsetWidth; }).addClass('is-caught');
+		};
+		anim.onfinish = done;
+		anim.oncancel = done;
+	}
 
 	$(document).on('click', '.om-compare-drop', function () {
 		var key = this.getAttribute('data-om-key');
@@ -2014,6 +2048,416 @@
 		}
 	});
 
+	/* =========================================================
+	   Story reels
+	   ========================================================= */
+
+	var REELS_SEEN_KEY = 'om_reels_seen';
+	var reel = null; // The open player's state.
+	var reelPrices = {}; // line|style => "From $X" ('' = none)
+
+	function readReelsSeen() {
+		try { var v = JSON.parse(window.localStorage.getItem(REELS_SEEN_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (err) { return []; }
+	}
+
+	function markReelSeen(id) {
+		var seen = readReelsSeen().filter(function (x) { return x !== id; });
+		seen.unshift(id);
+		try { window.localStorage.setItem(REELS_SEEN_KEY, JSON.stringify(seen.slice(0, 200))); } catch (err) { /* storage unavailable */ }
+		syncReelsSeen();
+		initBackLink();
+		restoreListingScroll();
+	}
+
+	// Watched stories get a quiet grey ring, like on social apps.
+	function syncReelsSeen() {
+		var seen = readReelsSeen();
+		$('.om-reel-bubble').each(function () {
+			$(this).toggleClass('is-seen', seen.indexOf(this.getAttribute('data-om-reel-id')) > -1);
+		});
+	}
+
+	function reelButton(cls, label, text) {
+		return $('<button type="button"></button>').addClass(cls).attr('aria-label', label).html(text || '');
+	}
+
+	function openReels($section, index, opener) {
+		var conf;
+		try { conf = JSON.parse($section.attr('data-om-reels') || '{}'); } catch (err) { return; }
+		if (!conf.items || !conf.items.length) { return; }
+		closeReels(true);
+		var $v = $('<div class="om-reels-viewer" role="dialog" aria-modal="true"></div>').attr('aria-label', t('stories', 'Video stories'));
+		var $panel = $('<div class="om-rv-panel"></div>');
+		var $bars = $('<div class="om-rv-bars" aria-hidden="true"></div>');
+		conf.items.forEach(function () { $bars.append('<span class="om-rv-bar"><span class="om-rv-fill"></span></span>'); });
+		var $top = $('<div class="om-rv-top"></div>')
+			.append($('<span class="om-rv-who"></span>').append('<span class="om-rv-avatar"></span>', '<span class="om-rv-name"></span>'))
+			.append($('<span class="om-rv-tools"></span>').append(
+				reelButton('om-rv-pause', t('pause', 'Pause')),
+				reelButton('om-rv-sound', t('soundOn', 'Turn sound on')),
+				reelButton('om-rv-close', t('close', 'Close'), '&times;')
+			));
+		var $stage = $('<div class="om-rv-stage"></div>')
+			.append('<div class="om-rv-media"></div>')
+			.append(reelButton('om-rv-nav om-rv-prev', t('prevStory', 'Previous')), reelButton('om-rv-nav om-rv-next', t('nextStory', 'Next')));
+		var $foot = $('<div class="om-rv-foot"></div>')
+			.append('<p class="om-rv-style"></p><p class="om-rv-title"></p><p class="om-rv-price"></p>')
+			.append($('<a class="om-rv-cta"></a>').text(conf.button || 'View this design'));
+		$panel.append($bars, $top, $stage, $foot, '<p class="om-visually-hidden om-rv-live" aria-live="polite"></p>');
+		// The widget's player colours travel with it (it lives on <body>).
+		var cs = window.getComputedStyle($section[0]);
+		['--om-rv-backdrop', '--om-rv-cta-bg', '--om-rv-cta-bg-hover', '--om-rv-cta-fg', '--om-rv-cta-radius'].forEach(function (name) {
+			var value = cs.getPropertyValue(name);
+			if (value && $.trim(value)) { $v[0].style.setProperty(name, $.trim(value)); }
+		});
+		$v.append($panel).appendTo(document.body);
+		$('html').addClass('om-dialog-open');
+		reel = { $v: $v, conf: conf, i: -1, opener: opener, muted: !conf.sound, paused: false, elapsed: 0, last: 0, raf: 0, held: false };
+		showReel(index);
+		setTimeout(function () { $v.find('.om-rv-close').trigger('focus'); }, 30);
+		requestAnimationFrame(function () { $v.addClass('is-open'); });
+	}
+
+	function reelMedia() {
+		return reel ? reel.$v.find('.om-rv-media video')[0] : null;
+	}
+
+	function showReel(i) {
+		if (!reel) { return; }
+		var items = reel.conf.items;
+		if (i < 0) { i = 0; }
+		if (i >= items.length) { closeReels(); return; }
+		reel.i = i;
+		reel.elapsed = 0;
+		reel.last = 0;
+		reel.paused = false;
+		var item = items[i];
+		var $v = reel.$v;
+		$v.find('.om-rv-bar').each(function (n) {
+			$(this).toggleClass('is-done', n < i).toggleClass('is-active', n === i).find('.om-rv-fill').css('transform', 'scaleX(' + (n < i ? 1 : 0) + ')');
+		});
+		$v.find('.om-rv-avatar').css('background-image', item.i ? 'url("' + item.i + '")' : '');
+		$v.find('.om-rv-name').text(item.t);
+		$v.find('.om-rv-title').text(item.t);
+		$v.find('.om-rv-style').text(reel.conf.style ? t('style', 'Style') + ' ' + item.s : '').prop('hidden', !reel.conf.style);
+		$v.find('.om-rv-cta').attr('href', item.u);
+		$v.find('.om-rv-live').text(t('storyOf', 'Story %1$s of %2$s').replace('%1$s', i + 1).replace('%2$s', items.length) + ': ' + item.t);
+		$v.find('.om-rv-prev').prop('disabled', i === 0);
+		syncReelTools();
+
+		// The media: a file plays in <video> (timed by its own length), an
+		// embed in an iframe (timed by the story duration).
+		var $media = $v.find('.om-rv-media').empty();
+		if (item.k === 'file') {
+			var video = document.createElement('video');
+			video.className = 'om-rv-video';
+			video.playsInline = true;
+			video.setAttribute('playsinline', '');
+			video.muted = reel.muted;
+			video.preload = 'auto';
+			if (item.i) { video.poster = item.i; }
+			video.src = item.src;
+			video.addEventListener('ended', function () { if (reel && reel.conf.next) { showReel(reel.i + 1); } else if (reel) { video.currentTime = 0; video.play(); } });
+			video.addEventListener('error', function () { item.k = 'photo'; showReel(reel ? reel.i : 0); });
+			$media.append(video);
+			var p = video.play();
+			if (p && p.catch) { p.catch(function () { /* autoplay refused: the poster shows, tap to play */ }); }
+		} else if (item.k === 'embed') {
+			var src = item.src;
+			if (!reel.muted) { src = src.replace('mute=1', 'mute=0').replace('muted=1', 'muted=0'); }
+			$media.append($('<iframe class="om-rv-embed" allow="autoplay; fullscreen; picture-in-picture" tabindex="-1"></iframe>').attr({ src: src, title: item.t }));
+		} else {
+			$media.append($('<img class="om-rv-photo" alt="" />').attr('src', item.i));
+		}
+
+		// Price, once per design.
+		var $price = $v.find('.om-rv-price').text('').prop('hidden', true);
+		if (reel.conf.price && cfg.ajaxUrl) {
+			var key = item.l + '|' + item.s;
+			var put = function (text) { if (reel && reel.conf.items[reel.i] === item) { $price.text(text || '').prop('hidden', !text); } };
+			if (key in reelPrices) { put(reelPrices[key]); } else {
+				$.post(cfg.ajaxUrl, { action: 'om_card_prices', line: item.l, styles: [item.s] }).done(function (r) {
+					reelPrices[key] = (r && r.success && r.data.prices && r.data.prices[item.s]) || '';
+					put(reelPrices[key]);
+				});
+			}
+		}
+
+		// Warm up the next story.
+		var nextItem = items[i + 1];
+		if (nextItem && nextItem.k === 'file' && !nextItem.warm) {
+			nextItem.warm = document.createElement('video');
+			nextItem.warm.preload = 'auto';
+			nextItem.warm.muted = true;
+			nextItem.warm.src = nextItem.src;
+		}
+
+		markReelSeen(item.l + '|' + item.s);
+		cancelAnimationFrame(reel.raf);
+		reel.raf = requestAnimationFrame(tickReel);
+	}
+
+	// Progress: a video's own time (capped at the longest a story may run),
+	// else a clock that stops while paused.
+	function tickReel(now) {
+		if (!reel) { return; }
+		var item = reel.conf.items[reel.i];
+		var pct = 0;
+		var video = reelMedia();
+		if (item.k === 'file' && video) {
+			var length = Math.min(video.duration || reel.conf.max, reel.conf.max);
+			pct = length ? video.currentTime / length : 0;
+			if (video.currentTime >= reel.conf.max && reel.conf.next) { showReel(reel.i + 1); return; }
+		} else {
+			if (!reel.paused && reel.last) { reel.elapsed += now - reel.last; }
+			reel.last = now;
+			pct = reel.elapsed / (reel.conf.dur * 1000);
+			if (pct >= 1) {
+				if (reel.conf.next) { showReel(reel.i + 1); return; }
+				reel.elapsed = 0;
+			}
+		}
+		reel.$v.find('.om-rv-bar').eq(reel.i).find('.om-rv-fill').css('transform', 'scaleX(' + Math.min(1, Math.max(0, pct)) + ')');
+		reel.raf = requestAnimationFrame(tickReel);
+	}
+
+	function pauseReel(on) {
+		if (!reel) { return; }
+		reel.paused = on;
+		var video = reelMedia();
+		if (video) { if (on) { video.pause(); } else { var p = video.play(); if (p && p.catch) { p.catch(function () {}); } } }
+		reel.$v.toggleClass('is-paused', on);
+		syncReelTools();
+	}
+
+	function syncReelTools() {
+		if (!reel) { return; }
+		reel.$v.find('.om-rv-pause').attr({ 'aria-label': reel.paused ? t('play', 'Play') : t('pause', 'Pause'), 'aria-pressed': reel.paused ? 'true' : 'false' });
+		reel.$v.find('.om-rv-sound').attr({ 'aria-label': reel.muted ? t('soundOn', 'Turn sound on') : t('soundOff', 'Turn sound off') }).toggleClass('is-on', !reel.muted);
+	}
+
+	function closeReels(silent) {
+		if (!reel) { return; }
+		var r = reel;
+		reel = null;
+		cancelAnimationFrame(r.raf);
+		var video = r.$v.find('video')[0];
+		if (video) { video.pause(); }
+		r.$v.remove();
+		$('html').removeClass('om-dialog-open');
+		if (!silent && r.opener && document.contains(r.opener)) { r.opener.focus(); }
+	}
+
+	$(document).on('click', '.om-reel-bubble', function () {
+		openReels($(this).closest('.om-reels'), parseInt(this.getAttribute('data-om-reel'), 10) || 0, this);
+	});
+
+	$(document).on('click', '.om-rv-close', function () { closeReels(); });
+	$(document).on('click', '.om-rv-pause', function () { pauseReel(!(reel && reel.paused)); });
+	$(document).on('click', '.om-rv-sound', function () {
+		if (!reel) { return; }
+		reel.muted = !reel.muted;
+		var video = reelMedia();
+		if (video) { video.muted = reel.muted; } else if (reel.conf.items[reel.i].k === 'embed') { showReel(reel.i); }
+		syncReelTools();
+	});
+	$(document).on('click', '.om-rv-prev, .om-rv-next', function () {
+		if (!reel || reel.held) { return; }
+		showReel(reel.i + ($(this).hasClass('om-rv-next') ? 1 : -1));
+	});
+	// Backdrop click (desktop) closes.
+	$(document).on('click', '.om-reels-viewer', function (e) { if (e.target === this) { closeReels(); } });
+
+	// Hold to pause; swipe sideways for the next story, down to close.
+	$(document).on('pointerdown', '.om-rv-stage', function (e) {
+		if (!reel) { return; }
+		var start = { x: e.clientX, y: e.clientY, t: Date.now() };
+		reel.held = false;
+		var holdTimer = setTimeout(function () { if (reel) { reel.held = true; pauseReel(true); } }, 220);
+		var up = function (ev) {
+			clearTimeout(holdTimer);
+			$(document).off('pointerup.omrv pointercancel.omrv');
+			if (!reel) { return; }
+			var dx = ev.clientX - start.x, dy = ev.clientY - start.y;
+			if (reel.held) {
+				pauseReel(false);
+				setTimeout(function () { if (reel) { reel.held = false; } }, 0);
+				return;
+			}
+			if (dy > 90 && Math.abs(dy) > Math.abs(dx)) { reel.held = true; closeReels(); return; }
+			if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+				reel.held = true;
+				showReel(reel.i + (dx < 0 ? 1 : -1));
+				setTimeout(function () { if (reel) { reel.held = false; } }, 0);
+			}
+		};
+		$(document).on('pointerup.omrv pointercancel.omrv', up);
+	});
+
+	$(document).on('keydown', function (e) {
+		if (!reel) { return; }
+		if (e.key === 'Escape') { e.preventDefault(); closeReels(); return; }
+		if (e.key === 'ArrowRight') { e.preventDefault(); showReel(reel.i + 1); return; }
+		if (e.key === 'ArrowLeft') { e.preventDefault(); showReel(reel.i - 1); return; }
+		if (e.key === ' ' && !$(e.target).is('a, button')) { e.preventDefault(); pauseReel(!reel.paused); return; }
+		if (e.key === 'Tab') {
+			// Keep focus inside the player.
+			var $f = reel.$v.find('button:not(:disabled), a[href]').filter(':visible');
+			var idx = $f.index(document.activeElement);
+			if (e.shiftKey && idx <= 0) { e.preventDefault(); $f.last().trigger('focus'); } else if (!e.shiftKey && idx === $f.length - 1) { e.preventDefault(); $f.first().trigger('focus'); }
+		}
+	});
+
+	document.addEventListener('visibilitychange', function () {
+		if (reel && document.hidden) { pauseReel(true); }
+	});
+
+	/* =========================================================
+	   Back to results
+	   ========================================================= */
+
+	var BACK_KEY = 'om_back';
+	var BACK_RESTORE_KEY = 'om_back_restore';
+
+	function sessionGet(key) {
+		try { return JSON.parse(window.sessionStorage.getItem(key) || 'null'); } catch (err) { return null; }
+	}
+
+	function sessionSet(key, value) {
+		try { if (value === null) { window.sessionStorage.removeItem(key); } else { window.sessionStorage.setItem(key, JSON.stringify(value)); } } catch (err) { /* storage unavailable */ }
+	}
+
+	// The listing's name: its heading, else the page title's first part.
+	function listingLabel($wrap) {
+		var heading = $.trim($wrap.find('.om-intro-title').first().text());
+		if (heading) { return heading; }
+		var h1 = $.trim($('h1').first().text());
+		if (h1 && h1.length < 60) { return h1; }
+		return $.trim(String(document.title).split(/\s[–—|-]\s/)[0]);
+	}
+
+	// Opening a design from a listing: remember where the visitor was.
+	function rememberListing($wrap) {
+		if (!$wrap.length || $wrap.hasClass('om-search-standalone')) { return; }
+		sessionSet(BACK_KEY, {
+			u: window.location.href,
+			y: Math.round(window.scrollY || window.pageYOffset || 0),
+			t: listingLabel($wrap),
+			f: $wrap.find('.om-active-filters .om-chip').map(function () { return $.trim($(this).clone().children().remove().end().text()); }).get().slice(0, 3),
+			at: Date.now()
+		});
+	}
+
+	$(document).on('click', '.om-catalog-wrap a.om-card', function (e) {
+		if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) { return; }
+		rememberListing($(this).closest('.om-catalog-wrap'));
+	});
+
+	// "View full details" from a quick view opened on a listing.
+	$(document).on('click', '.om-qv-full', function () {
+		rememberListing($('.om-catalog-wrap').not('.om-search-standalone').first());
+	});
+
+	function initBackLink() {
+		var $nav = $('.om-back').first();
+		if (!$nav.length) { return; }
+		var back = sessionGet(BACK_KEY);
+		// Only this visit's listing, and not older than a few hours.
+		if (!back || !back.u || Date.now() - (back.at || 0) > 6 * 3600 * 1000 || back.u === window.location.href) { return; }
+		var own = $nav.attr('data-om-back-text') || '';
+		var label = own || (back.t ? t('backTo', 'Back to %s').replace('%s', back.t) : t('backResults', 'Back to results'));
+		$nav.find('.om-back-link').attr('href', back.u);
+		$nav.find('.om-back-label').text(label);
+		$nav.find('.om-back-filters').text(back.f && back.f.length ? back.f.join(' · ') : '').prop('hidden', !(back.f && back.f.length));
+		$nav.prop('hidden', false);
+	}
+
+	$(document).on('click', '.om-back-link', function (e) {
+		var back = sessionGet(BACK_KEY);
+		if (!back || e.metaKey || e.ctrlKey || e.shiftKey) { return; }
+		// Straight from the listing: the browser's own Back restores it
+		// exactly as it was (scroll, loaded cards, open panels).
+		if (document.referrer === back.u && window.history.length > 1) {
+			e.preventDefault();
+			window.history.back();
+			return;
+		}
+		sessionSet(BACK_RESTORE_KEY, { u: back.u, y: back.y });
+	});
+
+	// Arriving back on the listing through the link: return to the spot.
+	function restoreListingScroll() {
+		var r = sessionGet(BACK_RESTORE_KEY);
+		if (!r) { return; }
+		sessionSet(BACK_RESTORE_KEY, null);
+		if (r.u !== window.location.href || !r.y) { return; }
+		var go = function () { window.scrollTo(0, r.y); };
+		go();
+		// Once late images have laid out, settle there again.
+		$(window).one('load', function () { setTimeout(go, 50); });
+	}
+
+	/* =========================================================
+	   Slim sticky toolbar (catalog)
+	   ========================================================= */
+
+	var stickyToolsTick = false;
+
+	// Show the slim bar once the block's own toolbar (or search) has
+	// scrolled away, while the results are still on screen.
+	function updateStickyTools() {
+		stickyToolsTick = false;
+		$('.om-sticky-tools').each(function () {
+			var bar = this;
+			var $wrap = $(bar).closest('.om-catalog-wrap');
+			var anchor = $wrap.find('.om-catalog-toolbar, .om-search').not('.om-sticky-tools *').last()[0] || $wrap.find('.om-catalog-grid')[0];
+			if (!anchor) { return; }
+			var top = parseFloat(window.getComputedStyle(bar).top) || 0;
+			var a = anchor.getBoundingClientRect();
+			var w = $wrap[0].getBoundingClientRect();
+			var show = a.bottom < top && w.bottom > top + 160 && !$('html').hasClass('om-sheet-open');
+			if (show === bar.classList.contains('is-shown')) { return; }
+			bar.hidden = false;
+			bar.classList.toggle('is-shown', show);
+			if (show) { bar.removeAttribute('inert'); bar.removeAttribute('aria-hidden'); } else { bar.setAttribute('inert', ''); bar.setAttribute('aria-hidden', 'true'); }
+		});
+	}
+
+	function queueStickyTools() {
+		if (!stickyToolsTick) { stickyToolsTick = true; window.requestAnimationFrame(updateStickyTools); }
+	}
+
+	window.addEventListener('scroll', queueStickyTools, { passive: true });
+	window.addEventListener('resize', queueStickyTools);
+
+	function scrollToWrap($wrap, then) {
+		var bar = $wrap.find('.om-sticky-tools')[0];
+		var offset = bar ? parseFloat(window.getComputedStyle(bar).top) || 0 : 0;
+		window.scrollTo({ top: Math.max(0, $wrap.offset().top - offset - 16), behavior: reduceMotion ? 'auto' : 'smooth' });
+		if (then) { setTimeout(then, reduceMotion ? 0 : 450); }
+	}
+
+	$(document).on('click', '.om-st-filters', function () {
+		var $wrap = $(this).closest('.om-catalog-wrap');
+		var panel = $wrap.find('.om-filter-panel')[0];
+		// Phones: the filters are a bottom sheet — open it right here.
+		if (panel && isSheet($wrap)) { panel.open = true; return; }
+		scrollToWrap($wrap, function () {
+			var first = $wrap.find('.om-filter-sidebar a, .om-filter-bar a, .om-filter-dropdowns select').first()[0];
+			if (first) { first.focus({ preventScroll: true }); }
+		});
+	});
+
+	$(document).on('click', '.om-st-search', function () {
+		var $wrap = $(this).closest('.om-catalog-wrap');
+		scrollToWrap($wrap, function () { $wrap.find('.om-search-input').first().trigger('focus'); });
+	});
+
+	$(document).on('click', '.om-st-top', function () {
+		var $wrap = $(this).closest('.om-catalog-wrap');
+		scrollToWrap($wrap, function () { var c = $wrap.find('a.om-card')[0]; if (c) { c.focus({ preventScroll: true }); } });
+	});
+
 	/* ---------- Boot ---------- */
 
 	function initBlock(root) {
@@ -2024,6 +2468,7 @@
 		$(root).find('.om-catalog-grid').addClass('om-fade-in');
 		observeInfinite(root);
 		syncCompare();
+		queueStickyTools();
 	}
 
 	// Record a product shown in the quick view as recently viewed too.
@@ -2053,6 +2498,9 @@
 		fillCustomForms(document);
 		initAutoplay(document);
 		initStickyBar();
+		syncReelsSeen();
+		initBackLink();
+		restoreListingScroll();
 		$('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
 		$('.om-product-gallery').each(function () { updateMediaCount($(this)); });
 		initReveal(document);

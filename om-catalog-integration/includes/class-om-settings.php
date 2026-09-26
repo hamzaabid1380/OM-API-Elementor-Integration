@@ -58,6 +58,7 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_show_related', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_show_recent', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_show_set', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_back_link', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_set_pairs', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'om_catalog_settings', 'om_options_style', array( 'sanitize_callback' => array( $this, 'sanitize_options_style' ) ) );
 		register_setting( 'om_catalog_settings', 'om_details_style', array( 'sanitize_callback' => array( $this, 'sanitize_details_style' ) ) );
@@ -427,7 +428,9 @@ class OM_Settings {
 							<input type="hidden" name="om_show_recent" value="0" />
 							<label><input type="checkbox" name="om_show_recent" value="1" <?php checked( get_option( 'om_show_recent', '1' ), '1' ); ?> /> "Recently viewed"</label><br />
 							<input type="hidden" name="om_show_set" value="0" />
-							<label><input type="checkbox" name="om_show_set" value="1" <?php checked( get_option( 'om_show_set', '1' ), '1' ); ?> /> "Complete the set" (matching bands on ring pages, rings on band pages)</label>
+							<label><input type="checkbox" name="om_show_set" value="1" <?php checked( get_option( 'om_show_set', '1' ), '1' ); ?> /> "Complete the set" (matching bands on ring pages, rings on band pages)</label><br />
+							<input type="hidden" name="om_back_link" value="0" />
+							<label><input type="checkbox" name="om_back_link" value="1" <?php checked( get_option( 'om_back_link', '1' ), '1' ); ?> /> "← Back to results" link above the product (returns to the same spot in the listing)</label>
 						</td>
 					</tr>
 				</table>

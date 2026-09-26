@@ -10,6 +10,9 @@ class OM_Shortcodes {
 	/** Pages shown at once by the current grid ("load more" restore). */
 	private $window = 1;
 
+	/** What the slim sticky toolbar repeats: count, chips, sort options. */
+	private $sticky = array();
+
 	/**
 	 * The API hard-rejects (400) any limit over 500 on product routes rather
 	 * than capping it silently.
@@ -266,6 +269,12 @@ class OM_Shortcodes {
 				// the built-in form in a dialog, link, none) and a secondary
 				// one (auto = "See all" when filtered, else back to top;
 				// top, link, none).
+				// Slim toolbar that stays at the top while scrolling results:
+				// sticky_on all|mobile|desktop; sticky_parts any of filters,
+				// search, count, chips, sort, top.
+				'sticky_tools'       => 'yes',
+				'sticky_on'          => 'all',
+				'sticky_parts'       => 'filters,search,count,chips,sort,top',
 				'end_card'           => 'yes',
 				'end_layout'         => 'cell',
 				'end_theme'          => 'soft',
@@ -609,10 +618,14 @@ class OM_Shortcodes {
 		}
 
 		$this->window = $window;
+		$this->sticky = array();
 		$this->render_results( $data, $atts, $paged, $per_page, $columns, $layout, $active_line, $chips, $clear_url, $state, $url, $base_url, $multi );
 
 		if ( $has_side ) {
 			echo '</div></div>';
+		}
+		if ( 'yes' === $atts['sticky_tools'] && ! empty( $this->sticky['products'] ) ) {
+			$this->render_sticky_tools( $atts, $has_side || ! empty( $facets ) );
 		}
 		echo '</div>';
 
@@ -708,6 +721,48 @@ class OM_Shortcodes {
 		echo '</div>';
 		echo $dialog; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above / in the inquiry renderer.
 		echo '</aside>';
+	}
+
+	/**
+	 * The slim toolbar that stays at the top of the screen while scrolling
+	 * the results: filters, search, count, active filters, sort, top. The
+	 * script shows it once the real toolbar has scrolled away.
+	 */
+	private function render_sticky_tools( $atts, $has_filters ) {
+		$on    = in_array( $atts['sticky_on'], array( 'all', 'mobile', 'desktop' ), true ) ? $atts['sticky_on'] : 'all';
+		$parts = array_map( 'trim', explode( ',', (string) $atts['sticky_parts'] ) );
+		$has   = static function ( $part ) use ( $parts ) {
+			return in_array( $part, $parts, true );
+		};
+		$s     = $this->sticky;
+		echo '<div class="om-sticky-tools om-sticky-tools--on-' . esc_attr( $on ) . '" hidden><div class="om-st-inner">';
+		if ( $has_filters && $has( 'filters' ) ) {
+			echo '<button type="button" class="om-st-btn om-st-filters"><span class="om-st-icon om-st-icon--filters" aria-hidden="true"></span><span class="om-st-text">' . esc_html__( 'Filters', 'om-catalog' ) . '</span>' . ( $s['chips'] ? '<span class="om-st-badge">' . (int) count( $s['chips'] ) . '</span>' : '' ) . '</button>';
+		}
+		if ( 'yes' === $atts['show_search'] && $has( 'search' ) ) {
+			echo '<button type="button" class="om-st-btn om-st-search" aria-label="' . esc_attr__( 'Search the catalog', 'om-catalog' ) . '"><span class="om-st-icon om-st-icon--search" aria-hidden="true"></span></button>';
+		}
+		echo '<div class="om-st-middle">';
+		if ( '' !== $s['count'] && $has( 'count' ) ) {
+			echo '<span class="om-st-count">' . esc_html( $s['count'] ) . '</span>';
+		}
+		if ( $s['chips'] && $has( 'chips' ) ) {
+			echo '<span class="om-st-chips">';
+			foreach ( $s['chips'] as $chip ) {
+				/* translators: %s: filter name. */
+				printf( '<a class="om-chip om-st-chip" href="%s" aria-label="%s">%s<span aria-hidden="true">&times;</span></a>', esc_url( $chip['url'] ), esc_attr( sprintf( __( 'Remove filter: %s', 'om-catalog' ), $chip['label'] ) ), esc_html( $chip['label'] ) );
+			}
+			echo '</span>';
+		}
+		echo '</div>';
+		if ( '' !== $s['sort'] && $has( 'sort' ) ) {
+			$id = 'om-st-sort-' . wp_rand( 1000, 9999 );
+			echo '<label class="om-st-sort" for="' . esc_attr( $id ) . '"><span class="om-visually-hidden">' . esc_html__( 'Sort by', 'om-catalog' ) . '</span><select id="' . esc_attr( $id ) . '" class="om-filter-nav om-sort-select">' . $s['sort'] . '</select></label>'; // phpcs:ignore WordPress.Security.EscapeOutput -- options escaped when built.
+		}
+		if ( $has( 'top' ) ) {
+			echo '<button type="button" class="om-st-btn om-st-top" aria-label="' . esc_attr__( 'Back to top', 'om-catalog' ) . '"><span class="om-st-icon om-st-icon--top" aria-hidden="true"></span></button>';
+		}
+		echo '</div></div>';
 	}
 
 	/** The heading above the catalog: eyebrow, title, rule, text. */
@@ -1130,6 +1185,7 @@ class OM_Shortcodes {
 		// the right.
 		$show_count = 'yes' === $atts['show_count'] && $total > 0 && $products;
 		$show_sort  = 'yes' === $atts['show_sort'] && '' === $state['q'] && $products;
+		$this->sticky = array( 'count' => '', 'chips' => $chips, 'clear' => $clear_url, 'sort' => '', 'products' => ! empty( $products ) );
 		if ( $show_count || $chips || $show_sort ) {
 			echo '<div class="om-catalog-toolbar"><div class="om-toolbar-start">';
 			if ( $show_count ) {
@@ -1146,6 +1202,7 @@ class OM_Shortcodes {
 					$count_text = sprintf( _n( '%s design', '%s designs', $total, 'om-catalog' ), number_format_i18n( $total ) );
 				}
 				echo '<p class="om-result-count" aria-live="polite">' . esc_html( $count_text ) . '</p>';
+				$this->sticky['count'] = $count_text;
 			}
 			if ( $chips ) {
 				echo '<div class="om-active-filters">';
@@ -1169,10 +1226,13 @@ class OM_Shortcodes {
 				$sort_id = 'om-sort-' . wp_rand( 1000, 9999 );
 				echo '<label class="om-sort" for="' . esc_attr( $sort_id ) . '"><span>' . esc_html__( 'Sort by', 'om-catalog' ) . '</span>';
 				echo '<select id="' . esc_attr( $sort_id ) . '" class="om-filter-nav om-sort-select">';
+				$options = '';
 				foreach ( $labels as $key => $label ) {
-					printf( '<option value="%s"%s>%s</option>', esc_url( $url( array( 'sort' => $key ) ) ), selected( $state['sort'], $key, false ), esc_html( $label ) );
+					$options .= sprintf( '<option value="%s"%s>%s</option>', esc_url( $url( array( 'sort' => $key ) ) ), selected( $state['sort'], $key, false ), esc_html( $label ) );
 				}
+				echo $options; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 				echo '</select></label>';
+				$this->sticky['sort'] = $options;
 			}
 			echo '</div>';
 		}

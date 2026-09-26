@@ -404,6 +404,40 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'back_link',
+			array(
+				'label'       => __( '"← Back to results" link', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'separator'   => 'before',
+				'description' => __( 'Above the product, when the visitor came from a listing: returns to the same spot, with the same filters.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
+			'back_text',
+			array(
+				'label'       => __( 'Link text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'placeholder' => __( 'Back to Engagement Rings (automatic)', 'om-catalog' ),
+				'description' => __( 'Leave empty to name the listing they came from.', 'om-catalog' ),
+				'condition'   => array( 'back_link' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
+			'back_filters',
+			array(
+				'label'     => __( 'Show their filters beside it', 'om-catalog' ),
+				'type'      => Controls_Manager::SWITCHER,
+				'default'   => 'yes',
+				'selectors_dictionary' => array( '' => 'display: none;' ),
+				'selectors' => array( '{{WRAPPER}} .om-back-filters' => '{{VALUE}}' ),
+				'condition' => array( 'back_link' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
 			'trust_source',
 			array(
 				'label'       => __( 'Trust line under the price', 'om-catalog' ),
@@ -879,6 +913,31 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$this->end_controls_section();
 
 		/* ---------- Style ---------- */
+
+		/* ---------- Style: back to results ---------- */
+
+		$this->start_controls_section(
+			'section_style_back',
+			array(
+				'label'     => __( 'Back to results', 'om-catalog' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => array( 'back_link' => 'yes' ),
+			)
+		);
+		$this->add_control( 'back_color', array( 'label' => __( 'Colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-back' => '--om-back-c: {{VALUE}};' ) ) );
+		$this->add_control( 'back_color_hover', array( 'label' => __( 'Hover colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-back' => '--om-back-c-hover: {{VALUE}};' ) ) );
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'back_typo', 'label' => __( 'Typography', 'om-catalog' ), 'selector' => '{{WRAPPER}} .om-back .om-back-link.om-back-link' ) );
+		$this->add_responsive_control(
+			'back_gap',
+			array(
+				'label'      => __( 'Space below', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 60 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-back' => 'margin-bottom: {{SIZE}}px;' ),
+			)
+		);
+		$this->end_controls_section();
 
 		/* ---------- Style: corners & spacing ---------- */
 		$this->start_controls_section(
@@ -1965,6 +2024,8 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['details_style']    = 'open' === ( $settings['details_style'] ?? 'accordion' ) ? 'open' : 'accordion';
 		$args['design']           = 'classic' === ( $settings['design'] ?? 'modern' ) ? 'classic' : 'modern';
 		$args['video_mode']       = 'thumb' === ( $settings['video_mode'] ?? 'first' ) ? 'thumb' : 'first';
+		$args['back_link']        = 'yes' === ( $settings['back_link'] ?? 'yes' );
+		$args['back_text']        = (string) ( $settings['back_text'] ?? '' );
 		$trust_source             = (string) ( $settings['trust_source'] ?? 'global' );
 		$args['trust_line']       = 'custom' === $trust_source ? (string) ( $settings['trust_text'] ?? '' ) : ( 'none' === $trust_source ? '' : null );
 		$args['gallery']          = array(

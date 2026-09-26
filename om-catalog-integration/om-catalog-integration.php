@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.18.0
+ * Version: 1.19.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.18.0' );
+define( 'OM_CATALOG_VERSION', '1.19.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -28,6 +28,7 @@ require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-ring-builder.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-related.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-reels.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-warmer.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-elementor-widgets.php';
 
@@ -47,6 +48,7 @@ function om_catalog_init() {
 	OM_Diamonds::instance();
 	OM_Ring_Builder::instance();
 	OM_Related::instance();
+	OM_Reels::instance();
 	OM_Warmer::instance();
 	OM_Elementor_Widgets::instance();
 }
@@ -94,6 +96,16 @@ function om_catalog_enqueue_assets() {
 				'mute'      => __( 'Turn sound off', 'om-catalog' ),
 				'sizeUnsure' => __( 'not sure — please help', 'om-catalog' ),
 				'viewed'     => __( 'Recently viewed', 'om-catalog' ),
+				'stories'    => __( 'Video stories', 'om-catalog' ),
+				'storyOf'    => __( 'Story %1$s of %2$s', 'om-catalog' ),
+				'pause'      => __( 'Pause', 'om-catalog' ),
+				'play'       => __( 'Play', 'om-catalog' ),
+				'soundOn'    => __( 'Turn sound on', 'om-catalog' ),
+				'soundOff'   => __( 'Turn sound off', 'om-catalog' ),
+				'prevStory'  => __( 'Previous', 'om-catalog' ),
+				'nextStory'  => __( 'Next', 'om-catalog' ),
+				'backTo'     => __( 'Back to %s', 'om-catalog' ),
+				'backResults' => __( 'Back to results', 'om-catalog' ),
 				'searchHelp' => __( 'Search suggestions', 'om-catalog' ),
 				'recent'     => __( 'Recent searches', 'om-catalog' ),
 				'popular'    => __( 'Popular searches', 'om-catalog' ),
@@ -324,14 +336,14 @@ function om_catalog_page_needs_assets() {
 	if ( is_singular() ) {
 		$post = get_post();
 		if ( $post ) {
-			foreach ( array( 'om_catalog', 'om_diamonds', 'om_ring_builder', 'om_related', 'om_search' ) as $tag ) {
+			foreach ( array( 'om_catalog', 'om_diamonds', 'om_ring_builder', 'om_related', 'om_search', 'om_reels' ) as $tag ) {
 				if ( has_shortcode( (string) $post->post_content, $tag ) ) {
 					return true;
 				}
 			}
 			// Elementor stores widget data in post meta, not post_content.
 			$elementor_data = get_post_meta( $post->ID, '_elementor_data', true );
-			if ( is_string( $elementor_data ) && preg_match( '/"widgetType":"om_[a-z_]+"|\[om_(catalog|diamonds|ring_builder|related|search)/', $elementor_data ) ) {
+			if ( is_string( $elementor_data ) && preg_match( '/"widgetType":"om_[a-z_]+"|\[om_(catalog|diamonds|ring_builder|related|search|reels)/', $elementor_data ) ) {
 				return true;
 			}
 		}

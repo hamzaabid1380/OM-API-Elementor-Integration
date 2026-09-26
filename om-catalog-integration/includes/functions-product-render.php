@@ -75,6 +75,10 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			'sticky_gallery'      => true,
 			// Quick view: compact version (no inquiry, links to the page).
 			'compact'             => false,
+			// "← Back to results": shown by the script when the visitor came
+			// from a listing this visit; back_text overrides "Back to …".
+			'back_link'           => false,
+			'back_text'           => '',
 			// Product videos: thumb (a tile in the gallery + "Watch
 			// video" button) or first (the video leads, playing muted).
 			'video_mode'          => 'first',
@@ -179,6 +183,13 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 	}
 
 	ob_start();
+	if ( $args['back_link'] ) {
+		printf(
+			'<nav class="om-back" aria-label="%s" data-om-back-text="%s" hidden><a class="om-back-link" href="#"><span class="om-back-arrow" aria-hidden="true"></span><span class="om-back-label"></span></a><span class="om-back-filters"></span></nav>',
+			esc_attr__( 'Back to results', 'om-catalog' ),
+			esc_attr( (string) $args['back_text'] )
+		);
+	}
 	?>
 	<div class="om-product-wrap om-design-<?php echo esc_attr( $design ); ?><?php echo $args['sticky_gallery'] ? ' om-sticky-gallery' : ''; ?><?php echo $args['compact'] ? ' om-product-wrap--compact' : ''; ?>"
 		data-line="<?php echo esc_attr( $product_line ); ?>"

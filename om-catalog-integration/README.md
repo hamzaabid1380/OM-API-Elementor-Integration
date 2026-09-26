@@ -569,7 +569,59 @@ end_primary_url="" end_subject="Custom design"
 end_secondary="auto|top|link|none" end_secondary_text=""
 end_secondary_url=""`.
 
+## Story reels (1.19)
+
+A new **OM Story Reels** widget (shortcode `[om_reels]`): a row of round
+bubbles (or tall reel cards), each a design with a video. Tapping one opens
+a full-screen player, stories-style: progress bars, tap right/left (or
+arrow keys), hold to pause, swipe sideways for the next, swipe down or
+Escape to close, sound button, the design's name, style number and "From"
+price, and a "View this design" button. Watched stories get a grey ring;
+the next video preloads while one plays. Only designs with a video appear.
+
+Widget: designs (line with optional collection/shape, most viewed, or
+hand-picked), count, heading, bubble shape, label (name, shape, carat,
+none), show on (all / phones / desktop), alignment, button text, price,
+style number, auto-advance, start with sound, longest play time, embed
+length; styles for size, spacing, ring colours (and watched), ring
+thickness, label and heading, and the player's backdrop and button.
+
+Shortcode: `[om_reels source="line|popular|picked" line="engagement-rings"
+style="" shape="" styles="" count="8" bubble="circle|card"
+label="title|shape|variant|none" show_on="all|mobile|desktop" heading=""
+show_price="yes" show_style="yes" button_text="" duration="8"
+max_length="15" sound="" auto_next="yes"]`
+
+## Browsing polish (1.19)
+
+- **Compare fly-in** — ticking "Compare" sends the card's photo flying into
+  its slot in the compare tray, which "catches" it with a small pop.
+- **← Back to results** — on a product page opened from a listing, a slim
+  link returns to the same spot with the same filters ("Back to Engagement
+  Rings · Oval"). Straight from the listing it uses the browser's own Back
+  (exact restore); after wandering through related designs it reopens the
+  listing and scrolls to where they were. OM Single Product widget: on/off,
+  own text, show filters, colour/typography/spacing; built-in product page:
+  Settings > OM Catalog > Built-in product page rows.
+- **Slim sticky toolbar** — once the visitor scrolls past the search and
+  sort, a frosted bar stays at the top with Filters (opens the bottom sheet
+  on phones), Search, the result count, active filters, Sort and Back to
+  top. OM Catalog widget > Sticky toolbar: on/off, devices, which parts,
+  distance from the top (for sticky site headers); Style: colours, height,
+  width, shadow. Shortcode: `sticky_tools="yes|no" sticky_on="all|mobile|desktop"
+  sticky_parts="filters,search,count,chips,sort,top"`.
+
 ## Changelog
+
+### 1.19.0
+- New OM Story Reels widget / [om_reels]: video stories of designs with a
+  full-screen player (progress, tap/swipe/keys, hold to pause, sound,
+  price, CTA, watched rings, preloading), fully configurable.
+- Compare fly-in animation into the compare tray.
+- "← Back to results" link on product pages with exact return
+  (widget + built-in page setting).
+- Slim sticky catalog toolbar (filters, search, count, chips, sort, top)
+  with widget controls.
 
 ### 1.18.0
 - End-of-results card after the last design (numbers, Show more,

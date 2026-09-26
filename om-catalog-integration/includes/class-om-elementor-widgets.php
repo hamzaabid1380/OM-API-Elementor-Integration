@@ -38,5 +38,6 @@ class OM_Elementor_Widgets {
 		$widgets_manager->register( new OM_Elementor_Builder_Widget() );
 		$widgets_manager->register( new OM_Elementor_Related_Widget() );
 		$widgets_manager->register( new OM_Elementor_Search_Widget() );
+		$widgets_manager->register( new OM_Elementor_Reels_Widget() );
 	}
 }
