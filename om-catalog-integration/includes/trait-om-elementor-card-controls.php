@@ -505,7 +505,7 @@ trait OM_Elementor_Card_Controls {
 				'default' => '',
 				'options' => array(
 					''     => __( 'Site default', 'om-catalog' ),
-					'lift' => __( 'Lift (card rises, name underlines)', 'om-catalog' ),
+					'lift' => __( 'Lift (card rises gently)', 'om-catalog' ),
 					'zoom' => __( 'Zoom (photo zooms slowly)', 'om-catalog' ),
 					'none' => __( 'None', 'om-catalog' ),
 				),

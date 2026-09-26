@@ -9035,3 +9035,49 @@ html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 	.om-cdesign-refined .om-sticky-tools .om-st-sort { flex-shrink: 0; }
 	.om-cdesign-refined .om-sticky-tools .om-st-sort select.om-sort-select { width: auto; min-width: 124px; padding-right: 26px; }
 }
+
+/* =========================================================
+   1.21.1 — Card fixes (all designs)
+   ========================================================= */
+
+/* No underline under the name on hover (Lift keeps the rise). */
+.om-card-cell .om-card:is(:hover, :focus-visible) .om-card-title.om-card-title,
+.om-hover-lift:hover .om-card-title.om-card-title {
+	text-decoration: none;
+}
+
+/* The video label keeps its own colour: themes that turn links white on
+   hover made it invisible (it sits inside the card link). */
+.om-card-cell .om-card .om-card-play.om-card-play--label,
+.om-card-cell .om-card:is(:hover, :focus, :visited) .om-card-play.om-card-play--label,
+.om-card-cell .om-card .om-card-play .om-card-play-text,
+.om-card-cell .om-card:is(:hover, :focus, :visited) .om-card-play .om-card-play-text {
+	color: var(--om-vbadge-color, var(--om-color-primary, #00111C));
+}
+
+/* The hover video fills the photo box in the box's own colour. */
+.om-card-cell .om-card-image .om-card-video {
+	background: inherit;
+}
+
+/* Refined: the video mark's play triangle stays centred (label style). */
+.om-refined .om-card-image .om-card-play.om-card-play::after {
+	position: absolute;
+	top: 50%;
+	left: 55%;
+	margin: 0;
+	transform: translate(-50%, -50%);
+}
+
+.om-refined .om-card-image .om-card-play.om-card-play--label { gap: 0; }
+
+/* Refined, framed cards: badge and compare sit on the photo's corners. */
+.om-refined .om-layout-boxed .om-card-cell > .om-badges {
+	top: 28px;
+	left: 28px;
+}
+
+.om-refined .om-layout-boxed .om-compare-toggle.om-compare-toggle {
+	top: 27px;
+	right: 27px;
+}

@@ -687,6 +687,15 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.21.1
+- Card video label keeps its own colour on hover (themes that turn links
+  white made it invisible).
+- No underline under the design name on hover ("Lift" now only rises).
+- The hover video preview fills the photo box in the box's colour.
+- Refined: the video mark's play icon is centred in every badge style;
+  on framed (boxed) cards the badge and compare tick sit on the photo's
+  corners.
+
 ### 1.21.0
 - New default "Refined" design (catalog, product page, rows, reels,
   quick view, compare): type scale, one button family with a Button
