@@ -272,10 +272,14 @@ the **Saved** panel lists them with:
   designs", so it doubles as a lead,
 - **Clear list**, with Undo (removing one design has Undo too).
 
-Open the panel from your header with the **OM Saved Designs** widget (a
-heart with the count), the `[om_saved_button]` shortcode, or any menu link
-to `#om-saved`. After a save, a "View saved" button appears in the message
-at the bottom of the screen.
+Where visitors find their list:
+- the **"View saved"** button in the message after each save,
+- a **heart with the count** in the catalog's slim toolbar (and in the
+  phone's Filter · Sort pill),
+- a floating **Saved** button (bottom left) on pages without a Saved
+  button of your own — it disappears once you add one,
+- your header: the **OM Saved Designs** widget (a heart with the count),
+  the `[om_saved_button]` shortcode, or any menu link to `#om-saved`.
 
 Settings > OM Catalog > Look & feel > **Saved designs** turns the feature
 (and "Email me my list") on or off site-wide. Each catalog / related widget
@@ -805,6 +809,16 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.28.1
+- **Sticky site headers**: the slim toolbar, the sticky filter sidebar and
+  the sticky product gallery now sit below a header that stays on screen
+  (measured automatically, including headers that shrink or hide on
+  scroll), instead of under it. The widget's "Distance from the top" still
+  wins when set.
+- **Finding saved designs**: a heart with the count in the slim toolbar and
+  the phone pill, and a floating Saved button on pages without your own
+  (Settings > OM Catalog > Look & feel > Saved designs).
 
 ### 1.28.0
 - **Saved designs**: hearts on cards, product pages and the quick view; a

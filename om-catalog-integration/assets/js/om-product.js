@@ -2359,11 +2359,32 @@
 			if ($text.length) { $text.text(on ? $text.attr('data-on') : $text.attr('data-off')); }
 		});
 		$('.om-saved-count').text(list.length).prop('hidden', !list.length);
+		$('.om-st-saved').prop('hidden', !list.length).attr('aria-label', t('savedTitle', 'Saved designs') + (list.length ? ' (' + list.length + ')' : ''));
+		syncSavedFloat(list);
 		$('.om-saved-open').toggleClass('has-items', list.length > 0).each(function () {
 			var base = $(this).find('.om-saved-open-text').text() || t('saved', 'Saved');
 			$(this).attr('aria-label', base + (list.length ? ' (' + list.length + ')' : ''));
 		});
 		if (savedDialog && savedDialog[0].open) { renderSaved(); }
+	}
+
+	// A floating "Saved" button, only while something is saved and the page
+	// has no Saved button of its own (header widget, shortcode or a
+	// #om-saved menu link that is visible).
+	var savedFloat = null;
+	function syncSavedFloat(list) {
+		if (!cfg.savedFloat) { return; }
+		var own = $('.om-saved-open, a[href$="#om-saved"]').filter(function () { return this.getClientRects().length > 0; }).length > 0;
+		if (!list.length || own) {
+			if (savedFloat) { savedFloat.prop('hidden', true); }
+			return;
+		}
+		if (!savedFloat) {
+			savedFloat = $('<button type="button" class="om-saved-float' + (cfg.refined ? ' om-refined' : '') + '" data-om-saved-open aria-haspopup="dialog"><span class="om-save-icon" aria-hidden="true"></span><span class="om-saved-float-text" aria-hidden="true"></span><span class="om-saved-float-n" aria-hidden="true"></span></button>').appendTo(document.body);
+			savedFloat.find('.om-saved-float-text').text(t('saved', 'Saved'));
+		}
+		savedFloat.find('.om-saved-float-n').text(list.length);
+		savedFloat.attr('aria-label', t('savedTitle', 'Saved designs') + ' (' + list.length + ')').prop('hidden', false);
 	}
 
 	$(document).on('click', '.om-save-toggle', function (e) {
@@ -3354,8 +3375,63 @@
 
 	// Show the slim bar once the block's own toolbar (or search) has
 	// scrolled away, while the results are still on screen.
+	/* A site header that stays on screen (sticky/fixed, e.g. Elementor
+	   Pro's sticky header): its height becomes --om-header-h, so the slim
+	   toolbar, the sticky sidebar and the sticky gallery sit below it
+	   instead of under it. Measured while scrolling, so headers that
+	   shrink, appear or hide on scroll are followed. The WordPress admin
+	   bar is left out (the CSS adds it). */
+	var headerH = -1;
+	var OWN_LAYERS = '.om-sticky-tools, .om-saved-float, .om-compare-tray, .om-toast, .om-sticky-bar, .om-rb-bar, dialog';
+
+	function measureHeader() {
+		var start = 0;
+		var bar = document.getElementById('wpadminbar');
+		if (bar && window.getComputedStyle(bar).position === 'fixed') { start = Math.max(0, bar.getBoundingClientRect().bottom); }
+		var y = start;
+		var vw = window.innerWidth;
+		var vh = window.innerHeight;
+		for (var guard = 0; guard < 4 && document.elementsFromPoint; guard++) {
+			var found = 0;
+			[vw / 2, 24, vw - 24].forEach(function (x) {
+				document.elementsFromPoint(x, y + 2).forEach(function (el) {
+					if (found || el === document.documentElement || el === document.body || el === bar || (bar && bar.contains(el)) || el.closest(OWN_LAYERS)) { return; }
+					var pos = window.getComputedStyle(el).position;
+					if (pos !== 'fixed' && pos !== 'sticky') { return; }
+					var r = el.getBoundingClientRect();
+					if (r.top <= y + 2 && r.bottom > y + 2 && r.height < vh * 0.45 && r.width > vw * 0.5) { found = r.bottom; }
+				});
+			});
+			if (!found || found <= y) { break; }
+			y = found;
+		}
+		var h = Math.max(0, Math.round(y - start));
+		if (h !== headerH) {
+			headerH = h;
+			document.documentElement.style.setProperty('--om-header-h', h + 'px');
+			document.documentElement.classList.toggle('om-fixed-header', h > 0);
+		}
+		// The sticky sidebar: below the header and the slim toolbar.
+		$('.om-catalog-wrap').each(function () {
+			var tools = this.querySelector('.om-sticky-tools');
+			var th = tools && vw >= 768 && !tools.hidden && window.getComputedStyle(tools).display !== 'none' ? tools.offsetHeight : 0;
+			var offset = h || th ? (h + th + 16) + 'px' : '';
+			if (this._omStickyOffset !== offset) {
+				this._omStickyOffset = offset;
+				if (offset) { this.style.setProperty('--om-sticky-offset', offset); } else { this.style.removeProperty('--om-sticky-offset'); }
+			}
+		});
+	}
+
 	function updateStickyTools() {
 		stickyToolsTick = false;
+		measureHeader();
+		updateStickyToolsShown();
+		// Again, now the toolbar's state is known (the sidebar sits below it).
+		measureHeader();
+	}
+
+	function updateStickyToolsShown() {
 		$('.om-sticky-tools').each(function () {
 			var bar = this;
 			var $wrap = $(bar).closest('.om-catalog-wrap');

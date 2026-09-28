@@ -788,6 +788,10 @@ class OM_Shortcodes {
 			echo '</span>';
 		}
 		echo '</div>';
+		// Saved designs: shown by the script once something is saved.
+		if ( 'no' !== ( $atts['save'] ?? 'yes' ) && class_exists( 'OM_Saved' ) && OM_Saved::enabled() ) {
+			echo '<button type="button" class="om-st-btn om-st-saved" data-om-saved-open aria-haspopup="dialog" aria-label="' . esc_attr__( 'Saved designs', 'om-catalog' ) . '" hidden><span class="om-save-icon" aria-hidden="true"></span><span class="om-saved-count" aria-hidden="true" hidden>0</span></button>';
+		}
 		if ( '' !== $s['sort'] && $has( 'sort' ) ) {
 			$id = 'om-st-sort-' . wp_rand( 1000, 9999 );
 			echo '<label class="om-st-sort" for="' . esc_attr( $id ) . '"><span class="om-visually-hidden">' . esc_html__( 'Sort by', 'om-catalog' ) . '</span><select id="' . esc_attr( $id ) . '" class="om-filter-nav om-sort-select">' . $s['sort'] . '</select></label>'; // phpcs:ignore WordPress.Security.EscapeOutput -- options escaped when built.

@@ -8073,6 +8073,12 @@ html.om-dialog-open {
 
 html.om-sheet-open .om-sticky-tools { visibility: hidden; }
 
+/* Below a site header that stays on screen (measured by the script; the
+   widget's "Distance from the top" still wins when set). */
+html.om-fixed-header .om-sticky-tools { --om-st-top: var(--om-header-h, 0px); }
+html.om-fixed-header { --om-sticky-offset: calc(var(--om-header-h, 0px) + 24px); }
+.om-sticky-tools.is-shown { transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease, top 0.25s ease; }
+
 .om-st-inner {
 	display: flex;
 	align-items: center;
@@ -10794,7 +10800,8 @@ html body .om-ts p.om-ts-check-text { margin: 10px 0; font-size: 13px; line-heig
 }
 
 .om-save-toggle.is-on .om-save-icon,
-.om-saved-open.has-items .om-save-icon {
+.om-saved-open.has-items .om-save-icon,
+.om-saved-float .om-save-icon {
 	-webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M12 20.2s-7.6-4.6-9.3-9.5C1.6 7.4 3.8 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.9 1.3-1.8 2.9-2.9 4.9-2.9 3.3 0 5.5 3.1 4.4 6.4-1.7 4.9-9.3 9.5-9.3 9.5z'/%3E%3C/svg%3E");
 	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M12 20.2s-7.6-4.6-9.3-9.5C1.6 7.4 3.8 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.9 1.3-1.8 2.9-2.9 4.9-2.9 3.3 0 5.5 3.1 4.4 6.4-1.7 4.9-9.3 9.5-9.3 9.5z'/%3E%3C/svg%3E");
 }
@@ -11165,3 +11172,75 @@ html body .om-ts p.om-ts-check-text { margin: 10px 0; font-size: 13px; line-heig
 .om-saved-dialog .om-saved-email-status { margin: 8px 0 0; font-size: 13px; color: #2f6b3f; }
 .om-saved-dialog .om-saved-email-status:empty { display: none; }
 .om-saved-dialog .om-saved-email-status.is-error { color: #a4262c; }
+
+/* Saved: slim toolbar heart and the floating button. */
+.om-sticky-tools .om-st-saved.om-st-saved { position: relative; }
+.om-sticky-tools .om-st-saved[hidden] { display: none; }
+.om-sticky-tools .om-st-saved .om-save-icon { width: 18px; height: 18px; -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M12 20.2s-7.6-4.6-9.3-9.5C1.6 7.4 3.8 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.9 1.3-1.8 2.9-2.9 4.9-2.9 3.3 0 5.5 3.1 4.4 6.4-1.7 4.9-9.3 9.5-9.3 9.5z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M12 20.2s-7.6-4.6-9.3-9.5C1.6 7.4 3.8 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.9 1.3-1.8 2.9-2.9 4.9-2.9 3.3 0 5.5 3.1 4.4 6.4-1.7 4.9-9.3 9.5-9.3 9.5z'/%3E%3C/svg%3E"); }
+.om-sticky-tools .om-st-saved .om-saved-count { position: absolute; top: 2px; right: -2px; min-width: 18px; height: 18px; padding: 0 5px; font-size: 10px; }
+.om-cdesign-refined .om-sticky-tools .om-st-saved .om-saved-count { background: var(--om-gold-light, #f4dc9c); color: var(--om-color-primary, #00111C); }
+
+.om-saved-float.om-saved-float {
+	position: fixed;
+	left: 16px;
+	bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+	z-index: 9980;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 48px;
+	margin: 0;
+	padding: 0 8px 0 16px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--om-color-primary, #00111C);
+	box-shadow: 0 14px 34px rgba(0, 17, 28, 0.25);
+	color: #fff;
+	font-family: var(--om-font-body, inherit);
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.14em;
+	line-height: 1;
+	text-transform: uppercase;
+	cursor: pointer;
+	animation: om-saved-float-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+	transition: bottom 0.3s ease;
+}
+
+.om-saved-float.om-saved-float:is(:hover, :focus, :focus-visible) { background: var(--om-color-primary, #00111C); color: #fff; }
+.om-saved-float.om-saved-float:focus-visible { outline: 2px solid var(--om-color-primary, #00111C); outline-offset: 3px; }
+.om-saved-float[hidden] { display: none; }
+.om-saved-float .om-save-icon { width: 18px; height: 18px; }
+.om-saved-float-n {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 32px;
+	height: 32px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: var(--om-gold-light, #f4dc9c);
+	color: var(--om-color-primary, #00111C);
+	font-size: 13px;
+	letter-spacing: 0;
+}
+
+@keyframes om-saved-float-in {
+	from { transform: translateY(20px); opacity: 0; }
+	to { transform: none; opacity: 1; }
+}
+
+/* Out of the way of the other bottom bars; the slim toolbar has its own heart. */
+html.om-has-compare .om-saved-float { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+html:has(.om-sticky-tools.is-shown .om-st-saved:not([hidden])) .om-saved-float { display: none; }
+
+@media (max-width: 800px) {
+	html.om-has-sticky-bar .om-saved-float { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+	html:has(.om-rb-bar) .om-saved-float { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+	.om-saved-float .om-saved-float-text { display: none; }
+	.om-saved-float.om-saved-float { padding: 0 8px 0 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-saved-float.om-saved-float { animation: none; transition: none; }
+}

@@ -113,6 +113,7 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_page_transitions', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_email', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_saved_float', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_trust_line', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_popular_searches', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_track_searches', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -577,8 +578,10 @@ class OM_Settings {
 							<input type="hidden" name="om_saved" value="0" />
 							<label><input type="checkbox" name="om_saved" value="1" <?php checked( get_option( 'om_saved', '1' ), '1' ); ?> /> A "Save" heart on cards, product pages and the quick view; a Saved panel lists them (kept on the visitor's device, no account)</label><br />
 							<input type="hidden" name="om_saved_email" value="0" />
-							<label><input type="checkbox" name="om_saved_email" value="1" <?php checked( get_option( 'om_saved_email', '1' ), '1' ); ?> /> "Email me my list" in the Saved panel — you get a copy, saved under Inquiries</label>
-							<p class="description">To open the Saved panel from your header, add the <strong>OM Saved Designs</strong> widget (heart with a count), the <code>[om_saved_button]</code> shortcode, or any menu link to <code>#om-saved</code>. Each widget can hide the heart on its cards.</p>
+							<label><input type="checkbox" name="om_saved_email" value="1" <?php checked( get_option( 'om_saved_email', '1' ), '1' ); ?> /> "Email me my list" in the Saved panel — you get a copy, saved under Inquiries</label><br />
+							<input type="hidden" name="om_saved_float" value="0" />
+							<label><input type="checkbox" name="om_saved_float" value="1" <?php checked( get_option( 'om_saved_float', '1' ), '1' ); ?> /> A floating "Saved" button (bottom left) once something is saved — only on pages where no Saved button of your own is visible</label>
+							<p class="description">Visitors reach their list from the "View saved" message after saving, the heart in the catalog's slim toolbar, and the floating button. To open it from your header too, add the <strong>OM Saved Designs</strong> widget (heart with a count), the <code>[om_saved_button]</code> shortcode, or any menu link to <code>#om-saved</code>. Each widget can hide the heart on its cards.</p>
 						</td>
 					</tr>
 					<tr>
