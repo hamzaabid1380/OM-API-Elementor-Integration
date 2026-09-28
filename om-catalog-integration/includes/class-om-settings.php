@@ -114,6 +114,8 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_saved', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_email', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_float', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_analytics', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_analytics_meta', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_trust_line', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_popular_searches', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_track_searches', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -596,6 +598,21 @@ class OM_Settings {
 							<label>Card names <input type="number" min="0" max="60" name="om_m_card_title" value="<?php echo esc_attr( get_option( 'om_m_card_title', '' ) ); ?>" class="small-text" placeholder="15" /> px</label> &nbsp;
 							<label>Body text <input type="number" min="0" max="60" name="om_m_body" value="<?php echo esc_attr( get_option( 'om_m_body', '' ) ); ?>" class="small-text" placeholder="14" /> px</label>
 							<p class="description">Screens up to 600px wide. Leave empty for the defaults shown. Long names are balanced over two lines instead of leaving one word alone.</p>
+						</td>
+					</tr>
+				</table>
+
+				<h2>Analytics</h2>
+				<table class="form-table">
+					<tr>
+						<th>Events</th>
+						<td>
+							<input type="hidden" name="om_analytics" value="0" />
+							<label><input type="checkbox" name="om_analytics" value="1" <?php checked( get_option( 'om_analytics', '1' ), '1' ); ?> /> Send what visitors do to your Google Analytics 4 / Google Tag Manager</label><br />
+							<input type="hidden" name="om_analytics_meta" value="0" />
+							<label><input type="checkbox" name="om_analytics_meta" value="1" <?php checked( get_option( 'om_analytics_meta', '1' ), '1' ); ?> /> …and to your Meta (Facebook / Instagram) pixel</label>
+							<p class="description">Uses the tracking already on your site (e.g. Site Kit, GTM4WP, PixelYourSite, or the code in your header) — nothing is added, and nothing is sent if none is installed. Events: <code>view_item</code> (product page, quick view), <code>add_to_wishlist</code> (heart), <code>compare_designs</code>, <code>share</code>, <code>search</code>, <code>generate_lead</code> (inquiries, "Email me my list", ring design emails), <code>ring_builder_step</code>, <code>diamond_guide</code>, <code>diamond_guide_choose</code>, <code>book_viewing_click</code>, <code>true_size</code>. Meta gets ViewContent, AddToWishlist, Search, Lead and Schedule, plus custom events for the rest.</p>
+							<p class="description">To check it, open any catalog page with <code>?om_debug_events=1</code> while logged in as an admin: each event is listed in the browser console (F12 › Console), with where it was sent. In GA4, mark <strong>generate_lead</strong> as a key event to count inquiries as conversions.</p>
 						</td>
 					</tr>
 				</table>

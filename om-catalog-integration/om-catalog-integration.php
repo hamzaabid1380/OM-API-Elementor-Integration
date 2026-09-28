@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.28.2
+ * Version: 1.29.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.28.2' );
+define( 'OM_CATALOG_VERSION', '1.29.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -202,6 +202,12 @@ function om_catalog_enqueue_assets() {
 			'saved'           => OM_Saved::enabled(),
 			'savedEmail'      => '0' !== get_option( 'om_saved_email', '1' ),
 			'savedFloat'      => '0' !== get_option( 'om_saved_float', '1' ),
+			// Analytics events to the site's own GA4 / GTM / Meta pixel.
+			'track'           => '0' !== get_option( 'om_analytics', '1' ),
+			'trackMeta'       => '0' !== get_option( 'om_analytics_meta', '1' ),
+			// Admins can watch the events in the browser console: ?om_debug_events=1
+			'trackDebug'      => isset( $_GET['om_debug_events'] ) && current_user_can( 'manage_options' ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
+			'currency'        => (string) apply_filters( 'om_analytics_currency', 'USD' ),
 			'popular'   => om_popular_searches(),
 		)
 	);

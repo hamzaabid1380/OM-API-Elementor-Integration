@@ -10,6 +10,89 @@
 	}
 
 	/* =========================================================
+	   Analytics: what visitors do, sent to the site's own GA4 (gtag),
+	   Google Tag Manager and Meta pixel — only those already on the page;
+	   nothing is loaded or sent elsewhere. Every event is also a
+	   document "om:track" event ({ name, params }) for other tools.
+	   ========================================================= */
+
+	// Not while designing the page in Elementor.
+	function trackOff() { return !!(document.body && document.body.classList.contains('elementor-editor-active')); }
+
+	/**
+	 * @param {string} name   GA4 event name (recommended names where one fits).
+	 * @param {Object} params GA4 parameters; "items" makes it an ecommerce event.
+	 * @param {Array}  meta   [ 'track' | 'trackCustom', name, data ] for the Meta pixel.
+	 */
+	function track(name, params, meta) {
+		if (trackOff()) { return; }
+		params = params || {};
+		try { document.dispatchEvent(new CustomEvent('om:track', { detail: { name: name, params: params } })); } catch (err) { /* old browser */ }
+		if (!cfg.track) { return; }
+		var sent = [];
+		try {
+			if (typeof window.gtag === 'function') {
+				window.gtag('event', name, params);
+				sent.push('GA4');
+			}
+			if (window.google_tag_manager && window.dataLayer && window.dataLayer.push) {
+				if (params.items) {
+					window.dataLayer.push({ ecommerce: null });
+					window.dataLayer.push({ event: name, ecommerce: params });
+				} else {
+					window.dataLayer.push($.extend({ event: name }, params));
+				}
+				sent.push('GTM');
+			}
+			if (meta && cfg.trackMeta && typeof window.fbq === 'function') {
+				window.fbq(meta[0], meta[1], meta[2] || {});
+				sent.push('Meta ' + meta[1]);
+			}
+		} catch (err) { /* never break the page for analytics */ }
+		if (cfg.trackDebug && window.console) {
+			window.console.info('[OM event] ' + name + (sent.length ? ' → ' + sent.join(', ') : ' (no GA4 / GTM / Meta pixel on this page)'), params);
+		}
+	}
+
+	// One design as a GA4 item.
+	function trackItem(x) {
+		var item = { item_id: String(x.s || ''), item_name: x.t || String(x.s || '') };
+		if (x.l) { item.item_category = String(x.l).replace(/-/g, ' '); }
+		if (x.v) { item.item_variant = x.v; }
+		if (x.price) { item.price = x.price; }
+		return item;
+	}
+
+	// A shown price ("$1,188.00") as a number, or 0.
+	function priceNumber(text) {
+		var n = parseFloat(String(text || '').replace(/[^0-9.]/g, ''));
+		return isFinite(n) ? n : 0;
+	}
+
+	// A design viewed (product page or quick view).
+	function trackView($root, how) {
+		var el = $root.find('.om-product-wrap[data-om-recent-item]').addBack('.om-product-wrap[data-om-recent-item]')[0];
+		if (!el) { return; }
+		var x;
+		try { x = JSON.parse(el.getAttribute('data-om-recent-item')); } catch (err) { return; }
+		var price = priceNumber($(el).find('.om-price-amount:not([hidden])').first().text());
+		x.price = price;
+		var params = { currency: cfg.currency || 'USD', items: [trackItem(x)], view_method: how };
+		if (price) { params.value = price; }
+		track('view_item', params, ['track', 'ViewContent', $.extend({ content_ids: [String(x.s)], content_name: x.t, content_type: 'product', content_category: x.l }, price ? { value: price, currency: cfg.currency || 'USD' } : {})]);
+	}
+
+	var lastSearch = null;
+	function trackSearch(href) {
+		var q = '';
+		try { q = new URL(href, window.location.href).searchParams.get('om_q') || ''; } catch (err) { return; }
+		q = $.trim(q);
+		if (!q || q === lastSearch) { return; }
+		lastSearch = q;
+		track('search', { search_term: q }, ['track', 'Search', { search_string: q }]);
+	}
+
+	/* =========================================================
 	   Product page: live re-quote
 	   ========================================================= */
 
@@ -811,6 +894,12 @@
 				$status.text((response && response.data && response.data.message) || (ok ? '' : t('error', 'Something went wrong. Please try again.')))
 					.addClass(ok ? 'is-success' : 'is-error').prop('hidden', false);
 				if (ok) {
+					var subject = $.trim($form.find('[name="om_subject"]:checked, input.om-subject-hidden').first().val() || '');
+					var leadItem = $form.find('[name="om_ctx_style"]').val();
+					var from = $form.closest('.om-builder').length ? 'ring_builder' : ($form.closest('.om-quick-view').length ? 'quick_view' : ($form.closest('.om-diamonds').length ? 'diamond' : ($form.closest('.om-product-wrap').length ? 'product_page' : 'page')));
+					var leadPrice = priceNumber($form.find('[name="om_ctx_price"]').val());
+					track('generate_lead', $.extend({ form_type: 'inquiry', form_location: from, subject: subject, item_id: leadItem || '' }, leadPrice ? { value: leadPrice, currency: cfg.currency || 'USD' } : {}), ['track', 'Lead', { content_name: $form.find('[name="om_ctx_title"]').val() || subject, content_category: from }]);
+					if (/viewing|appointment/i.test(subject) && cfg.track && cfg.trackMeta && typeof window.fbq === 'function' && !trackOff()) { try { window.fbq('track', 'Schedule'); } catch (err) { /* ignore */ } }
 					form.reset();
 					setPair($form, '', '');
 					$form.find('.om-field, .om-field-row, .om-inquiry-submit').prop('hidden', true);
@@ -970,6 +1059,7 @@
 			if (window.history && window.history.pushState) {
 				window.history.pushState({ omCatalog: true }, '', href);
 				omPushed = true;
+				if (!isDiamonds) { trackSearch(href); }
 			}
 			if (focusSearch) {
 				var input = $fresh.find('.om-search-input')[0];
@@ -1025,7 +1115,9 @@
 	}
 
 	// Share a link: the phone's share sheet where there is one, else copy.
-	function shareLink(url, title) {
+	function shareLink(url, title, type) {
+		var native = !!(navigator.share && window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+		track('share', { method: native ? 'share_sheet' : 'copy_link', content_type: type || 'page' }, ['trackCustom', 'Share', { content_type: type || 'page' }]);
 		if (navigator.share && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
 			navigator.share({ title: title || document.title, url: url }).catch(function () {});
 			return;
@@ -1552,6 +1644,7 @@
 			window.localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 20)));
 		} catch (err) { /* storage unavailable: nothing to remember */ }
 		countView(el);
+		trackView($(el), 'product_page');
 	}
 
 	// One counted view per design per visit, for "Most viewed" and the
@@ -1793,7 +1886,7 @@
 			qv.find('.om-qv-prev').attr('aria-label', t('prevDesign', 'Previous design')).on('click', function () { stepQuickView(-1); });
 			qv.find('.om-qv-next').attr('aria-label', t('nextDesign', 'Next design')).on('click', function () { stepQuickView(1); });
 			qv.find('.om-qv-share').attr('aria-label', t('shareLink', 'Share link')).append('<span class="om-qv-share-icon" aria-hidden="true"></span>', $('<span class="om-qv-share-text"></span>').text(t('share', 'Share'))).on('click', function () {
-				shareLink(window.location.href, qv.find('.om-product-title').first().text());
+				shareLink(window.location.href, qv.find('.om-product-title').first().text(), 'product');
 			});
 			qv.on('click', function (e) { if (e.target === qv[0]) { closeQuickView(); } });
 			qv.find('.om-qv-close').on('click', closeQuickView);
@@ -1875,6 +1968,7 @@
 				qv.scrollTop(0);
 				rememberFrom($body);
 				syncSaved();
+				trackView($body, 'quick_view');
 				$body.find('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
 			} else {
 				$body.html($('<p class="om-error"></p>').text((response && response.data && response.data.message) || t('error', 'Something went wrong. Please try again.')));
@@ -2240,7 +2334,7 @@
 			compareDialog.find('.om-compare-share-text').text(t('shareLink', 'Share link'));
 			compareDialog.find('.om-compare-share').attr('aria-label', t('shareLink', 'Share link')).on('click', function () {
 				var list = readCompare();
-				shareLink(urlWith('om_compare', list.map(function (x) { return x.l + '/' + x.s; }).join(',')), t('compare', 'Compare'));
+				shareLink(urlWith('om_compare', list.map(function (x) { return x.l + '/' + x.s; }).join(',')), t('compare', 'Compare'), 'compare');
 			});
 			compareDialog.find('.om-compare-clear-all').text(t('clearAll', 'Clear all')).on('click', function () {
 				var before = readCompare();
@@ -2260,6 +2354,7 @@
 			compareDialog[0].addEventListener('close', function () { $('html').removeClass('om-lb-open'); });
 		}
 		var list = readCompare();
+		track('compare_designs', { designs: list.length, item_ids: list.map(function (x) { return x.s; }).join(',') }, ['trackCustom', 'CompareDesigns', { content_ids: list.map(function (x) { return String(x.s); }) }]);
 		compareDialog.find('.om-compare-title').text(list.length === 1 ? t('compareOne', '1 design') : t('compareMany', '%d designs side by side').replace('%d', list.length));
 		compareDialog.find('.om-compare-diff').prop('hidden', list.length < 2);
 		var $body = compareDialog.find('.om-compare-body').html('<div class="om-qv-loading"><span class="om-qv-skel om-qv-skel--img"></span><span class="om-qv-skel"></span></div>');
@@ -2451,6 +2546,7 @@
 		$(btn).addClass('is-pop');
 		showToast(t('savedAdded', 'Saved') + ' (' + list.length + ')', openSaved, t('savedView', 'View saved'));
 		if (cfg.ajaxUrl) { $.post(cfg.ajaxUrl, { action: 'om_saved_stat', line: item.l, style: item.s }); }
+		track('add_to_wishlist', { currency: cfg.currency || 'USD', items: [trackItem(item)] }, ['track', 'AddToWishlist', { content_ids: [String(item.s)], content_name: item.t, content_type: 'product' }]);
 	});
 
 	function openSaved() {
@@ -2540,7 +2636,7 @@
 	});
 
 	$(document).on('click', '.om-saved-share', function () {
-		shareLink(urlWith('om_saved', readSaved().map(function (x) { return x.l + '/' + x.s; }).join(',')), t('savedTitle', 'Saved designs'));
+		shareLink(urlWith('om_saved', readSaved().map(function (x) { return x.l + '/' + x.s; }).join(',')), t('savedTitle', 'Saved designs'), 'saved_list');
 	});
 
 	$(document).on('click', '.om-saved-compare', function () {
@@ -2571,6 +2667,7 @@
 		}).done(function (r) {
 			var msg = (r && r.data && r.data.message) || t('error', 'Something went wrong. Please try again.');
 			$status.toggleClass('is-error', !(r && r.success)).text(msg);
+			if (r && r.success) { track('generate_lead', { form_type: 'saved_list_email', designs: readSaved().length }, ['track', 'Lead', { content_name: 'Saved designs', content_category: 'saved_list_email' }]); }
 		}).fail(function () {
 			$status.addClass('is-error').text(t('error', 'Something went wrong. Please try again.'));
 		}).always(function () { $btn.prop('disabled', false); });
@@ -2668,10 +2765,26 @@
 			if ($bar.length && $freshBar.length && !$bar.find('dialog[open]').length) { $bar.replaceWith($freshBar); }
 			$fresh.find('.om-rb-pick').addClass('om-fade-in');
 			replaceUrl(url);
+			trackGuide(form, $fresh.find('.om-rb-pick').length);
 		}).fail(function () {
 			if (seq === guideSeq) { window.location.href = url; }
 		});
 	}
+	// "Help me choose" answers (the chosen budget or size, not more).
+	function trackGuide(form, picks) {
+		var get = function (n) { var $f = $(form).find('[name="' + n + '"]'); return $f.is(':radio') ? $f.filter(':checked').val() || '' : $f.val() || ''; };
+		var params = { priority: get('g_pri'), origin: get('g_origin') || 'fixed', shape: get('g_shape') || 'setting', suggestions: picks };
+		if (get('g_budget')) { params.budget = parseInt(get('g_budget'), 10) || 0; params.currency = cfg.currency || 'USD'; }
+		if (get('g_ct')) { params.carat = parseFloat(get('g_ct')) || 0; }
+		track('diamond_guide', params, ['trackCustom', 'DiamondGuide', params]);
+	}
+	$(document).on('click', '.om-rb-pick-choose', function () {
+		var $pick = $(this).closest('.om-rb-pick');
+		track('diamond_guide_choose', { suggestion: $.trim($pick.find('.om-rb-pick-tag').text()), diamond: $.trim($pick.find('.om-rb-pick-title').text()) }, ['trackCustom', 'DiamondGuideChoose', {}]);
+	});
+	$(document).on('click', '.om-rb-book', function () {
+		track('book_viewing_click', { location: 'ring_builder' }, ['trackCustom', 'BookViewingClick', {}]);
+	});
 	$(document).on('change', '.om-rb-guide-form', function () { updateGuide(this); });
 	$(document).on('submit', '.om-rb-guide-form', function (e) { e.preventDefault(); updateGuide(this); });
 	$(document).on('input', '.om-rb-guide-form input[type=range]', function () {
@@ -2686,7 +2799,7 @@
 	});
 
 	$(document).on('click', '.om-rb-share', function () {
-		shareLink(this.getAttribute('data-om-url') || window.location.href, this.getAttribute('data-om-title') || document.title);
+		shareLink(this.getAttribute('data-om-url') || window.location.href, this.getAttribute('data-om-title') || document.title, 'ring_design');
 	});
 
 	$(document).on('submit', '.om-rb-email-form', function (e) {
@@ -2710,7 +2823,10 @@
 			website: $(form).find('input[name=website]').val()
 		}).done(function (r) {
 			$status.text((r && r.data && r.data.message) || '');
-			if (r && r.success) { $(form).find('input[name=email]').val(''); }
+			if (r && r.success) {
+				$(form).find('input[name=email]').val('');
+				track('generate_lead', { form_type: 'ring_design_email' }, ['track', 'Lead', { content_name: form.getAttribute('data-om-title') || '', content_category: 'ring_design_email' }]);
+			}
 		}).fail(function () {
 			$status.text(t('error', 'Something went wrong. Please try again.'));
 		}).always(function () { $btn.prop('disabled', false); });
@@ -2794,6 +2910,7 @@
 	function tsCt(n) { return String(Math.round(n * 100) / 100); }
 
 	function openTrueSize(data, trigger) {
+		track('true_size', { shape: (data && data.s) || '', carat: (data && data.c) || 0 }, ['trackCustom', 'TrueSize', {}]);
 		var shape = data.s || 'Round';
 		var mine = { c: parseFloat(data.c) || 0, l: parseFloat(data.l) || 0, w: parseFloat(data.w) || 0 };
 		if ((!mine.l || !mine.w) && mine.c) { var ty = tsTypical(shape, mine.c); mine.l = ty.l; mine.w = ty.w; }
@@ -3590,6 +3707,11 @@
 
 	$(function () {
 		initBlock(document);
+		if ($('.om-catalog-wrap').length) { trackSearch(window.location.href); }
+		$('.om-builder').each(function () {
+			var m = /om-builder--([a-z]+)/.exec(this.className);
+			if (m) { track('ring_builder_step', { step: m[1], start_with: $(this).hasClass('om-builder--diamond-first') ? 'diamond' : 'setting' }, ['trackCustom', 'RingBuilderStep', { step: m[1] }]); }
+		});
 		rememberProduct();
 		renderRecent(document);
 		fillCustomForms(document);

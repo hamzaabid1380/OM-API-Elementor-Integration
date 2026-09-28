@@ -296,6 +296,34 @@ can hide the heart on its cards (Quick View, Compare & Save section), and
 the product widget has a **"Save" (heart) button** switch under Sections.
 Insights shows the **most saved** designs and how many became inquiries.
 
+## Analytics
+
+What visitors do is sent to the tracking already on your site — Google
+Analytics 4 (gtag, e.g. Site Kit), Google Tag Manager (dataLayer) and the
+Meta pixel. Nothing is added or sent anywhere else, and nothing happens if
+none is installed.
+
+| Event (GA4 / GTM) | When | Meta pixel |
+| --- | --- | --- |
+| `view_item` (`view_method`: product_page / quick_view) | a design is viewed | ViewContent |
+| `add_to_wishlist` | the heart | AddToWishlist |
+| `compare_designs` | the compare table opens | CompareDesigns |
+| `share` (`content_type`: product, compare, saved_list, ring_design) | a share link | Share |
+| `search` | a catalog search | Search |
+| `generate_lead` (`form_type`: inquiry, saved_list_email, ring_design_email) | a form is sent | Lead (+ Schedule for viewings) |
+| `ring_builder_step` | each builder step | RingBuilderStep |
+| `diamond_guide`, `diamond_guide_choose` | Help me choose answers / a suggestion chosen | DiamondGuide… |
+| `book_viewing_click` | Book a viewing | BookViewingClick |
+| `true_size` | See true size | TrueSize |
+
+Items carry the style number, name, line and (when shown) the price. In GA4,
+mark `generate_lead` as a key event to count inquiries as conversions.
+Turn it off (or just Meta) in Settings > OM Catalog > Analytics. Admins can
+watch the events in the browser console with `?om_debug_events=1`.
+Developers can listen for the `om:track` event on `document`
+(`detail: { name, params }`); the currency is filterable with
+`om_analytics_currency` (default USD).
+
 ## Inquiries
 
 Product pages, diamonds and the builder review have an inquiry form. Each
@@ -818,6 +846,13 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.29.0
+- **Analytics events** for GA4, Google Tag Manager and the Meta pixel
+  (whatever the site already has): views, saves, compare, share, search,
+  leads (inquiries and emailed lists/designs), ring builder steps, Help me
+  choose, Book a viewing and true size. Settings > OM Catalog > Analytics;
+  `?om_debug_events=1` for admins; `om:track` for developers.
 
 ### 1.28.2
 - **Saved lists last on iPhones too**: a backup cookie set by your site
