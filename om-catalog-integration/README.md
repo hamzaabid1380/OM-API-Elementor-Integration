@@ -246,6 +246,14 @@ takes the stone into the builder. After a setting, only diamonds that fit
 it are suggested. Set it in the widget's **Help me choose** section: mode
 (automatic, budget, size or off), texts, budget range and the start card.
 
+The answers go with the visitor's request (and a "Questions? Ask us"
+message): the inquiry email and the **Inquiries** list show e.g. "Budget
+$5,250 · Oval · Most important: Sparkle · Lab-grown — chose our 'Top
+sparkle' suggestion" (or "then picked a different diamond"). The visitor
+sees a short note above the send button saying so; the copy they receive
+leaves it out. Switch it off with **Send the answers with requests** in the
+widget's Help me choose section.
+
 Every text is in the widget's Content tab (Start screen, Steps & guidance,
 Settings & diamonds, Help me choose, "Your ring" bar, Review & request); colours and corners
 in Style › Builder.
@@ -772,6 +780,13 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.27.0
+- **Help me choose answers go with requests**: budget or size, shape,
+  priority, lab/natural and which suggestion was chosen are added to the
+  inquiry email, the Inquiries list and custom forms (`om_guide`). The
+  visitor sees a note saying so. Widget switch: "Send the answers with
+  requests".
 
 ### 1.26.0
 - **Help me choose** in the ring builder: budget or size, priority and

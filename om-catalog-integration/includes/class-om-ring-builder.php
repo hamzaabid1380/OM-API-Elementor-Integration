@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OM_Ring_Builder {
 
-	const PARAMS = array( 'rb_setting', 'rb_metal', 'rb_color', 'rb_diamond', 'rb_step', 'rb_first', 'rb', 'g_ct', 'g_budget', 'g_pri', 'g_origin', 'g_shape' );
+	const PARAMS = array( 'rb_setting', 'rb_metal', 'rb_color', 'rb_diamond', 'rb_step', 'rb_first', 'rb_guide', 'rb', 'g_ct', 'g_budget', 'g_pri', 'g_origin', 'g_shape' );
 
 	private static $instance = null;
 
@@ -101,6 +101,8 @@ class OM_Ring_Builder {
 			'guide_link'      => __( 'Not sure which diamond? Help me choose', 'om-catalog' ),
 			'budget_min'      => 1000,
 			'budget_max'      => 20000,
+			// Send the answers with the visitor's request / question.
+			'guide_send'      => 'yes',
 
 			// "Your ring" bar.
 			'bar'             => 'yes',
@@ -154,6 +156,9 @@ class OM_Ring_Builder {
 			'diamond' => $get( 'rb_diamond' ),
 			'step'    => in_array( $get( 'rb_step' ), array( 'setting', 'diamond', 'review', 'guide' ), true ) ? $get( 'rb_step' ) : '',
 			'first'   => 'diamond' === $get( 'rb_first' ) ? 'diamond' : '',
+			// "Help me choose" answers (OM_Diamond_Guide::code()), kept so
+			// they can go with the request.
+			'guide'   => mb_substr( $get( 'rb_guide' ), 0, 120 ),
 		);
 	}
 
@@ -168,6 +173,7 @@ class OM_Ring_Builder {
 				'rb_diamond' => $s['diamond'],
 				'rb_step'    => $s['step'] ?? '',
 				'rb_first'   => $s['first'] ?? '',
+				'rb_guide'   => $s['guide'] ?? '',
 			),
 			'strlen'
 		);
@@ -362,7 +368,8 @@ class OM_Ring_Builder {
 		if ( 'start' === $step ) {
 			$this->render_start( $atts, $link, $order );
 		} elseif ( 'guide' === $step ) {
-			$this->render_guide( $atts, $state, $has_setting ? $setting : null, $link, $order, $has_setting, $has_diamond, $page_url, $guide_mode );
+			// The answers so far then travel on through the bar's links.
+			$state['guide'] = $this->render_guide( $atts, $state, $has_setting ? $setting : null, $link, $order, $has_setting, $has_diamond, $page_url, $guide_mode );
 		} else {
 			$guides = array(
 				'setting' => $has_diamond ? self::fill( $atts['guide_setting2'], $setting_name, $diamond_name ) : $atts['guide_setting'],
@@ -474,7 +481,11 @@ class OM_Ring_Builder {
 		return $priced ? 'budget' : 'size';
 	}
 
-	/** Step: "Help me choose" — three questions, three real stones. */
+	/**
+	 * Step: "Help me choose" — three questions, three real stones.
+	 *
+	 * @return string The answers (OM_Diamond_Guide::code()).
+	 */
 	private function render_guide( $atts, $state, $setting, $link, $order, $has_setting, $has_diamond, $page_url, $mode ) {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view state.
 		$get = static function ( $key ) {
@@ -515,6 +526,9 @@ class OM_Ring_Builder {
 		}
 		$picks = OM_Diamond_Guide::picks( $query );
 		$tags  = OM_Diamond_Guide::tags( $budget_mode );
+		$code  = static function ( $pick = '', $lot = '' ) use ( $mode, $budget_mode, $budget, $ct, $pri, $origin, $shape ) {
+			return OM_Diamond_Guide::code( $mode, $budget_mode ? $budget : $ct, $pri, $origin, $shape, $pick, $lot );
+		};
 
 		$names = array(
 			'setting' => $atts['step_setting'],
@@ -626,7 +640,7 @@ class OM_Ring_Builder {
 							</div>
 							<div class="om-rb-pick-end">
 								<span class="om-rb-pick-price"><?php echo esc_html( null !== $retail ? om_format_price_short( $retail ) : __( 'Price on request', 'om-catalog' ) ); ?></span>
-								<a class="om-rb-pick-choose" href="<?php echo esc_url( $link( array( 'diamond' => (string) $d['lot_number'], 'step' => '' ) ) ); ?>"><?php esc_html_e( 'Choose', 'om-catalog' ); ?><span class="om-visually-hidden">: <?php echo esc_html( OM_Diamonds::describe( $d ) ); ?></span></a>
+								<a class="om-rb-pick-choose" href="<?php echo esc_url( $link( array( 'diamond' => (string) $d['lot_number'], 'step' => '', 'guide' => $code( $key, (string) $d['lot_number'] ) ) ) ); ?>"><?php esc_html_e( 'Choose', 'om-catalog' ); ?><span class="om-visually-hidden">: <?php echo esc_html( OM_Diamonds::describe( $d ) ); ?></span></a>
 								<?php
 								if ( 'no' !== $atts['true_size'] ) {
 									echo om_true_size_button( $d ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the helper.
@@ -636,10 +650,11 @@ class OM_Ring_Builder {
 						</div>
 					<?php endforeach; ?>
 				<?php endif; ?>
-				<p class="om-rb-guide-all"><a href="<?php echo esc_url( $link( array( 'step' => 'diamond' ) ) ); ?>"><?php esc_html_e( 'See all matching diamonds', 'om-catalog' ); ?></a></p>
+				<p class="om-rb-guide-all"><a href="<?php echo esc_url( $link( array( 'step' => 'diamond', 'guide' => $code() ) ) ); ?>"><?php esc_html_e( 'See all matching diamonds', 'om-catalog' ); ?></a></p>
 			</div>
 		</div>
 		<?php
+		return $code();
 	}
 
 	private function render_start( $atts, $link, $order ) {
@@ -851,13 +866,27 @@ class OM_Ring_Builder {
 		if ( '' !== $total ) {
 			echo '<span class="om-rb-total"><span class="om-rb-total-label">' . esc_html__( 'Total', 'om-catalog' ) . '</span> ' . esc_html( $total ) . '</span>';
 		}
-		echo $this->ask_link( $atts, $link ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in ask_link().
+		echo $this->ask_link( $atts, $link, self::guide_text( $atts, $state ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in ask_link().
 		echo $next; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 		echo '</span></div></div>';
 	}
 
+	/** The "Help me choose" answers in words, for the shop ('' = none or not sent). */
+	private static function guide_text( $atts, $state ) {
+		if ( 'no' === $atts['guide_send'] || '' === (string) ( $state['guide'] ?? '' ) ) {
+			return '';
+		}
+		return OM_Diamond_Guide::describe_code( $state['guide'], (string) $state['diamond'] );
+	}
+
+	/** Tells the visitor their answers go with the form. */
+	private static function guide_note( $guide ) {
+		/* translators: %s: the visitor's answers. */
+		return '' !== $guide ? sprintf( __( 'Sent with it, so we can help: your “Help me choose” answers (%s).', 'om-catalog' ), $guide ) : '';
+	}
+
 	/** "Questions? Ask us": a link, or a short inquiry form in a pop-up. */
-	private function ask_link( $atts, $link ) {
+	private function ask_link( $atts, $link, $guide = '' ) {
 		$text = trim( (string) $atts['ask_text'] );
 		if ( '' === $text ) {
 			return '';
@@ -878,6 +907,8 @@ class OM_Ring_Builder {
 					'intro'       => __( 'Ask us anything about settings, diamonds, sizing or timing.', 'om-catalog' ),
 					'subject'     => __( 'General question', 'om-catalog' ),
 					'url'         => om_absolute_url( $link() ),
+					'guide'       => $guide,
+					'note'        => self::guide_note( $guide ),
 					'button'      => __( 'Send', 'om-catalog' ),
 				)
 			)
@@ -931,6 +962,7 @@ class OM_Ring_Builder {
 			(string) ( $diamond['lot_number'] ?? '' )
 		);
 		$title = (string) ( $setting['title'] ?? '' ) . ' + ' . OM_Diamonds::describe( $diamond );
+		$guide = self::guide_text( $atts, $state );
 		$share = om_absolute_url( $link( array( 'step' => '' ) ) );
 
 		// The request form: the site's fields plus ring size and engraving.
@@ -1052,6 +1084,8 @@ class OM_Ring_Builder {
 						'price'       => null !== $total ? om_format_price( $total ) : '',
 						'diamond'     => (string) ( $diamond['lot_number'] ?? '' ),
 						'summary'     => $summary,
+						'guide'       => $guide,
+						'note'        => self::guide_note( $guide ),
 						'heading'     => (string) $atts['request_heading'],
 						'intro'       => (string) $atts['request_intro'],
 						'button'      => (string) $atts['request_button'],
@@ -1092,7 +1126,7 @@ class OM_Ring_Builder {
 						</ol>
 					</div>
 				<?php endif; ?>
-				<a class="om-review-restart" href="<?php echo esc_url( om_builder_url() ? om_builder_url() : $link( array( 'line' => '', 'style' => '', 'metal' => '', 'color' => '', 'diamond' => '', 'first' => '', 'step' => '' ) ) ); ?>"><?php esc_html_e( 'Start over', 'om-catalog' ); ?></a>
+				<a class="om-review-restart" href="<?php echo esc_url( om_builder_url() ? om_builder_url() : $link( array( 'line' => '', 'style' => '', 'metal' => '', 'color' => '', 'diamond' => '', 'first' => '', 'guide' => '', 'step' => '' ) ) ); ?>"><?php esc_html_e( 'Start over', 'om-catalog' ); ?></a>
 			</aside>
 		</div>
 		<?php

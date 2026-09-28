@@ -415,6 +415,7 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 					array( 'guide_link', 'text', __( 'Link on the diamond step', 'om-catalog' ), array( 'condition' => array( 'guide!' => 'off' ), 'description' => __( 'Leave empty for none.', 'om-catalog' ) ) ),
 					array( 'budget_min', 'number', __( 'Budget from', 'om-catalog' ), array( 'condition' => array( 'guide!' => array( 'off', 'size' ) ) ) ),
 					array( 'budget_max', 'number', __( 'Budget up to', 'om-catalog' ), array( 'condition' => array( 'guide!' => array( 'off', 'size' ) ) ) ),
+					array( 'guide_send', 'switch', __( 'Send the answers with requests', 'om-catalog' ), array( 'condition' => array( 'guide!' => 'off' ), 'description' => __( 'Their budget or size, priority and lab/natural go with the request and the "Ask us" question (email and Inquiries list). The visitor sees a short note saying so.', 'om-catalog' ) ) ),
 				),
 			),
 			'section_rb_bar'    => array(

@@ -147,6 +147,62 @@ class OM_Diamond_Guide {
 		return implode( ' ', $parts );
 	}
 
+	/**
+	 * The answers as one URL value, carried through the builder so they can
+	 * go with the request: mode (b = budget, c = carat) ~ amount ~ priority
+	 * ~ origin ~ shape ~ the pick's priority ~ its lot number.
+	 */
+	public static function code( $mode, $amount, $pri, $origin, $shape, $pick = '', $lot = '' ) {
+		return implode( '~', array( 'budget' === $mode ? 'b' : 'c', 'budget' === $mode ? (int) $amount : round( (float) $amount, 2 ), $pri, $origin, $shape, $pick, $lot ) );
+	}
+
+	/**
+	 * The answers in words for the shop, or '' when the code is not valid.
+	 *
+	 * @param string $code See code().
+	 * @param string $lot  The diamond now in the ring ('' before one is chosen).
+	 */
+	public static function describe_code( $code, $lot = '' ) {
+		$p = explode( '~', (string) $code, 7 );
+		if ( count( $p ) < 5 || ! in_array( $p[0], array( 'b', 'c' ), true ) || ! is_numeric( $p[1] ) ) {
+			return '';
+		}
+		$budget  = 'b' === $p[0];
+		$pris    = array(
+			'value'   => $budget ? __( 'Size', 'om-catalog' ) : __( 'Value', 'om-catalog' ),
+			'balance' => __( 'Balance', 'om-catalog' ),
+			'sparkle' => __( 'Sparkle', 'om-catalog' ),
+		);
+		$origins = array(
+			'lab'     => __( 'Lab-grown', 'om-catalog' ),
+			'natural' => __( 'Natural', 'om-catalog' ),
+			'either'  => __( 'Lab-grown or natural', 'om-catalog' ),
+		);
+		$parts   = array(
+			$budget
+				/* translators: %s: amount. */
+				? sprintf( __( 'Budget %s', 'om-catalog' ), om_format_price_short( max( 0, (int) $p[1] ) ) )
+				/* translators: %s: carat. */
+				: sprintf( __( 'About %s ct', 'om-catalog' ), rtrim( rtrim( number_format( max( 0, (float) $p[1] ), 2 ), '0' ), '.' ) ),
+			in_array( $p[4], OM_Diamonds::SHAPES, true ) ? $p[4] : '',
+			/* translators: %s: priority. */
+			isset( $pris[ $p[2] ] ) ? sprintf( __( 'Most important: %s', 'om-catalog' ), $pris[ $p[2] ] ) : '',
+			$origins[ $p[3] ] ?? '',
+		);
+		$text    = implode( ' · ', array_filter( $parts, 'strlen' ) );
+		$pick    = $p[5] ?? '';
+		$tags    = self::tags( $budget );
+		if ( '' !== (string) $lot ) {
+			if ( isset( $tags[ $pick ] ) && (string) ( $p[6] ?? '' ) === (string) $lot ) {
+				/* translators: %s: suggestion tag, e.g. Best balance. */
+				$text .= ' — ' . sprintf( __( 'chose our “%s” suggestion', 'om-catalog' ), $tags[ $pick ] );
+			} else {
+				$text .= ' — ' . __( 'then picked a different diamond', 'om-catalog' );
+			}
+		}
+		return $text;
+	}
+
 	/** Tag for each priority's pick. */
 	public static function tags( $budget ) {
 		return array(

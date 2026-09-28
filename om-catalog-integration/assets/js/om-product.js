@@ -1643,7 +1643,7 @@
 				product: data.product, style: data.style, price: price, options: options,
 				url: $wrap.length ? configuredUrl($wrap, url) : url,
 				image: $wrap.find('.om-main-image').attr('src') || '',
-				diamond: data.diamond, summary: data.summary
+				diamond: data.diamond, summary: data.summary, guide: data.guide
 			};
 			$.each(values, function (key, value) {
 				// Matches name="om_product" as well as Elementor's
@@ -2349,9 +2349,14 @@
 		$res.addClass('is-loading').attr('aria-busy', 'true');
 		$.get(url).done(function (html) {
 			if (seq !== guideSeq) { return; }
-			var $fresh = $($.parseHTML(html)).find('.om-rb-guide-results').first();
+			var $page = $($.parseHTML(html));
+			var $fresh = $page.find('.om-rb-guide-results').first();
 			if (!$fresh.length) { window.location.href = url; return; }
 			$res.replaceWith($fresh);
+			// The bar too: its links and "Ask us" form carry the new answers.
+			var $bar = $(form).closest('.om-builder').find('.om-rb-bar').first();
+			var $freshBar = $page.find('.om-rb-bar').first();
+			if ($bar.length && $freshBar.length && !$bar.find('dialog[open]').length) { $bar.replaceWith($freshBar); }
 			$fresh.find('.om-rb-pick').addClass('om-fade-in');
 			replaceUrl(url);
 		}).fail(function () {

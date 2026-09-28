@@ -92,6 +92,10 @@ class OM_Inquiry {
 			$label = trim( $title . ( $sku ? ' · ' . $sku : '' ) );
 			$pair  = get_post_meta( $post_id, '_om_pair', true );
 			$extra = is_array( $pair ) && ! empty( $pair['url'] ) ? '<br /><small>+ <a href="' . esc_url( $pair['url'] ) . '" target="_blank" rel="noopener">' . esc_html( $pair['title'] . ' · ' . $pair['style'] ) . '</a></small>' : '';
+			$guide = (string) get_post_meta( $post_id, '_om_guide', true );
+			if ( '' !== $guide ) {
+				$extra .= '<br /><small>' . esc_html__( 'Help me choose:', 'om-catalog' ) . ' ' . esc_html( $guide ) . '</small>';
+			}
 			echo '<span>' . ( $url ? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' . esc_html( $label ? $label : $url ) . '</a>' : esc_html( $label ) ) . $extra . '</span></div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 		}
 	}
@@ -331,6 +335,10 @@ class OM_Inquiry {
 				'price'       => '',
 				'diamond'     => '',
 				'summary'     => '',
+				// Ring builder "Help me choose" answers, in words.
+				'guide'       => '',
+				// A small line above the send button.
+				'note'        => '',
 				// Filled by the script at send time: the page URL with the
 				// options chosen, and the metal colour (for the right photo).
 				'link'        => '',
@@ -382,14 +390,14 @@ class OM_Inquiry {
 				<p class="om-inquiry-intro"><?php echo esc_html( $context['intro'] ); ?></p>
 			<?php endif; ?>
 			<?php if ( '' !== trim( (string) $context['custom_form'] ) ) : ?>
-				<div class="om-inquiry-custom" data-om-product="<?php echo esc_attr( wp_json_encode( array( 'product' => $context['title'], 'style' => $context['style'], 'price' => $context['price'], 'url' => $context['url'], 'diamond' => $context['diamond'], 'summary' => $context['summary'] ) ) ); ?>">
+				<div class="om-inquiry-custom" data-om-product="<?php echo esc_attr( wp_json_encode( array( 'product' => $context['title'], 'style' => $context['style'], 'price' => $context['price'], 'url' => $context['url'], 'diamond' => $context['diamond'], 'summary' => $context['summary'], 'guide' => $context['guide'] ) ) ); ?>">
 					<?php echo do_shortcode( $context['custom_form'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- the site's own form plugin output. ?>
 				</div>
 			<?php else : ?>
 			<form class="om-inquiry-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" novalidate>
 				<input type="hidden" name="action" value="om_inquiry" />
 				<input type="hidden" name="om_t" value="<?php echo esc_attr( self::stamp() ); ?>" />
-				<?php foreach ( array( 'title', 'style', 'line', 'url', 'price', 'diamond', 'summary', 'link', 'color' ) as $field ) : ?>
+				<?php foreach ( array( 'title', 'style', 'line', 'url', 'price', 'diamond', 'summary', 'guide', 'link', 'color' ) as $field ) : ?>
 					<input type="hidden" name="om_ctx_<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $context[ $field ] ); ?>" />
 				<?php endforeach; ?>
 				<input type="hidden" name="om_config" value="" class="om-inquiry-config" />
@@ -437,6 +445,9 @@ class OM_Inquiry {
 					}
 					?>
 				</div>
+				<?php if ( '' !== trim( (string) $context['note'] ) ) : ?>
+					<p class="om-inquiry-note"><?php echo esc_html( $context['note'] ); ?></p>
+				<?php endif; ?>
 				<p class="om-inquiry-status" role="status" aria-live="polite" hidden></p>
 				<button type="submit" class="om-inquiry-submit"><?php echo esc_html( $context['button'] ); ?></button>
 			</form>
@@ -576,6 +587,7 @@ class OM_Inquiry {
 			'price'   => mb_substr( $f( 'om_ctx_price' ), 0, 60 ),
 			'diamond' => mb_substr( $f( 'om_ctx_diamond' ), 0, 80 ),
 			'summary' => mb_substr( $f( 'om_ctx_summary', true ), 0, 1000 ),
+			'guide'   => mb_substr( $f( 'om_ctx_guide' ), 0, 300 ),
 			'config'  => mb_substr( $f( 'om_config' ), 0, 300 ),
 		);
 		// phpcs:enable
@@ -638,7 +650,8 @@ class OM_Inquiry {
 				__( 'Price shown', 'om-catalog' )    => $data['price'],
 				__( 'Diamond', 'om-catalog' )        => $data['diamond'],
 				__( 'Ring builder', 'om-catalog' )   => $data['summary'],
-				__( 'Page', 'om-catalog' )           => $data['link'],
+				__( 'Help me choose', 'om-catalog' ) => $data['guide'],
+				__( 'Page', 'om-catalog' )          => $data['link'],
 				__( 'Together with', 'om-catalog' )  => $data['pair'] ? $data['pair']['title'] . ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) . ') ' . $data['pair']['url'] : '',
 			),
 			'strlen'
@@ -673,7 +686,7 @@ class OM_Inquiry {
 			)
 		);
 		if ( $post_id && ! is_wp_error( $post_id ) ) {
-			foreach ( array( 'email', 'phone', 'style', 'url', 'link', 'image', 'title', 'diamond', 'subject' ) as $key ) {
+			foreach ( array( 'email', 'phone', 'style', 'url', 'link', 'image', 'title', 'diamond', 'subject', 'guide' ) as $key ) {
 				update_post_meta( $post_id, '_om_' . $key, $data[ $key ] );
 			}
 			if ( $data['pair'] ) {
@@ -757,6 +770,8 @@ class OM_Inquiry {
 				__( 'Price shown', 'om-catalog' )  => $data['price'] ?? '',
 				__( 'Diamond', 'om-catalog' )      => $data['diamond'] ?? '',
 				__( 'Ring builder', 'om-catalog' ) => $data['summary'] ?? '',
+				// For the shop only.
+				__( 'Help me choose', 'om-catalog' ) => $customer ? '' : ( $data['guide'] ?? '' ),
 			),
 			'strlen'
 		);
