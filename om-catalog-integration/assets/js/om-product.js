@@ -2336,6 +2336,48 @@
 	function writeSaved(list) {
 		try { window.localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, SAVED_MAX))); } catch (err) { /* storage unavailable */ }
 		syncSaved();
+		backupSaved();
+	}
+
+	/* Backup: the server keeps the style numbers in a cookie (up to a year).
+	   Safari and iPhone browsers wipe the page's own storage after 7 days
+	   without a visit, but not cookies the site's server sets — so a list
+	   that vanished is restored from it. */
+	var backupTimer = null;
+	function savedCode(list) { return list.map(function (x) { return x.l + '/' + x.s; }).join(','); }
+	function readSavedCookie() {
+		var m = /(?:^|;\s*)om_saved=([^;]*)/.exec(document.cookie);
+		if (!m) { return ''; }
+		try { return decodeURIComponent(m[1].replace(/\+/g, ' ')); } catch (err) { return ''; }
+	}
+	function backupSaved() {
+		if (!cfg.ajaxUrl) { return; }
+		clearTimeout(backupTimer);
+		backupTimer = setTimeout(function () {
+			var code = savedCode(readSaved());
+			if (code === readSavedCookie()) { return; }
+			$.post(cfg.ajaxUrl, { action: 'om_saved_sync', list: code });
+		}, 400);
+	}
+	function restoreSaved() {
+		var stored = null;
+		try { stored = window.localStorage.getItem(SAVED_KEY); } catch (err) { return; }
+		var code = readSavedCookie();
+		if (!code) { if (readSaved().length) { backupSaved(); } return; }
+		// Storage wiped (or empty) but the backup has designs: bring them back.
+		if (stored === null) {
+			var list = [];
+			code.split(',').forEach(function (pair) {
+				var m = /^([a-z0-9-]+)\/([A-Za-z0-9._\-\/]+)$/.exec($.trim(pair));
+				if (m && list.length < SAVED_MAX) { list.push({ l: m[1], s: m[2] }); }
+			});
+			if (list.length) {
+				try { window.localStorage.setItem(SAVED_KEY, JSON.stringify(list)); } catch (err) { return; }
+				fillSaved();
+			}
+		} else if (code !== savedCode(readSaved())) {
+			backupSaved();
+		}
 	}
 
 	function savedKey(x) { return x.l + '|' + String(x.s).toLowerCase(); }
@@ -2555,6 +2597,7 @@
 	// "Open my list"): those designs join the visitor's list and it opens.
 	$(function () {
 		if (!cfg.saved) { return; }
+		restoreSaved();
 		syncSaved();
 		var wanted = new URLSearchParams(window.location.search).get('om_saved');
 		if (wanted) {

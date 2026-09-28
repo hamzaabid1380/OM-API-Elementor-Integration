@@ -281,6 +281,15 @@ Where visitors find their list:
 - your header: the **OM Saved Designs** widget (a heart with the count),
   the `[om_saved_button]` shortcode, or any menu link to `#om-saved`.
 
+**How long it lasts**: the list is kept in the visitor's browser, with a
+backup copy of the style numbers in a cookie (`om_saved`, up to a year, no
+personal details) that your site sets. Safari and iPhone browsers wipe
+what a page stores after 7 days without a visit; the list is then restored
+from the cookie. It doesn't follow visitors to another device or survive
+private browsing — "Email me my list" covers that. If your privacy or
+cookie policy lists cookies, add `om_saved` (functional: remembers saved
+designs).
+
 Settings > OM Catalog > Look & feel > **Saved designs** turns the feature
 (and "Email me my list") on or off site-wide. Each catalog / related widget
 can hide the heart on its cards (Quick View, Compare & Save section), and
@@ -809,6 +818,12 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.28.2
+- **Saved lists last on iPhones too**: a backup cookie set by your site
+  (`om_saved`, style numbers only, up to a year) restores the list when
+  Safari / iPhone browsers have wiped the page's storage after 7 days
+  without a visit. Clearing the list removes it.
 
 ### 1.28.1
 - **Sticky site headers**: the slim toolbar, the sticky filter sidebar and

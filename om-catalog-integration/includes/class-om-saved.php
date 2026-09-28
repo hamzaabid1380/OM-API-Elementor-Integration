@@ -28,7 +28,7 @@ class OM_Saved {
 	}
 
 	private function __construct() {
-		foreach ( array( 'om_saved_items' => 'handle_items', 'om_saved_email' => 'handle_email', 'om_saved_stat' => 'handle_stat' ) as $action => $method ) {
+		foreach ( array( 'om_saved_items' => 'handle_items', 'om_saved_email' => 'handle_email', 'om_saved_stat' => 'handle_stat', 'om_saved_sync' => 'handle_sync' ) as $action => $method ) {
 			add_action( 'wp_ajax_' . $action, array( $this, $method ) );
 			add_action( 'wp_ajax_nopriv_' . $action, array( $this, $method ) );
 		}
@@ -138,6 +138,49 @@ class OM_Saved {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- public read-only lookup.
 		$raw = isset( $_POST['items'] ) && is_array( $_POST['items'] ) ? wp_unslash( $_POST['items'] ) : array();
 		wp_send_json_success( array( 'items' => self::lookup( $raw ) ) );
+	}
+
+	/** The backup cookie: "line/style,line/style" (style numbers only). */
+	const COOKIE = 'om_saved';
+
+	/**
+	 * Keep a copy of the list in a cookie sent by the server. Safari (and
+	 * every iPhone browser) wipes what a page stores itself after 7 days
+	 * without a visit, but not a cookie the site's own server sets — so
+	 * the list comes back from here. Up to a year; an empty list removes it.
+	 */
+	public function handle_sync() {
+		if ( ! self::enabled() ) {
+			wp_send_json_success();
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- only sets the visitor's own cookie.
+		$raw   = isset( $_POST['list'] ) && is_scalar( $_POST['list'] ) ? (string) wp_unslash( $_POST['list'] ) : '';
+		$items = array();
+		foreach ( array_slice( explode( ',', $raw ), 0, self::MAX ) as $pair ) {
+			if ( preg_match( '#^([a-z0-9-]{1,60})/([A-Za-z0-9._/-]{1,40})$#', trim( $pair ), $m ) && ! in_array( $m[0], $items, true ) ) {
+				$items[] = $m[0];
+			}
+		}
+		$value = implode( ',', $items );
+		$path  = defined( 'COOKIEPATH' ) && COOKIEPATH ? COOKIEPATH : '/';
+		$args  = array(
+			'expires'  => '' === $value ? time() - YEAR_IN_SECONDS : time() + YEAR_IN_SECONDS,
+			'path'     => $path,
+			'secure'   => is_ssl(),
+			// The page script reads it back to restore the list.
+			'httponly' => false,
+			'samesite' => 'Lax',
+		);
+		if ( defined( 'COOKIE_DOMAIN' ) && COOKIE_DOMAIN ) {
+			$args['domain'] = COOKIE_DOMAIN;
+		}
+		if ( PHP_VERSION_ID >= 70300 ) {
+			setcookie( self::COOKIE, $value, $args );
+		} else {
+			setcookie( self::COOKIE, $value, $args['expires'], $path . '; samesite=Lax', $args['domain'] ?? '', $args['secure'], false );
+		}
+		nocache_headers();
+		wp_send_json_success();
 	}
 
 	/** Count a save, for Insights ("Most saved"). */
