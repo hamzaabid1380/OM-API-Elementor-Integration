@@ -717,6 +717,21 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.23.1
+- The site's global text styles no longer change the plugin's text.
+  Elementor Site Settings › Typography (and theme rules like
+  ".entry-content p") used to override the plugin's type: card titles came
+  out at the site's H3 size (38px in the ring builder), and the
+  count, Compare title and form text shifted. Inside the plugin's blocks,
+  text now keeps the plugin's fonts, sizes and spacing, and every widget
+  Style control still wins.
+- Ring builder: the "Choose a setting" step can look exactly like your
+  catalog. The new **"Choose a setting" looks like** option copies an OM
+  Product Catalog widget's design, cards, fonts, filters and Style
+  settings (automatically the newest catalog page showing engagement
+  rings, a page you pick, or the builder's own look). Edit the catalog
+  widget and the builder follows.
+
 ### 1.23.0
 - Quick view: step through the designs without closing it. There are
   previous/next arrows with "3 of 12", the left/right arrow keys, and a
@@ -1151,3 +1166,11 @@ that format changes between Elementor versions and isn't meant to be hand-genera
 by a plugin; doing so reliably isn't realistic. Instead, the catalog grid is exposed
 as a genuine Elementor widget you can drag, drop, and style like any other Elementor
 element, which is the standard, supported way plugins integrate with Elementor.
+
+## For developers: stylesheet build
+
+Edit `assets/css/om-catalog.css`, then run `python3 tools/build-css.py`
+(from the repository root) to regenerate `assets/css/om-catalog.build.css`,
+which is the file the plugin loads. The build raises low-specificity
+selectors by `html body` so site-wide typography can't override them;
+widget Style controls still take precedence.

@@ -2283,8 +2283,16 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 	}
 
 	protected function render() {
-		$settings = $this->get_settings_for_display();
+		$atts = $this->grid_atts( $this->get_settings_for_display() );
+		echo OM_Shortcodes::instance()->render_grid( $atts, OM_Shortcodes::request_from_globals() ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+	}
 
+	/**
+	 * The widget's settings as render_grid() attributes. Public so the ring
+	 * builder can show its "Choose a setting" step exactly like a catalog
+	 * widget on another page.
+	 */
+	public function grid_atts( $settings ) {
 		// Primary line plus any additional lines, deduplicated in order.
 		$lines = array( $settings['product_line'] );
 		if ( ! empty( $settings['extra_lines'] ) && is_array( $settings['extra_lines'] ) ) {
@@ -2380,6 +2388,6 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'inline_columns'  => 'no',
 		) + $this->card_extras_atts( $settings ) + self::filter_group_atts( $settings['filter_groups'] ?? array() );
 
-		echo OM_Shortcodes::instance()->render_grid( $atts, OM_Shortcodes::request_from_globals() ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+		return $atts;
 	}
 }

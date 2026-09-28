@@ -327,6 +327,25 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 			)
 		);
 
+		$looks = array(
+			''     => __( 'Automatic: same as my catalog page', 'om-catalog' ),
+			'none' => __( "The builder's own look", 'om-catalog' ),
+		);
+		foreach ( om_elementor_pages_with( 'om_catalog_widget' ) as $page_id => $title ) {
+			/* translators: %s: page title. */
+			$looks[ (string) $page_id ] = sprintf( __( 'Same as: %s', 'om-catalog' ), $title );
+		}
+		$this->add_control(
+			'look_page',
+			array(
+				'label'       => __( '"Choose a setting" looks like', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => '',
+				'options'     => $looks,
+				'description' => __( 'The settings grid copies an OM Product Catalog widget: its design, cards, fonts, filters and Style-tab settings. Edit that widget and the builder follows. Automatic picks the newest catalog page showing engagement rings.', 'om-catalog' ),
+			)
+		);
+
 		$this->add_control(
 			'diamond_origin',
 			array(
@@ -353,6 +372,7 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 				'heading'        => (string) $s['heading'],
 				'per_page'       => (int) $s['per_page'],
 				'diamond_origin' => (string) $s['diamond_origin'],
+				'look_page'      => (string) ( $s['look_page'] ?? '' ),
 			)
 		);
 	}

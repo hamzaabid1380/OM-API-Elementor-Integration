@@ -129,53 +129,13 @@ class OM_Ajax {
 		wp_send_json_success( array( 'html' => $html ) + $data );
 	}
 
-	/**
-	 * The "OM Single Product" widget on the product layout page (Settings >
-	 * OM Catalog), or null when product pages use the plugin's template.
-	 *
-	 * @return array|null [ layout, id, settings ].
-	 */
+	/** The "OM Single Product" widget on the product layout page, if any. */
 	private static function product_page_widget() {
-		$layout = (int) get_option( 'om_product_layout_page', 0 );
-		if ( ! $layout || ! did_action( 'elementor/loaded' ) || 'publish' !== get_post_status( $layout ) ) {
+		$found = om_elementor_page_widget( (int) get_option( 'om_product_layout_page', 0 ), 'om_product_widget' );
+		if ( ! $found || ! class_exists( 'OM_Elementor_Product_Widget' ) ) {
 			return null;
 		}
-		// Widgets (and their classes) load when Elementor first lists them.
-		\Elementor\Plugin::$instance->widgets_manager->get_widget_types();
-		if ( ! class_exists( 'OM_Elementor_Product_Widget' ) ) {
-			return null;
-		}
-		$data = json_decode( (string) get_post_meta( $layout, '_elementor_data', true ), true );
-		$find = static function ( $elements ) use ( &$find ) {
-			foreach ( (array) $elements as $element ) {
-				if ( 'widget' === ( $element['elType'] ?? '' ) && 'om_product_widget' === ( $element['widgetType'] ?? '' ) ) {
-					return $element;
-				}
-				$inner = $find( $element['elements'] ?? array() );
-				if ( $inner ) {
-					return $inner;
-				}
-			}
-			return null;
-		};
-		$element = is_array( $data ) ? $find( $data ) : null;
-		if ( ! $element ) {
-			return null;
-		}
-		// Through Elementor, so unset controls read as their defaults.
-		$settings = (array) ( $element['settings'] ?? array() );
-		try {
-			$widget = \Elementor\Plugin::$instance->elements_manager->create_element_instance( $element );
-			if ( $widget ) {
-				$settings = $widget->get_settings_for_display();
-			}
-		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- raw settings are fine.
-		}
-		return array(
-			'layout'   => $layout,
-			'id'       => (string) $element['id'],
-			'settings' => $settings,
-		);
+		return array( 'layout' => $found['page'] ) + $found;
 	}
 
 	/**

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.23.0
+ * Version: 1.23.1
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.23.0' );
+define( 'OM_CATALOG_VERSION', '1.23.1' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -22,6 +22,7 @@ require_once OM_CATALOG_DIR . 'includes/class-om-rewrites.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-shortcodes.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-ajax.php';
 require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
+require_once OM_CATALOG_DIR . 'includes/functions-elementor.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-search.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-engage.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
@@ -63,7 +64,7 @@ add_action( 'plugins_loaded', 'om_catalog_init' );
  * template, ...), and the Elementor widgets declare them as dependencies.
  */
 function om_catalog_enqueue_assets() {
-	wp_register_style( 'om-catalog-css', OM_CATALOG_URL . 'assets/css/om-catalog.css', array(), OM_CATALOG_VERSION );
+	wp_register_style( 'om-catalog-css', OM_CATALOG_URL . 'assets/css/om-catalog.build.css', array(), OM_CATALOG_VERSION );
 	$tokens = om_catalog_style_tokens();
 	if ( 'kit' === $tokens['source'] ) {
 		// The kit's fonts load through Elementor (Google or self-hosted, as

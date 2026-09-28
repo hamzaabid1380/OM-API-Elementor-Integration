@@ -93,12 +93,40 @@ class OM_Ring_Builder {
 		return '';
 	}
 
+	/**
+	 * The catalog widget whose look the settings grid borrows: the chosen
+	 * page, or (automatically) the newest page whose catalog shows one of
+	 * the builder's lines.
+	 */
+	private static function look_source( $choice ) {
+		if ( 'none' === $choice || ! did_action( 'elementor/loaded' ) ) {
+			return null;
+		}
+		$pages = ctype_digit( $choice ) ? array( (int) $choice => '' ) : om_elementor_pages_with( 'om_catalog_widget', 20 );
+		$first = null;
+		foreach ( array_keys( $pages ) as $page ) {
+			$found = om_elementor_page_widget( $page, 'om_catalog_widget' );
+			if ( ! $found || ! $found['widget'] || ! method_exists( $found['widget'], 'grid_atts' ) ) {
+				continue;
+			}
+			$lines = array_merge( array( (string) ( $found['settings']['product_line'] ?? '' ) ), (array) ( $found['settings']['extra_lines'] ?? array() ) );
+			if ( array_intersect( $lines, om_builder_lines() ) ) {
+				return $found;
+			}
+			$first = $first ? $first : $found;
+		}
+		return $first;
+	}
+
 	public function render( $atts ) {
 		$atts = shortcode_atts(
 			array(
 				'per_page'       => 12,
 				'diamond_origin' => '',
 				'heading'        => '',
+				// The "Choose a setting" grid looks like the catalog widget on
+				// this page: '' = find one automatically, 'none' = own look.
+				'look_page'      => '',
 			),
 			$atts,
 			'om_ring_builder'
@@ -162,22 +190,43 @@ class OM_Ring_Builder {
 				if ( $has_diamond ) {
 					$card_query['rb_diamond'] = $state['diamond'];
 				}
-				echo OM_Shortcodes::instance()->render_grid( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
-					array(
-						'lines'           => implode( ',', om_builder_lines() ),
-						'per_page'        => (int) $atts['per_page'],
-						'show_filters'    => 'yes',
-						'filter_shapes'   => 'yes',
-						'filter_metals'   => 'yes',
-						'filter_position' => 'left',
-						'filters_title'   => __( 'Settings', 'om-catalog' ),
-						'show_prices'     => 'yes',
-						// A chosen diamond pre-selects matching settings.
-						'shape'           => $has_diamond ? (string) ( $diamond['shape'] ?? '' ) : '',
-						'card_query'      => $card_query,
-					),
-					OM_Shortcodes::request_from_globals()
+				$grid = array(
+					'lines'           => implode( ',', om_builder_lines() ),
+					'per_page'        => (int) $atts['per_page'],
+					'show_filters'    => 'yes',
+					'filter_shapes'   => 'yes',
+					'filter_metals'   => 'yes',
+					'filter_position' => 'left',
+					'filters_title'   => __( 'Settings', 'om-catalog' ),
+					'show_prices'     => 'yes',
 				);
+				$look = self::look_source( (string) $atts['look_page'] );
+				if ( $look ) {
+					// Everything as on the catalog page (design, cards, filters,
+					// search, badges…), limited to the builder's lines.
+					$grid = array_merge(
+						$look['widget']->grid_atts( $look['settings'] ),
+						array(
+							'lines'         => $grid['lines'],
+							'per_page'      => $grid['per_page'],
+							'show_filters'  => 'yes',
+							'filter_shapes' => 'yes',
+							'head'          => 'no',
+							'intro'         => 'no',
+							'end_card'      => 'no',
+						)
+					);
+					$grid['line_styles'] = array_intersect_key( (array) ( $grid['line_styles'] ?? array() ), array_flip( om_builder_lines() ) );
+				}
+				// A chosen diamond pre-selects matching settings.
+				$grid['shape']      = $has_diamond ? (string) ( $diamond['shape'] ?? '' ) : '';
+				$grid['card_query'] = $card_query;
+				$html = OM_Shortcodes::instance()->render_grid( $grid, OM_Shortcodes::request_from_globals() );
+				if ( $look ) {
+					om_elementor_enqueue_page_css( $look['page'] );
+					$html = om_elementor_wrap( $html, $look['page'], $look['id'], 'om-builder-look' );
+				}
+				echo $html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 				break;
 			case 'diamond':
 				$select_state = self::state_args( $state, array( 'step' => '' ) );
