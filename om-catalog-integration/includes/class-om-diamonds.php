@@ -112,6 +112,8 @@ class OM_Diamonds {
 				'select_state'  => '',
 				'show_select'   => 'yes',
 				'show_inquiry'  => 'yes',
+				// "True size": the stone drawn at its real size on a finger.
+				'true_size'     => 'yes',
 			),
 			$atts,
 			'om_diamonds'
@@ -470,6 +472,11 @@ class OM_Diamonds {
 						<?php if ( ! empty( $d['certificate_url'] ) ) : ?>
 							<a class="om-btn om-btn--outline" href="<?php echo esc_url( $d['certificate_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'View certificate', 'om-catalog' ); ?></a>
 						<?php endif; ?>
+						<?php
+						if ( 'no' !== $atts['true_size'] ) {
+							echo om_true_size_button( $d, __( 'See true size', 'om-catalog' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the helper.
+						}
+						?>
 					</div>
 					<?php
 					if ( 'yes' === $atts['show_inquiry'] ) {

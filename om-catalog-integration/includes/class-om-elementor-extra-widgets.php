@@ -194,6 +194,16 @@ class OM_Elementor_Diamond_Widget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'true_size',
+			array(
+				'label'       => __( '"See true size"', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Shows the stone at its real size on a finger, compared with other carats.', 'om-catalog' ),
+			)
+		);
+
 		$this->end_controls_section();
 
 		$this->register_common_style( '{{WRAPPER}} .om-diamonds', '{{WRAPPER}} .om-dd-title, {{WRAPPER}} .om-dd-price' );
@@ -255,6 +265,7 @@ class OM_Elementor_Diamond_Widget extends Widget_Base {
 				'default_sort' => (string) $s['default_sort'],
 				'show_select'   => (string) $s['show_select'],
 				'show_inquiry'  => (string) $s['show_inquiry'],
+				'true_size'     => 'yes' === ( $s['true_size'] ?? 'yes' ) ? 'yes' : 'no',
 				'show_origin'   => 'yes' === ( $s['show_origin'] ?? 'yes' ) ? 'yes' : 'no',
 				'default_shape' => (string) ( $s['default_shape'] ?? '' ),
 			),
@@ -372,6 +383,7 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 							'description' => __( 'Once both are chosen, the setting’s head size is matched to the stone automatically.', 'om-catalog' ),
 						),
 					),
+					array( 'true_size', 'switch', __( '"True size" on diamonds', 'om-catalog' ), array( 'description' => __( 'Shows the stone at its real size on a finger, compared with other carats.', 'om-catalog' ) ) ),
 				),
 			),
 			'section_rb_bar'    => array(

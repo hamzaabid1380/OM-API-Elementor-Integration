@@ -83,6 +83,8 @@ class OM_Ring_Builder {
 			// Which diamonds fit a setting: strict (its carat range), loose
 			// (a little either side) or off (shape only).
 			'fit_rule'        => 'strict',
+			// "True size" buttons on diamonds and in the review.
+			'true_size'       => 'yes',
 
 			// "Your ring" bar.
 			'bar'             => 'yes',
@@ -366,6 +368,7 @@ class OM_Ring_Builder {
 						'default_cmin'  => $range ? $range[0] : '',
 						'default_cmax'  => $range ? $range[1] : '',
 						'select_state'  => $select_state,
+						'true_size'     => $atts['true_size'],
 					),
 					OM_Diamonds::request_from_globals()
 				);
@@ -792,6 +795,11 @@ class OM_Ring_Builder {
 								<p class="om-review-price"><?php echo esc_html( om_format_price( $diamond_price ) ); ?></p>
 							<?php endif; ?>
 							<a class="om-review-change" href="<?php echo esc_url( $link( array( 'step' => 'diamond' ) ) ); ?>"><?php esc_html_e( 'Change diamond', 'om-catalog' ); ?></a>
+							<?php
+							if ( 'no' !== $atts['true_size'] ) {
+								echo om_true_size_button( $diamond, __( 'True size on a hand', 'om-catalog' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the helper.
+							}
+							?>
 						</div>
 					</div>
 				</div>

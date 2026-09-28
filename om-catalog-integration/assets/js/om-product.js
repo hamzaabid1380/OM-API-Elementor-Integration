@@ -2371,6 +2371,216 @@
 		}).always(function () { $btn.prop('disabled', false); });
 	});
 
+	/* ---------- True size: a diamond at its real size on a finger ---------- */
+
+	var TS_KEY = 'om_px_mm';
+	// Face-up area of each shape as a share of its length x width, and its
+	// usual length/width ratio (for the "compare carats" stones).
+	var TS_SHAPES = {
+		round: [0.785, 1], oval: [0.785, 1.4], pear: [0.66, 1.55], marquise: [0.55, 2],
+		emerald: [0.92, 1.4], radiant: [0.93, 1.25], cushion: [0.9, 1.1], princess: [1, 1],
+		asscher: [0.9, 1], heart: [0.75, 1]
+	};
+	// Round diameters in mm by carat.
+	var TS_ROUND = [[0.25, 4.1], [0.5, 5.1], [0.75, 5.8], [1, 6.4], [1.25, 6.9], [1.5, 7.4], [2, 8.1], [2.5, 8.7], [3, 9.3], [4, 10.2], [5, 11]];
+	var tsState = null;
+	var tsDialog = null;
+
+	function tsShapeKey(shape) {
+		var k = String(shape || '').toLowerCase().replace(/[^a-z]/g, '');
+		return TS_SHAPES[k] ? k : 'round';
+	}
+
+	function tsRoundDiameter(ct) {
+		for (var i = 1; i < TS_ROUND.length; i++) {
+			if (ct <= TS_ROUND[i][0]) {
+				var a = TS_ROUND[i - 1], b = TS_ROUND[i];
+				return a[1] + (b[1] - a[1]) * (ct - a[0]) / (b[0] - a[0]);
+			}
+		}
+		return TS_ROUND[TS_ROUND.length - 1][1] * Math.cbrt(ct / 5);
+	}
+
+	// Typical length x width for a carat weight in a shape.
+	function tsTypical(shape, ct) {
+		var k = tsShapeKey(shape), d = tsRoundDiameter(ct), f = TS_SHAPES[k];
+		var w = Math.sqrt(0.785 * d * d / (f[0] * f[1]));
+		return { l: w * f[1], w: w };
+	}
+
+	// CSS pixels per millimetre: the visitor's screen check, else a guess
+	// from the kind of screen (labelled "approximate").
+	function tsPxPerMm() {
+		var saved = 0;
+		try { saved = parseFloat(window.localStorage.getItem(TS_KEY)) || 0; } catch (err) { saved = 0; }
+		if (saved > 1 && saved < 15) { return { v: saved, exact: true }; }
+		var short = Math.min(window.screen.width || 1280, window.screen.height || 800);
+		var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+		var v = coarse ? (short < 600 ? short / 64 : short / 150) : ((window.screen.width || 1440) <= 1600 ? 4.8 : 3.8);
+		return { v: v, exact: false };
+	}
+
+	function tsRingDiameter(size) { return 11.63 + 0.8128 * size; }
+
+	// SVG path for a stone: centred on cx,cy, length along the finger.
+	function tsPath(shape, cx, cy, w, l) {
+		var k = tsShapeKey(shape), x0 = cx - w / 2, x1 = cx + w / 2, y0 = cy - l / 2, y1 = cy + l / 2, c;
+		switch (k) {
+			case 'pear':
+				return 'M' + cx + ' ' + y0 + ' Q' + x1 + ' ' + (y0 + l * 0.42) + ' ' + x1 + ' ' + (y1 - w / 2) + ' A' + (w / 2) + ' ' + (w / 2) + ' 0 0 1 ' + x0 + ' ' + (y1 - w / 2) + ' Q' + x0 + ' ' + (y0 + l * 0.42) + ' ' + cx + ' ' + y0 + 'Z';
+			case 'marquise':
+				return 'M' + cx + ' ' + y0 + ' Q' + (cx + w) + ' ' + cy + ' ' + cx + ' ' + y1 + ' Q' + (cx - w) + ' ' + cy + ' ' + cx + ' ' + y0 + 'Z';
+			case 'emerald': case 'asscher': case 'radiant':
+				c = Math.min(w, l) * (k === 'asscher' ? 0.24 : k === 'radiant' ? 0.14 : 0.18);
+				return 'M' + (x0 + c) + ' ' + y0 + 'H' + (x1 - c) + 'L' + x1 + ' ' + (y0 + c) + 'V' + (y1 - c) + 'L' + (x1 - c) + ' ' + y1 + 'H' + (x0 + c) + 'L' + x0 + ' ' + (y1 - c) + 'V' + (y0 + c) + 'Z';
+			case 'princess':
+				return 'M' + x0 + ' ' + y0 + 'H' + x1 + 'V' + y1 + 'H' + x0 + 'Z';
+			case 'cushion':
+				c = Math.min(w, l) * 0.28;
+				return 'M' + (x0 + c) + ' ' + y0 + 'H' + (x1 - c) + 'Q' + x1 + ' ' + y0 + ' ' + x1 + ' ' + (y0 + c) + 'V' + (y1 - c) + 'Q' + x1 + ' ' + y1 + ' ' + (x1 - c) + ' ' + y1 + 'H' + (x0 + c) + 'Q' + x0 + ' ' + y1 + ' ' + x0 + ' ' + (y1 - c) + 'V' + (y0 + c) + 'Q' + x0 + ' ' + y0 + ' ' + (x0 + c) + ' ' + y0 + 'Z';
+			case 'heart':
+				return 'M' + cx + ' ' + y1 + ' C' + (x0 - w * 0.05) + ' ' + (cy + l * 0.1) + ' ' + x0 + ' ' + y0 + ' ' + (cx - w * 0.25) + ' ' + y0 + ' C' + (cx - w * 0.08) + ' ' + y0 + ' ' + cx + ' ' + (y0 + l * 0.12) + ' ' + cx + ' ' + (y0 + l * 0.2) + ' C' + cx + ' ' + (y0 + l * 0.12) + ' ' + (cx + w * 0.08) + ' ' + y0 + ' ' + (cx + w * 0.25) + ' ' + y0 + ' C' + x1 + ' ' + y0 + ' ' + (x1 + w * 0.05) + ' ' + (cy + l * 0.1) + ' ' + cx + ' ' + y1 + 'Z';
+			default:
+				return 'M' + x0 + ' ' + cy + ' A' + (w / 2) + ' ' + (l / 2) + ' 0 1 1 ' + x1 + ' ' + cy + ' A' + (w / 2) + ' ' + (l / 2) + ' 0 1 1 ' + x0 + ' ' + cy + 'Z';
+		}
+	}
+
+	function tsFmt(n) { return (Math.round(n * 10) / 10).toFixed(1); }
+	function tsCt(n) { return String(Math.round(n * 100) / 100); }
+
+	function openTrueSize(data, trigger) {
+		var shape = data.s || 'Round';
+		var mine = { c: parseFloat(data.c) || 0, l: parseFloat(data.l) || 0, w: parseFloat(data.w) || 0 };
+		if ((!mine.l || !mine.w) && mine.c) { var ty = tsTypical(shape, mine.c); mine.l = ty.l; mine.w = ty.w; }
+		if (!mine.c) { mine.c = 1; }
+		var picks = [0.5, 1, 1.5, 2].filter(function (c) { return Math.abs(c - mine.c) > 0.08; }).map(function (c) { var t = tsTypical(shape, c); return { c: c, l: t.l, w: t.w, mine: false }; });
+		picks.push({ c: mine.c, l: mine.l, w: mine.w, mine: true });
+		picks.sort(function (a, b) { return a.c - b.c; });
+		tsState = { shape: shape, title: data.t || '', picks: picks, at: picks.findIndex(function (p) { return p.mine; }), close: false, size: 6, trigger: trigger };
+		if (!tsDialog) { tsDialog = buildTrueSize(); }
+		tsDialog.find('.om-ts-check').prop('open', false);
+		if (!tsDialog[0].open) {
+			if (tsDialog[0].showModal) { tsDialog[0].showModal(); } else { tsDialog.attr('open', ''); }
+		}
+		$('html').addClass('om-lb-open');
+		// Drawn once open, so the stage has its size.
+		renderTrueSize();
+	}
+
+	function buildTrueSize() {
+		var $d = $('<dialog class="om-ts' + (cfg.refined ? ' om-refined' : '') + '" aria-labelledby="om-ts-title"></dialog>');
+		var sizes = '';
+		for (var s = 4; s <= 10; s += 0.5) { sizes += '<option value="' + s + '">' + s + '</option>'; }
+		$d.html(
+			'<div class="om-ts-inner">' +
+			'<div class="om-ts-stage"><svg class="om-ts-svg" role="img"></svg><span class="om-ts-scale"></span></div>' +
+			'<div class="om-ts-side">' +
+			'<div class="om-ts-top"><div><p class="om-ts-eyebrow"></p><h2 class="om-ts-title" id="om-ts-title"></h2><p class="om-ts-sub"></p></div><button type="button" class="om-ts-close">&times;</button></div>' +
+			'<p class="om-ts-label om-ts-label--compare"></p><div class="om-ts-picks" role="group"></div>' +
+			'<div class="om-ts-row" aria-hidden="true"></div>' +
+			'<div class="om-ts-controls"><span class="om-ts-toggle" role="group"><button type="button" class="om-ts-true"></button><button type="button" class="om-ts-zoom"></button></span>' +
+			'<label class="om-ts-size"><span class="om-ts-size-label"></span> <select>' + sizes + '</select></label></div>' +
+			'<details class="om-ts-check"><summary></summary><p class="om-ts-check-text"></p><div class="om-ts-card-wrap"><span class="om-ts-card"></span></div>' +
+			'<label class="om-ts-check-range"><span class="om-visually-hidden"></span><input type="range" min="2.5" max="9" step="0.01" /></label><button type="button" class="om-ts-check-done"></button></details>' +
+			'</div></div>'
+		);
+		$d.find('.om-ts-eyebrow').text(t('tsEyebrow', 'True size'));
+		$d.find('.om-ts-close').attr('aria-label', t('close', 'Close')).on('click', function () { $d[0].close(); });
+		$d.find('.om-ts-label--compare').text(t('tsCompare', 'Compare carats'));
+		$d.find('.om-ts-picks').attr('aria-label', t('tsCompare', 'Compare carats'));
+		$d.find('.om-ts-true').text(t('tsTrue', 'True size')).on('click', function () { tsState.close = false; renderTrueSize(); });
+		$d.find('.om-ts-zoom').text(t('tsZoom', 'Close-up ×3')).on('click', function () { tsState.close = true; renderTrueSize(); });
+		$d.find('.om-ts-size-label').text(t('tsFinger', 'Ring size'));
+		$d.find('.om-ts-size select').on('change', function () { tsState.size = parseFloat(this.value) || 6; renderTrueSize(); });
+		$d.find('.om-ts-check summary').text(t('tsCheck', 'Screen check (once)'));
+		$d.find('.om-ts-check-text').text(t('tsCheckText', 'Hold any bank card against the screen and drag the slider until the outline matches it. Sizes are then exact on this device.'));
+		$d.find('.om-ts-check-range .om-visually-hidden').text(t('tsCheckRange', 'Card outline size'));
+		$d.find('.om-ts-check-range input').on('input', function () { tsState.px = parseFloat(this.value); renderTrueSize(true); });
+		$d.find('.om-ts-check-done').text(t('tsCheckDone', 'Done — save for this device')).on('click', function () {
+			try { window.localStorage.setItem(TS_KEY, String(tsState.px)); } catch (err) { /* storage unavailable */ }
+			$d.find('.om-ts-check').prop('open', false);
+			renderTrueSize();
+			announce(t('tsSaved', 'Saved. Sizes are exact on this screen.'));
+		});
+		$d.on('click', function (e) { if (e.target === $d[0]) { $d[0].close(); } });
+		$d[0].addEventListener('close', function () {
+			$('html').removeClass('om-lb-open');
+			if (tsState && tsState.trigger && tsState.trigger.focus) { tsState.trigger.focus(); }
+		});
+		return $d.appendTo(document.body);
+	}
+
+	function renderTrueSize(checking) {
+		var $d = tsDialog, st = tsState;
+		var px = tsPxPerMm();
+		if (checking && st.px) { px = { v: st.px, exact: true }; } else { st.px = px.v; }
+		var sel = st.picks[st.at];
+		var s = px.v * (st.close ? 3 : 1);
+		var stage = $d.find('.om-ts-stage')[0];
+		var W = stage.clientWidth || 520, H = stage.clientHeight || 520;
+		var cx = W / 2, fw = tsRingDiameter(st.size) * s, top = H * 0.08;
+		var bandY = Math.min(H * 0.62, top + fw * 2.2 + sel.l * s / 2);
+		var svgNS = 'http://www.w3.org/2000/svg';
+		var svg = $d.find('.om-ts-svg')[0];
+		svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+		svg.setAttribute('width', W);
+		svg.setAttribute('height', H);
+		while (svg.firstChild) { svg.removeChild(svg.firstChild); }
+		var add = function (name, attrs) { var el = document.createElementNS(svgNS, name); Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); }); svg.appendChild(el); return el; };
+		var r = fw / 2;
+		add('path', { d: 'M' + (cx - r) + ' ' + H + ' V' + (top + r) + ' A' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + (top + r) + ' V' + H, 'class': 'om-ts-finger' });
+		var nw = fw * 0.5;
+		add('rect', { x: cx - nw / 2, y: top + fw * 0.18, width: nw, height: fw * 0.62, rx: nw / 2, 'class': 'om-ts-nail' });
+		var bh = 2 * s;
+		add('rect', { x: cx - r - 2, y: bandY - bh / 2, width: fw + 4, height: bh, rx: bh / 2, 'class': 'om-ts-band' });
+		add('path', { d: tsPath(st.shape, cx, bandY, sel.w * s, sel.l * s), 'class': 'om-ts-stone' });
+		add('path', { d: tsPath(st.shape, cx, bandY, sel.w * s * 0.56, sel.l * s * 0.56), 'class': 'om-ts-table' });
+
+		var name = st.shape.charAt(0).toUpperCase() + st.shape.slice(1).toLowerCase();
+		var dims = tsFmt(sel.l) + ' × ' + tsFmt(sel.w) + ' mm';
+		svg.setAttribute('aria-label', tsCt(sel.c) + ' ct ' + name + ', ' + dims + ', ' + t('tsOnFinger', 'on a size %s finger').replace('%s', st.size));
+		$d.find('.om-ts-title').text(tsCt(sel.c) + ' ct ' + name + ' · ' + dims);
+		$d.find('.om-ts-sub').text(sel.mine ? (st.title || '') : t('tsTypical', 'Typical size for this carat'));
+		$d.find('.om-ts-scale').text(st.close ? t('tsScaleZoom', 'Close-up — 3× real size') : (px.exact ? t('tsScaleExact', 'Real size on this screen') : t('tsScaleApprox', 'About real size — do the screen check for exact')));
+
+		var $picks = $d.find('.om-ts-picks').empty();
+		st.picks.forEach(function (p, i) {
+			$('<button type="button" class="om-ts-pick"></button>')
+				.toggleClass('is-on', i === st.at).toggleClass('is-mine', !!p.mine)
+				.attr('aria-pressed', i === st.at ? 'true' : 'false')
+				.append($('<span class="om-ts-pick-ct"></span>').text((p.mine ? t('tsThis', 'This one') + ' · ' : '') + tsCt(p.c) + ' ct'), $('<span class="om-ts-pick-mm"></span>').text(tsFmt(p.l) + ' × ' + tsFmt(p.w) + ' mm'))
+				.on('click', function () { st.at = i; renderTrueSize(); })
+				.appendTo($picks);
+		});
+		var $row = $d.find('.om-ts-row').empty();
+		st.picks.forEach(function (p, i) {
+			var k = Math.min(px.v * 1.6, 60 / Math.max(p.l, 1));
+			var sw = p.w * k, sl = p.l * k;
+			var mini = document.createElementNS(svgNS, 'svg');
+			mini.setAttribute('width', Math.ceil(sw + 4)); mini.setAttribute('height', Math.ceil(sl + 4));
+			var path = document.createElementNS(svgNS, 'path');
+			path.setAttribute('d', tsPath(st.shape, sw / 2 + 2, sl / 2 + 2, sw, sl));
+			path.setAttribute('class', 'om-ts-stone' + (i === st.at ? ' is-on' : '') + (p.mine ? ' is-mine' : ''));
+			mini.appendChild(path);
+			$('<span class="om-ts-mini"></span>').append(mini, $('<span></span>').text(tsCt(p.c) + ' ct')).appendTo($row);
+		});
+		$d.find('.om-ts-true').attr('aria-pressed', st.close ? 'false' : 'true').toggleClass('is-on', !st.close);
+		$d.find('.om-ts-zoom').attr('aria-pressed', st.close ? 'true' : 'false').toggleClass('is-on', st.close);
+		$d.find('.om-ts-size select').val(String(st.size));
+		// Screen check: a bank card (85.6 × 54 mm) at the current scale.
+		$d.find('.om-ts-card').css({ width: 85.6 * px.v + 'px', height: 53.98 * px.v + 'px' });
+		$d.find('.om-ts-check-range input').val(px.v);
+	}
+
+	$(document).on('click', '.om-ts-open', function (e) {
+		e.preventDefault();
+		var data;
+		try { data = JSON.parse(this.getAttribute('data-om-ts')); } catch (err) { return; }
+		openTrueSize(data, this);
+	});
+
+	$(window).on('resize', function () { if (tsDialog && tsDialog[0].open) { renderTrueSize(); } });
+
 	/* ---------- Page transitions (listing <-> product) ---------- */
 
 	// The clicked card's photo morphs into the product photo (browsers with

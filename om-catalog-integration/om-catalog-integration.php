@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.24.0
+ * Version: 1.25.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.24.0' );
+define( 'OM_CATALOG_VERSION', '1.25.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -133,6 +133,23 @@ function om_catalog_enqueue_assets() {
 				'linkCopied' => __( 'Link copied', 'om-catalog' ),
 				'undo'       => __( 'Undo', 'om-catalog' ),
 				'rbWelcome'  => __( 'Welcome back — continue', 'om-catalog' ),
+				'tsEyebrow'  => __( 'True size', 'om-catalog' ),
+				'tsCompare'  => __( 'Compare carats', 'om-catalog' ),
+				'tsTrue'     => __( 'True size', 'om-catalog' ),
+				'tsZoom'     => __( 'Close-up ×3', 'om-catalog' ),
+				'tsFinger'   => __( 'Ring size', 'om-catalog' ),
+				'tsCheck'    => __( 'Screen check (once)', 'om-catalog' ),
+				'tsCheckText' => __( 'Hold any bank card against the screen and drag the slider until the outline matches it. Sizes are then exact on this device.', 'om-catalog' ),
+				'tsCheckRange' => __( 'Card outline size', 'om-catalog' ),
+				'tsCheckDone' => __( 'Done — save for this device', 'om-catalog' ),
+				'tsSaved'    => __( 'Saved. Sizes are exact on this screen.', 'om-catalog' ),
+				/* translators: %s: ring size. */
+				'tsOnFinger' => __( 'on a size %s finger', 'om-catalog' ),
+				'tsTypical'  => __( 'Typical size for this carat', 'om-catalog' ),
+				'tsScaleZoom' => __( 'Close-up — 3× real size', 'om-catalog' ),
+				'tsScaleExact' => __( 'Real size on this screen', 'om-catalog' ),
+				'tsScaleApprox' => __( 'About real size — do the screen check for exact', 'om-catalog' ),
+				'tsThis'     => __( 'This one', 'om-catalog' ),
 				'rbEmailBad' => __( 'Please enter a valid email address.', 'om-catalog' ),
 				'filtersCleared' => __( 'Filters cleared', 'om-catalog' ),
 				/* translators: %s: filter name. */

@@ -219,6 +219,15 @@ diamond**.
   me** (the visitor gets a link; you get a copy) and an optional "What
   happens next" list — off until you enter your steps.
 
+**True size** (1.25): every diamond in the search and the builder review
+has **See true size**. It draws the stone at its real size on a finger
+(from the diamond's own measurements), with a ring band, and compares it
+with typical 0.5, 1, 1.5 and 2 ct stones of the same shape. Visitors can
+switch to a 3× close-up and change the ring size. Until the one-time
+**screen check** is done (hold a bank card to the screen and match the
+outline, saved per device), the size is labelled "about real size". It
+can be switched off in the OM Diamond Search and OM Ring Builder widgets.
+
 Every text is in the widget's Content tab (Start screen, Steps & guidance,
 Settings & diamonds, "Your ring" bar, Review & request); colours and corners
 in Style › Builder.
@@ -745,6 +754,15 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.25.0
+- **True size**: "See true size" on every diamond (diamond search and the
+  ring builder review) shows the stone at its real size on a finger, from
+  its measurements. It compares typical 0.5 / 1 / 1.5 / 2 ct stones of the
+  same shape, with a 3× close-up and a ring-size choice. A one-time screen
+  check (match a bank card) makes it exact on each device; until then it
+  is labelled "about real size". All ten shapes are drawn, and it works on
+  phones.
 
 ### 1.24.0
 - Guided ring builder: a new start screen, "Step N of 3" titles with

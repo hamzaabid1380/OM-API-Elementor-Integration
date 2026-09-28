@@ -10319,3 +10319,252 @@ html body .om-rb-next-steps ol { margin: 0; padding-left: 18px; font-size: 13px;
 	html body .om-rb-bar-end { flex: 1 1 100%; justify-content: space-between; }
 	.om-builder .om-rb-next { min-height: 44px; padding: 0 18px; }
 }
+
+/* =========================================================
+   1.25 True size: a diamond at its real size on a finger
+   ========================================================= */
+
+.om-ts-open.om-ts-open {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 40px;
+	margin: 0;
+	padding: 0 16px;
+	border: 1px solid var(--om-hair, #e6e0d6);
+	border-radius: 999px;
+	background: var(--om-color-background, #fff);
+	font: inherit;
+	font-size: 13px;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--om-color-primary, #00111C);
+	cursor: pointer;
+}
+
+.om-ts-open.om-ts-open:is(:hover, :focus-visible) {
+	border-color: var(--om-color-primary, #00111C);
+	background: var(--om-color-background, #fff);
+	color: var(--om-color-primary, #00111C);
+}
+
+html body .om-ts-icon {
+	width: 16px;
+	height: 16px;
+	background: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.3'%3E%3Cpath d='M1 5h14v6H1zM4 5v3M7 5v2M10 5v3M13 5v2'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.3'%3E%3Cpath d='M1 5h14v6H1zM4 5v3M7 5v2M10 5v3M13 5v2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.om-rb-review .om-review-info .om-ts-open { margin-top: 10px; }
+
+html body .om-ts {
+	width: min(1080px, calc(100vw - 24px));
+	max-height: calc(100vh - 24px);
+	margin: auto;
+	padding: 0;
+	border: 0;
+	border-radius: 24px;
+	background: var(--om-color-background, #fff);
+	color: var(--om-color-text, #464646);
+	box-shadow: 0 30px 80px rgba(0, 17, 28, 0.25);
+	font-family: var(--om-font-body, Inter, sans-serif);
+	overflow: hidden;
+}
+
+html body .om-ts::backdrop { background: rgba(0, 17, 28, 0.45); }
+
+html body .om-ts-inner {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 440px;
+	height: min(720px, calc(100vh - 24px));
+}
+
+html body .om-ts-stage {
+	position: relative;
+	min-height: 0;
+	overflow: hidden;
+	background: var(--om-photo-tone, #f3efe8);
+}
+
+html body .om-ts-svg { position: absolute; inset: 0; display: block; }
+
+html body .om-ts-finger { fill: #efe3d6; stroke: #d7c3ae; stroke-width: 1.5; }
+html body .om-ts-nail { fill: #f7eee6; stroke: #decab6; stroke-width: 1; }
+html body .om-ts-band { fill: #dcdee2; stroke: #b9bdc4; stroke-width: 1; }
+html body .om-ts-stone { fill: #fdfeff; stroke: #8fa0b2; stroke-width: 1.2; }
+html body .om-ts-table { fill: none; stroke: #c5d2df; stroke-width: 0.8; }
+.om-ts-row .om-ts-stone.is-on { stroke: var(--om-color-primary, #00111C); stroke-width: 1.6; }
+.om-ts-row .om-ts-stone.is-mine { fill: #fffdf6; }
+
+html body .om-ts-scale {
+	position: absolute;
+	left: 16px;
+	bottom: 16px;
+	padding: 6px 12px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.92);
+	font-size: 12px;
+	color: var(--om-color-primary, #00111C);
+}
+
+html body .om-ts-side {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+	padding: 30px 32px;
+	overflow-y: auto;
+}
+
+html body .om-ts-side > * { flex-shrink: 0; }
+
+html body .om-ts-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+
+html body .om-ts p.om-ts-eyebrow {
+	margin: 0 0 6px;
+	font-size: 11px;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: #8a6a3b;
+}
+
+html body .om-ts h2.om-ts-title {
+	margin: 0;
+	font-family: var(--om-font-heading, Arapey, Georgia, serif);
+	font-size: 28px;
+	font-weight: 400;
+	line-height: 1.15;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--om-color-primary, #00111C);
+}
+
+html body .om-ts p.om-ts-sub { margin: 6px 0 0; font-size: 14px; }
+
+.om-ts .om-ts-close.om-ts-close {
+	flex: 0 0 auto;
+	width: 44px;
+	height: 44px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: #f4f3f1;
+	font-size: 24px;
+	line-height: 1;
+	color: var(--om-color-primary, #00111C);
+	cursor: pointer;
+}
+
+html body .om-ts p.om-ts-label { margin: 0 0 -8px; font-size: 14px; font-weight: 500; color: var(--om-color-primary, #00111C); }
+
+html body .om-ts-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.om-ts .om-ts-pick.om-ts-pick {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	min-width: 84px;
+	margin: 0;
+	padding: 9px 12px;
+	border: 1px solid var(--om-hair, #e6e0d6);
+	border-radius: 14px;
+	background: var(--om-color-background, #fff);
+	font: inherit;
+	font-size: 13px;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--om-color-primary, #00111C);
+	cursor: pointer;
+}
+
+.om-ts .om-ts-pick.is-on { border-color: var(--om-color-primary, #00111C); background: var(--om-photo-tone, #f3efe8); }
+.om-ts .om-ts-pick.is-mine .om-ts-pick-ct { font-weight: 500; }
+html body .om-ts-pick-mm { font-size: 11px; color: #555; }
+
+html body .om-ts-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 16px;
+	min-height: 70px;
+	padding: 14px 16px;
+	border-radius: 14px;
+	background: #faf8f4;
+	overflow-x: auto;
+}
+
+html body .om-ts-mini { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; }
+
+html body .om-ts-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+
+html body .om-ts-toggle { display: inline-flex; padding: 4px; border: 1px solid var(--om-hair, #e6e0d6); border-radius: 999px; }
+
+.om-ts .om-ts-toggle button {
+	min-height: 36px;
+	margin: 0;
+	padding: 0 14px;
+	border: 0;
+	border-radius: 999px;
+	background: transparent;
+	font: inherit;
+	font-size: 13px;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--om-color-primary, #00111C);
+	cursor: pointer;
+}
+
+.om-ts .om-ts-toggle button.is-on { background: var(--om-color-primary, #00111C); color: var(--om-color-background, #fff); }
+
+html body .om-ts-size { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; white-space: nowrap; }
+
+.om-ts .om-ts-size select {
+	min-height: 40px;
+	padding: 0 28px 0 12px;
+	border: 1px solid var(--om-hair, #e6e0d6);
+	border-radius: 999px;
+	background-color: var(--om-color-background, #fff);
+	font: inherit;
+	font-size: 13px;
+}
+
+html body .om-ts-check { padding: 14px 16px; border: 1px dashed #d9d2c6; border-radius: 14px; }
+html body .om-ts-check > summary { font-size: 13px; font-weight: 500; color: var(--om-color-primary, #00111C); cursor: pointer; }
+html body .om-ts p.om-ts-check-text { margin: 10px 0; font-size: 13px; line-height: 1.5; }
+html body .om-ts-card-wrap { overflow-x: auto; padding: 4px 0 8px; }
+
+html body .om-ts-card {
+	display: block;
+	box-sizing: border-box;
+	border: 1.5px solid var(--om-color-primary, #00111C);
+	border-radius: 10px;
+	background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(0, 17, 28, 0.04) 10px 20px);
+}
+
+html body .om-ts-check-range { display: block; margin: 6px 0 10px; }
+html body .om-ts-check-range input { width: 100%; accent-color: var(--om-color-primary, #00111C); }
+
+.om-ts .om-ts-check-done.om-ts-check-done {
+	min-height: 40px;
+	margin: 0;
+	padding: 0 16px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--om-color-primary, #00111C);
+	font: inherit;
+	font-size: 12px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--om-color-background, #fff);
+	cursor: pointer;
+}
+
+@media (max-width: 800px) {
+	html body .om-ts { width: 100vw; max-width: 100vw; max-height: 100vh; height: 100%; border-radius: 0; }
+	html body .om-ts-inner { grid-template-columns: minmax(0, 1fr); grid-template-rows: 44vh minmax(0, 1fr); height: 100%; }
+	html body .om-ts-side { padding: 18px 16px 24px; gap: 14px; }
+	html body .om-ts h2.om-ts-title { font-size: 22px; }
+	html body .om-ts-picks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.om-ts .om-ts-pick.om-ts-pick { min-width: 0; }
+}

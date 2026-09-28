@@ -1315,3 +1315,37 @@ function om_card_hover_style() {
 	$style = (string) get_option( 'om_card_hover', 'lift' );
 	return in_array( $style, array( 'lift', 'zoom', 'none' ), true ) ? $style : 'lift';
 }
+
+/**
+ * "True size" button data for a diamond: shape, carat and face-up length
+ * and width in mm (from the API's length/width, or its "7.30 x 7.34 x 4.52"
+ * measurement). Returns '' when there's nothing to draw.
+ */
+function om_true_size_button( $d, $text = '' ) {
+	$shape = (string) ( $d['shape'] ?? '' );
+	$carat = isset( $d['carat'] ) ? (float) $d['carat'] : 0;
+	$l     = isset( $d['length'] ) ? (float) $d['length'] : 0;
+	$w     = isset( $d['width'] ) ? (float) $d['width'] : 0;
+	if ( ( ! $l || ! $w ) && ! empty( $d['measurement'] ) && preg_match( '/([\d.]+)\s*[x×]\s*([\d.]+)/i', (string) $d['measurement'], $m ) ) {
+		$l = (float) $m[1];
+		$w = (float) $m[2];
+	}
+	if ( $l && $w && $w > $l ) {
+		list( $l, $w ) = array( $w, $l );
+	}
+	if ( '' === $shape || ( ! $carat && ! $l ) ) {
+		return '';
+	}
+	$data = array(
+		's' => $shape,
+		'c' => round( $carat, 2 ),
+		'l' => round( $l, 2 ),
+		'w' => round( $w, 2 ),
+		't' => class_exists( 'OM_Diamonds' ) ? OM_Diamonds::describe( $d ) : $shape,
+	);
+	return sprintf(
+		'<button type="button" class="om-ts-open" data-om-ts="%s" aria-haspopup="dialog"><span class="om-ts-icon" aria-hidden="true"></span>%s</button>',
+		esc_attr( wp_json_encode( $data ) ),
+		esc_html( '' !== $text ? $text : __( 'True size', 'om-catalog' ) )
+	);
+}
