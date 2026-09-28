@@ -975,12 +975,76 @@
 				var input = $fresh.find('.om-search-input')[0];
 				if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
 			}
+			if (opts.undo) {
+				var back = opts.undoHref;
+				showToast(opts.undo, function () {
+					var $now = $fresh[0] && document.contains($fresh[0]) ? $fresh : $();
+					if ($now.length) { loadBlock($now, back); } else { window.location.href = back; }
+				});
+			}
 			if (opts.scroll && $fresh[0] && $fresh[0].getBoundingClientRect().top < 0 && $fresh[0].scrollIntoView) {
 				$fresh[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
 			}
 		}).fail(function () {
 			if (seq === blockSeq) { window.location.href = href; }
 		});
+	}
+
+	/* ---------- Toast with "Undo" ---------- */
+
+	var toast = null;
+	var toastTimer = null;
+	function showToast(text, undo) {
+		if (!toast) {
+			toast = $('<div class="om-toast' + (cfg.refined ? ' om-refined' : '') + '" role="status" aria-live="polite" hidden><span class="om-toast-text"></span><button type="button" class="om-toast-undo"></button></div>').appendTo(document.body);
+			// Stays while the pointer or focus is on it.
+			toast.on('mouseenter focusin', function () { clearTimeout(toastTimer); })
+				.on('mouseleave focusout', armToast);
+		}
+		var $undo = toast.find('.om-toast-undo').off('click').text(t('undo', 'Undo')).prop('hidden', !undo);
+		if (undo) { $undo.on('click', function () { hideToast(); undo(); }); }
+		toast.find('.om-toast-text').text('');
+		toast.prop('hidden', false);
+		// Filled once visible, so screen readers announce it.
+		setTimeout(function () { toast.find('.om-toast-text').text(text); toast.addClass('is-in'); }, 30);
+		armToast();
+	}
+	function armToast() {
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(hideToast, 6000);
+	}
+	function hideToast() {
+		if (!toast) { return; }
+		clearTimeout(toastTimer);
+		toast.removeClass('is-in');
+		setTimeout(function () { if (!toast.hasClass('is-in')) { toast.prop('hidden', true); } }, 260);
+	}
+
+	// Share a link: the phone's share sheet where there is one, else copy.
+	function shareLink(url, title) {
+		if (navigator.share && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+			navigator.share({ title: title || document.title, url: url }).catch(function () {});
+			return;
+		}
+		var done = function () { showToast(t('linkCopied', 'Link copied')); };
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(url).then(done, function () { window.prompt('', url); });
+		} else {
+			window.prompt('', url);
+		}
+	}
+
+	// The page URL with one query parameter set (or removed with '').
+	function urlWith(name, value) {
+		var url = new URL(window.location.href);
+		if (value) { url.searchParams.set(name, value); } else { url.searchParams.delete(name); }
+		// Readable in a message: engagement-rings/85121-2, not %2F.
+		return url.toString().replace(/%2F/gi, '/').replace(/%2C/gi, ',');
+	}
+	function replaceUrl(url) {
+		if (window.history && window.history.replaceState && url !== window.location.href) {
+			window.history.replaceState(window.history.state, '', url);
+		}
 	}
 
 	var blockLinks = [
@@ -995,7 +1059,16 @@
 		}
 		e.preventDefault();
 		var isPagination = $(this).closest('.om-pagination').length > 0;
-		loadBlock($(this).closest('.om-catalog-wrap, .om-diamonds'), this.href, { scroll: isPagination });
+		var opts = { scroll: isPagination };
+		// Taking filters away offers "Undo" for a few seconds.
+		var $link = $(this);
+		if ($link.is('.om-chip:not(.om-chip--ghost)')) {
+			opts.undo = t('filterRemoved', 'Removed %s').replace('%s', $.trim($link.clone().children().remove().end().text()));
+		} else if ($link.is('.om-clear-filters, .om-end-clear, .om-clear-filters-btn')) {
+			opts.undo = t('filtersCleared', 'Filters cleared');
+		}
+		if (opts.undo) { opts.undoHref = window.location.href; }
+		loadBlock($link.closest('.om-catalog-wrap, .om-diamonds'), this.href, opts);
 	});
 
 	$(document).on('change', '.om-catalog-wrap .om-filter-nav, .om-diamonds .om-sort-select', function () {
@@ -1712,15 +1785,57 @@
 
 	function openQuickView(line, style, trigger) {
 		if (!qv) {
-			qv = $('<dialog class="om-quick-view' + (cfg.refined ? ' om-refined' : '') + '" aria-label="' + t('quickView', 'Quick view') + '"><div class="om-qv-inner"><button type="button" class="om-qv-close" aria-label="' + t('close', 'Close') + '">&times;</button><div class="om-qv-body"></div></div></dialog>').appendTo(document.body);
+			qv = $('<dialog class="om-quick-view' + (cfg.refined ? ' om-refined' : '') + '" aria-label="' + t('quickView', 'Quick view') + '"><div class="om-qv-inner"><div class="om-qv-bar"><div class="om-qv-nav"><button type="button" class="om-qv-step om-qv-prev"></button><span class="om-qv-pos"></span><button type="button" class="om-qv-step om-qv-next"></button></div><button type="button" class="om-qv-share"></button><button type="button" class="om-qv-close" autofocus aria-label="' + t('close', 'Close') + '">&times;</button></div><div class="om-qv-body"></div></div></dialog>').appendTo(document.body);
+			qv.find('.om-qv-prev').attr('aria-label', t('prevDesign', 'Previous design')).on('click', function () { stepQuickView(-1); });
+			qv.find('.om-qv-next').attr('aria-label', t('nextDesign', 'Next design')).on('click', function () { stepQuickView(1); });
+			qv.find('.om-qv-share').attr('aria-label', t('shareLink', 'Share link')).append('<span class="om-qv-share-icon" aria-hidden="true"></span>', $('<span class="om-qv-share-text"></span>').text(t('share', 'Share'))).on('click', function () {
+				shareLink(window.location.href, qv.find('.om-product-title').first().text());
+			});
 			qv.on('click', function (e) { if (e.target === qv[0]) { closeQuickView(); } });
 			qv.find('.om-qv-close').on('click', closeQuickView);
 			qv[0].addEventListener('close', function () {
 				$('html').removeClass('om-lb-open');
-				if (qvReturn && qvReturn.focus) { qvReturn.focus(); }
+				replaceUrl(urlWith('om_qv', ''));
+				if (qvReturn && qvReturn.focus && document.contains(qvReturn)) { qvReturn.focus(); }
 			});
+			// Left/right arrow keys step through the designs (not while
+			// typing, or inside the photo gallery, which has its own).
+			qv.on('keydown', function (e) {
+				if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.metaKey || e.ctrlKey) { return; }
+				if ($(e.target).is('input, select, textarea') || $(e.target).closest('.om-product-gallery, .om-options, [role="radiogroup"]').length) { return; }
+				if (lb && !lb.prop('hidden')) { return; }
+				e.preventDefault();
+				stepQuickView(e.key === 'ArrowRight' ? 1 : -1);
+			});
+			// Phones: swipe sideways on the details (the photos swipe on their own).
+			var sx = null;
+			var sy = null;
+			qv[0].addEventListener('touchstart', function (e) {
+				sx = null;
+				if (e.touches.length !== 1 || $(e.target).closest('.om-product-gallery, .om-options, select, input').length) { return; }
+				sx = e.touches[0].clientX;
+				sy = e.touches[0].clientY;
+			}, { passive: true });
+			qv[0].addEventListener('touchend', function (e) {
+				if (sx === null) { return; }
+				var dx = e.changedTouches[0].clientX - sx;
+				var dy = e.changedTouches[0].clientY - sy;
+				sx = null;
+				if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) { stepQuickView(dx < 0 ? 1 : -1); }
+			}, { passive: true });
 		}
 		qvReturn = trigger;
+		qvList = qvSiblings(trigger);
+		qvAt = -1;
+		qvList.forEach(function (btn, i) { if (btn === trigger) { qvAt = i; } });
+		qv.find('.om-qv-nav').prop('hidden', qvList.length < 2 || qvAt === -1);
+		if (qvAt !== -1) {
+			qv.find('.om-qv-pos').text(t('designOf', '%1$s of %2$s').replace('%1$s', qvAt + 1).replace('%2$s', qvList.length));
+			qv.find('.om-qv-prev').prop('disabled', qvAt === 0);
+			qv.find('.om-qv-next').prop('disabled', qvAt === qvList.length - 1);
+		}
+		// A link to exactly this pop-up.
+		replaceUrl(urlWith('om_qv', line + '/' + style));
 		var computed = trigger && window.getComputedStyle ? window.getComputedStyle(trigger) : null;
 		QV_VARS.forEach(function (name) {
 			var value = computed ? computed.getPropertyValue(name).trim() : '';
@@ -1728,8 +1843,17 @@
 		});
 		var opts = {};
 		try { opts = JSON.parse($(trigger).closest('[data-om-qv-opts]').attr('data-om-qv-opts') || '{}') || {}; } catch (err) { opts = {}; }
-		var $body = qv.find('.om-qv-body').html('<div class="om-qv-loading"><span class="om-qv-skel om-qv-skel--img"></span><span class="om-qv-skel"></span><span class="om-qv-skel om-qv-skel--short"></span></div>');
-		if (qv[0].showModal) { qv[0].showModal(); } else { qv.attr('open', ''); }
+		var $body = qv.find('.om-qv-body');
+		var seq = ++qvSeq;
+		if (qv[0].open && $body.children('.om-single-product').length) {
+			// Stepping: keep the current design until the next one arrives.
+			qv.addClass('is-stepping');
+		} else {
+			$body.html('<div class="om-qv-loading"><span class="om-qv-skel om-qv-skel--img"></span><span class="om-qv-skel"></span><span class="om-qv-skel om-qv-skel--short"></span></div>');
+		}
+		if (!qv[0].open) {
+			if (qv[0].showModal) { qv[0].showModal(); } else { qv.attr('open', ''); }
+		}
 		$('html').addClass('om-lb-open');
 		var data = { action: 'om_quick_view', line: line, style: style };
 		if (typeof opts.parts === 'string') { data.parts = opts.parts; }
@@ -1737,18 +1861,62 @@
 		if (opts.thumbs) { data.thumbs = opts.thumbs; }
 		if (opts.link) { data.link = opts.link; }
 		$.post(cfg.ajaxUrl, data).done(function (response) {
+			if (seq !== qvSeq) { return; }
+			qv.removeClass('is-stepping');
 			if (response && response.success && response.data.html) {
 				loadPageStyles(response.data);
 				$body.html(response.data.html);
+				$body.scrollTop(0);
+				qv.find('.om-qv-inner').scrollTop(0);
+				qv.scrollTop(0);
 				rememberFrom($body);
 				$body.find('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
 			} else {
 				$body.html($('<p class="om-error"></p>').text((response && response.data && response.data.message) || t('error', 'Something went wrong. Please try again.')));
 			}
 		}).fail(function () {
+			if (seq !== qvSeq) { return; }
+			qv.removeClass('is-stepping');
 			$body.html($('<p class="om-error"></p>').text(t('error', 'Something went wrong. Please try again.')));
 		});
 	}
+
+	var qvList = [];
+	var qvAt = -1;
+	var qvSeq = 0;
+
+	// The other Quick view buttons in the same grid or row, in page order
+	// (one per design).
+	function qvSiblings(trigger) {
+		if (!trigger || !$(trigger).is('.om-qv-btn')) { return []; }
+		var $scope = $(trigger).closest('.om-catalog-wrap, .om-related, .om-reels, [data-om-qv-opts]');
+		var seen = {};
+		return $scope.find('.om-qv-btn').filter(function () {
+			if ($(this).closest('.is-skeleton').length) { return false; }
+			var key = this.getAttribute('data-om-qv-line') + '|' + this.getAttribute('data-om-qv-style');
+			if (seen[key]) { return false; }
+			seen[key] = true;
+			return true;
+		}).get();
+	}
+
+	function stepQuickView(dir) {
+		var next = qvList[qvAt + dir];
+		if (!next) { return; }
+		openQuickView(next.getAttribute('data-om-qv-line'), next.getAttribute('data-om-qv-style'), next);
+		announce(qv.find('.om-qv-pos').text());
+	}
+
+	// Arriving with ?om_qv=line/style (a shared link) opens that pop-up.
+	$(function () {
+		var wanted = new URLSearchParams(window.location.search).get('om_qv');
+		var m = wanted ? /^([a-z0-9-]+)\/([A-Za-z0-9._\-\/]+)$/.exec(wanted) : null;
+		if (!m || !cfg.ajaxUrl) { return; }
+		var btn = $('.om-qv-btn').filter(function () {
+			return this.getAttribute('data-om-qv-line') === m[1] && this.getAttribute('data-om-qv-style').toLowerCase() === m[2].toLowerCase();
+		})[0];
+		openQuickView(m[1], m[2], btn || $('.om-qv-btn')[0] || null);
+	});
 
 	// The product page's Elementor styles, so the pop-up's buttons look
 	// like the page's. Loaded once; skipped when the page already has them.
@@ -2061,10 +2229,20 @@
 
 	function openCompare() {
 		if (!compareDialog) {
-			compareDialog = $('<dialog class="om-compare-dialog' + (cfg.refined ? ' om-refined' : '') + '" aria-labelledby="om-compare-title"><div class="om-compare-inner"><div class="om-compare-head"><div class="om-compare-heading"><p class="om-compare-eyebrow"></p><h2 class="om-compare-title" id="om-compare-title"></h2></div><div class="om-compare-tools"><label class="om-compare-diff"><input type="checkbox" /><span></span></label><button type="button" class="om-compare-clear-all"></button><button type="button" class="om-compare-close">&times;</button></div></div><div class="om-compare-body"></div></div></dialog>').appendTo(document.body);
+			compareDialog = $('<dialog class="om-compare-dialog' + (cfg.refined ? ' om-refined' : '') + '" aria-labelledby="om-compare-title"><div class="om-compare-inner"><div class="om-compare-head"><div class="om-compare-heading"><p class="om-compare-eyebrow"></p><h2 class="om-compare-title" id="om-compare-title"></h2></div><div class="om-compare-tools"><label class="om-compare-diff"><input type="checkbox" /><span></span></label><button type="button" class="om-compare-share"><span class="om-qv-share-icon" aria-hidden="true"></span><span class="om-compare-share-text"></span></button><button type="button" class="om-compare-clear-all"></button><button type="button" class="om-compare-close">&times;</button></div></div><div class="om-compare-body"></div></div></dialog>').appendTo(document.body);
 			compareDialog.find('.om-compare-eyebrow').text(t('compare', 'Compare'));
 			compareDialog.find('.om-compare-diff span').text(t('compareDiff', 'Highlight differences'));
-			compareDialog.find('.om-compare-clear-all').text(t('clearAll', 'Clear all')).on('click', function () { writeCompare([]); compareDialog[0].close(); });
+			compareDialog.find('.om-compare-share-text').text(t('shareLink', 'Share link'));
+			compareDialog.find('.om-compare-share').attr('aria-label', t('shareLink', 'Share link')).on('click', function () {
+				var list = readCompare();
+				shareLink(urlWith('om_compare', list.map(function (x) { return x.l + '/' + x.s; }).join(',')), t('compare', 'Compare'));
+			});
+			compareDialog.find('.om-compare-clear-all').text(t('clearAll', 'Clear all')).on('click', function () {
+				var before = readCompare();
+				writeCompare([]);
+				compareDialog[0].close();
+				showToast(t('compareCleared', 'Compare list cleared'), function () { writeCompare(before); });
+			});
 			var diffOn = false;
 			try { diffOn = window.localStorage.getItem('om_compare_diff') === '1'; } catch (err) { diffOn = false; }
 			compareDialog.find('.om-compare-diff input').prop('checked', diffOn).on('change', function () {
@@ -2085,6 +2263,18 @@
 		$.post(cfg.ajaxUrl, { action: 'om_compare', items: list.map(function (x) { return { line: x.l, style: x.s }; }) }).done(function (response) {
 			$body.html(response && response.success ? response.data.html : $('<p class="om-error"></p>').text((response && response.data && response.data.message) || t('error', 'Something went wrong. Please try again.')));
 			markCompareDiffs($body);
+			// Designs from a shared link arrive without photo and name.
+			if (response && response.success && response.data.items) {
+				var info = {};
+				response.data.items.forEach(function (x) { info[x.l + '|' + String(x.s).toLowerCase()] = x; });
+				var changed = false;
+				var filled = readCompare().map(function (x) {
+					var got = info[x.l + '|' + String(x.s).toLowerCase()];
+					if (got && (!x.i || !x.t)) { changed = true; return $.extend({}, got, x, { t: x.t || got.t, i: x.i || got.i, u: x.u || got.u }); }
+					return x;
+				});
+				if (changed) { writeCompare(filled); }
+			}
 		}).fail(function () {
 			$body.html($('<p class="om-error"></p>').text(t('error', 'Something went wrong. Please try again.')));
 		});
@@ -2102,6 +2292,22 @@
 	}
 
 	$(document).on('click', '.om-compare-open', openCompare);
+
+	// Arriving with ?om_compare=line/style,line/style (a shared link):
+	// those designs become the compare list and the table opens.
+	$(function () {
+		var wanted = new URLSearchParams(window.location.search).get('om_compare');
+		if (!wanted || !cfg.ajaxUrl) { return; }
+		var list = [];
+		wanted.split(',').forEach(function (pair) {
+			var m = /^([a-z0-9-]+)\/([A-Za-z0-9._\-\/]+)$/.exec($.trim(pair));
+			if (m && list.length < 4 && !list.some(function (x) { return x.l === m[1] && x.s === m[2]; })) { list.push({ l: m[1], s: m[2] }); }
+		});
+		replaceUrl(urlWith('om_compare', ''));
+		if (!list.length) { return; }
+		writeCompare(list);
+		openCompare();
+	});
 	$(document).on('click', '.om-compare-remove', function () {
 		var key = this.getAttribute('data-om-line') + '|' + this.getAttribute('data-om-style');
 		var list = readCompare().filter(function (x) { return x.l + '|' + x.s !== key; });

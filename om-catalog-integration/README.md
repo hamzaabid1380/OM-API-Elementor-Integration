@@ -717,6 +717,24 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.23.0
+- Quick view: step through the designs without closing it. There are
+  previous/next arrows with "3 of 12", the left/right arrow keys, and a
+  sideways swipe on the details on phones. The current design stays on
+  screen until the next one arrives.
+- Shareable links:
+  - The quick view has a **Share** button (the phone's share sheet, or
+    copy on desktop). While it is open, the address is
+    `…?om_qv=engagement-rings/85121-2`, and opening that link shows the
+    same pop-up.
+  - Compare has **Share link**
+    (`…?om_compare=engagement-rings/85121-2,engagement-rings/85275-1`),
+    which opens the same comparison for whoever receives it, photos and
+    tray included.
+- Undo: removing a filter chip or clearing all filters shows "Removed
+  Oval · Undo" / "Filters cleared · Undo" for six seconds (it stays while
+  hovered or focused). Clearing the compare list can be undone too.
+
 ### 1.22.4
 - Compare pop-up header redesigned: a small "Compare" eyebrow and a
   title that counts the designs ("3 designs side by side") replace the

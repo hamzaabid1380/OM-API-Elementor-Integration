@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.22.4
+ * Version: 1.23.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.22.4' );
+define( 'OM_CATALOG_VERSION', '1.23.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -123,6 +123,18 @@ function om_catalog_enqueue_assets() {
 				'compareOne' => __( '1 design', 'om-catalog' ),
 				'compareDiff' => __( 'Highlight differences', 'om-catalog' ),
 				'clearAll'   => __( 'Clear all', 'om-catalog' ),
+				'prevDesign' => __( 'Previous design', 'om-catalog' ),
+				'nextDesign' => __( 'Next design', 'om-catalog' ),
+				/* translators: 1: position, 2: total. */
+				'designOf'   => __( '%1$s of %2$s', 'om-catalog' ),
+				'share'      => __( 'Share', 'om-catalog' ),
+				'shareLink'  => __( 'Share link', 'om-catalog' ),
+				'linkCopied' => __( 'Link copied', 'om-catalog' ),
+				'undo'       => __( 'Undo', 'om-catalog' ),
+				'filtersCleared' => __( 'Filters cleared', 'om-catalog' ),
+				/* translators: %s: filter name. */
+				'filterRemoved' => __( 'Removed %s', 'om-catalog' ),
+				'compareCleared' => __( 'Compare list cleared', 'om-catalog' ),
 				'compareNow' => __( 'Compare now', 'om-catalog' ),
 				'compareMore' => __( 'Add one more', 'om-catalog' ),
 				'compareFull' => __( 'You can compare up to 4 designs.', 'om-catalog' ),

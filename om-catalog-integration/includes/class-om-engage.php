@@ -225,6 +225,7 @@ class OM_Engage {
 		$rows   = array_filter( $rows, static function ( $label, $key ) { return '' !== $label || in_array( $key, array( 'photo', 'link' ), true ); }, ARRAY_FILTER_USE_BOTH );
 
 		$cells = array();
+		$found = array();
 		foreach ( $items as list( $line, $style, $product ) ) {
 			$centre = '';
 			$count  = 0;
@@ -243,6 +244,8 @@ class OM_Engage {
 			$url     = om_product_url( $line, $style );
 			$image   = om_card_images( $product )[0];
 			$title   = (string) ( $product['title'] ?? $style );
+			// For a shared compare link: the tray needs photo and name.
+			$found[] = array( 'l' => $line, 's' => $style, 't' => $title, 'i' => (string) $image, 'u' => $url );
 			$cells[] = array(
 				'photo'  => $image ? '<a href="' . esc_url( $url ) . '" tabindex="-1"><img src="' . esc_url( $image ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" /></a>' : '',
 				'name'   => '<a class="om-compare-name" href="' . esc_url( $url ) . '">' . esc_html( $title ) . '</a><span class="om-compare-style">' . esc_html( sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $style ) ) . '</span>',
@@ -269,6 +272,6 @@ class OM_Engage {
 			echo '</tr>';
 		}
 		echo '</table></div>';
-		wp_send_json_success( array( 'html' => ob_get_clean() ) );
+		wp_send_json_success( array( 'html' => ob_get_clean(), 'items' => $found ) );
 	}
 }
