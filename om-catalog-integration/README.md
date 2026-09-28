@@ -225,11 +225,29 @@ has **See true size**. It draws the stone at its real size on a finger
 with typical 0.5, 1, 1.5 and 2 ct stones of the same shape. Visitors can
 switch to a 3× close-up and change the ring size. Until the one-time
 **screen check** is done (hold a bank card to the screen and match the
-outline, saved per device), the size is labelled "about real size". It
-can be switched off in the OM Diamond Search and OM Ring Builder widgets.
+outline, saved per device), the size is labelled "about real size".
+
+Switching it off:
+- **Site-wide**: Settings > OM Catalog > Ring Builder > **True size** —
+  untick the "See true size" line to remove the button everywhere, or
+  untick "Screen check and the 'About real size' note" to keep the
+  feature but hide the note and the card check.
+- **Per page**: the **See true size** switch in the OM Diamond Search
+  widget, and **True size on diamonds** in the OM Ring Builder widget
+  (Settings & diamonds).
+
+**Help me choose** (1.26): a third way in on the start screen and a link
+on the diamond step. Three questions — a budget (while prices show) or a
+size (while they are hidden), what matters most (value, balance or
+sparkle) and lab-grown or natural — then the three best real diamonds from
+the live list, each with a tag and a plain-words reason ("Near-colourless
+(G) — looks white in a ring"). Answers update the picks at once; **Choose**
+takes the stone into the builder. After a setting, only diamonds that fit
+it are suggested. Set it in the widget's **Help me choose** section: mode
+(automatic, budget, size or off), texts, budget range and the start card.
 
 Every text is in the widget's Content tab (Start screen, Steps & guidance,
-Settings & diamonds, "Your ring" bar, Review & request); colours and corners
+Settings & diamonds, Help me choose, "Your ring" bar, Review & request); colours and corners
 in Style › Builder.
 
 ## Inquiries
@@ -754,6 +772,16 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.26.0
+- **Help me choose** in the ring builder: budget or size, priority and
+  origin → the three best matching diamonds with plain-words reasons.
+  Budget mode only while prices show; otherwise it guides by size and
+  says "Price on request". Respects the chosen setting's carat range.
+  Start-screen card and diamond-step link, all editable in the widget.
+- **True size switches** in Settings > OM Catalog > Ring Builder: turn
+  "See true size" off site-wide, or keep it and hide the screen check and
+  the "About real size" note.
 
 ### 1.25.0
 - **True size**: "See true size" on every diamond (diamond search and the

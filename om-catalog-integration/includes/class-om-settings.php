@@ -74,6 +74,8 @@ class OM_Settings {
 
 		// Ring builder.
 		register_setting( 'om_catalog_settings', 'om_builder_page', array( 'sanitize_callback' => 'absint' ) );
+		register_setting( 'om_catalog_settings', 'om_true_size', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_true_size_check', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_builder_lines', array( 'sanitize_callback' => array( $this, 'sanitize_lines' ) ) );
 
 		// Inquiries.
@@ -280,6 +282,16 @@ class OM_Settings {
 						<th><label for="om_builder_lines">Setting product lines</label></th>
 						<td><input type="text" id="om_builder_lines" name="om_builder_lines" value="<?php echo esc_attr( get_option( 'om_builder_lines', 'engagement-rings' ) ); ?>" class="regular-text" />
 						<p class="description">Comma-separated line codes whose products can be chosen as the setting.</p></td>
+					</tr>
+					<tr>
+						<th>True size</th>
+						<td>
+							<input type="hidden" name="om_true_size" value="0" />
+							<label><input type="checkbox" name="om_true_size" value="1" <?php checked( get_option( 'om_true_size', '1' ), '1' ); ?> /> "See true size" on diamonds (the stone drawn at its real size on a finger)</label><br />
+							<input type="hidden" name="om_true_size_check" value="0" />
+							<label><input type="checkbox" name="om_true_size_check" value="1" <?php checked( get_option( 'om_true_size_check', '1' ), '1' ); ?> /> Screen check and the "About real size" note</label>
+							<p class="description">Screens differ, so until a visitor does the one-time bank-card check the size is an estimate, labelled "About real size". Untick to hide the note and the check; the stone is then simply shown to scale. Each OM Diamond Search / OM Ring Builder widget can also switch "True size" off for its own page.</p>
+						</td>
 					</tr>
 				</table>
 

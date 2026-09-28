@@ -2340,6 +2340,37 @@
 		if (last.i) { $cont.find('.om-rb-continue-img').append($('<img alt="" />').attr('src', last.i)); }
 	});
 
+	// "Help me choose": answers update the suggestions in place.
+	var guideSeq = 0;
+	function updateGuide(form) {
+		var url = formUrl(form);
+		var seq = ++guideSeq;
+		var $res = $(form).closest('.om-rb-guide-wrap').find('.om-rb-guide-results');
+		$res.addClass('is-loading').attr('aria-busy', 'true');
+		$.get(url).done(function (html) {
+			if (seq !== guideSeq) { return; }
+			var $fresh = $($.parseHTML(html)).find('.om-rb-guide-results').first();
+			if (!$fresh.length) { window.location.href = url; return; }
+			$res.replaceWith($fresh);
+			$fresh.find('.om-rb-pick').addClass('om-fade-in');
+			replaceUrl(url);
+		}).fail(function () {
+			if (seq === guideSeq) { window.location.href = url; }
+		});
+	}
+	$(document).on('change', '.om-rb-guide-form', function () { updateGuide(this); });
+	$(document).on('submit', '.om-rb-guide-form', function (e) { e.preventDefault(); updateGuide(this); });
+	$(document).on('input', '.om-rb-guide-form input[type=range]', function () {
+		var $out = $(this).closest('.om-rb-q').find('.om-rb-q-value');
+		var v = parseFloat(this.value);
+		if ($out.attr('data-om-ct')) {
+			$out.text((Math.round(v * 100) / 100) + ' ct');
+		} else {
+			var prefix = ($out.text().match(/^[^\d]*/) || [''])[0];
+			$out.text(prefix + Math.round(v).toLocaleString('en-US'));
+		}
+	});
+
 	$(document).on('click', '.om-rb-share', function () {
 		shareLink(this.getAttribute('data-om-url') || window.location.href, this.getAttribute('data-om-title') || document.title);
 	});
@@ -2541,7 +2572,10 @@
 		svg.setAttribute('aria-label', tsCt(sel.c) + ' ct ' + name + ', ' + dims + ', ' + t('tsOnFinger', 'on a size %s finger').replace('%s', st.size));
 		$d.find('.om-ts-title').text(tsCt(sel.c) + ' ct ' + name + ' · ' + dims);
 		$d.find('.om-ts-sub').text(sel.mine ? (st.title || '') : t('tsTypical', 'Typical size for this carat'));
-		$d.find('.om-ts-scale').text(st.close ? t('tsScaleZoom', 'Close-up — 3× real size') : (px.exact ? t('tsScaleExact', 'Real size on this screen') : t('tsScaleApprox', 'About real size — do the screen check for exact')));
+		var note = st.close ? t('tsScaleZoom', 'Close-up — 3× real size') : (px.exact ? t('tsScaleExact', 'Real size on this screen') : (cfg.tsCheck === false ? '' : t('tsScaleApprox', 'About real size — do the screen check for exact')));
+		$d.find('.om-ts-scale').text(note).prop('hidden', !note);
+		// Screen check switched off in Settings: no note, no check.
+		$d.find('.om-ts-check').prop('hidden', cfg.tsCheck === false);
 
 		var $picks = $d.find('.om-ts-picks').empty();
 		st.picks.forEach(function (p, i) {

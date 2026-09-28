@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OM_Ring_Builder {
 
-	const PARAMS = array( 'rb_setting', 'rb_metal', 'rb_color', 'rb_diamond', 'rb_step', 'rb_first', 'rb' );
+	const PARAMS = array( 'rb_setting', 'rb_metal', 'rb_color', 'rb_diamond', 'rb_step', 'rb_first', 'rb', 'g_ct', 'g_budget', 'g_pri', 'g_origin', 'g_shape' );
 
 	private static $instance = null;
 
@@ -62,6 +62,11 @@ class OM_Ring_Builder {
 			'diamond_title'   => __( 'Start with a diamond', 'om-catalog' ),
 			'diamond_text'    => __( 'Choose the centre stone by shape, carat, colour and clarity, then find a setting made for it.', 'om-catalog' ),
 			'diamond_cta'     => __( 'Browse diamonds', 'om-catalog' ),
+			'start_guide'     => 'yes',
+			'guide_tag'       => __( 'Not sure?', 'om-catalog' ),
+			'guide_title'     => __( 'Help me choose', 'om-catalog' ),
+			'guide_text'      => __( 'Three quick questions — size or budget, what matters most, lab or natural — and we suggest the best stones for you.', 'om-catalog' ),
+			'guide_cta'       => __( 'Start (1 minute)', 'om-catalog' ),
 			'continue'        => 'yes',
 			// "|"-separated short promises under the start options.
 			'promises'        => __( 'Certified diamonds|Nothing to pay online — we confirm everything with you|Your design is saved in the link', 'om-catalog' ),
@@ -85,6 +90,17 @@ class OM_Ring_Builder {
 			'fit_rule'        => 'strict',
 			// "True size" buttons on diamonds and in the review.
 			'true_size'       => 'yes',
+
+			// "Help me choose": auto = by budget when diamond prices show,
+			// by size while they are hidden; budget; size; off.
+			'guide'           => 'auto',
+			'guide_eyebrow'   => __( 'Help me choose · 1 minute', 'om-catalog' ),
+			'guide_heading'   => __( 'The right diamond for you', 'om-catalog' ),
+			'guide_heading_b' => __( 'The best diamond for your budget', 'om-catalog' ),
+			'guide_intro'     => __( 'Answer three questions. We search every stone that fits and explain the choice in plain words.', 'om-catalog' ),
+			'guide_link'      => __( 'Not sure which diamond? Help me choose', 'om-catalog' ),
+			'budget_min'      => 1000,
+			'budget_max'      => 20000,
 
 			// "Your ring" bar.
 			'bar'             => 'yes',
@@ -136,7 +152,7 @@ class OM_Ring_Builder {
 			'metal'   => $get( 'rb_metal' ),
 			'color'   => $get( 'rb_color' ),
 			'diamond' => $get( 'rb_diamond' ),
-			'step'    => in_array( $get( 'rb_step' ), array( 'setting', 'diamond', 'review' ), true ) ? $get( 'rb_step' ) : '',
+			'step'    => in_array( $get( 'rb_step' ), array( 'setting', 'diamond', 'review', 'guide' ), true ) ? $get( 'rb_step' ) : '',
 			'first'   => 'diamond' === $get( 'rb_first' ) ? 'diamond' : '',
 		);
 	}
@@ -297,6 +313,10 @@ class OM_Ring_Builder {
 		if ( 'review' === $step && ! ( $has_setting && $has_diamond ) ) {
 			$step = $has_setting ? 'diamond' : 'setting';
 		}
+		$guide_mode = self::guide_mode( $atts );
+		if ( 'guide' === $step && '' === $guide_mode ) {
+			$step = 'diamond';
+		}
 
 		$page_url = om_builder_url();
 		if ( '' === $page_url ) {
@@ -341,6 +361,8 @@ class OM_Ring_Builder {
 
 		if ( 'start' === $step ) {
 			$this->render_start( $atts, $link, $order );
+		} elseif ( 'guide' === $step ) {
+			$this->render_guide( $atts, $state, $has_setting ? $setting : null, $link, $order, $has_setting, $has_diamond, $page_url, $guide_mode );
 		} else {
 			$guides = array(
 				'setting' => $has_diamond ? self::fill( $atts['guide_setting2'], $setting_name, $diamond_name ) : $atts['guide_setting'],
@@ -358,6 +380,9 @@ class OM_Ring_Builder {
 				$this->render_settings( $atts, $state, $has_diamond ? $diamond : null, $link );
 				break;
 			case 'diamond':
+				if ( '' !== $guide_mode && '' !== trim( (string) $atts['guide_link'] ) ) {
+					echo '<p class="om-rb-tip"><span class="om-rb-tip-icon" aria-hidden="true"></span><a href="' . esc_url( $link( array( 'step' => 'guide' ) ) ) . '">' . esc_html( $atts['guide_link'] ) . '</a></p>';
+				}
 				$select_state = self::state_args( $state, array( 'step' => '' ) );
 				unset( $select_state['rb_diamond'] );
 				$range = $has_setting ? self::fit_range( self::head_sizes( $setting, $state['style'] ), (string) $atts['fit_rule'] ) : null;
@@ -379,7 +404,7 @@ class OM_Ring_Builder {
 		}
 
 		if ( 'start' !== $step && 'no' !== $atts['bar'] ) {
-			$this->render_bar( $atts, $step, $order, $state, $has_setting ? $setting : null, $has_diamond ? $diamond : null, $link );
+			$this->render_bar( $atts, 'guide' === $step ? 'diamond' : $step, $order, $state, $has_setting ? $setting : null, $has_diamond ? $diamond : null, $link );
 		}
 		echo '</div>';
 		return ob_get_clean();
@@ -433,6 +458,190 @@ class OM_Ring_Builder {
 		echo '</ol>';
 	}
 
+	/** "budget", "size" or '' (off), from the setting and whether prices show. */
+	private static function guide_mode( $atts ) {
+		$mode = (string) $atts['guide'];
+		if ( 'off' === $mode ) {
+			return '';
+		}
+		$priced = OM_Diamond_Guide::prices_visible();
+		if ( 'budget' === $mode ) {
+			return $priced ? 'budget' : 'size';
+		}
+		if ( 'size' === $mode ) {
+			return 'size';
+		}
+		return $priced ? 'budget' : 'size';
+	}
+
+	/** Step: "Help me choose" — three questions, three real stones. */
+	private function render_guide( $atts, $state, $setting, $link, $order, $has_setting, $has_diamond, $page_url, $mode ) {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only view state.
+		$get = static function ( $key ) {
+			return isset( $_GET[ $key ] ) && is_scalar( $_GET[ $key ] ) ? sanitize_text_field( wp_unslash( $_GET[ $key ] ) ) : '';
+		};
+		// phpcs:enable
+		$budget_mode = 'budget' === $mode;
+		$shapes      = OM_Diamonds::SHAPES;
+		$fixed_shape = $setting ? self::setting_shape( $setting ) : '';
+		$shape       = '' !== $fixed_shape ? $fixed_shape : ( in_array( $get( 'g_shape' ), $shapes, true ) ? $get( 'g_shape' ) : 'Round' );
+		$fixed_orig  = in_array( $atts['diamond_origin'], array( 'lab', 'natural' ), true ) ? $atts['diamond_origin'] : '';
+		$origin      = '' !== $fixed_orig ? $fixed_orig : ( in_array( $get( 'g_origin' ), array( 'lab', 'natural', 'either' ), true ) ? $get( 'g_origin' ) : 'lab' );
+		$pri         = in_array( $get( 'g_pri' ), array( 'value', 'balance', 'sparkle' ), true ) ? $get( 'g_pri' ) : 'balance';
+
+		// Size limits: the setting's fit range, else 0.3–4 ct.
+		$range  = $setting ? self::fit_range( self::head_sizes( $setting, $state['style'] ), (string) $atts['fit_rule'] ) : null;
+		$ct_min = $range ? $range[0] : 0.3;
+		$ct_max = $range ? $range[1] : 4;
+		$ct     = is_numeric( $get( 'g_ct' ) ) ? (float) $get( 'g_ct' ) : ( $range ? round( ( $ct_min + $ct_max ) / 2, 2 ) : 1 );
+		$ct     = max( $ct_min, min( $ct_max, $ct ) );
+		$b_min  = max( 100, (int) $atts['budget_min'] );
+		$b_max  = max( $b_min + 500, (int) $atts['budget_max'] );
+		$budget = is_numeric( $get( 'g_budget' ) ) ? (int) $get( 'g_budget' ) : (int) round( ( $b_min + $b_max ) / 4, -2 );
+		$budget = max( $b_min, min( $b_max, $budget ) );
+
+		$query = array(
+			'shape'  => $shape,
+			'origin' => 'either' === $origin ? '' : $origin,
+			'pri'    => $pri,
+		);
+		if ( $budget_mode ) {
+			$query['budget'] = $budget;
+			if ( $range ) {
+				$query += array( 'ct_min' => $ct_min, 'ct_max' => $ct_max );
+			}
+		} else {
+			$query += array( 'ct' => $ct, 'ct_min' => $ct_min, 'ct_max' => $ct_max );
+		}
+		$picks = OM_Diamond_Guide::picks( $query );
+		$tags  = OM_Diamond_Guide::tags( $budget_mode );
+
+		$names = array(
+			'setting' => $atts['step_setting'],
+			'diamond' => $atts['step_diamond'],
+			'review'  => $atts['step_review'],
+		);
+		echo '<div class="om-rb-head"><div class="om-rb-head-text">';
+		echo '<p class="om-rb-eyebrow">' . esc_html( $atts['guide_eyebrow'] ) . '</p>';
+		echo '<h2 class="om-rb-title">' . esc_html( $budget_mode ? $atts['guide_heading_b'] : $atts['guide_heading'] ) . '</h2>';
+		if ( '' !== trim( (string) $atts['guide_intro'] ) ) {
+			echo '<p class="om-rb-guide">' . esc_html( $atts['guide_intro'] ) . '</p>';
+		}
+		echo '</div>';
+		$this->render_progress( $order, 'diamond', $names, $has_setting, $has_diamond, $link );
+		echo '</div>';
+
+		$action = strtok( $page_url, '?' );
+		$keep   = array();
+		parse_str( (string) wp_parse_url( $page_url, PHP_URL_QUERY ), $keep );
+		$keep  = array_merge( $keep, self::state_args( $state, array( 'step' => 'guide' ) ) );
+		$money = static function ( $n ) {
+			return om_format_price_short( $n );
+		};
+		?>
+		<div class="om-rb-guide-wrap">
+			<form class="om-rb-guide-form" method="get" action="<?php echo esc_url( $action ); ?>">
+				<?php foreach ( $keep as $key => $value ) : ?>
+					<?php if ( is_scalar( $value ) && ! in_array( $key, OM_Diamond_Guide::PARAMS, true ) ) : ?>
+						<input type="hidden" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $value ); ?>" />
+					<?php endif; ?>
+				<?php endforeach; ?>
+				<?php $n = 1; ?>
+				<?php if ( '' === $fixed_shape ) : ?>
+					<fieldset class="om-rb-q">
+						<legend><span class="om-rb-q-n"><?php echo (int) $n++; ?> ·</span> <?php esc_html_e( 'Which shape?', 'om-catalog' ); ?></legend>
+						<div class="om-rb-q-shapes">
+							<?php foreach ( $shapes as $one ) : ?>
+								<label class="om-rb-q-shape"><input type="radio" name="g_shape" value="<?php echo esc_attr( $one ); ?>" <?php checked( $shape, $one ); ?> /><span><?php echo OM_Diamonds::shape_icon( $one ); // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG. ?><?php echo esc_html( $one ); ?></span></label>
+							<?php endforeach; ?>
+						</div>
+					</fieldset>
+				<?php endif; ?>
+				<?php if ( $budget_mode ) : ?>
+					<div class="om-rb-q">
+						<label class="om-rb-q-label" for="om-rb-budget"><span><span class="om-rb-q-n"><?php echo (int) $n++; ?> ·</span> <?php esc_html_e( 'Budget for the diamond', 'om-catalog' ); ?></span><output class="om-rb-q-value" for="om-rb-budget" data-om-money="1"><?php echo esc_html( $money( $budget ) ); ?></output></label>
+						<input id="om-rb-budget" type="range" name="g_budget" min="<?php echo (int) $b_min; ?>" max="<?php echo (int) $b_max; ?>" step="250" value="<?php echo (int) $budget; ?>" />
+						<span class="om-rb-q-ends"><span><?php echo esc_html( $money( $b_min ) ); ?></span><span><?php echo esc_html( $money( $b_max ) ); ?>+</span></span>
+					</div>
+				<?php else : ?>
+					<div class="om-rb-q">
+						<label class="om-rb-q-label" for="om-rb-ct"><span><span class="om-rb-q-n"><?php echo (int) $n++; ?> ·</span> <?php esc_html_e( 'How big would you like it?', 'om-catalog' ); ?></span><output class="om-rb-q-value" for="om-rb-ct" data-om-ct="1"><?php echo esc_html( rtrim( rtrim( number_format( $ct, 2 ), '0' ), '.' ) . ' ct' ); ?></output></label>
+						<input id="om-rb-ct" type="range" name="g_ct" min="<?php echo esc_attr( $ct_min ); ?>" max="<?php echo esc_attr( $ct_max ); ?>" step="0.05" value="<?php echo esc_attr( $ct ); ?>" />
+						<span class="om-rb-q-ends"><span><?php echo esc_html( $ct_min . ' ct' ); ?></span><span><?php echo esc_html( $ct_max . ' ct' ); ?></span></span>
+					</div>
+				<?php endif; ?>
+				<fieldset class="om-rb-q">
+					<legend><span class="om-rb-q-n"><?php echo (int) $n++; ?> ·</span> <?php esc_html_e( 'What matters most?', 'om-catalog' ); ?></legend>
+					<div class="om-rb-q-cards">
+						<?php
+						$prios = array(
+							'value'   => $budget_mode ? array( __( 'Size', 'om-catalog' ), __( 'Look bigger on the hand', 'om-catalog' ) ) : array( __( 'Value', 'om-catalog' ), __( 'Smart grades, gentler price', 'om-catalog' ) ),
+							'balance' => array( __( 'Balance', 'om-catalog' ), __( 'A bit of everything', 'om-catalog' ) ),
+							'sparkle' => array( __( 'Sparkle', 'om-catalog' ), __( 'Whitest, cleanest, best cut', 'om-catalog' ) ),
+						);
+						foreach ( $prios as $key => $label ) :
+							?>
+							<label class="om-rb-q-card"><input type="radio" name="g_pri" value="<?php echo esc_attr( $key ); ?>" <?php checked( $pri, $key ); ?> /><span><strong><?php echo esc_html( $label[0] ); ?></strong><?php echo esc_html( $label[1] ); ?></span></label>
+						<?php endforeach; ?>
+					</div>
+				</fieldset>
+				<?php if ( '' === $fixed_orig ) : ?>
+					<fieldset class="om-rb-q">
+						<legend><span class="om-rb-q-n"><?php echo (int) $n++; ?> ·</span> <?php esc_html_e( 'Lab-grown or natural?', 'om-catalog' ); ?></legend>
+						<div class="om-rb-q-seg">
+							<?php foreach ( array( 'lab' => __( 'Lab-grown', 'om-catalog' ), 'natural' => __( 'Natural', 'om-catalog' ), 'either' => __( 'Either', 'om-catalog' ) ) as $key => $label ) : ?>
+								<label><input type="radio" name="g_origin" value="<?php echo esc_attr( $key ); ?>" <?php checked( $origin, $key ); ?> /><span><?php echo esc_html( $label ); ?></span></label>
+							<?php endforeach; ?>
+						</div>
+						<p class="om-rb-q-note"><?php esc_html_e( 'Lab-grown diamonds are real diamonds, grown rather than mined — usually a bigger stone for the same budget.', 'om-catalog' ); ?></p>
+					</fieldset>
+				<?php endif; ?>
+				<button type="submit" class="om-rb-guide-go"><?php esc_html_e( 'Show my best three', 'om-catalog' ); ?></button>
+			</form>
+
+			<div class="om-rb-guide-results" aria-live="polite">
+				<p class="om-rb-guide-results-title"><?php esc_html_e( 'Suggested for you', 'om-catalog' ); ?></p>
+				<?php if ( is_wp_error( $picks ) || ! $picks ) : ?>
+					<p class="om-rb-guide-empty"><?php esc_html_e( 'No stones match those answers right now. Try a different size, budget or lab/natural — or ask us, and we will find one.', 'om-catalog' ); ?></p>
+				<?php else : ?>
+					<?php foreach ( $picks as $i => $pick ) : ?>
+						<?php
+						list( $key, $d ) = $pick;
+						$retail = isset( $d['price'] ) ? om_diamond_retail( $d['price'] ) : null;
+						$img    = (string) ( $d['image_url'] ?? '' );
+						?>
+						<div class="om-rb-pick<?php echo 0 === $i ? ' is-first' : ''; ?>">
+							<div class="om-rb-pick-media">
+								<?php if ( $img ) : ?>
+									<img src="<?php echo esc_url( $img ); ?>" alt="" loading="lazy" />
+								<?php else : ?>
+									<?php echo OM_Diamonds::shape_icon( (string) ( $d['shape'] ?? 'Round' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG. ?>
+								<?php endif; ?>
+							</div>
+							<div class="om-rb-pick-info">
+								<span class="om-rb-pick-tag"><?php echo esc_html( $tags[ $key ] ); ?></span>
+								<p class="om-rb-pick-title"><?php echo esc_html( OM_Diamonds::describe( $d ) ); ?></p>
+								<p class="om-rb-pick-why"><?php echo esc_html( OM_Diamond_Guide::reason( $d ) ); ?></p>
+								<p class="om-rb-pick-meta"><?php echo esc_html( trim( (string) ( $d['measurement'] ?? '' ) . ( ! empty( $d['lab'] ) ? ' · ' . $d['lab'] : '' ), ' ·' ) ); ?></p>
+							</div>
+							<div class="om-rb-pick-end">
+								<span class="om-rb-pick-price"><?php echo esc_html( null !== $retail ? om_format_price_short( $retail ) : __( 'Price on request', 'om-catalog' ) ); ?></span>
+								<a class="om-rb-pick-choose" href="<?php echo esc_url( $link( array( 'diamond' => (string) $d['lot_number'], 'step' => '' ) ) ); ?>"><?php esc_html_e( 'Choose', 'om-catalog' ); ?><span class="om-visually-hidden">: <?php echo esc_html( OM_Diamonds::describe( $d ) ); ?></span></a>
+								<?php
+								if ( 'no' !== $atts['true_size'] ) {
+									echo om_true_size_button( $d ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the helper.
+								}
+								?>
+							</div>
+						</div>
+					<?php endforeach; ?>
+				<?php endif; ?>
+				<p class="om-rb-guide-all"><a href="<?php echo esc_url( $link( array( 'step' => 'diamond' ) ) ); ?>"><?php esc_html_e( 'See all matching diamonds', 'om-catalog' ); ?></a></p>
+			</div>
+		</div>
+		<?php
+	}
+
 	private function render_start( $atts, $link, $order ) {
 		echo '<div class="om-rb-start">';
 		echo '<div class="om-rb-start-head">';
@@ -466,6 +675,9 @@ class OM_Ring_Builder {
 		}
 		if ( 'no' !== $atts['start_diamond'] ) {
 			$ways[] = array( 'diamond', $link( array( 'step' => 'diamond', 'first' => 'diamond' ) ), $atts['diamond_tag'], $atts['diamond_title'], $atts['diamond_text'], $atts['diamond_cta'], '<path d="M10 18l7-9h14l7 9-14 21z"/><path d="M10 18h28M17 9l7 9 7-9M24 18v21"/>' );
+		}
+		if ( 'no' !== $atts['start_guide'] && '' !== self::guide_mode( $atts ) ) {
+			$ways[] = array( 'guide', $link( array( 'step' => 'guide', 'first' => 'diamond' ) ), $atts['guide_tag'], $atts['guide_title'], $atts['guide_text'], $atts['guide_cta'], '<circle cx="24" cy="24" r="17"/><path d="M19 19.5a5 5 0 1 1 6.6 4.7c-1.1.4-1.6 1.2-1.6 2.6M24 31.5v.5"/>' );
 		}
 		echo '<div class="om-rb-ways om-rb-ways--' . count( $ways ) . '">';
 		foreach ( $ways as $i => $way ) {

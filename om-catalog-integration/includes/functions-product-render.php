@@ -1322,6 +1322,9 @@ function om_card_hover_style() {
  * measurement). Returns '' when there's nothing to draw.
  */
 function om_true_size_button( $d, $text = '' ) {
+	if ( '0' === get_option( 'om_true_size', '1' ) ) {
+		return '';
+	}
 	$shape = (string) ( $d['shape'] ?? '' );
 	$carat = isset( $d['carat'] ) ? (float) $d['carat'] : 0;
 	$l     = isset( $d['length'] ) ? (float) $d['length'] : 0;
