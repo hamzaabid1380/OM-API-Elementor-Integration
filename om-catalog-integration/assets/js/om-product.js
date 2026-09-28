@@ -2318,6 +2318,59 @@
 	// Another tab changed the picks.
 	window.addEventListener('storage', function (e) { if (e.key === COMPARE_KEY) { syncCompare(); } });
 
+	/* ---------- Ring builder ---------- */
+
+	// The visitor's latest design, so the start screen can offer it back.
+	var RB_KEY = 'om_rb_last';
+	$(function () {
+		var el = document.querySelector('.om-builder[data-om-rb-save]');
+		if (el) {
+			try { window.localStorage.setItem(RB_KEY, el.getAttribute('data-om-rb-save')); } catch (err) { /* storage unavailable */ }
+		}
+		var $cont = $('.om-rb-continue');
+		if (!$cont.length) { return; }
+		var last = null;
+		try { last = JSON.parse(window.localStorage.getItem(RB_KEY) || 'null'); } catch (err) { last = null; }
+		if (!last || !last.u || !last.t || !/^https?:\/\//.test(last.u) || new URL(last.u).host !== window.location.host) { return; }
+		$cont.attr('href', last.u).prop('hidden', false);
+		$cont.find('.om-rb-continue-text').empty().append(
+			document.createTextNode(t('rbWelcome', 'Welcome back — continue') + ' '),
+			$('<strong></strong>').text(last.t)
+		);
+		if (last.i) { $cont.find('.om-rb-continue-img').append($('<img alt="" />').attr('src', last.i)); }
+	});
+
+	$(document).on('click', '.om-rb-share', function () {
+		shareLink(this.getAttribute('data-om-url') || window.location.href, this.getAttribute('data-om-title') || document.title);
+	});
+
+	$(document).on('submit', '.om-rb-email-form', function (e) {
+		e.preventDefault();
+		var form = this;
+		var $status = $(form).find('.om-rb-email-status');
+		var $btn = $(form).find('button[type=submit]');
+		var email = $.trim($(form).find('input[name=email]').val());
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+			$status.text(t('rbEmailBad', 'Please enter a valid email address.'));
+			$(form).find('input[name=email]').trigger('focus');
+			return;
+		}
+		$btn.prop('disabled', true);
+		$status.text('');
+		$.post(cfg.ajaxUrl, {
+			action: 'om_builder_email',
+			email: email,
+			url: form.getAttribute('data-om-url'),
+			title: form.getAttribute('data-om-title'),
+			website: $(form).find('input[name=website]').val()
+		}).done(function (r) {
+			$status.text((r && r.data && r.data.message) || '');
+			if (r && r.success) { $(form).find('input[name=email]').val(''); }
+		}).fail(function () {
+			$status.text(t('error', 'Something went wrong. Please try again.'));
+		}).always(function () { $btn.prop('disabled', false); });
+	});
+
 	/* ---------- Page transitions (listing <-> product) ---------- */
 
 	// The clicked card's photo morphs into the product photo (browsers with

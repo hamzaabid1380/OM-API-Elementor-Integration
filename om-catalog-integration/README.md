@@ -194,6 +194,35 @@ URL, so it can be bookmarked or shared. Engagement-ring product pages get a
 **Select this setting** button; the diamond search gets **Select this
 diamond**.
 
+### The guided flow (1.24)
+
+- **Start screen**: "Start with a setting" or "Start with a diamond" (each
+  can be switched off and reworded), a "Welcome back — continue your …"
+  link for returning visitors, and up to four short promises.
+- **Every step** says "Step 2 of 3", its title and one line of guidance
+  ({setting} / {diamond} fill in what was chosen), with a progress line
+  that links back to finished steps. Diamond-first flips the order.
+- **Settings**: the grid looks like your catalog widget (see "Choose a
+  setting" looks like), each card has **Choose this setting**, and after a
+  diamond only settings in its shape show.
+- **Diamonds that fit**: after a setting, the diamond search opens on its
+  shape and carat range (strict, loose or shape only). When both are
+  chosen, the setting's **head size is matched to the stone** (each carat is
+  its own style number at Overnight Mountings) and the review says so.
+- **"Your ring" bar**: the setting and diamond so far, the total when prices
+  show, **Questions? Ask us** (a short inquiry pop-up, or your own link)
+  and the next step. On phones it floats at the bottom.
+- **Review**: metal and colour choices, price breakdown (only while prices
+  show), **Book a viewing** (opens the form with that subject, or goes to a
+  booking link), the request form with ring size and engraving (added only
+  when your form doesn't already ask), **Share this design**, **Email it to
+  me** (the visitor gets a link; you get a copy) and an optional "What
+  happens next" list — off until you enter your steps.
+
+Every text is in the widget's Content tab (Start screen, Steps & guidance,
+Settings & diamonds, "Your ring" bar, Review & request); colours and corners
+in Style › Builder.
+
 ## Inquiries
 
 Product pages, diamonds and the builder review have an inquiry form. Each
@@ -716,6 +745,20 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.24.0
+- Guided ring builder: a new start screen, "Step N of 3" titles with
+  guidance and a progress line, and "Choose this setting" on every card.
+  Diamond-first shows only settings in the stone's shape.
+- The diamond step opens on the setting's shape and carat range, and the
+  setting's head size is matched to the chosen stone automatically.
+- "Your ring" bar on every step (chosen setting and diamond, the total when
+  prices show, "Questions? Ask us" and the next step), floating on phones.
+- Review: metal and colour choices, "Book a viewing" (form or link), ring
+  size and engraving fields, "Share this design", "Email it to me" and an
+  optional "What happens next" list.
+- "Continue your ring" for returning visitors.
+- All builder texts and options are editable in the widget.
 
 ### 1.23.1
 - The site's global text styles no longer change the plugin's text.

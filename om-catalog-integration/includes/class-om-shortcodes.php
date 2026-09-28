@@ -318,6 +318,10 @@ class OM_Shortcodes {
 				// Extra query args appended to product links (the ring
 				// builder uses this to carry its state).
 				'card_query'      => '',
+				// Ring builder: a "Choose this setting" link under each card
+				// ({line} / {style} in the URL become the card's).
+				'card_choose_url'  => '',
+				'card_choose_text' => '',
 				// "yes" adds a Quick view button to each card.
 				'quick_view'      => 'yes',
 				// Card badges: "STYLE: Label" lines, and "New" for designs
@@ -1459,10 +1463,16 @@ class OM_Shortcodes {
 			if ( '' !== (string) $state['metal'] && false === strpos( (string) $state['metal'], ',' ) ) {
 				$link = add_query_arg( 'om_color', rawurlencode( (string) $state['metal'] ), $link );
 			}
+			$after = '';
+			if ( '' !== (string) $atts['card_choose_url'] ) {
+				$choose = str_replace( array( '%7Bline%7D', '{line}', '%7Bstyle%7D', '{style}' ), array( rawurlencode( $active_line ), rawurlencode( $active_line ), rawurlencode( $style_number ), rawurlencode( $style_number ) ), (string) $atts['card_choose_url'] );
+				$after  = '<a class="om-card-choose" href="' . esc_url( $choose ) . '">' . esc_html( '' !== trim( (string) $atts['card_choose_text'] ) ? $atts['card_choose_text'] : __( 'Choose this setting', 'om-catalog' ) ) . '<span class="om-visually-hidden">: ' . esc_html( (string) ( $product['title'] ?? $style_number ) ) . '</span></a>';
+			}
 			echo om_render_card( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 				$product,
 				$active_line,
 				array(
+					'after'  => $after,
 					'link'   => $link,
 					'prices' => $prices,
 					'badges' => $this->card_badges( $product, $atts, $state, $url, $active_line ),

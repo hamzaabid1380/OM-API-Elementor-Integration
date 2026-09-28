@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.23.1
+ * Version: 1.24.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.23.1' );
+define( 'OM_CATALOG_VERSION', '1.24.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -132,6 +132,8 @@ function om_catalog_enqueue_assets() {
 				'shareLink'  => __( 'Share link', 'om-catalog' ),
 				'linkCopied' => __( 'Link copied', 'om-catalog' ),
 				'undo'       => __( 'Undo', 'om-catalog' ),
+				'rbWelcome'  => __( 'Welcome back — continue', 'om-catalog' ),
+				'rbEmailBad' => __( 'Please enter a valid email address.', 'om-catalog' ),
 				'filtersCleared' => __( 'Filters cleared', 'om-catalog' ),
 				/* translators: %s: filter name. */
 				'filterRemoved' => __( 'Removed %s', 'om-catalog' ),

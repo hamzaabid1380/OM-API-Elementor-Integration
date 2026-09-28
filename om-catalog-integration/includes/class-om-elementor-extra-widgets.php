@@ -295,86 +295,251 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 		return array( 'om-catalog-js' );
 	}
 
-	protected function register_controls() {
-		$this->start_controls_section( 'section_content', array( 'label' => __( 'Ring Builder', 'om-catalog' ) ) );
-
-		$this->add_control(
-			'note',
-			array(
-				'type'            => Controls_Manager::RAW_HTML,
-				'raw'             => __( 'Choose this page as the builder page under Settings > OM Catalog > Ring Builder, so product pages and the diamond search link here.', 'om-catalog' ),
-				'content_classes' => 'elementor-descriptor',
-			)
-		);
-
-		$this->add_control(
-			'heading',
-			array(
-				'label'       => __( 'Heading (optional)', 'om-catalog' ),
-				'type'        => Controls_Manager::TEXT,
-				'placeholder' => __( 'Design your engagement ring', 'om-catalog' ),
-			)
-		);
-
-		$this->add_control(
-			'per_page',
-			array(
-				'label'   => __( 'Settings per page', 'om-catalog' ),
-				'type'    => Controls_Manager::NUMBER,
-				'default' => 12,
-				'min'     => 3,
-				'max'     => 60,
-			)
-		);
-
-		$looks = array(
-			''     => __( 'Automatic: same as my catalog page', 'om-catalog' ),
-			'none' => __( "The builder's own look", 'om-catalog' ),
-		);
-		foreach ( om_elementor_pages_with( 'om_catalog_widget' ) as $page_id => $title ) {
-			/* translators: %s: page title. */
-			$looks[ (string) $page_id ] = sprintf( __( 'Same as: %s', 'om-catalog' ), $title );
-		}
-		$this->add_control(
-			'look_page',
-			array(
-				'label'       => __( '"Choose a setting" looks like', 'om-catalog' ),
-				'type'        => Controls_Manager::SELECT,
-				'default'     => '',
-				'options'     => $looks,
-				'description' => __( 'The settings grid copies an OM Product Catalog widget: its design, cards, fonts, filters and Style-tab settings. Edit that widget and the builder follows. Automatic picks the newest catalog page showing engagement rings.', 'om-catalog' ),
-			)
-		);
-
-		$this->add_control(
-			'diamond_origin',
-			array(
-				'label'   => __( 'Diamonds', 'om-catalog' ),
-				'type'    => Controls_Manager::SELECT,
-				'default' => '',
-				'options' => array(
-					''        => __( 'Lab-grown and natural', 'om-catalog' ),
-					'lab'     => __( 'Lab-grown only', 'om-catalog' ),
-					'natural' => __( 'Natural only', 'om-catalog' ),
+	/**
+	 * The builder's content settings, section by section:
+	 * [ key, type, label, extra args ]. Defaults come from
+	 * OM_Ring_Builder::defaults(), so the widget and the shortcode agree.
+	 */
+	private static function builder_controls() {
+		return array(
+			'section_rb_start'  => array(
+				__( 'Start screen', 'om-catalog' ),
+				array(
+					array( 'intro_eyebrow', 'text', __( 'Small line above the title', 'om-catalog' ) ),
+					array( 'intro_title', 'text', __( 'Title', 'om-catalog' ) ),
+					array( 'intro_text', 'textarea', __( 'Intro', 'om-catalog' ) ),
+					array( 'start_setting', 'switch', __( 'Offer "Start with a setting"', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'setting_tag', 'text', __( 'Its tag', 'om-catalog' ), array( 'condition' => array( 'start_setting' => 'yes' ) ) ),
+					array( 'setting_title', 'text', __( 'Its title', 'om-catalog' ), array( 'condition' => array( 'start_setting' => 'yes' ) ) ),
+					array( 'setting_text', 'textarea', __( 'Its text', 'om-catalog' ), array( 'condition' => array( 'start_setting' => 'yes' ) ) ),
+					array( 'setting_cta', 'text', __( 'Its button', 'om-catalog' ), array( 'condition' => array( 'start_setting' => 'yes' ) ) ),
+					array( 'start_diamond', 'switch', __( 'Offer "Start with a diamond"', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'diamond_tag', 'text', __( 'Its tag', 'om-catalog' ), array( 'condition' => array( 'start_diamond' => 'yes' ) ) ),
+					array( 'diamond_title', 'text', __( 'Its title', 'om-catalog' ), array( 'condition' => array( 'start_diamond' => 'yes' ) ) ),
+					array( 'diamond_text', 'textarea', __( 'Its text', 'om-catalog' ), array( 'condition' => array( 'start_diamond' => 'yes' ) ) ),
+					array( 'diamond_cta', 'text', __( 'Its button', 'om-catalog' ), array( 'condition' => array( 'start_diamond' => 'yes' ) ) ),
+					array( 'continue', 'switch', __( '"Continue your ring" for returning visitors', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'promises', 'text', __( 'Promises (separate with |)', 'om-catalog' ), array( 'description' => __( 'Short lines under the options. Leave empty for none.', 'om-catalog' ) ) ),
 				),
+			),
+			'section_rb_steps'  => array(
+				__( 'Steps & guidance', 'om-catalog' ),
+				array(
+					array( 'heading', 'text', __( 'Heading above the steps (optional)', 'om-catalog' ) ),
+					array( 'step_setting', 'text', __( 'Step name: setting', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'step_diamond', 'text', __( 'Step name: diamond', 'om-catalog' ) ),
+					array( 'step_review', 'text', __( 'Step name: review', 'om-catalog' ) ),
+					array( 'title_setting', 'text', __( 'Title: setting step', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'guide_setting', 'textarea', __( 'Guidance: setting first', 'om-catalog' ) ),
+					array( 'guide_setting2', 'textarea', __( 'Guidance: setting after a diamond', 'om-catalog' ), array( 'description' => __( '{diamond} = the stone chosen.', 'om-catalog' ) ) ),
+					array( 'tip_setting', 'textarea', __( 'Tip on the setting step', 'om-catalog' ), array( 'description' => __( 'Leave empty for none.', 'om-catalog' ) ) ),
+					array( 'title_diamond', 'text', __( 'Title: diamond step', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'guide_diamond', 'textarea', __( 'Guidance: diamond after a setting', 'om-catalog' ), array( 'description' => __( '{setting} = the setting chosen.', 'om-catalog' ) ) ),
+					array( 'guide_diamond1', 'textarea', __( 'Guidance: diamond first', 'om-catalog' ) ),
+					array( 'title_review', 'text', __( 'Title: review step', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'guide_review', 'textarea', __( 'Guidance: review', 'om-catalog' ) ),
+				),
+			),
+			'section_rb_grid'   => array(
+				__( 'Settings & diamonds', 'om-catalog' ),
+				array(
+					array( 'look_page', 'look', __( '"Choose a setting" looks like', 'om-catalog' ) ),
+					array( 'per_page', 'number', __( 'Settings per page', 'om-catalog' ), array( 'min' => 3, 'max' => 60 ) ),
+					array( 'choose_text', 'text', __( 'Card button', 'om-catalog' ) ),
+					array(
+						'diamond_origin',
+						'select',
+						__( 'Diamonds', 'om-catalog' ),
+						array(
+							'separator' => 'before',
+							'options'   => array(
+								''        => __( 'Lab-grown and natural', 'om-catalog' ),
+								'lab'     => __( 'Lab-grown only', 'om-catalog' ),
+								'natural' => __( 'Natural only', 'om-catalog' ),
+							),
+						),
+					),
+					array(
+						'fit_rule',
+						'select',
+						__( 'Diamonds that fit a setting', 'om-catalog' ),
+						array(
+							'options'     => array(
+								'strict' => __( 'Strict: the setting’s carat sizes', 'om-catalog' ),
+								'loose'  => __( 'Loose: a little either side', 'om-catalog' ),
+								'off'    => __( 'Shape only', 'om-catalog' ),
+							),
+							'description' => __( 'Once both are chosen, the setting’s head size is matched to the stone automatically.', 'om-catalog' ),
+						),
+					),
+				),
+			),
+			'section_rb_bar'    => array(
+				__( '"Your ring" bar', 'om-catalog' ),
+				array(
+					array( 'bar', 'switch', __( 'Show the bar', 'om-catalog' ), array( 'description' => __( 'Shows the setting and diamond chosen so far, the total (when prices show) and the next step.', 'om-catalog' ) ) ),
+					array( 'ask_text', 'text', __( 'Questions link', 'om-catalog' ), array( 'description' => __( 'Leave empty for none.', 'om-catalog' ) ) ),
+					array( 'ask_url', 'url', __( 'Questions link goes to', 'om-catalog' ), array( 'description' => __( 'Empty: a short inquiry form opens in a pop-up. Or a page, tel: or WhatsApp link.', 'om-catalog' ) ) ),
+				),
+			),
+			'section_rb_review' => array(
+				__( 'Review & request', 'om-catalog' ),
+				array(
+					array( 'request_heading', 'text', __( 'Form heading', 'om-catalog' ) ),
+					array( 'request_intro', 'textarea', __( 'Form intro', 'om-catalog' ) ),
+					array( 'request_button', 'text', __( 'Form button', 'om-catalog' ) ),
+					array( 'ring_size', 'switch', __( 'Ring size field', 'om-catalog' ) ),
+					array( 'engraving', 'switch', __( 'Engraving field', 'om-catalog' ) ),
+					array(
+						'book',
+						'select',
+						__( 'Book a viewing', 'om-catalog' ),
+						array(
+							'separator' => 'before',
+							'options'   => array(
+								'inquiry' => __( 'Opens the form with a subject', 'om-catalog' ),
+								'url'     => __( 'Goes to a link (e.g. a booking page)', 'om-catalog' ),
+								'off'     => __( 'Off', 'om-catalog' ),
+							),
+						),
+					),
+					array( 'book_text', 'text', __( 'Button text', 'om-catalog' ), array( 'condition' => array( 'book!' => 'off' ) ) ),
+					array( 'book_subject', 'text', __( 'Subject chosen', 'om-catalog' ), array( 'condition' => array( 'book' => 'inquiry' ) ) ),
+					array( 'book_url', 'url', __( 'Booking link', 'om-catalog' ), array( 'condition' => array( 'book' => 'url' ) ) ),
+					array( 'share', 'switch', __( '"Share this design"', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'email_me', 'switch', __( '"Email it to me"', 'om-catalog' ), array( 'description' => __( 'Sends the visitor a link to their design; you get a copy.', 'om-catalog' ) ) ),
+					array( 'next_title', 'text', __( '"What happens next" title', 'om-catalog' ), array( 'separator' => 'before' ) ),
+					array( 'next_steps', 'textarea', __( '"What happens next" steps (separate with |)', 'om-catalog' ), array( 'description' => __( 'Up to 4 short steps. Leave empty to hide the section.', 'om-catalog' ) ) ),
+				),
+			),
+		);
+	}
+
+	protected function register_controls() {
+		$defaults = OM_Ring_Builder::defaults();
+		$first    = true;
+		foreach ( self::builder_controls() as $section => $def ) {
+			$this->start_controls_section( $section, array( 'label' => $def[0] ) );
+			if ( $first ) {
+				$this->add_control(
+					'note',
+					array(
+						'type'            => Controls_Manager::RAW_HTML,
+						'raw'             => __( 'Choose this page as the builder page under Settings > OM Catalog > Ring Builder, so product pages and the diamond search link here.', 'om-catalog' ),
+						'content_classes' => 'elementor-descriptor',
+					)
+				);
+				$first = false;
+			}
+			foreach ( $def[1] as $control ) {
+				list( $key, $type, $label ) = $control;
+				$extra = $control[3] ?? array();
+				$args  = array( 'label' => $label ) + $extra;
+				switch ( $type ) {
+					case 'switch':
+						$args += array( 'type' => Controls_Manager::SWITCHER, 'default' => 'no' === $defaults[ $key ] ? '' : 'yes' );
+						break;
+					case 'textarea':
+						$args += array( 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => $defaults[ $key ] );
+						break;
+					case 'number':
+						$args += array( 'type' => Controls_Manager::NUMBER, 'default' => $defaults[ $key ] );
+						break;
+					case 'select':
+						$args += array( 'type' => Controls_Manager::SELECT, 'default' => $defaults[ $key ] );
+						break;
+					case 'url':
+						$args += array( 'type' => Controls_Manager::URL, 'show_external' => false, 'placeholder' => 'https://' );
+						break;
+					case 'look':
+						$looks = array(
+							''     => __( 'Automatic: same as my catalog page', 'om-catalog' ),
+							'none' => __( "The builder's own look", 'om-catalog' ),
+						);
+						foreach ( om_elementor_pages_with( 'om_catalog_widget' ) as $page_id => $title ) {
+							/* translators: %s: page title. */
+							$looks[ (string) $page_id ] = sprintf( __( 'Same as: %s', 'om-catalog' ), $title );
+						}
+						$args += array(
+							'type'        => Controls_Manager::SELECT,
+							'default'     => '',
+							'options'     => $looks,
+							'description' => __( 'The settings grid copies an OM Product Catalog widget: its design, cards, fonts, filters and Style-tab settings. Edit that widget and the builder follows.', 'om-catalog' ),
+						);
+						break;
+					default:
+						$args += array( 'type' => Controls_Manager::TEXT, 'default' => $defaults[ $key ], 'label_block' => true );
+				}
+				$this->add_control( $key, $args );
+			}
+			$this->end_controls_section();
+		}
+
+		$this->register_common_style( '{{WRAPPER}} .om-builder', '{{WRAPPER}} .om-builder-heading, {{WRAPPER}} .om-rb-title, {{WRAPPER}} .om-rb-start-title, {{WRAPPER}} .om-rb-way-title, {{WRAPPER}} .om-review-title' );
+
+		$this->start_controls_section(
+			'section_style_rb',
+			array(
+				'label' => __( 'Builder', 'om-catalog' ),
+				'tab'   => Controls_Manager::TAB_STYLE,
 			)
 		);
-
+		$this->add_control(
+			'rb_gold',
+			array(
+				'label'       => __( 'Highlight (steps done, small titles)', 'om-catalog' ),
+				'type'        => Controls_Manager::COLOR,
+				'selectors'   => array( '{{WRAPPER}} .om-builder' => '--om-gold: {{VALUE}};' ),
+			)
+		);
+		$this->add_control(
+			'rb_panel_bg',
+			array(
+				'label'     => __( 'Card & panel background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-builder' => '--om-rb-panel: {{VALUE}};' ),
+			)
+		);
+		$this->add_control(
+			'rb_bar_bg',
+			array(
+				'label'     => __( '"Your ring" bar background', 'om-catalog' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => array( '{{WRAPPER}} .om-rb-bar' => '--om-rb-bar-bg: {{VALUE}};' ),
+			)
+		);
+		$this->add_responsive_control(
+			'rb_radius',
+			array(
+				'label'      => __( 'Card corners', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 0, 'max' => 32 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-builder' => '--om-rb-radius: {{SIZE}}{{UNIT}};' ),
+			)
+		);
 		$this->end_controls_section();
-
-		$this->register_common_style( '{{WRAPPER}} .om-builder', '{{WRAPPER}} .om-builder-heading, {{WRAPPER}} .om-review-title, {{WRAPPER}} .om-builder-choice-title' );
 	}
 
 	protected function render() {
-		$s = $this->get_settings_for_display();
-		echo OM_Ring_Builder::instance()->render( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
-			array(
-				'heading'        => (string) $s['heading'],
-				'per_page'       => (int) $s['per_page'],
-				'diamond_origin' => (string) $s['diamond_origin'],
-				'look_page'      => (string) ( $s['look_page'] ?? '' ),
-			)
-		);
+		$s    = $this->get_settings_for_display();
+		$atts = array();
+		foreach ( self::builder_controls() as $def ) {
+			foreach ( $def[1] as $control ) {
+				list( $key, $type ) = $control;
+				if ( ! array_key_exists( $key, $s ) ) {
+					continue;
+				}
+				if ( 'switch' === $type ) {
+					$atts[ $key ] = 'yes' === $s[ $key ] ? 'yes' : 'no';
+				} elseif ( 'url' === $type ) {
+					$atts[ $key ] = (string) ( $s[ $key ]['url'] ?? '' );
+				} else {
+					$atts[ $key ] = is_scalar( $s[ $key ] ) ? (string) $s[ $key ] : '';
+				}
+			}
+		}
+		echo OM_Ring_Builder::instance()->render( $atts ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 	}
 }
 

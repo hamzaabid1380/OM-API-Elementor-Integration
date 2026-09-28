@@ -6,17 +6,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Ring builder: [om_ring_builder] shortcode / "OM Ring Builder" widget.
  *
- * Three steps — setting, diamond, review — in either order. All state is in
- * the page URL (rb_setting=line:style, rb_metal, rb_color, rb_diamond=lot),
- * so a design can be bookmarked or sent to someone, the page can be cached,
- * and nothing is stored per visitor. Choose the builder page under Settings
- * > OM Catalog; product pages of the builder's product lines then show a
- * "Select this setting" button and the diamond search a "Select this
- * diamond" button that lead back here.
+ * A guided flow in three steps — setting, diamond, review — started from
+ * either end. All state is in the page URL (rb_setting=line:style,
+ * rb_metal, rb_color, rb_diamond=lot, rb_first=diamond), so a design can be
+ * bookmarked or sent to someone, the page can be cached, and nothing is
+ * stored per visitor. Choose the builder page under Settings > OM Catalog;
+ * product pages of the builder's product lines then show a "Select this
+ * setting" button and the diamond search a "Select this diamond" button
+ * that lead back here.
  */
 class OM_Ring_Builder {
 
-	const PARAMS = array( 'rb_setting', 'rb_metal', 'rb_color', 'rb_diamond', 'rb_step', 'rb' );
+	const PARAMS = array( 'rb_setting', 'rb_metal', 'rb_color', 'rb_diamond', 'rb_step', 'rb_first', 'rb' );
 
 	private static $instance = null;
 
@@ -29,10 +30,84 @@ class OM_Ring_Builder {
 
 	private function __construct() {
 		add_shortcode( 'om_ring_builder', array( $this, 'shortcode' ) );
+		add_action( 'wp_ajax_om_builder_email', array( $this, 'handle_email' ) );
+		add_action( 'wp_ajax_nopriv_om_builder_email', array( $this, 'handle_email' ) );
 	}
 
 	public function shortcode( $atts ) {
 		return $this->render( (array) $atts );
+	}
+
+	/** Every setting of the builder, with its default. */
+	public static function defaults() {
+		return array(
+			'per_page'        => 12,
+			'diamond_origin'  => '',
+			'heading'         => '',
+			// The "Choose a setting" grid looks like the catalog widget on
+			// this page: '' = find one automatically, 'none' = own look.
+			'look_page'       => '',
+
+			// Start screen.
+			'intro_eyebrow'   => __( 'Ring builder', 'om-catalog' ),
+			'intro_title'     => __( 'Design your engagement ring', 'om-catalog' ),
+			'intro_text'      => __( 'Three short steps. We only show diamonds that fit the setting you choose, and you can change anything before you send it to us.', 'om-catalog' ),
+			'start_setting'   => 'yes',
+			'setting_tag'     => __( 'Most popular', 'om-catalog' ),
+			'setting_title'   => __( 'Start with a setting', 'om-catalog' ),
+			'setting_text'    => __( 'Browse the ring designs you love. Next, we show only the diamonds that fit it.', 'om-catalog' ),
+			'setting_cta'     => __( 'Browse settings', 'om-catalog' ),
+			'start_diamond'   => 'yes',
+			'diamond_tag'     => __( 'For stone lovers', 'om-catalog' ),
+			'diamond_title'   => __( 'Start with a diamond', 'om-catalog' ),
+			'diamond_text'    => __( 'Choose the centre stone by shape, carat, colour and clarity, then find a setting made for it.', 'om-catalog' ),
+			'diamond_cta'     => __( 'Browse diamonds', 'om-catalog' ),
+			'continue'        => 'yes',
+			// "|"-separated short promises under the start options.
+			'promises'        => __( 'Certified diamonds|Nothing to pay online — we confirm everything with you|Your design is saved in the link', 'om-catalog' ),
+
+			// Steps and guidance ({setting} / {diamond} = what was chosen).
+			'step_setting'    => __( 'Setting', 'om-catalog' ),
+			'step_diamond'    => __( 'Diamond', 'om-catalog' ),
+			'step_review'     => __( 'Review', 'om-catalog' ),
+			'title_setting'   => __( 'Choose your setting', 'om-catalog' ),
+			'title_diamond'   => __( 'Choose your diamond', 'om-catalog' ),
+			'title_review'    => __( 'Your ring', 'om-catalog' ),
+			'guide_setting'   => __( "Pick the design you love. Next, you'll choose its diamond — we only show stones that fit.", 'om-catalog' ),
+			'guide_setting2'  => __( 'Only settings made for your {diamond}. We match the head size to it.', 'om-catalog' ),
+			'guide_diamond'   => __( 'Every stone here fits your {setting}.', 'om-catalog' ),
+			'guide_diamond1'  => __( 'Choose the centre stone first. Next, we show only settings made for it.', 'om-catalog' ),
+			'guide_review'    => __( 'Check the details, choose the metal and your ring size, then send it to us.', 'om-catalog' ),
+			'tip_setting'     => __( 'Not sure where to start? Filter by shape first — it decides the diamond.', 'om-catalog' ),
+			'choose_text'     => __( 'Choose this setting', 'om-catalog' ),
+			// Which diamonds fit a setting: strict (its carat range), loose
+			// (a little either side) or off (shape only).
+			'fit_rule'        => 'strict',
+
+			// "Your ring" bar.
+			'bar'             => 'yes',
+			'ask_text'        => __( 'Questions? Ask us', 'om-catalog' ),
+			// Empty = a short inquiry form in a pop-up.
+			'ask_url'         => '',
+
+			// Review.
+			'request_heading' => __( 'Request this ring', 'om-catalog' ),
+			'request_intro'   => __( 'Send us your design and we will confirm availability, ring size and timing.', 'om-catalog' ),
+			'request_button'  => __( 'Send request', 'om-catalog' ),
+			// inquiry = the form on the page with this subject; url; off.
+			'book'            => 'inquiry',
+			'book_text'       => __( 'Book a viewing', 'om-catalog' ),
+			'book_subject'    => __( 'Book a viewing', 'om-catalog' ),
+			'book_url'        => '',
+			'ring_size'       => 'yes',
+			'engraving'       => 'yes',
+			'engraving_max'   => 30,
+			'share'           => 'yes',
+			'email_me'        => 'yes',
+			// "|"-separated steps; empty = the section is not shown.
+			'next_steps'      => '',
+			'next_title'      => __( 'What happens next', 'om-catalog' ),
+		);
 	}
 
 	/** Builder state from the current URL. */
@@ -60,6 +135,7 @@ class OM_Ring_Builder {
 			'color'   => $get( 'rb_color' ),
 			'diamond' => $get( 'rb_diamond' ),
 			'step'    => in_array( $get( 'rb_step' ), array( 'setting', 'diamond', 'review' ), true ) ? $get( 'rb_step' ) : '',
+			'first'   => 'diamond' === $get( 'rb_first' ) ? 'diamond' : '',
 		);
 	}
 
@@ -73,6 +149,7 @@ class OM_Ring_Builder {
 				'rb_color'   => $s['color'],
 				'rb_diamond' => $s['diamond'],
 				'rb_step'    => $s['step'] ?? '',
+				'rb_first'   => $s['first'] ?? '',
 			),
 			'strlen'
 		);
@@ -91,6 +168,378 @@ class OM_Ring_Builder {
 			}
 		}
 		return '';
+	}
+
+	/** "1 1/4 CT" → 1.25, ".12 CT" → 0.12; null when it isn't a carat. */
+	public static function parse_carat( $text ) {
+		$text = strtolower( trim( (string) $text ) );
+		if ( '' === $text || false === strpos( $text, 'ct' ) ) {
+			return null;
+		}
+		$text = trim( str_replace( array( 'ctw', 'ct', 'tw' ), '', $text ) );
+		if ( preg_match( '#^(\d+)\s+(\d+)/(\d+)$#', $text, $m ) && (int) $m[3] > 0 ) {
+			return (int) $m[1] + (int) $m[2] / (int) $m[3];
+		}
+		if ( preg_match( '#^(\d+)/(\d+)$#', $text, $m ) && (int) $m[2] > 0 ) {
+			return (int) $m[1] / (int) $m[2];
+		}
+		if ( preg_match( '#^(\d*\.?\d+)$#', $text, $m ) ) {
+			return (float) $m[1];
+		}
+		return null;
+	}
+
+	/**
+	 * The setting's centre-stone sizes: [ carat => style number ], from its
+	 * carat variants (one style number per head size) or, failing that,
+	 * its own centre stone.
+	 */
+	private static function head_sizes( $setting, $style ) {
+		$out = array();
+		foreach ( (array) ( $setting['product_variants'] ?? array() ) as $variant ) {
+			$ct = self::parse_carat( $variant['variant_name'] ?? '' );
+			if ( null !== $ct && ! empty( $variant['style_number'] ) ) {
+				$out[ (string) round( $ct, 3 ) ] = (string) $variant['style_number'];
+			}
+		}
+		if ( ! $out ) {
+			$ct = self::parse_carat( $setting['variant_name'] ?? '' );
+			if ( null === $ct ) {
+				foreach ( (array) ( $setting['stone_breakdown'] ?? array() ) as $stone ) {
+					if ( 1 === (int) ( $stone['quantity'] ?? 0 ) && ! empty( $stone['carat'] ) ) {
+						$ct = (float) $stone['carat'];
+						break;
+					}
+				}
+			}
+			if ( null !== $ct && $ct > 0 ) {
+				$out[ (string) round( $ct, 3 ) ] = $style;
+			}
+		}
+		ksort( $out, SORT_NUMERIC );
+		return $out;
+	}
+
+	/** Carat range of diamonds that fit a setting, or null (shape only). */
+	private static function fit_range( $sizes, $rule ) {
+		if ( ! $sizes || 'off' === $rule ) {
+			return null;
+		}
+		$keys  = array_map( 'floatval', array_keys( $sizes ) );
+		$slack = 'loose' === $rule ? 0.25 : 0.12;
+		return array( max( 0.1, round( min( $keys ) * ( 1 - $slack ), 2 ) ), round( max( $keys ) * ( 1 + $slack ), 2 ) );
+	}
+
+	/** Fill {setting} / {diamond} in a guidance line. */
+	private static function fill( $text, $setting_name, $diamond_name ) {
+		return str_replace( array( '{setting}', '{diamond}' ), array( $setting_name, $diamond_name ), (string) $text );
+	}
+
+	public function render( $atts ) {
+		$atts = shortcode_atts( self::defaults(), $atts, 'om_ring_builder' );
+
+		wp_enqueue_style( 'om-catalog-css' );
+		wp_enqueue_script( 'om-catalog-js' );
+
+		$state   = self::state();
+		$setting = ( $state['line'] && $state['style'] ) ? OM_API_Client::get_product_by_style( $state['line'], $state['style'] ) : null;
+		$diamond = '' !== $state['diamond'] ? OM_API_Client::get_diamond( $state['diamond'] ) : null;
+
+		$has_setting = $setting && ! is_wp_error( $setting );
+		$has_diamond = $diamond && ! is_wp_error( $diamond );
+
+		// Setting and diamond together: set the stone in the head size made
+		// for it (each carat is its own style number at OM).
+		$head = '';
+		if ( $has_setting && $has_diamond && ! empty( $diamond['carat'] ) ) {
+			$sizes = self::head_sizes( $setting, $state['style'] );
+			if ( $sizes ) {
+				$want = (float) $diamond['carat'];
+				$best = null;
+				foreach ( array_keys( $sizes ) as $ct ) {
+					if ( null === $best || abs( (float) $ct - $want ) < abs( (float) $best - $want ) ) {
+						$best = $ct;
+					}
+				}
+				$head = $best;
+				if ( 0 !== strcasecmp( $sizes[ $best ], $state['style'] ) ) {
+					$better = OM_API_Client::get_product_by_style( $state['line'], $sizes[ $best ] );
+					if ( $better && ! is_wp_error( $better ) ) {
+						$setting        = $better;
+						$state['style'] = $sizes[ $best ];
+					}
+				}
+			}
+		}
+
+		$first = $state['first'];
+		if ( '' === $first && $has_diamond && ! $has_setting ) {
+			$first = 'diamond';
+		}
+		$state['first'] = $first;
+		$order          = 'diamond' === $first ? array( 'diamond', 'setting', 'review' ) : array( 'setting', 'diamond', 'review' );
+
+		// Which step to show.
+		$step = $state['step'];
+		if ( '' === $step ) {
+			if ( $has_setting && $has_diamond ) {
+				$step = 'review';
+			} elseif ( $has_setting ) {
+				$step = 'diamond';
+			} elseif ( $has_diamond ) {
+				$step = 'setting';
+			} else {
+				$step = 'start';
+			}
+		}
+		if ( 'review' === $step && ! ( $has_setting && $has_diamond ) ) {
+			$step = $has_setting ? 'diamond' : 'setting';
+		}
+
+		$page_url = om_builder_url();
+		if ( '' === $page_url ) {
+			$page_url = remove_query_arg( array_merge( self::PARAMS, OM_Shortcodes::STATE_PARAMS, OM_Diamonds::PARAMS ) );
+		}
+		$link = function ( $changes = array() ) use ( &$state, $page_url ) {
+			return add_query_arg( array_map( 'rawurlencode', self::state_args( $state, $changes ) ), $page_url );
+		};
+
+		$setting_name = $has_setting ? (string) ( $setting['title'] ?? $state['style'] ) : '';
+		$diamond_name = $has_diamond ? OM_Diamonds::describe( $diamond ) : '';
+
+		// What returning visitors can come back to.
+		$save = '';
+		if ( $has_setting || $has_diamond ) {
+			$save = wp_json_encode(
+				array(
+					'u' => om_absolute_url( $link( array( 'step' => '' ) ) ),
+					't' => trim( $setting_name . ( $has_setting && $has_diamond ? ' + ' : '' ) . $diamond_name ),
+					'i' => $has_setting ? (string) ( om_card_images( $setting )[0] ?? '' ) : (string) ( $diamond['image_url'] ?? '' ),
+				)
+			);
+		}
+
+		ob_start();
+		printf(
+			'<div class="om-builder om-builder--%s%s"%s>',
+			esc_attr( $step ),
+			'diamond' === $first ? ' om-builder--diamond-first' : '',
+			'' !== $save ? ' data-om-rb-save="' . esc_attr( $save ) . '"' : ''
+		);
+		if ( '' !== trim( (string) $atts['heading'] ) && 'start' !== $step ) {
+			echo '<h2 class="om-builder-heading">' . esc_html( $atts['heading'] ) . '</h2>';
+		}
+
+		if ( $state['diamond'] && ! $has_diamond ) {
+			echo '<p class="om-builder-notice">' . esc_html__( 'The diamond you picked is no longer available. Please choose another.', 'om-catalog' ) . '</p>';
+		}
+		if ( $state['style'] && ! $has_setting ) {
+			echo '<p class="om-builder-notice">' . esc_html__( 'The setting you picked is no longer available. Please choose another.', 'om-catalog' ) . '</p>';
+		}
+
+		if ( 'start' === $step ) {
+			$this->render_start( $atts, $link, $order );
+		} else {
+			$guides = array(
+				'setting' => $has_diamond ? self::fill( $atts['guide_setting2'], $setting_name, $diamond_name ) : $atts['guide_setting'],
+				'diamond' => $has_setting ? self::fill( $atts['guide_diamond'], $setting_name, $diamond_name ) : $atts['guide_diamond1'],
+				'review'  => $atts['guide_review'],
+			);
+			$this->render_head( $atts, $step, $order, $has_setting, $has_diamond, $link, $guides[ $step ] );
+		}
+
+		switch ( $step ) {
+			case 'setting':
+				if ( ! $has_diamond && '' !== trim( (string) $atts['tip_setting'] ) ) {
+					echo '<p class="om-rb-tip"><span class="om-rb-tip-icon" aria-hidden="true"></span>' . esc_html( $atts['tip_setting'] ) . '</p>';
+				}
+				$this->render_settings( $atts, $state, $has_diamond ? $diamond : null, $link );
+				break;
+			case 'diamond':
+				$select_state = self::state_args( $state, array( 'step' => '' ) );
+				unset( $select_state['rb_diamond'] );
+				$range = $has_setting ? self::fit_range( self::head_sizes( $setting, $state['style'] ), (string) $atts['fit_rule'] ) : null;
+				echo OM_Diamonds::instance()->render( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+					array(
+						'origin'        => $atts['diamond_origin'],
+						'default_shape' => $has_setting ? self::setting_shape( $setting ) : '',
+						'default_cmin'  => $range ? $range[0] : '',
+						'default_cmax'  => $range ? $range[1] : '',
+						'select_state'  => $select_state,
+					),
+					OM_Diamonds::request_from_globals()
+				);
+				break;
+			case 'review':
+				$this->render_review( $atts, $state, $setting, $diamond, $link, $head );
+				break;
+		}
+
+		if ( 'start' !== $step && 'no' !== $atts['bar'] ) {
+			$this->render_bar( $atts, $step, $order, $state, $has_setting ? $setting : null, $has_diamond ? $diamond : null, $link );
+		}
+		echo '</div>';
+		return ob_get_clean();
+	}
+
+	/** "Step 2 of 3", the step's title and guidance, and the progress line. */
+	private function render_head( $atts, $step, $order, $has_setting, $has_diamond, $link, $guide ) {
+		$n      = array_search( $step, $order, true ) + 1;
+		$names  = array(
+			'setting' => $atts['step_setting'],
+			'diamond' => $atts['step_diamond'],
+			'review'  => $atts['step_review'],
+		);
+		$titles = array(
+			'setting' => $atts['title_setting'],
+			'diamond' => $atts['title_diamond'],
+			'review'  => $atts['title_review'],
+		);
+		echo '<div class="om-rb-head"><div class="om-rb-head-text">';
+		/* translators: 1: step number, 2: number of steps. */
+		echo '<p class="om-rb-eyebrow">' . esc_html( sprintf( __( 'Step %1$d of %2$d', 'om-catalog' ), $n, count( $order ) ) ) . '</p>';
+		echo '<h2 class="om-rb-title">' . esc_html( $titles[ $step ] ) . '</h2>';
+		if ( '' !== trim( (string) $guide ) ) {
+			echo '<p class="om-rb-guide">' . esc_html( $guide ) . '</p>';
+		}
+		echo '</div>';
+		$this->render_progress( $order, $step, $names, $has_setting, $has_diamond, $link );
+		echo '</div>';
+	}
+
+	private function render_progress( $order, $step, $names, $has_setting, $has_diamond, $link ) {
+		echo '<ol class="om-rb-progress" aria-label="' . esc_attr__( 'Steps', 'om-catalog' ) . '">';
+		foreach ( $order as $i => $key ) {
+			$done    = ( 'setting' === $key && $has_setting ) || ( 'diamond' === $key && $has_diamond );
+			$current = $key === $step;
+			$can     = ! $current && 'start' !== $step && ( 'review' !== $key || ( $has_setting && $has_diamond ) );
+			$label   = '<span class="om-rb-progress-bar" aria-hidden="true"></span><span class="om-rb-progress-label">' . esc_html( ( $i + 1 ) . ' · ' . $names[ $key ] ) . ( $done && ! $current ? ' <span class="om-rb-tick" aria-hidden="true">&#10003;</span><span class="om-visually-hidden">' . esc_html__( '(done)', 'om-catalog' ) . '</span>' : '' ) . '</span>';
+			printf(
+				'<li class="om-rb-progress-step%s%s"%s>',
+				$current ? ' is-current' : '',
+				$done ? ' is-done' : '',
+				$current ? ' aria-current="step"' : ''
+			);
+			if ( $can ) {
+				echo '<a href="' . esc_url( $link( array( 'step' => $key ) ) ) . '">' . $label . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+			} else {
+				echo '<span>' . $label . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+			}
+			echo '</li>';
+		}
+		echo '</ol>';
+	}
+
+	private function render_start( $atts, $link, $order ) {
+		echo '<div class="om-rb-start">';
+		echo '<div class="om-rb-start-head">';
+		if ( '' !== trim( (string) $atts['intro_eyebrow'] ) ) {
+			echo '<p class="om-rb-eyebrow om-rb-eyebrow--lined">' . esc_html( $atts['intro_eyebrow'] ) . '</p>';
+		}
+		$title = '' !== trim( (string) $atts['intro_title'] ) ? $atts['intro_title'] : $atts['heading'];
+		if ( '' !== trim( (string) $title ) ) {
+			echo '<h2 class="om-rb-start-title">' . esc_html( $title ) . '</h2>';
+		}
+		if ( '' !== trim( (string) $atts['intro_text'] ) ) {
+			echo '<p class="om-rb-start-text">' . esc_html( $atts['intro_text'] ) . '</p>';
+		}
+		echo '</div>';
+
+		if ( 'no' !== $atts['continue'] ) {
+			// Filled by the script from the visitor's last design, if any.
+			echo '<a class="om-rb-continue" href="#" hidden><span class="om-rb-continue-img" aria-hidden="true"></span><span class="om-rb-continue-text">' . esc_html__( 'Welcome back — continue your ring', 'om-catalog' ) . '</span><span class="om-rb-arrow" aria-hidden="true"></span></a>';
+		}
+
+		$names = array(
+			'setting' => $atts['step_setting'],
+			'diamond' => $atts['step_diamond'],
+			'review'  => $atts['step_review'],
+		);
+		$this->render_progress( $order, 'start', $names, false, false, $link );
+
+		$ways = array();
+		if ( 'no' !== $atts['start_setting'] ) {
+			$ways[] = array( 'setting', $link( array( 'step' => 'setting' ) ), $atts['setting_tag'], $atts['setting_title'], $atts['setting_text'], $atts['setting_cta'], '<circle cx="24" cy="30" r="12"/><path d="M18 14l6-8 6 8-6 6z"/>' );
+		}
+		if ( 'no' !== $atts['start_diamond'] ) {
+			$ways[] = array( 'diamond', $link( array( 'step' => 'diamond', 'first' => 'diamond' ) ), $atts['diamond_tag'], $atts['diamond_title'], $atts['diamond_text'], $atts['diamond_cta'], '<path d="M10 18l7-9h14l7 9-14 21z"/><path d="M10 18h28M17 9l7 9 7-9M24 18v21"/>' );
+		}
+		echo '<div class="om-rb-ways om-rb-ways--' . count( $ways ) . '">';
+		foreach ( $ways as $i => $way ) {
+			list( $key, $href, $tag, $title, $text, $cta, $icon ) = $way;
+			printf(
+				'<a class="om-rb-way om-rb-way--%1$s%2$s" href="%3$s"><span class="om-rb-way-top"><svg class="om-rb-way-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">%4$s</svg>%5$s</span><span class="om-rb-way-title">%6$s</span><span class="om-rb-way-text">%7$s</span><span class="om-rb-way-cta">%8$s<span class="om-rb-arrow" aria-hidden="true"></span></span></a>',
+				esc_attr( $key ),
+				0 === $i ? ' is-featured' : '',
+				esc_url( $href ),
+				$icon, // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG.
+				'' !== trim( (string) $tag ) ? '<span class="om-rb-way-tag">' . esc_html( $tag ) . '</span>' : '',
+				esc_html( $title ),
+				esc_html( $text ),
+				esc_html( $cta )
+			);
+		}
+		echo '</div>';
+
+		$promises = array_filter( array_map( 'trim', explode( '|', (string) $atts['promises'] ) ), 'strlen' );
+		if ( $promises ) {
+			echo '<ul class="om-rb-promises">';
+			foreach ( array_slice( $promises, 0, 4 ) as $promise ) {
+				echo '<li>' . esc_html( $promise ) . '</li>';
+			}
+			echo '</ul>';
+		}
+		echo '</div>';
+	}
+
+	/** Step: the settings grid, looking like a catalog widget. */
+	private function render_settings( $atts, $state, $diamond, $link ) {
+		$card_query = array( 'rb' => '1' );
+		if ( $diamond ) {
+			$card_query['rb_diamond'] = $state['diamond'];
+			$card_query['rb_first']   = 'diamond';
+		}
+		$grid = array(
+			'lines'           => implode( ',', om_builder_lines() ),
+			'per_page'        => (int) $atts['per_page'],
+			'show_filters'    => 'yes',
+			'filter_shapes'   => 'yes',
+			'filter_metals'   => 'yes',
+			'filter_position' => 'left',
+			'filters_title'   => __( 'Filters', 'om-catalog' ),
+			'show_prices'     => 'yes',
+		);
+		$look = self::look_source( (string) $atts['look_page'] );
+		if ( $look ) {
+			// Everything as on the catalog page (design, cards, filters,
+			// search, badges…), limited to the builder's lines.
+			$grid                = array_merge(
+				$look['widget']->grid_atts( $look['settings'] ),
+				array(
+					'lines'         => $grid['lines'],
+					'per_page'      => $grid['per_page'],
+					'show_filters'  => 'yes',
+					'filter_shapes' => 'yes',
+					'head'          => 'no',
+					'intro'         => 'no',
+					'end_card'      => 'no',
+				)
+			);
+			$grid['line_styles'] = array_intersect_key( (array) ( $grid['line_styles'] ?? array() ), array_flip( om_builder_lines() ) );
+		}
+		// A chosen diamond pre-selects settings in its shape.
+		$grid['shape']      = $diamond ? (string) ( $diamond['shape'] ?? '' ) : '';
+		$grid['card_query'] = $card_query;
+		// Each card: "Choose this setting" straight into the next step.
+		$grid['card_choose_url']  = $link( array( 'line' => '{line}', 'style' => '{style}', 'step' => '' ) );
+		$grid['card_choose_text'] = (string) $atts['choose_text'];
+
+		$html = OM_Shortcodes::instance()->render_grid( $grid, OM_Shortcodes::request_from_globals() );
+		if ( $look ) {
+			om_elementor_enqueue_page_css( $look['page'] );
+			$html = om_elementor_wrap( $html, $look['page'], $look['id'], 'om-builder-look' );
+		}
+		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 	}
 
 	/**
@@ -118,197 +567,117 @@ class OM_Ring_Builder {
 		return $first;
 	}
 
-	public function render( $atts ) {
-		$atts = shortcode_atts(
-			array(
-				'per_page'       => 12,
-				'diamond_origin' => '',
-				'heading'        => '',
-				// The "Choose a setting" grid looks like the catalog widget on
-				// this page: '' = find one automatically, 'none' = own look.
-				'look_page'      => '',
-			),
-			$atts,
-			'om_ring_builder'
-		);
+	/** Prices shown for the setting ("from") and the diamond, or null. */
+	private static function prices( $state, $setting, $diamond ) {
+		if ( ! om_markup_is_configured() ) {
+			return array( null, null );
+		}
+		$setting_price = null;
+		if ( $setting ) {
+			$wholesale     = OM_API_Client::get_card_price( $state['line'], $state['style'] );
+			$setting_price = null !== $wholesale ? om_apply_markup( $wholesale ) : null;
+		}
+		$diamond_price = $diamond && isset( $diamond['price'] ) ? om_diamond_retail( $diamond['price'] ) : null;
+		return array( $setting_price, $diamond_price );
+	}
 
-		wp_enqueue_style( 'om-catalog-css' );
-		wp_enqueue_script( 'om-catalog-js' );
+	/** The "Your ring" bar at the foot of every step. */
+	private function render_bar( $atts, $step, $order, $state, $setting, $diamond, $link ) {
+		list( $setting_price, $diamond_price ) = self::prices( $state, $setting, $diamond );
 
-		$state   = self::state();
-		$setting = ( $state['line'] && $state['style'] ) ? OM_API_Client::get_product_by_style( $state['line'], $state['style'] ) : null;
-		$diamond = '' !== $state['diamond'] ? OM_API_Client::get_diamond( $state['diamond'] ) : null;
-
-		$has_setting = $setting && ! is_wp_error( $setting );
-		$has_diamond = $diamond && ! is_wp_error( $diamond );
-
-		// Which step to show.
-		$step = $state['step'];
-		if ( '' === $step ) {
-			if ( $has_setting && $has_diamond ) {
-				$step = 'review';
-			} elseif ( $has_setting ) {
-				$step = 'diamond';
-			} elseif ( $has_diamond ) {
-				$step = 'setting';
-			} else {
-				$step = 'start';
+		$chip = static function ( $kind, $title, $meta, $img, $href, $empty_text ) {
+			if ( '' === $title ) {
+				return '<span class="om-rb-chip is-empty"><span class="om-rb-chip-img" aria-hidden="true"></span><span class="om-rb-chip-text">' . esc_html( $empty_text ) . '</span></span>';
 			}
-		}
-		if ( 'review' === $step && ! ( $has_setting && $has_diamond ) ) {
-			$step = $has_setting ? 'diamond' : 'setting';
-		}
-
-		$page_url = om_builder_url();
-		if ( '' === $page_url ) {
-			$page_url = remove_query_arg( array_merge( self::PARAMS, OM_Shortcodes::STATE_PARAMS, OM_Diamonds::PARAMS ) );
-		}
-		$link = function ( $changes = array() ) use ( $state, $page_url ) {
-			return add_query_arg( array_map( 'rawurlencode', self::state_args( $state, $changes ) ), $page_url );
+			return sprintf(
+				'<a class="om-rb-chip om-rb-chip--%1$s" href="%2$s"><span class="om-rb-chip-img" aria-hidden="true">%3$s</span><span class="om-rb-chip-text"><span class="om-rb-chip-title">%4$s</span><span class="om-rb-chip-meta">%5$s</span></span></a>',
+				esc_attr( $kind ),
+				esc_url( $href ),
+				'' !== $img ? '<img src="' . esc_url( $img ) . '" alt="" loading="lazy" />' : '',
+				esc_html( $title ),
+				esc_html( $meta )
+			);
 		};
 
-		ob_start();
-		echo '<div class="om-builder om-builder--' . esc_attr( $step ) . '">';
-		if ( '' !== trim( (string) $atts['heading'] ) ) {
-			echo '<h2 class="om-builder-heading">' . esc_html( $atts['heading'] ) . '</h2>';
-		}
-		$this->render_steps( $step, $state, $setting, $diamond, $link );
+		$setting_meta = $setting ? implode( ' · ', array_filter( array( trim( $state['metal'] . ' ' . $state['color'] ), null !== $setting_price ? sprintf( /* translators: %s: price. */ __( 'from %s', 'om-catalog' ), om_format_price_short( $setting_price ) ) : '' ), 'strlen' ) ) : '';
+		$diamond_meta = $diamond ? implode( ' · ', array_filter( array( ! empty( $diamond['is_lab'] ) ? __( 'Lab-grown', 'om-catalog' ) : __( 'Natural', 'om-catalog' ), null !== $diamond_price ? om_format_price_short( $diamond_price ) : '' ), 'strlen' ) ) : '';
 
-		if ( $state['diamond'] && ! $has_diamond ) {
-			echo '<p class="om-builder-notice">' . esc_html__( 'The diamond you picked is no longer available. Please choose another.', 'om-catalog' ) . '</p>';
-		}
-		if ( $state['style'] && ! $has_setting ) {
-			echo '<p class="om-builder-notice">' . esc_html__( 'The setting you picked is no longer available. Please choose another.', 'om-catalog' ) . '</p>';
-		}
-
-		switch ( $step ) {
-			case 'start':
-				$this->render_start( $link );
-				break;
-			case 'setting':
-				$card_query = array( 'rb' => '1' );
-				if ( $has_diamond ) {
-					$card_query['rb_diamond'] = $state['diamond'];
-				}
-				$grid = array(
-					'lines'           => implode( ',', om_builder_lines() ),
-					'per_page'        => (int) $atts['per_page'],
-					'show_filters'    => 'yes',
-					'filter_shapes'   => 'yes',
-					'filter_metals'   => 'yes',
-					'filter_position' => 'left',
-					'filters_title'   => __( 'Settings', 'om-catalog' ),
-					'show_prices'     => 'yes',
-				);
-				$look = self::look_source( (string) $atts['look_page'] );
-				if ( $look ) {
-					// Everything as on the catalog page (design, cards, filters,
-					// search, badges…), limited to the builder's lines.
-					$grid = array_merge(
-						$look['widget']->grid_atts( $look['settings'] ),
-						array(
-							'lines'         => $grid['lines'],
-							'per_page'      => $grid['per_page'],
-							'show_filters'  => 'yes',
-							'filter_shapes' => 'yes',
-							'head'          => 'no',
-							'intro'         => 'no',
-							'end_card'      => 'no',
-						)
-					);
-					$grid['line_styles'] = array_intersect_key( (array) ( $grid['line_styles'] ?? array() ), array_flip( om_builder_lines() ) );
-				}
-				// A chosen diamond pre-selects matching settings.
-				$grid['shape']      = $has_diamond ? (string) ( $diamond['shape'] ?? '' ) : '';
-				$grid['card_query'] = $card_query;
-				$html = OM_Shortcodes::instance()->render_grid( $grid, OM_Shortcodes::request_from_globals() );
-				if ( $look ) {
-					om_elementor_enqueue_page_css( $look['page'] );
-					$html = om_elementor_wrap( $html, $look['page'], $look['id'], 'om-builder-look' );
-				}
-				echo $html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
-				break;
-			case 'diamond':
-				$select_state = self::state_args( $state, array( 'step' => '' ) );
-				unset( $select_state['rb_diamond'] );
-				echo OM_Diamonds::instance()->render( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
-					array(
-						'origin'        => $atts['diamond_origin'],
-						'default_shape' => $has_setting ? self::setting_shape( $setting ) : '',
-						'select_state'  => $select_state,
-					),
-					OM_Diamonds::request_from_globals()
-				);
-				break;
-			case 'review':
-				$this->render_review( $state, $setting, $diamond, $link );
-				break;
-		}
-		echo '</div>';
-		return ob_get_clean();
-	}
-
-	private function render_steps( $step, $state, $setting, $diamond, $link ) {
-		$has_setting = $setting && ! is_wp_error( $setting );
-		$has_diamond = $diamond && ! is_wp_error( $diamond );
-		$steps       = array(
-			'setting' => array(
-				'label'   => __( 'Choose a setting', 'om-catalog' ),
-				'summary' => $has_setting ? (string) ( $setting['title'] ?? $state['style'] ) : '',
-			),
-			'diamond' => array(
-				'label'   => __( 'Choose a diamond', 'om-catalog' ),
-				'summary' => $has_diamond ? OM_Diamonds::describe( $diamond ) : '',
-			),
-			'review'  => array(
-				'label'   => __( 'Review your ring', 'om-catalog' ),
-				'summary' => '',
-			),
+		$chips = array(
+			'setting' => $chip( 'setting', $setting ? (string) ( $setting['title'] ?? $state['style'] ) : '', $setting_meta, $setting ? (string) ( om_card_images( $setting )[0] ?? '' ) : '', $link( array( 'step' => 'setting' ) ), __( 'Setting', 'om-catalog' ) ),
+			'diamond' => $chip( 'diamond', $diamond ? OM_Diamonds::describe( $diamond ) : '', $diamond_meta, $diamond ? (string) ( $diamond['image_url'] ?? '' ) : '', $link( array( 'step' => 'diamond' ) ), __( 'Diamond', 'om-catalog' ) ),
 		);
-		echo '<ol class="om-builder-steps">';
-		$n = 0;
-		foreach ( $steps as $key => $def ) {
-			$n++;
-			$done    = ( 'setting' === $key && $has_setting ) || ( 'diamond' === $key && $has_diamond );
-			$current = $key === $step;
-			$can     = 'review' !== $key || ( $has_setting && $has_diamond );
-			$classes = 'om-builder-step' . ( $current ? ' is-current' : '' ) . ( $done ? ' is-done' : '' );
-			echo '<li class="' . esc_attr( $classes ) . '"' . ( $current ? ' aria-current="step"' : '' ) . '>';
-			$inner = '<span class="om-step-num">' . ( $done && ! $current ? '&#10003;' : (int) $n ) . '</span><span class="om-step-text"><span class="om-step-label">' . esc_html( $def['label'] ) . '</span>' . ( '' !== $def['summary'] ? '<span class="om-step-summary">' . esc_html( $def['summary'] ) . '</span>' : '' ) . '</span>';
-			if ( $can && ! $current ) {
-				echo '<a href="' . esc_url( $link( array( 'step' => $key ) ) ) . '">' . $inner . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
-			} else {
-				echo '<span>' . $inner . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+
+		// The next step, once this one is done.
+		$next = '';
+		$at   = array_search( $step, $order, true );
+		if ( 'review' !== $step ) {
+			$ready = ( 'setting' === $step && $setting ) || ( 'diamond' === $step && $diamond );
+			$to    = $order[ $at + 1 ] ?? 'review';
+			if ( 'review' === $to && ! ( $setting && $diamond ) ) {
+				$ready = false;
 			}
-			echo '</li>';
+			$labels = array(
+				'setting' => __( 'Next: choose a setting', 'om-catalog' ),
+				'diamond' => __( 'Next: choose a diamond', 'om-catalog' ),
+				'review'  => __( 'Next: review your ring', 'om-catalog' ),
+			);
+			if ( $ready ) {
+				$next = '<a class="om-rb-next" href="' . esc_url( $link( array( 'step' => $to ) ) ) . '">' . esc_html( $labels[ $to ] ) . '<span class="om-rb-arrow" aria-hidden="true"></span></a>';
+			}
 		}
-		echo '</ol>';
+
+		$total = null !== $setting_price && null !== $diamond_price ? om_format_price( $setting_price + $diamond_price ) : '';
+
+		echo '<div class="om-rb-bar" role="region" aria-label="' . esc_attr__( 'Your ring', 'om-catalog' ) . '"><div class="om-rb-bar-inner">';
+		echo '<span class="om-rb-bar-label">' . esc_html__( 'Your ring', 'om-catalog' ) . '</span>';
+		$pair = 'diamond' === $order[0] ? array( 'diamond', 'setting' ) : array( 'setting', 'diamond' );
+		echo '<span class="om-rb-chips">' . $chips[ $pair[0] ] . '<span class="om-rb-plus" aria-hidden="true">+</span>' . $chips[ $pair[1] ] . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in $chip.
+		echo '<span class="om-rb-bar-end">';
+		if ( '' !== $total ) {
+			echo '<span class="om-rb-total"><span class="om-rb-total-label">' . esc_html__( 'Total', 'om-catalog' ) . '</span> ' . esc_html( $total ) . '</span>';
+		}
+		echo $this->ask_link( $atts, $link ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in ask_link().
+		echo $next; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+		echo '</span></div></div>';
 	}
 
-	private function render_start( $link ) {
-		?>
-		<div class="om-builder-start">
-			<a class="om-builder-choice" href="<?php echo esc_url( $link( array( 'step' => 'setting' ) ) ); ?>">
-				<span class="om-builder-choice-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="24" cy="30" r="12"/><path d="M18 14l6-8 6 8-6 6z"/></svg></span>
-				<span class="om-builder-choice-title"><?php esc_html_e( 'Start with a setting', 'om-catalog' ); ?></span>
-				<span class="om-builder-choice-text"><?php esc_html_e( 'Find the ring design you love, then pair it with the perfect diamond.', 'om-catalog' ); ?></span>
-			</a>
-			<a class="om-builder-choice" href="<?php echo esc_url( $link( array( 'step' => 'diamond' ) ) ); ?>">
-				<span class="om-builder-choice-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M10 18l7-9h14l7 9-14 21z"/><path d="M10 18h28M17 9l7 9 7-9M24 18v21"/></svg></span>
-				<span class="om-builder-choice-title"><?php esc_html_e( 'Start with a diamond', 'om-catalog' ); ?></span>
-				<span class="om-builder-choice-text"><?php esc_html_e( 'Choose your centre stone by shape, carat, colour and clarity first.', 'om-catalog' ); ?></span>
-			</a>
-		</div>
-		<?php
+	/** "Questions? Ask us": a link, or a short inquiry form in a pop-up. */
+	private function ask_link( $atts, $link ) {
+		$text = trim( (string) $atts['ask_text'] );
+		if ( '' === $text ) {
+			return '';
+		}
+		if ( '' !== trim( (string) $atts['ask_url'] ) ) {
+			return '<a class="om-rb-ask" href="' . esc_url( $atts['ask_url'] ) . '">' . esc_html( $text ) . '</a>';
+		}
+		if ( ! class_exists( 'OM_Inquiry' ) ) {
+			return '';
+		}
+		$id = 'om-rb-ask-' . wp_rand( 1000, 9999 );
+		return '<button type="button" class="om-rb-ask" data-om-end-dialog="' . esc_attr( $id ) . '" aria-haspopup="dialog">' . esc_html( $text ) . '</button>'
+			. '<dialog class="om-end-dialog" id="' . esc_attr( $id ) . '" aria-labelledby="' . esc_attr( $id ) . '-t"><div class="om-end-dialog-inner"><button type="button" class="om-end-dialog-close" aria-label="' . esc_attr__( 'Close', 'om-catalog' ) . '">&times;</button><p class="om-end-dialog-title" id="' . esc_attr( $id ) . '-t">' . esc_html( $text ) . '</p>'
+			. OM_Inquiry::render_form(
+				array(
+					'collapsible' => false,
+					'heading'     => '',
+					'intro'       => __( 'Ask us anything about settings, diamonds, sizing or timing.', 'om-catalog' ),
+					'subject'     => __( 'General question', 'om-catalog' ),
+					'url'         => om_absolute_url( $link() ),
+					'button'      => __( 'Send', 'om-catalog' ),
+				)
+			)
+			. '</div></dialog>';
 	}
 
-	private function render_review( $state, $setting, $diamond, $link ) {
+	private function render_review( $atts, $state, $setting, $diamond, $link, $head ) {
 		// Price the setting as a semi-mount (no centre stone) when OM offers
 		// that level, in the metal/colour the customer picked.
 		$levels = (array) ( $setting['levels'] ?? array() );
 		$level  = in_array( 'Semi-Mount', $levels, true ) ? 'Semi-Mount' : (string) ( $setting['default_level'] ?? '' );
-		$metal  = in_array( $state['metal'], (array) ( $setting['metals'] ?? array() ), true ) ? $state['metal'] : (string) ( $setting['default_metal'] ?? '' );
-		$color  = in_array( $state['color'], (array) ( $setting['colors'] ?? array() ), true ) ? $state['color'] : (string) ( $setting['default_color'] ?? '' );
+		$metals = array_values( array_filter( array_map( 'strval', (array) ( $setting['metals'] ?? array() ) ), 'strlen' ) );
+		$colors = array_values( array_filter( array_map( 'strval', (array) ( $setting['colors'] ?? array() ) ), 'strlen' ) );
+		$metal  = in_array( $state['metal'], $metals, true ) ? $state['metal'] : (string) ( $setting['default_metal'] ?? '' );
+		$color  = in_array( $state['color'], $colors, true ) ? $state['color'] : (string) ( $setting['default_color'] ?? '' );
 
 		$setting_price = null;
 		if ( om_markup_is_configured() ) {
@@ -331,9 +700,11 @@ class OM_Ring_Builder {
 		$diamond_price = isset( $diamond['price'] ) ? om_diamond_retail( $diamond['price'] ) : null;
 		$total         = ( null !== $setting_price && null !== $diamond_price ) ? $setting_price + $diamond_price : null;
 
-		$setting_img = ! empty( $setting['images'][0] ) ? om_image_url( $setting['images'][0] ) : '';
+		$setting_img = (string) ( om_card_images( $setting, $color )[0] ?? '' );
 		$diamond_img = (string) ( $diamond['image_url'] ?? '' );
 		$setting_url = om_product_url( $state['line'], $state['style'] );
+		/* translators: %s: carat. */
+		$head_text = '' !== (string) $head ? sprintf( __( 'Head size set for a %s ct centre stone', 'om-catalog' ), rtrim( rtrim( number_format( (float) $head, 2 ), '0' ), '.' ) ) : '';
 
 		$summary = sprintf(
 			/* translators: 1: setting, 2: style, 3: metal/colour, 4: diamond, 5: lot. */
@@ -344,62 +715,222 @@ class OM_Ring_Builder {
 			OM_Diamonds::describe( $diamond ),
 			(string) ( $diamond['lot_number'] ?? '' )
 		);
+		$title = (string) ( $setting['title'] ?? '' ) . ' + ' . OM_Diamonds::describe( $diamond );
+		$share = om_absolute_url( $link( array( 'step' => '' ) ) );
+
+		// The request form: the site's fields plus ring size and engraving.
+		$fields = OM_Inquiry::global_fields();
+		$has    = static function ( $word ) use ( $fields ) {
+			foreach ( $fields as $field ) {
+				if ( false !== stripos( $field['key'] . ' ' . $field['label'], $word ) ) {
+					return true;
+				}
+			}
+			return false;
+		};
+		// Only when the site's form doesn't ask already.
+		if ( 'no' !== $atts['ring_size'] && ! $has( 'size' ) ) {
+			$sizes = array( __( 'Not sure yet', 'om-catalog' ) );
+			for ( $s = 3; $s <= 10; $s += 0.5 ) {
+				$sizes[] = rtrim( rtrim( number_format( $s, 1 ), '0' ), '.' );
+			}
+			$fields[] = array( 'key' => 'ring_size', 'label' => __( 'Ring size', 'om-catalog' ), 'type' => 'select', 'width' => 'half', 'options' => $sizes );
+		}
+		if ( 'no' !== $atts['engraving'] && ! $has( 'engrav' ) ) {
+			/* translators: %d: characters. */
+			$fields[] = array( 'key' => 'engraving', 'label' => __( 'Engraving (optional)', 'om-catalog' ), 'type' => 'text', 'width' => 'half', 'placeholder' => sprintf( __( 'Up to %d characters', 'om-catalog' ), (int) $atts['engraving_max'] ) );
+		}
+
+		$pill_links = static function ( $values, $current, $key, $link ) {
+			$out = '';
+			foreach ( $values as $value ) {
+				$out .= sprintf(
+					'<a class="om-rb-pill%s" href="%s"%s>%s</a>',
+					$value === $current ? ' is-active' : '',
+					esc_url( $link( array( $key => $value, 'step' => 'review' ) ) ),
+					$value === $current ? ' aria-current="true"' : '',
+					esc_html( $value )
+				);
+			}
+			return $out;
+		};
 		?>
-		<div class="om-builder-review">
-			<div class="om-review-items">
-				<div class="om-review-item">
-					<div class="om-review-media"><?php if ( $setting_img ) : ?><img src="<?php echo esc_url( $setting_img ); ?>" alt="<?php echo esc_attr( $setting['title'] ?? '' ); ?>" /><?php endif; ?></div>
-					<div class="om-review-info">
-						<p class="om-review-kicker"><?php esc_html_e( 'Setting', 'om-catalog' ); ?></p>
-						<p class="om-review-title"><a href="<?php echo esc_url( $setting_url ); ?>"><?php echo esc_html( $setting['title'] ?? $state['style'] ); ?></a></p>
-						<p class="om-review-meta"><?php echo esc_html( implode( ' · ', array_filter( array( 'Style ' . $state['style'], trim( $metal . ' ' . $color ) ) ) ) ); ?></p>
-						<p class="om-review-price"><?php echo esc_html( null !== $setting_price ? om_format_price( $setting_price ) : __( 'Price on request', 'om-catalog' ) ); ?></p>
-						<a class="om-review-change" href="<?php echo esc_url( $link( array( 'step' => 'setting' ) ) ); ?>"><?php esc_html_e( 'Change setting', 'om-catalog' ); ?></a>
+		<div class="om-builder-review om-rb-review">
+			<div class="om-rb-review-main">
+				<?php if ( $setting_img ) : ?>
+					<div class="om-rb-hero"><img src="<?php echo esc_url( $setting_img ); ?>" alt="<?php echo esc_attr( (string) ( $setting['title'] ?? '' ) ); ?>" /></div>
+				<?php endif; ?>
+				<div class="om-review-items">
+					<div class="om-review-item">
+						<div class="om-review-media"><?php if ( $setting_img ) : ?><img src="<?php echo esc_url( $setting_img ); ?>" alt="" /><?php endif; ?></div>
+						<div class="om-review-info">
+							<p class="om-review-kicker"><?php esc_html_e( 'Setting', 'om-catalog' ); ?></p>
+							<p class="om-review-title"><a href="<?php echo esc_url( $setting_url ); ?>"><?php echo esc_html( $setting['title'] ?? $state['style'] ); ?></a></p>
+							<p class="om-review-meta"><?php echo esc_html( implode( ' · ', array_filter( array( 'Style ' . $state['style'], trim( $metal . ' ' . $color ) ) ) ) ); ?></p>
+							<?php if ( '' !== $head_text ) : ?>
+								<p class="om-review-meta om-rb-head-note"><?php echo esc_html( $head_text ); ?></p>
+							<?php endif; ?>
+							<?php if ( null !== $setting_price ) : ?>
+								<p class="om-review-price"><?php echo esc_html( om_format_price( $setting_price ) ); ?></p>
+							<?php endif; ?>
+							<a class="om-review-change" href="<?php echo esc_url( $link( array( 'step' => 'setting' ) ) ); ?>"><?php esc_html_e( 'Change setting', 'om-catalog' ); ?></a>
+						</div>
 					</div>
-				</div>
-				<div class="om-review-item">
-					<div class="om-review-media">
-						<?php if ( $diamond_img ) : ?>
-							<img src="<?php echo esc_url( $diamond_img ); ?>" alt="<?php echo esc_attr( OM_Diamonds::describe( $diamond ) ); ?>" />
-						<?php else : ?>
-							<div class="om-dd-placeholder"><?php echo OM_Diamonds::shape_icon( (string) ( $diamond['shape'] ?? 'Round' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG. ?></div>
-						<?php endif; ?>
-					</div>
-					<div class="om-review-info">
-						<p class="om-review-kicker"><?php esc_html_e( 'Diamond', 'om-catalog' ); ?></p>
-						<p class="om-review-title"><?php echo esc_html( OM_Diamonds::describe( $diamond ) ); ?></p>
-						<p class="om-review-meta"><?php echo esc_html( trim( ( $diamond['lab'] ?? '' ) . ' ' . ( $diamond['certificate_number'] ?? '' ) ) ); ?></p>
-						<p class="om-review-price"><?php echo esc_html( null !== $diamond_price ? om_format_price( $diamond_price ) : __( 'Price on request', 'om-catalog' ) ); ?></p>
-						<a class="om-review-change" href="<?php echo esc_url( $link( array( 'step' => 'diamond' ) ) ); ?>"><?php esc_html_e( 'Change diamond', 'om-catalog' ); ?></a>
+					<div class="om-review-item">
+						<div class="om-review-media">
+							<?php if ( $diamond_img ) : ?>
+								<img src="<?php echo esc_url( $diamond_img ); ?>" alt="" />
+							<?php else : ?>
+								<div class="om-dd-placeholder"><?php echo OM_Diamonds::shape_icon( (string) ( $diamond['shape'] ?? 'Round' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG. ?></div>
+							<?php endif; ?>
+						</div>
+						<div class="om-review-info">
+							<p class="om-review-kicker"><?php esc_html_e( 'Diamond', 'om-catalog' ); ?></p>
+							<p class="om-review-title"><?php echo esc_html( OM_Diamonds::describe( $diamond ) ); ?></p>
+							<p class="om-review-meta"><?php echo esc_html( implode( ' · ', array_filter( array( ! empty( $diamond['is_lab'] ) ? __( 'Lab-grown', 'om-catalog' ) : __( 'Natural', 'om-catalog' ), trim( ( $diamond['lab'] ?? '' ) . ' ' . ( $diamond['certificate_number'] ?? '' ) ) ), 'strlen' ) ) ); ?></p>
+							<?php if ( null !== $diamond_price ) : ?>
+								<p class="om-review-price"><?php echo esc_html( om_format_price( $diamond_price ) ); ?></p>
+							<?php endif; ?>
+							<a class="om-review-change" href="<?php echo esc_url( $link( array( 'step' => 'diamond' ) ) ); ?>"><?php esc_html_e( 'Change diamond', 'om-catalog' ); ?></a>
+						</div>
 					</div>
 				</div>
 			</div>
 			<aside class="om-review-summary">
-				<p class="om-review-total-label"><?php esc_html_e( 'Your ring', 'om-catalog' ); ?></p>
-				<p class="om-review-total"><?php echo esc_html( null !== $total ? om_format_price( $total ) : __( 'Price on request', 'om-catalog' ) ); ?></p>
+				<?php if ( count( $metals ) > 1 ) : ?>
+					<div class="om-rb-choice">
+						<p class="om-rb-choice-label"><?php esc_html_e( 'Metal', 'om-catalog' ); ?></p>
+						<div class="om-rb-pills"><?php echo $pill_links( $metals, $metal, 'metal', $link ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the closure. ?></div>
+					</div>
+				<?php endif; ?>
+				<?php if ( count( $colors ) > 1 ) : ?>
+					<div class="om-rb-choice">
+						<p class="om-rb-choice-label"><?php esc_html_e( 'Colour', 'om-catalog' ); ?></p>
+						<div class="om-rb-pills"><?php echo $pill_links( $colors, $color, 'color', $link ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the closure. ?></div>
+					</div>
+				<?php endif; ?>
 				<?php if ( null !== $total ) : ?>
-					<p class="om-review-note"><?php esc_html_e( 'Setting and diamond. Final price confirmed with your order; ring size included.', 'om-catalog' ); ?></p>
+					<div class="om-rb-sum">
+						<p><span><?php esc_html_e( 'Setting', 'om-catalog' ); ?></span><span><?php echo esc_html( om_format_price( $setting_price ) ); ?></span></p>
+						<p><span><?php esc_html_e( 'Diamond', 'om-catalog' ); ?></span><span><?php echo esc_html( om_format_price( $diamond_price ) ); ?></span></p>
+						<p class="om-rb-sum-total"><span><?php esc_html_e( 'Total', 'om-catalog' ); ?></span><span><?php echo esc_html( om_format_price( $total ) ); ?></span></p>
+						<p class="om-review-note"><?php esc_html_e( 'Final price confirmed with your order; ring size included.', 'om-catalog' ); ?></p>
+					</div>
+				<?php endif; ?>
+				<?php if ( 'url' === $atts['book'] && '' !== trim( (string) $atts['book_url'] ) ) : ?>
+					<a class="om-rb-book" href="<?php echo esc_url( $atts['book_url'] ); ?>"><?php echo esc_html( $atts['book_text'] ); ?></a>
+				<?php elseif ( 'inquiry' === $atts['book'] ) : ?>
+					<a class="om-rb-book" href="<?php echo esc_attr( '#om-inquiry?subject=' . rawurlencode( (string) $atts['book_subject'] ) ); ?>"><?php echo esc_html( $atts['book_text'] ); ?></a>
 				<?php endif; ?>
 				<?php
 				echo OM_Inquiry::render_form( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 					array(
-						'title'       => (string) ( $setting['title'] ?? '' ) . ' + ' . OM_Diamonds::describe( $diamond ),
+						'title'       => $title,
 						'style'       => $state['style'],
 						'line'        => $state['line'],
 						'url'         => om_absolute_url( $link() ),
 						'price'       => null !== $total ? om_format_price( $total ) : '',
 						'diamond'     => (string) ( $diamond['lot_number'] ?? '' ),
 						'summary'     => $summary,
-						'heading'     => __( 'Request this ring', 'om-catalog' ),
-						'intro'       => __( 'Send us your design and we will confirm availability, ring size and timing.', 'om-catalog' ),
-						'button'      => __( 'Send request', 'om-catalog' ),
+						'heading'     => (string) $atts['request_heading'],
+						'intro'       => (string) $atts['request_intro'],
+						'button'      => (string) $atts['request_button'],
 						'collapsible' => false,
+						'fields'      => $fields,
 					)
 				);
 				?>
-				<a class="om-review-restart" href="<?php echo esc_url( om_builder_url() ? om_builder_url() : $link( array( 'line' => '', 'style' => '', 'metal' => '', 'color' => '', 'diamond' => '' ) ) ); ?>"><?php esc_html_e( 'Start over', 'om-catalog' ); ?></a>
+				<?php if ( 'no' !== $atts['share'] || 'no' !== $atts['email_me'] ) : ?>
+					<div class="om-rb-keep">
+						<?php if ( 'no' !== $atts['share'] ) : ?>
+							<button type="button" class="om-rb-share" data-om-url="<?php echo esc_attr( $share ); ?>" data-om-title="<?php echo esc_attr( $title ); ?>"><?php esc_html_e( 'Share this design', 'om-catalog' ); ?></button>
+						<?php endif; ?>
+						<?php if ( 'no' !== $atts['email_me'] ) : ?>
+							<details class="om-rb-email">
+								<summary><?php esc_html_e( 'Email it to me', 'om-catalog' ); ?></summary>
+								<form class="om-rb-email-form" data-om-url="<?php echo esc_attr( $share ); ?>" data-om-title="<?php echo esc_attr( $title ); ?>" novalidate>
+									<label class="om-visually-hidden" for="om-rb-email-input"><?php esc_html_e( 'Your email', 'om-catalog' ); ?></label>
+									<input id="om-rb-email-input" type="email" name="email" required placeholder="<?php esc_attr_e( 'Your email', 'om-catalog' ); ?>" autocomplete="email" />
+									<input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="om-hp" aria-hidden="true" />
+									<button type="submit"><?php esc_html_e( 'Send', 'om-catalog' ); ?></button>
+									<p class="om-rb-email-status" role="status"></p>
+								</form>
+							</details>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
+				<?php
+				$next = array_filter( array_map( 'trim', explode( '|', (string) $atts['next_steps'] ) ), 'strlen' );
+				if ( $next ) :
+					?>
+					<div class="om-rb-next-steps">
+						<p class="om-rb-next-title"><?php echo esc_html( $atts['next_title'] ); ?></p>
+						<ol>
+							<?php foreach ( array_slice( $next, 0, 4 ) as $one ) : ?>
+								<li><?php echo esc_html( $one ); ?></li>
+							<?php endforeach; ?>
+						</ol>
+					</div>
+				<?php endif; ?>
+				<a class="om-review-restart" href="<?php echo esc_url( om_builder_url() ? om_builder_url() : $link( array( 'line' => '', 'style' => '', 'metal' => '', 'color' => '', 'diamond' => '', 'first' => '', 'step' => '' ) ) ); ?>"><?php esc_html_e( 'Start over', 'om-catalog' ); ?></a>
 			</aside>
 		</div>
 		<?php
+	}
+
+	/**
+	 * "Email it to me": sends the visitor a link to their design (and the
+	 * store a copy, as a lead). Rate-limited per address and per IP.
+	 */
+	public function handle_email() {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- public, rate-limited, sends only to the address given.
+		$email = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		$url   = isset( $_POST['url'] ) ? esc_url_raw( wp_unslash( $_POST['url'] ) ) : '';
+		$title = isset( $_POST['title'] ) ? mb_substr( sanitize_text_field( wp_unslash( $_POST['title'] ) ), 0, 160 ) : '';
+		$trap  = isset( $_POST['website'] ) ? (string) wp_unslash( $_POST['website'] ) : '';
+		// phpcs:enable
+		$ok = __( 'Sent — check your inbox.', 'om-catalog' );
+		if ( '' !== $trap ) {
+			wp_send_json_success( array( 'message' => $ok ) );
+		}
+		if ( ! is_email( $email ) ) {
+			wp_send_json_error( array( 'message' => __( 'Please enter a valid email address.', 'om-catalog' ) ) );
+		}
+		// Only links to this site's builder.
+		if ( '' === $url || wp_parse_url( $url, PHP_URL_HOST ) !== wp_parse_url( home_url(), PHP_URL_HOST ) || false === strpos( $url, 'rb_' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Something went wrong. Please try again.', 'om-catalog' ) ) );
+		}
+		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		foreach ( array( 'om_rbmail_ip_' . md5( $ip ) => 6, 'om_rbmail_to_' . md5( strtolower( $email ) ) => 3 ) as $key => $limit ) {
+			$count = (int) get_transient( $key );
+			if ( $count >= $limit ) {
+				wp_send_json_error( array( 'message' => __( 'Please try again a little later.', 'om-catalog' ) ) );
+			}
+			set_transient( $key, $count + 1, HOUR_IN_SECONDS );
+		}
+
+		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		/* translators: %s: site name. */
+		$subject = sprintf( __( 'Your ring design from %s', 'om-catalog' ), $site );
+		$body    = '<div style="font-family:Georgia,serif;color:#00111C;max-width:560px">'
+			. '<p style="font-size:22px;margin:0 0 12px">' . esc_html__( 'Your ring design', 'om-catalog' ) . '</p>'
+			. '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#464646;margin:0 0 20px">' . esc_html( $title ) . '</p>'
+			. '<p style="margin:0 0 24px"><a href="' . esc_url( $url ) . '" style="display:inline-block;padding:14px 26px;border-radius:999px;background:#00111C;color:#FAF8F4;font-family:Arial,sans-serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none">' . esc_html__( 'Open my design', 'om-catalog' ) . '</a></p>'
+			. '<p style="font-family:Arial,sans-serif;font-size:13px;color:#6E6E6E;margin:0">' . esc_html__( 'Questions? Just reply to this email.', 'om-catalog' ) . '</p></div>';
+		$store   = sanitize_email( (string) get_option( 'om_inquiry_email', '' ) );
+		$store   = is_email( $store ) ? $store : get_option( 'admin_email' );
+		$sent    = wp_mail( $email, $subject, $body, array( 'Content-Type: text/html; charset=UTF-8', 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $site ) . ' <' . $store . '>' ) );
+		if ( ! $sent ) {
+			wp_send_json_error( array( 'message' => __( 'The email could not be sent. Please try again.', 'om-catalog' ) ) );
+		}
+		// The store's copy: someone kept this design.
+		wp_mail(
+			$store,
+			/* translators: %s: design. */
+			sprintf( __( 'Ring builder: a visitor saved "%s"', 'om-catalog' ), $title ),
+			'<p style="font-family:Arial,sans-serif">' . esc_html( $email ) . ' — <a href="' . esc_url( $url ) . '">' . esc_html( $title ) . '</a></p>',
+			array( 'Content-Type: text/html; charset=UTF-8', 'Reply-To: ' . $email )
+		);
+		wp_send_json_success( array( 'message' => $ok ) );
 	}
 }

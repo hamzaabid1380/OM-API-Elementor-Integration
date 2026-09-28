@@ -105,6 +105,9 @@ class OM_Diamonds {
 				'per_page'      => 20,
 				'show_origin'   => 'yes',
 				'default_shape' => '',
+				// Carat range to start from (the ring builder: stones that fit).
+				'default_cmin'  => '',
+				'default_cmax'  => '',
 				'default_sort'  => 'price-asc',
 				'select_state'  => '',
 				'show_select'   => 'yes',
@@ -128,8 +131,8 @@ class OM_Diamonds {
 		// Visitor state, validated.
 		$f = array(
 			'shape'   => self::pick( '' !== $request['shape'] ? $request['shape'] : $atts['default_shape'], $shapes_offered ),
-			'cmin'    => self::num( $request['cmin'], 0.1, 30 ),
-			'cmax'    => self::num( $request['cmax'], 0.1, 30 ),
+			'cmin'    => self::num( '' !== (string) $request['cmin'] ? $request['cmin'] : $atts['default_cmin'], 0.1, 30 ),
+			'cmax'    => self::num( '' !== (string) $request['cmax'] ? $request['cmax'] : $atts['default_cmax'], 0.1, 30 ),
 			'pmin'    => $multiplier > 0 ? self::num( $request['pmin'], 0, 10000000 ) : null,
 			'pmax'    => $multiplier > 0 ? self::num( $request['pmax'], 0, 10000000 ) : null,
 			'color'   => self::pick( $request['color'], self::COLORS ),
