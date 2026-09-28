@@ -994,14 +994,18 @@
 
 	var toast = null;
 	var toastTimer = null;
-	function showToast(text, undo) {
+	// A short message; with undo, a button (labelled "Undo" unless label says otherwise).
+	function showToast(text, undo, label) {
 		if (!toast) {
 			toast = $('<div class="om-toast' + (cfg.refined ? ' om-refined' : '') + '" role="status" aria-live="polite" hidden><span class="om-toast-text"></span><button type="button" class="om-toast-undo"></button></div>').appendTo(document.body);
 			// Stays while the pointer or focus is on it.
 			toast.on('mouseenter focusin', function () { clearTimeout(toastTimer); })
 				.on('mouseleave focusout', armToast);
 		}
-		var $undo = toast.find('.om-toast-undo').off('click').text(t('undo', 'Undo')).prop('hidden', !undo);
+		// Inside an open pop-up, so it shows above it (top layer) and can be used.
+		var host = $('dialog[open]').last()[0] || document.body;
+		if (toast.parent()[0] !== host) { toast.appendTo(host); }
+		var $undo = toast.find('.om-toast-undo').off('click').text(label || t('undo', 'Undo')).prop('hidden', !undo);
 		if (undo) { $undo.on('click', function () { hideToast(); undo(); }); }
 		toast.find('.om-toast-text').text('');
 		toast.prop('hidden', false);
@@ -1870,6 +1874,7 @@
 				qv.find('.om-qv-inner').scrollTop(0);
 				qv.scrollTop(0);
 				rememberFrom($body);
+				syncSaved();
 				$body.find('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
 			} else {
 				$body.html($('<p class="om-error"></p>').text((response && response.data && response.data.message) || t('error', 'Something went wrong. Please try again.')));
@@ -2317,6 +2322,246 @@
 
 	// Another tab changed the picks.
 	window.addEventListener('storage', function (e) { if (e.key === COMPARE_KEY) { syncCompare(); } });
+
+	/* ---------- Saved designs (hearts; kept on this device) ---------- */
+
+	var SAVED_KEY = 'om_saved';
+	var SAVED_MAX = 24;
+	var savedDialog = null;
+
+	function readSaved() {
+		try { return JSON.parse(window.localStorage.getItem(SAVED_KEY) || '[]').filter(function (x) { return x && x.l && x.s; }).slice(0, SAVED_MAX); } catch (err) { return []; }
+	}
+
+	function writeSaved(list) {
+		try { window.localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, SAVED_MAX))); } catch (err) { /* storage unavailable */ }
+		syncSaved();
+	}
+
+	function savedKey(x) { return x.l + '|' + String(x.s).toLowerCase(); }
+
+	// Hearts, header counts and the open panel follow the list.
+	function syncSaved() {
+		if (!cfg.saved) { return; }
+		var list = readSaved();
+		var keys = list.map(savedKey);
+		$('.om-save-toggle').each(function () {
+			var item;
+			try { item = JSON.parse(this.getAttribute('data-om-save')); } catch (err) { return; }
+			var on = keys.indexOf(savedKey(item)) !== -1;
+			if ($(this).hasClass('is-on') === on && this.hasAttribute('data-om-synced')) { return; }
+			this.setAttribute('data-om-synced', '1');
+			$(this).toggleClass('is-on', on).attr({
+				'aria-pressed': String(on),
+				'aria-label': (on ? t('unsaveThis', 'Remove %s from saved') : t('saveThis', 'Save %s')).replace('%s', item.t || item.s)
+			});
+			var $text = $(this).find('.om-save-text');
+			if ($text.length) { $text.text(on ? $text.attr('data-on') : $text.attr('data-off')); }
+		});
+		$('.om-saved-count').text(list.length).prop('hidden', !list.length);
+		$('.om-saved-open').toggleClass('has-items', list.length > 0).each(function () {
+			var base = $(this).find('.om-saved-open-text').text() || t('saved', 'Saved');
+			$(this).attr('aria-label', base + (list.length ? ' (' + list.length + ')' : ''));
+		});
+		if (savedDialog && savedDialog[0].open) { renderSaved(); }
+	}
+
+	$(document).on('click', '.om-save-toggle', function (e) {
+		e.preventDefault();
+		var item;
+		try { item = JSON.parse(this.getAttribute('data-om-save')); } catch (err) { return; }
+		var before = readSaved();
+		var list = before.slice();
+		var at = list.map(savedKey).indexOf(savedKey(item));
+		if (at !== -1) {
+			list.splice(at, 1);
+			writeSaved(list);
+			showToast(t('savedRemoved', 'Removed from saved'), function () { writeSaved(before); });
+			return;
+		}
+		if (list.length >= SAVED_MAX) { showToast(t('savedFull', 'Your list is full (24). Remove one to save another.')); return; }
+		list.unshift(item);
+		writeSaved(list);
+		var btn = this;
+		$(btn).removeClass('is-pop');
+		void btn.offsetWidth;
+		$(btn).addClass('is-pop');
+		showToast(t('savedAdded', 'Saved') + ' (' + list.length + ')', openSaved, t('savedView', 'View saved'));
+		if (cfg.ajaxUrl) { $.post(cfg.ajaxUrl, { action: 'om_saved_stat', line: item.l, style: item.s }); }
+	});
+
+	function openSaved() {
+		if (!cfg.saved) { return; }
+		if (!savedDialog) {
+			savedDialog = $('<dialog class="om-saved-dialog' + (cfg.refined ? ' om-refined' : '') + '" aria-labelledby="om-saved-title"><div class="om-saved-inner"><div class="om-saved-head"><h2 class="om-saved-title" id="om-saved-title"></h2><button type="button" class="om-saved-close">&times;</button></div><div class="om-saved-body"></div><div class="om-saved-foot"></div></div></dialog>').appendTo(document.body);
+			savedDialog.find('.om-saved-close').attr('aria-label', t('close', 'Close')).on('click', function () { savedDialog[0].close(); });
+			savedDialog.on('click', function (e) { if (e.target === savedDialog[0]) { savedDialog[0].close(); } });
+			savedDialog[0].addEventListener('close', function () { $('html').removeClass('om-lb-open'); });
+		}
+		renderSaved();
+		if (savedDialog[0].showModal && !savedDialog[0].open) { savedDialog[0].showModal(); }
+		$('html').addClass('om-lb-open');
+	}
+
+	function renderSaved() {
+		var list = readSaved();
+		var $d = savedDialog;
+		$d.find('.om-saved-title').empty().append(document.createTextNode(t('savedTitle', 'Saved designs') + ' '), $('<span class="om-saved-title-n"></span>').text(list.length ? '(' + list.length + ')' : ''));
+		var $body = $d.find('.om-saved-body').empty();
+		var $foot = $d.find('.om-saved-foot').empty();
+		if (!list.length) {
+			$body.append($('<p class="om-saved-empty"></p>').text(t('savedEmpty', 'Nothing saved yet.')));
+			return;
+		}
+		var $ul = $('<ul class="om-saved-list"></ul>');
+		list.forEach(function (x) {
+			var url = x.u || '#';
+			$ul.append($('<li class="om-saved-item"></li>').append(
+				$('<a class="om-saved-photo" tabindex="-1" aria-hidden="true"></a>').attr('href', url).append(x.i ? $('<img alt="" loading="lazy" />').attr('src', x.i) : $('<span class="om-compare-noimg"></span>')),
+				$('<div class="om-saved-info"></div>').append(
+					$('<a class="om-saved-name"></a>').attr('href', url).text(x.t || x.s),
+					$('<span class="om-saved-style"></span>').text((x.v ? x.v + ' · ' : '') + t('styleN', 'Style %s').replace('%s', x.s))
+				),
+				$('<button type="button" class="om-saved-drop">&times;</button>').attr({ 'data-om-key': savedKey(x), 'aria-label': t('savedRemove', 'Remove %s').replace('%s', x.t || x.s) })
+			));
+		});
+		$body.append($ul);
+
+		var $actions = $('<div class="om-saved-actions"></div>');
+		if (list.length > 1) {
+			$actions.append($('<button type="button" class="om-saved-btn om-saved-btn--line om-saved-compare"></button>').text(list.length > 4 ? t('savedCompareHint', 'Compare the first 4') : t('savedCompare', 'Compare')));
+		}
+		$actions.append(
+			$('<button type="button" class="om-saved-share"><span class="om-qv-share-icon" aria-hidden="true"></span></button>').append(document.createTextNode(t('savedShare', 'Share list'))),
+			$('<button type="button" class="om-saved-clear"></button>').text(t('savedClear', 'Clear list'))
+		);
+		$foot.append($actions);
+		if (cfg.savedEmail) {
+			var $form = $('<form class="om-saved-email" novalidate></form>').append(
+				$('<p class="om-saved-email-title"></p>').text(t('savedEmailMe', 'Email me my list')),
+				$('<p class="om-saved-email-intro"></p>').text(t('savedEmailIntro', 'We will send the photos and links to your inbox.')),
+				$('<div class="om-saved-email-row"></div>').append(
+					$('<label class="om-visually-hidden" for="om-saved-email-input"></label>').text(t('savedYourEmail', 'Your email')),
+					$('<input type="email" id="om-saved-email-input" name="email" autocomplete="email" inputmode="email" required />').attr('placeholder', t('savedYourEmail', 'Your email')),
+					$('<button type="submit" class="om-saved-btn om-saved-send"></button>').text(t('savedSend', 'Send'))
+				),
+				$('<label class="om-visually-hidden" for="om-saved-name-input"></label>').text(t('savedYourName', 'Your name (optional)')),
+				$('<input type="text" id="om-saved-name-input" name="name" autocomplete="name" class="om-saved-name-input" />').attr('placeholder', t('savedYourName', 'Your name (optional)')),
+				$('<input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="om-hp" aria-hidden="true" />'),
+				$('<p class="om-saved-email-status" role="status" aria-live="polite"></p>')
+			);
+			$foot.append($form);
+		}
+	}
+
+	$(document).on('click', '[data-om-saved-open], a[href$="#om-saved"]', function (e) {
+		if (!cfg.saved) { return; }
+		e.preventDefault();
+		openSaved();
+	});
+
+	$(document).on('click', '.om-saved-drop', function () {
+		var key = this.getAttribute('data-om-key');
+		var before = readSaved();
+		writeSaved(before.filter(function (x) { return savedKey(x) !== key; }));
+		showToast(t('savedRemoved', 'Removed from saved'), function () { writeSaved(before); });
+		var $next = savedDialog && savedDialog.find('.om-saved-drop').first();
+		if ($next && $next.length) { $next.trigger('focus'); } else if (savedDialog) { savedDialog.find('.om-saved-close').trigger('focus'); }
+	});
+
+	$(document).on('click', '.om-saved-clear', function () {
+		var before = readSaved();
+		writeSaved([]);
+		showToast(t('savedCleared', 'Saved list cleared'), function () { writeSaved(before); });
+		if (savedDialog) { savedDialog.find('.om-saved-close').trigger('focus'); }
+	});
+
+	$(document).on('click', '.om-saved-share', function () {
+		shareLink(urlWith('om_saved', readSaved().map(function (x) { return x.l + '/' + x.s; }).join(',')), t('savedTitle', 'Saved designs'));
+	});
+
+	$(document).on('click', '.om-saved-compare', function () {
+		writeCompare(readSaved().slice(0, 4).map(function (x) { return { l: x.l, s: x.s, t: x.t, i: x.i, u: x.u }; }));
+		if (savedDialog) { savedDialog[0].close(); }
+		openCompare();
+	});
+
+	$(document).on('submit', '.om-saved-email', function (e) {
+		e.preventDefault();
+		var $form = $(this);
+		var $status = $form.find('.om-saved-email-status').removeClass('is-error');
+		var email = $.trim($form.find('[name=email]').val());
+		if (!/^\S+@\S+\.\S+$/.test(email)) {
+			$status.addClass('is-error').text(t('rbEmailBad', 'Please enter a valid email address.'));
+			$form.find('[name=email]').attr('aria-invalid', 'true').trigger('focus');
+			return;
+		}
+		$form.find('[name=email]').removeAttr('aria-invalid');
+		var $btn = $form.find('button[type=submit]').prop('disabled', true);
+		$status.text(t('sending', 'Sending…'));
+		$.post(cfg.ajaxUrl, {
+			action: 'om_saved_email',
+			email: email,
+			name: $.trim($form.find('[name=name]').val()),
+			website: $form.find('[name=website]').val(),
+			items: readSaved().map(function (x) { return { line: x.l, style: x.s }; })
+		}).done(function (r) {
+			var msg = (r && r.data && r.data.message) || t('error', 'Something went wrong. Please try again.');
+			$status.toggleClass('is-error', !(r && r.success)).text(msg);
+		}).fail(function () {
+			$status.addClass('is-error').text(t('error', 'Something went wrong. Please try again.'));
+		}).always(function () { $btn.prop('disabled', false); });
+	});
+
+	// Designs without photo or name (a shared link) are looked up.
+	function fillSaved() {
+		var missing = readSaved().filter(function (x) { return !x.t || !x.i; });
+		if (!missing.length || !cfg.ajaxUrl) { return; }
+		$.post(cfg.ajaxUrl, { action: 'om_saved_items', items: missing.map(function (x) { return { line: x.l, style: x.s }; }) }).done(function (r) {
+			if (!(r && r.success && r.data.items)) { return; }
+			var info = {};
+			r.data.items.forEach(function (x) { info[savedKey(x)] = x; });
+			var found = {};
+			writeSaved(readSaved().map(function (x) {
+				var got = info[savedKey(x)];
+				if (got) { found[savedKey(x)] = true; return $.extend({}, got, { t: x.t || got.t, i: x.i || got.i, u: x.u || got.u }); }
+				return x;
+			}).filter(function (x) { return x.t || found[savedKey(x)]; }));
+		});
+	}
+
+	// Arriving with ?om_saved=line/style,... (a shared list or the email's
+	// "Open my list"): those designs join the visitor's list and it opens.
+	$(function () {
+		if (!cfg.saved) { return; }
+		syncSaved();
+		var wanted = new URLSearchParams(window.location.search).get('om_saved');
+		if (wanted) {
+			replaceUrl(urlWith('om_saved', ''));
+			var before = readSaved();
+			var list = before.slice();
+			var keys = list.map(savedKey);
+			var added = 0;
+			wanted.split(',').forEach(function (pair) {
+				var m = /^([a-z0-9-]+)\/([A-Za-z0-9._\-\/]+)$/.exec($.trim(pair));
+				if (m && list.length < SAVED_MAX && keys.indexOf(m[1] + '|' + m[2].toLowerCase()) === -1) {
+					list.push({ l: m[1], s: m[2] });
+					keys.push(m[1] + '|' + m[2].toLowerCase());
+					added++;
+				}
+			});
+			if (added) {
+				writeSaved(list);
+				fillSaved();
+				showToast(t('savedShared', '%d shared designs added to your saved list').replace('%d', added), function () { writeSaved(before); });
+			}
+			openSaved();
+		} else if (window.location.hash === '#om-saved') {
+			openSaved();
+		}
+	});
+
+	window.addEventListener('storage', function (e) { if (e.key === SAVED_KEY) { syncSaved(); } });
 
 	/* ---------- Ring builder ---------- */
 
@@ -3199,6 +3444,7 @@
 		$(root).find('.om-catalog-grid').addClass('om-fade-in');
 		observeInfinite(root);
 		syncCompare();
+		syncSaved();
 		queueStickyTools();
 		applyGridSize(root);
 	}

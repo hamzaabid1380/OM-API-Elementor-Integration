@@ -254,6 +254,8 @@ class OM_Shortcodes {
 				'pagination_style' => 'numbers',
 				// "Compare" toggle under each card (tray + side-by-side table).
 				'compare'          => 'yes',
+				// "Save" heart on each card (Saved designs).
+				'save'             => 'yes',
 				// "Popular" badge on the most viewed designs.
 				'badge_popular'    => 'yes',
 				// Badges double as quick filters (shape, New, Popular).

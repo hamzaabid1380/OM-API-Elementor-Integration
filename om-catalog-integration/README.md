@@ -258,6 +258,31 @@ Every text is in the widget's Content tab (Start screen, Steps & guidance,
 Settings & diamonds, Help me choose, "Your ring" bar, Review & request); colours and corners
 in Style › Builder.
 
+## Saved designs
+
+A heart on every card (catalog, "You might also like", the builder's
+settings), beside the title on product pages and in the quick view.
+Visitors keep up to 24 designs — on their device, no account needed — and
+the **Saved** panel lists them with:
+
+- **Compare** (the first four, in the compare table),
+- **Share list** (a link that adds those designs to whoever opens it),
+- **Email me my list** (photos and links to their inbox, with a button that
+  reopens the list). You get a copy, saved under **Inquiries** as "Saved
+  designs", so it doubles as a lead,
+- **Clear list**, with Undo (removing one design has Undo too).
+
+Open the panel from your header with the **OM Saved Designs** widget (a
+heart with the count), the `[om_saved_button]` shortcode, or any menu link
+to `#om-saved`. After a save, a "View saved" button appears in the message
+at the bottom of the screen.
+
+Settings > OM Catalog > Look & feel > **Saved designs** turns the feature
+(and "Email me my list") on or off site-wide. Each catalog / related widget
+can hide the heart on its cards (Quick View, Compare & Save section), and
+the product widget has a **"Save" (heart) button** switch under Sections.
+Insights shows the **most saved** designs and how many became inquiries.
+
 ## Inquiries
 
 Product pages, diamonds and the builder review have an inquiry form. Each
@@ -780,6 +805,13 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.28.0
+- **Saved designs**: hearts on cards, product pages and the quick view; a
+  Saved panel with Compare, Share list and Email me my list (a copy lands
+  in Inquiries). OM Saved Designs header widget, `[om_saved_button]`, and
+  `#om-saved` links. Insights: Most saved. Site-wide and per-widget
+  switches.
 
 ### 1.27.0
 - **Help me choose answers go with requests**: budget or size, shape,

@@ -1655,3 +1655,99 @@ class OM_Elementor_Reels_Widget extends Widget_Base {
 		);
 	}
 }
+
+/**
+ * OM Saved Designs: a heart with the count of saved designs, for a header.
+ * Opens the Saved panel (compare, share, email the list).
+ */
+class OM_Elementor_Saved_Widget extends Widget_Base {
+
+	public function get_name() {
+		return 'om_saved_widget';
+	}
+
+	public function get_title() {
+		return __( 'OM Saved Designs', 'om-catalog' );
+	}
+
+	public function get_icon() {
+		return 'eicon-heart-o';
+	}
+
+	public function get_categories() {
+		return array( 'general' );
+	}
+
+	public function get_keywords() {
+		return array( 'saved', 'wishlist', 'favourites', 'favorites', 'heart', 'jewelry' );
+	}
+
+	public function get_style_depends() {
+		return array( 'om-catalog-css' );
+	}
+
+	public function get_script_depends() {
+		return array( 'om-catalog-js' );
+	}
+
+	protected function register_controls() {
+		$this->start_controls_section( 'section_content', array( 'label' => __( 'Saved designs', 'om-catalog' ) ) );
+		$this->add_control(
+			'text',
+			array(
+				'label'       => __( 'Text', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => __( 'Saved', 'om-catalog' ),
+				'description' => __( 'Opens the Saved panel. Any link to #om-saved (e.g. in a menu) does the same. Turn the whole feature on or off in Settings > OM Catalog > Look & feel.', 'om-catalog' ),
+			)
+		);
+		$this->add_control( 'show_text', array( 'label' => __( 'Show the text', 'om-catalog' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes' ) );
+		$this->add_control( 'show_count', array( 'label' => __( 'Show the count', 'om-catalog' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes' ) );
+		$this->add_responsive_control(
+			'align',
+			array(
+				'label'     => __( 'Alignment', 'om-catalog' ),
+				'type'      => Controls_Manager::CHOOSE,
+				'options'   => array(
+					'flex-start' => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
+					'center'     => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
+					'flex-end'   => array( 'title' => __( 'Right', 'om-catalog' ), 'icon' => 'eicon-text-align-right' ),
+				),
+				'selectors' => array( '{{WRAPPER}} .om-saved-open-wrap' => 'justify-content: {{VALUE}};' ),
+			)
+		);
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_style', array( 'label' => __( 'Button', 'om-catalog' ), 'tab' => Controls_Manager::TAB_STYLE ) );
+		$this->add_control( 'color', array( 'label' => __( 'Colour', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-saved-open.om-saved-open' => 'color: {{VALUE}};', '{{WRAPPER}} .om-saved-open .om-save-icon' => 'background-color: {{VALUE}};' ) ) );
+		$this->add_control( 'count_bg', array( 'label' => __( 'Count background', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-saved-count' => 'background-color: {{VALUE}};' ) ) );
+		$this->add_control( 'count_color', array( 'label' => __( 'Count text', 'om-catalog' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .om-saved-count' => 'color: {{VALUE}};' ) ) );
+		$this->add_responsive_control(
+			'icon_size',
+			array(
+				'label'      => __( 'Heart size', 'om-catalog' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => array( 'px' ),
+				'range'      => array( 'px' => array( 'min' => 12, 'max' => 40 ) ),
+				'selectors'  => array( '{{WRAPPER}} .om-saved-open .om-save-icon' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};' ),
+			)
+		);
+		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'typo', 'selector' => '{{WRAPPER}} .om-saved-open-text' ) );
+		$this->end_controls_section();
+	}
+
+	protected function render() {
+		$s    = $this->get_settings_for_display();
+		$html = OM_Saved::render_button(
+			array(
+				'text'       => (string) ( $s['text'] ?? '' ),
+				'show_text'  => 'yes' === ( $s['show_text'] ?? 'yes' ) ? 'yes' : 'no',
+				'show_count' => 'yes' === ( $s['show_count'] ?? 'yes' ) ? 'yes' : 'no',
+			)
+		);
+		if ( '' === $html && \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
+			$html = '<p>' . esc_html__( 'Saved designs is off in Settings > OM Catalog > Look & feel.', 'om-catalog' ) . '</p>';
+		}
+		echo '<div class="om-saved-open-wrap">' . $html . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+	}
+}

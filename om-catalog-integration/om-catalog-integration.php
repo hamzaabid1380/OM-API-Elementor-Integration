@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.27.0
+ * Version: 1.28.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.27.0' );
+define( 'OM_CATALOG_VERSION', '1.28.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -25,6 +25,7 @@ require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
 require_once OM_CATALOG_DIR . 'includes/functions-elementor.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-search.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-engage.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-saved.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamond-guide.php';
@@ -47,6 +48,7 @@ function om_catalog_init() {
 	OM_Ajax::instance();
 	OM_Search::instance();
 	OM_Engage::instance();
+	OM_Saved::instance();
 	OM_Inquiry::instance();
 	OM_Diamonds::instance();
 	OM_Ring_Builder::instance();
@@ -162,12 +164,43 @@ function om_catalog_enqueue_assets() {
 				'compareAdded' => __( 'Added to compare', 'om-catalog' ),
 				'compareRemoved' => __( 'Removed from compare', 'om-catalog' ),
 				'inLine'     => __( 'in %s', 'om-catalog' ),
+				'saved'      => __( 'Saved', 'om-catalog' ),
+				'savedTitle' => __( 'Saved designs', 'om-catalog' ),
+				'savedAdded' => __( 'Saved', 'om-catalog' ),
+				'savedRemoved' => __( 'Removed from saved', 'om-catalog' ),
+				'savedView'  => __( 'View saved', 'om-catalog' ),
+				'savedEmpty' => __( 'Nothing saved yet. Tap the heart on any design to keep it here — it stays on this device, no account needed.', 'om-catalog' ),
+				'savedShare' => __( 'Share list', 'om-catalog' ),
+				'savedCompare' => __( 'Compare', 'om-catalog' ),
+				'savedCompareHint' => __( 'Compare the first 4', 'om-catalog' ),
+				'savedEmailMe' => __( 'Email me my list', 'om-catalog' ),
+				'savedEmailIntro' => __( 'We will send the photos and links to your inbox.', 'om-catalog' ),
+				'savedYourEmail' => __( 'Your email', 'om-catalog' ),
+				'savedYourName' => __( 'Your name (optional)', 'om-catalog' ),
+				'savedSend'  => __( 'Send', 'om-catalog' ),
+				'savedClear' => __( 'Clear list', 'om-catalog' ),
+				'savedCleared' => __( 'Saved list cleared', 'om-catalog' ),
+				/* translators: %d: number of designs. */
+				'savedShared' => __( '%d shared designs added to your saved list', 'om-catalog' ),
+				'savedFull'  => __( 'Your list is full (24). Remove one to save another.', 'om-catalog' ),
+				/* translators: %s: design name. */
+				'savedRemove' => __( 'Remove %s', 'om-catalog' ),
+				/* translators: %s: design name. */
+				'saveThis'   => __( 'Save %s', 'om-catalog' ),
+				/* translators: %s: design name. */
+				'unsaveThis' => __( 'Remove %s from saved', 'om-catalog' ),
+				'sending'    => __( 'Sending…', 'om-catalog' ),
+				/* translators: %s: style number. */
+				'styleN'     => __( 'Style %s', 'om-catalog' ),
 			),
 			'cardHover' => (string) get_option( 'om_card_hover', 'lift' ),
 			'refined'   => 'refined' === om_design(),
 			'pageTransitions' => '0' !== get_option( 'om_page_transitions', '1' ),
 			// True size: the screen check and "About real size" note.
 			'tsCheck'         => '0' !== get_option( 'om_true_size_check', '1' ),
+			// Saved designs (hearts) and "Email me my list".
+			'saved'           => OM_Saved::enabled(),
+			'savedEmail'      => '0' !== get_option( 'om_saved_email', '1' ),
 			'popular'   => om_popular_searches(),
 		)
 	);

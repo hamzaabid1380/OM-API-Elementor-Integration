@@ -25,6 +25,8 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			'show_line_label'     => true,
 			'show_title'          => true,
 			'show_meta'           => true,
+			// "Save" (heart) next to the title.
+			'show_save'           => true,
 			'show_price'          => true,
 			'show_description'    => true,
 			'show_options'        => true,
@@ -211,8 +213,17 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 				<p class="om-line-label"><?php echo esc_html( ucwords( str_replace( '-', ' ', $product_line ) ) ); ?></p>
 			<?php endif; ?>
 
+			<?php
+			$save_html = $args['show_save'] && class_exists( 'OM_Saved' ) ? OM_Saved::button( $product_line, $style_number, $title, ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '', om_product_url( $product_line, $style_number ), 'om-save-toggle--page' ) : '';
+			?>
 			<?php if ( $args['show_title'] ) : ?>
-				<h1 class="om-product-title"><?php echo esc_html( $title ); ?></h1>
+				<?php if ( '' !== $save_html ) : ?>
+					<div class="om-title-row"><h1 class="om-product-title"><?php echo esc_html( $title ); ?></h1><?php echo $save_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the helper. ?></div>
+				<?php else : ?>
+					<h1 class="om-product-title"><?php echo esc_html( $title ); ?></h1>
+				<?php endif; ?>
+			<?php elseif ( '' !== $save_html ) : ?>
+				<div class="om-title-row"><?php echo $save_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the helper. ?></div>
 			<?php endif; ?>
 
 			<?php if ( $args['show_meta'] ) : ?>
@@ -1164,6 +1175,8 @@ function om_card_options( $atts ) {
 		// Card hover for this widget; '' = Settings default.
 		'hover'            => $pick( $atts['card_hover'] ?? '', array( 'lift', 'zoom', 'none' ), '' ),
 		'compare'          => 'yes' === ( $atts['compare'] ?? '' ),
+		// Heart (Saved designs); on unless the widget turns it off.
+		'save'             => 'no' !== ( $atts['save'] ?? 'yes' ) && class_exists( 'OM_Saved' ) && OM_Saved::enabled(),
 	);
 }
 
@@ -1203,6 +1216,7 @@ function om_render_card( $product, $line, $o ) {
 			'badges'  => array(),
 			'color'   => '',
 			'compare' => false,
+			'save'    => false,
 			'color_images' => false,
 			'after'   => '',
 		)
@@ -1294,6 +1308,9 @@ function om_render_card( $product, $line, $o ) {
 				}
 				?>
 			</span>
+		<?php endif; ?>
+		<?php if ( $o['save'] ) : ?>
+			<?php echo OM_Saved::button( $line, $style_number, $title, (string) $image, $link, 'om-save-toggle--card' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the helper. ?>
 		<?php endif; ?>
 		<?php if ( $o['compare'] ) : ?>
 			<button type="button" class="om-compare-toggle" aria-pressed="false" data-om-compare="<?php echo esc_attr( wp_json_encode( array( 'l' => $line, 's' => $style_number, 't' => $title, 'i' => $image, 'u' => $link ) ) ); ?>"><span class="om-compare-box" aria-hidden="true"></span><?php esc_html_e( 'Compare', 'om-catalog' ); ?><span class="om-visually-hidden"> <?php echo esc_html( $title ); ?></span></button>

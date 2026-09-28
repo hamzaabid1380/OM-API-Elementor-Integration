@@ -80,6 +80,7 @@ class OM_Related {
 				// Card hover: lift, zoom, none; '' = Settings default.
 				'card_hover'       => '',
 				'compare'          => '',
+				'save'             => 'yes',
 				// "Complete the set": the line to pair with ('' = automatic),
 				// a line under the title (' ' = none), and an "Ask about
 				// this set" link on each card.

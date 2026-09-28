@@ -18,7 +18,17 @@ trait OM_Elementor_Card_Controls {
 	protected function register_quick_view_content( $default_on = 'yes' ) {
 		$this->start_controls_section(
 			'section_quick_view',
-			array( 'label' => __( 'Quick View & Compare', 'om-catalog' ) )
+			array( 'label' => __( 'Quick View, Compare & Save', 'om-catalog' ) )
+		);
+
+		$this->add_control(
+			'save',
+			array(
+				'label'       => __( '"Save" heart on cards', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Visitors keep designs in a Saved list on their device (no account), then compare, share or email it to themselves. Needs Saved designs on in Settings > OM Catalog.', 'om-catalog' ),
+			)
 		);
 
 		$this->add_control(
@@ -633,6 +643,7 @@ trait OM_Elementor_Card_Controls {
 			'video_badge_pos'  => (string) ( $s['video_badge_pos'] ?? 'tr' ),
 			'card_hover'       => (string) ( $s['card_hover'] ?? '' ),
 			'compare'          => 'yes' === ( $s['compare'] ?? '' ) ? 'yes' : '',
+			'save'             => 'yes' === ( $s['save'] ?? 'yes' ) ? 'yes' : 'no',
 		);
 	}
 }

@@ -111,6 +111,8 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_photo_tone', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
 		register_setting( 'om_catalog_settings', 'om_photo_blend', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_page_transitions', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_saved', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_saved_email', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_trust_line', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_popular_searches', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_track_searches', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -568,6 +570,16 @@ class OM_Settings {
 					<tr>
 						<th>Page transitions</th>
 						<td><input type="hidden" name="om_page_transitions" value="0" /><label><input type="checkbox" name="om_page_transitions" value="1" <?php checked( get_option( 'om_page_transitions', '1' ), '1' ); ?> /> Smooth transitions between listing and product pages: the clicked photo glides into the product page (Chrome, Edge, Safari 18+; other browsers simply open the page)</label></td>
+					</tr>
+					<tr>
+						<th>Saved designs</th>
+						<td>
+							<input type="hidden" name="om_saved" value="0" />
+							<label><input type="checkbox" name="om_saved" value="1" <?php checked( get_option( 'om_saved', '1' ), '1' ); ?> /> A "Save" heart on cards, product pages and the quick view; a Saved panel lists them (kept on the visitor's device, no account)</label><br />
+							<input type="hidden" name="om_saved_email" value="0" />
+							<label><input type="checkbox" name="om_saved_email" value="1" <?php checked( get_option( 'om_saved_email', '1' ), '1' ); ?> /> "Email me my list" in the Saved panel — you get a copy, saved under Inquiries</label>
+							<p class="description">To open the Saved panel from your header, add the <strong>OM Saved Designs</strong> widget (heart with a count), the <code>[om_saved_button]</code> shortcode, or any menu link to <code>#om-saved</code>. Each widget can hide the heart on its cards.</p>
+						</td>
 					</tr>
 					<tr>
 						<th><label for="om_trust_line">Trust line under the price</label></th>

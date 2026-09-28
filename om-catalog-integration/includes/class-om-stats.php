@@ -29,6 +29,7 @@ class OM_Stats {
 			'inquiry_subject' => __( 'Inquiry subjects', 'om-catalog' ),
 			'compare'        => __( 'Compared designs', 'om-catalog' ),
 			'compare_pair'   => __( 'Compared pairs', 'om-catalog' ),
+			'saved'          => __( 'Saved designs', 'om-catalog' ),
 			'reel_view'      => __( 'Reel views', 'om-catalog' ),
 			'reel_tap'       => __( 'Reel taps to product', 'om-catalog' ),
 		);
@@ -397,6 +398,19 @@ class OM_Stats {
 				</div>
 
 				<div class="om-ins-card">
+					<h2><?php esc_html_e( 'Most saved', 'om-catalog' ); ?></h2>
+					<p class="desc"><?php esc_html_e( 'Designs visitors keep with the heart — and how many of them became inquiries.', 'om-catalog' ); ?></p>
+					<?php
+					$rows = array();
+					foreach ( array_slice( $t['saved'] ?? array(), 0, 12, true ) as $key => $n ) {
+						$inq    = (int) ( $t['inquiry'][ $key ] ?? 0 );
+						$rows[] = array( self::design_cell( $key, false ), number_format_i18n( $n ), number_format_i18n( $inq ) );
+					}
+					self::table( array( __( 'Design', 'om-catalog' ), __( 'Saves', 'om-catalog' ), __( 'Inquiries', 'om-catalog' ) ), $rows, __( 'Nothing saved yet.', 'om-catalog' ) );
+					?>
+				</div>
+
+				<div class="om-ins-card">
 					<h2><?php esc_html_e( 'Story reels', 'om-catalog' ); ?></h2>
 					<p class="desc"><?php esc_html_e( 'Which stories are watched, and how often they send visitors to the design.', 'om-catalog' ); ?></p>
 					<?php
@@ -562,7 +576,7 @@ class OM_Stats {
 		fputcsv( $out, array( 'type', 'item', 'design', 'count' ) );
 		foreach ( self::types() as $type => $label ) {
 			foreach ( $data['types'][ $type ] ?? array() as $key => $n ) {
-				$design = in_array( $type, array( 'view', 'inquiry', 'compare', 'reel_view', 'reel_tap' ), true ) && false !== strpos( $key, '|' ) ? self::design( $key )['title'] : '';
+				$design = in_array( $type, array( 'view', 'inquiry', 'compare', 'saved', 'reel_view', 'reel_tap' ), true ) && false !== strpos( $key, '|' ) ? self::design( $key )['title'] : '';
 				// Guard against spreadsheet formula injection.
 				$item = preg_match( '/^[=+\-@]/', (string) $key ) ? "'" . $key : $key;
 				fputcsv( $out, array( $label, $item, $design, $n ) );
