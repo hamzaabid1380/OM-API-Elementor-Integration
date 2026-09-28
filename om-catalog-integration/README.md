@@ -784,8 +784,8 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 ### 1.27.0
 - **Help me choose answers go with requests**: budget or size, shape,
   priority, lab/natural and which suggestion was chosen are added to the
-  inquiry email, the Inquiries list and custom forms (`om_guide`). The
-  visitor sees a note saying so. Widget switch: "Send the answers with
+  inquiry email and the Inquiries list. The visitor sees a note saying
+  so. Widget switch: "Send the answers with
   requests".
 
 ### 1.26.0
