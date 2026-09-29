@@ -11245,3 +11245,19 @@ html:has(.om-sticky-tools.is-shown .om-st-saved:not([hidden])) .om-saved-float {
 @media (prefers-reduced-motion: reduce) {
 	.om-saved-float.om-saved-float { animation: none; transition: none; }
 }
+
+/* =========================================================
+   1.29.1 Carat switch in place
+   ========================================================= */
+
+.om-product-wrap.is-switching :is(.om-product-gallery, .om-price, .om-product-title, .om-style-meta) {
+	opacity: 0.55;
+	transition: opacity 0.2s ease 0.15s;
+}
+
+.om-product-wrap.is-switching .om-variant-link.is-pending { cursor: progress; }
+
+@media (prefers-reduced-motion: no-preference) {
+	html body ::view-transition-old(root),
+	html body ::view-transition-new(root) { animation-duration: 0.28s; }
+}

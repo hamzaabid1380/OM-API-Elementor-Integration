@@ -847,6 +847,13 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.29.1
+- **Carat switch without a page reload**: the carat pills load the other
+  carat in place (fetched in the background as soon as a pill is hovered
+  or touched), with a cross-fade, keeping the chosen metal and colour and
+  the scroll position; the address, tab title and Back button follow. In
+  quick view, the pop-up loads that carat.
+
 ### 1.29.0
 - **Analytics events** for GA4, Google Tag Manager and the Meta pixel
   (whatever the site already has): views, saves, compare, share, search,

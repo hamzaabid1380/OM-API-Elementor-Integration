@@ -484,6 +484,100 @@
 		this.href = configuredUrl($(this).closest('.om-product-wrap'), this.href);
 	});
 
+	/* ---------- Carat switch in place (each carat is its own style) ----------
+	   The other carat's page is fetched in the background (already on hover
+	   or touch) and its product section swapped in, with a cross-fade, the
+	   address and tab title updated — no page reload. In quick view, the
+	   pop-up loads that carat. Anything unexpected falls back to the link. */
+
+	var variantCache = {};
+	function fetchVariant(href) {
+		var key = href.split('#')[0];
+		if (!variantCache[key]) {
+			variantCache[key] = $.ajax({ url: key, dataType: 'html', timeout: 15000 });
+			variantCache[key].fail(function () { delete variantCache[key]; });
+		}
+		return variantCache[key];
+	}
+
+	$(document).on('mouseenter touchstart focusin', '.om-product-wrap .om-variant-link:not(.is-current)', function () {
+		if ($(this).closest('.om-quick-view').length || !window.history.pushState) { return; }
+		fetchVariant(configuredUrl($(this).closest('.om-product-wrap'), this.href));
+	});
+
+	$(document).on('click', '.om-variant-link', function (e) {
+		if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) { return; }
+		if ($(this).hasClass('is-current')) { e.preventDefault(); return; }
+		var line = this.getAttribute('data-om-line');
+		var style = this.getAttribute('data-om-style');
+		if ($(this).closest('.om-quick-view').length) {
+			if (line && style) { e.preventDefault(); openQuickView(line, style, this); }
+			return;
+		}
+		if (!window.history.pushState || !window.DOMParser) { return; }
+		e.preventDefault();
+		switchVariant($(this).closest('.om-product-wrap'), this.href, $.trim($(this).text()), style);
+	});
+
+	function switchVariant($wrap, href, label, style) {
+		// The page layout this product sits in (its Elementor page, else the
+		// product section itself), so every widget on it follows.
+		var root = $wrap.closest('[data-elementor-id]')[0] || $wrap[0];
+		var rootId = root.getAttribute('data-elementor-id');
+		$wrap.addClass('is-switching').attr('aria-busy', 'true');
+		var $current = $wrap.find('.om-variant-link').removeClass('is-current').removeAttr('aria-current');
+		$current.filter('[data-om-style="' + style + '"]').addClass('is-current is-pending');
+		fetchVariant(href).done(function (html) {
+			var doc = new window.DOMParser().parseFromString(html, 'text/html');
+			var fresh = rootId ? doc.querySelector('[data-elementor-id="' + rootId + '"]') : doc.querySelector('.om-product-wrap');
+			if (!fresh || !fresh.querySelector('.om-product-wrap')) { window.location.href = href; return; }
+			var swap = function () {
+				var node = document.importNode(fresh, true);
+				root.parentNode.replaceChild(node, root);
+				afterVariantSwap(node, doc, style);
+			};
+			window.history.pushState({ omVariant: true }, '', href);
+			omPushed = true;
+			if (document.startViewTransition && !reduceMotion) {
+				document.startViewTransition(swap);
+			} else {
+				swap();
+			}
+			announce(label);
+		}).fail(function () { window.location.href = href; });
+	}
+
+	function afterVariantSwap(node, doc, style) {
+		var $node = $(node);
+		if (doc.title) { document.title = doc.title; }
+		['link[rel="canonical"]', 'meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:url"]', 'meta[property="og:image"]'].forEach(function (sel) {
+			var from = doc.querySelector(sel);
+			var to = document.querySelector(sel);
+			if (from && to) {
+				var attr = from.hasAttribute('href') ? 'href' : 'content';
+				to.setAttribute(attr, from.getAttribute(attr));
+			}
+		});
+		initBlock(node);
+		rememberProduct();
+		fillCustomForms(node);
+		initAutoplay(node);
+		initStickyBar();
+		initBackLink();
+		$node.find('.om-product-gallery.is-video-first').each(function () { decorateMainVideo($(this)); });
+		$node.find('.om-product-gallery').each(function () { updateMediaCount($(this)); });
+		initReveal(node);
+		$node.find('.om-reveal').addClass('is-in');
+		// Elementor's own widgets on the page (tabs, sliders…).
+		try {
+			if (window.elementorFrontend && window.elementorFrontend.elementsHandler) {
+				$node.find('.elementor-element').each(function () { window.elementorFrontend.elementsHandler.runReadyTrigger(this); });
+			}
+		} catch (err) { /* the swapped content still works without */ }
+		var focusTo = $node.find('.om-variant-link[data-om-style="' + style + '"]')[0];
+		if (focusTo && document.activeElement && (document.activeElement === document.body || !document.activeElement.isConnected)) { focusTo.focus({ preventScroll: true }); }
+	}
+
 	$(document).on('click', '.om-watch-video', function () {
 		var $gallery = $(this).closest('.om-product-gallery');
 		var $thumb = $gallery.find('.om-thumb--video').first();
@@ -1818,6 +1912,8 @@
 		var pastAnchor = false;
 		var atInquiry = false;
 		var update = function () {
+			// Replaced (another carat loaded in place): the new bar takes over.
+			if (!bar.isConnected) { return; }
 			var formOpen = inquiry && (inquiry.querySelector('details[open]') || inquiry.querySelector('.om-inquiry--open'));
 			var show = pastAnchor && !(atInquiry && formOpen);
 			bar.hidden = !show;
@@ -1829,20 +1925,22 @@
 			// IntersectionObserver: a jump past the anchor (restored scroll
 			// position, a #link) never "crosses" it, so no observer event.
 			var ticking = false;
+			var onScroll = function () {
+				if (!ticking) {
+					ticking = true;
+					window.requestAnimationFrame(check);
+				}
+			};
 			var check = function () {
 				ticking = false;
+				if (!bar.isConnected) { window.removeEventListener('scroll', onScroll); return; }
 				var past = anchor.getBoundingClientRect().bottom < 0;
 				if (past !== pastAnchor) {
 					pastAnchor = past;
 					update();
 				}
 			};
-			window.addEventListener('scroll', function () {
-				if (!ticking) {
-					ticking = true;
-					window.requestAnimationFrame(check);
-				}
-			}, { passive: true });
+			window.addEventListener('scroll', onScroll, { passive: true });
 			check();
 		}
 		if (inquiry && window.IntersectionObserver) {

@@ -340,7 +340,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 									}
 									$is_current = ( $variant['style_number'] === $style_number );
 									?>
-									<a class="om-variant-link<?php echo $is_current ? ' is-current' : ''; ?>" data-om-keep-options
+									<a class="om-variant-link<?php echo $is_current ? ' is-current' : ''; ?>" data-om-keep-options data-om-line="<?php echo esc_attr( $product_line ); ?>" data-om-style="<?php echo esc_attr( $variant['style_number'] ); ?>"
 										<?php echo $is_current ? 'aria-current="page"' : ''; ?>
 										href="<?php echo esc_url( om_product_url( $product_line, $variant['style_number'] ) ); ?>">
 										<?php echo esc_html( ! empty( $variant['variant_name'] ) ? $variant['variant_name'] : $variant['style_number'] ); ?>
