@@ -1,0 +1,364 @@
+/* OM Catalog settings screen. Scoped to .om-admin; WordPress's own
+   styles stay untouched elsewhere. */
+
+body.settings_page_om-catalog-settings { background: #f6f4f0; }
+
+.om-admin {
+	--oa-ink: #0f1a24;
+	--oa-text: #3c4650;
+	--oa-muted: #66717c;
+	--oa-line: #e6e1d9;
+	--oa-soft: #faf8f5;
+	--oa-card: #ffffff;
+	--oa-accent: #00111c;
+	--oa-gold: #b8925a;
+	--oa-ok: #1f7a4d;
+	--oa-warn: #b4540a;
+	--oa-radius: 14px;
+	max-width: 1320px;
+	margin: 18px 20px 0 2px;
+	color: var(--oa-text);
+	font-size: 14px;
+}
+
+/* ---- Header ---- */
+.om-admin-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin-bottom: 18px;
+}
+
+.om-admin-brand { display: flex; align-items: center; gap: 14px; }
+
+.om-admin-mark {
+	width: 44px;
+	height: 44px;
+	border-radius: 12px;
+	background: var(--oa-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8cf98' stroke-width='1.4' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='15' r='5.5'/%3E%3Cpath d='M9.5 3.5h5l1.5 3-4 2.8-4-2.8z'/%3E%3C/svg%3E") center / 26px no-repeat;
+}
+
+.om-admin .om-admin-head h1 {
+	margin: 0;
+	padding: 0;
+	color: var(--oa-ink);
+	font-size: 22px;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.om-admin-head p { margin: 2px 0 0; color: var(--oa-muted); font-size: 13px; }
+
+.om-admin-head-links { display: flex; gap: 8px; }
+
+.om-admin .om-admin-btn {
+	display: inline-flex;
+	align-items: center;
+	min-height: 36px;
+	padding: 0 14px;
+	border: 1px solid var(--oa-line);
+	border-radius: 999px;
+	background: #fff;
+	color: var(--oa-ink);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.om-admin .om-admin-btn:hover,
+.om-admin .om-admin-btn:focus { border-color: var(--oa-accent); color: var(--oa-ink); }
+
+.om-admin .wp-header-end { visibility: hidden; margin: 0; }
+
+.om-admin .notice { margin: 0 0 14px; border-radius: 10px; }
+
+/* ---- Layout ---- */
+.om-admin-layout {
+	display: grid;
+	grid-template-columns: 250px minmax(0, 1fr);
+	gap: 24px;
+	align-items: start;
+}
+
+.om-admin-nav {
+	position: sticky;
+	top: 46px;
+	padding: 12px;
+	border: 1px solid var(--oa-line);
+	border-radius: var(--oa-radius);
+	background: var(--oa-card);
+}
+
+.om-admin-nav ul { margin: 8px 0 0; padding: 0; list-style: none; }
+.om-admin-nav li { margin: 0; }
+
+.om-admin-nav a {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 40px;
+	padding: 0 12px;
+	border-radius: 10px;
+	color: var(--oa-text);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.om-admin-nav a svg {
+	flex: 0 0 18px;
+	width: 18px;
+	height: 18px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.6;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	opacity: 0.75;
+}
+
+.om-admin-nav a:hover,
+.om-admin-nav a:focus { background: var(--oa-soft); color: var(--oa-ink); box-shadow: none; }
+.om-admin-nav a:focus-visible { outline: 2px solid var(--oa-accent); outline-offset: 1px; }
+
+.om-admin-nav a[aria-current="page"] { background: var(--oa-accent); color: #fff; }
+.om-admin-nav a[aria-current="page"] svg { opacity: 1; stroke: #e8cf98; }
+
+.om-admin-search input[type="search"] {
+	width: 100%;
+	min-height: 38px;
+	padding: 0 12px 0 34px;
+	border: 1px solid var(--oa-line);
+	border-radius: 10px;
+	background: var(--oa-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2366717c' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m16 16 4.5 4.5'/%3E%3C/svg%3E") 11px center / 16px no-repeat;
+	font-size: 13px;
+}
+
+.om-admin-main { min-width: 0; }
+
+/* ---- Cards ---- */
+.om-admin .om-card {
+	margin: 0 0 18px;
+	padding: 22px 26px 12px;
+	border: 1px solid var(--oa-line);
+	border-radius: var(--oa-radius);
+	background: var(--oa-card);
+	box-shadow: 0 1px 2px rgba(15, 26, 36, 0.04);
+}
+
+.om-admin .om-card[hidden] { display: none; }
+
+.om-admin .om-card > h2 {
+	margin: 0 0 6px;
+	color: var(--oa-ink);
+	font-size: 17px;
+	font-weight: 600;
+}
+
+.om-admin .om-card > h2:focus { outline: none; }
+
+.om-admin .om-card > p.description,
+.om-admin .om-card > p { max-width: 70ch; color: var(--oa-muted); font-size: 13px; }
+
+.om-admin .form-table { margin-top: 6px; }
+
+.om-admin .form-table > tbody > tr,
+.om-admin .form-table > tr { border-top: 1px solid var(--oa-line); }
+
+.om-admin .form-table > tbody > tr:first-child { border-top: 0; }
+
+.om-admin .form-table th {
+	width: 230px;
+	padding: 18px 20px 18px 0;
+	color: var(--oa-ink);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.om-admin .form-table td { padding: 16px 0; }
+
+.om-admin .form-table td p.description,
+.om-admin .form-table td .description { margin-top: 6px; color: var(--oa-muted); font-size: 12.5px; line-height: 1.55; }
+
+.om-admin .form-table code,
+.om-admin .om-card code { padding: 1px 6px; border-radius: 6px; background: #f2eee8; font-size: 12px; }
+
+/* Inputs */
+.om-admin input[type="text"],
+.om-admin input[type="email"],
+.om-admin input[type="url"],
+.om-admin input[type="password"],
+.om-admin input[type="number"],
+.om-admin select,
+.om-admin textarea {
+	min-height: 38px;
+	border: 1px solid #d9d3ca;
+	border-radius: 9px;
+	box-shadow: none;
+	color: var(--oa-ink);
+}
+
+.om-admin textarea { padding: 8px 12px; }
+
+.om-admin input:focus,
+.om-admin select:focus,
+.om-admin textarea:focus {
+	border-color: var(--oa-accent);
+	box-shadow: 0 0 0 1px var(--oa-accent);
+	outline: none;
+}
+
+/* Checkboxes as switches (their labels stay clickable). */
+.om-admin .om-card label:has(> input[type="checkbox"]) {
+	display: inline-flex;
+	align-items: flex-start;
+	gap: 10px;
+	margin: 4px 0;
+	line-height: 1.45;
+}
+
+.om-admin .om-card input[type="checkbox"] {
+	-webkit-appearance: none;
+	appearance: none;
+	position: relative;
+	flex: 0 0 36px;
+	width: 36px;
+	height: 20px;
+	margin: 0;
+	border: 0;
+	border-radius: 999px;
+	background: #cfc8bd;
+	box-shadow: none;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.om-admin .om-card input[type="checkbox"]::before {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+	transition: transform 0.15s ease;
+}
+
+.om-admin .om-card input[type="checkbox"]:checked { background: var(--oa-ok); }
+.om-admin .om-card input[type="checkbox"]:checked::before { transform: translateX(16px); }
+.om-admin .om-card input[type="checkbox"]:focus-visible { outline: 2px solid var(--oa-accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+	.om-admin .om-card input[type="checkbox"],
+	.om-admin .om-card input[type="checkbox"]::before { transition: none; }
+}
+
+/* Buttons */
+.om-admin .button-primary {
+	min-height: 38px;
+	padding: 0 20px;
+	border-color: var(--oa-accent);
+	border-radius: 999px;
+	background: var(--oa-accent);
+	color: #fff;
+}
+
+.om-admin .button-primary:hover,
+.om-admin .button-primary:focus { border-color: #22313e; background: #22313e; color: #fff; }
+
+.om-admin .button:not(.button-primary) { min-height: 38px; border-radius: 999px; }
+
+/* ---- Overview ---- */
+.om-admin-status {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+	gap: 12px;
+	margin: 16px 0 10px;
+	padding: 0;
+	list-style: none;
+}
+
+.om-admin-status li { margin: 0; }
+
+.om-admin-status a {
+	display: grid;
+	grid-template-columns: 10px 1fr;
+	column-gap: 10px;
+	row-gap: 2px;
+	align-items: center;
+	height: 100%;
+	padding: 14px 16px;
+	border: 1px solid var(--oa-line);
+	border-radius: 12px;
+	background: var(--oa-soft);
+	color: var(--oa-text);
+	text-decoration: none;
+	box-sizing: border-box;
+}
+
+.om-admin-status a:hover,
+.om-admin-status a:focus { border-color: var(--oa-accent); color: var(--oa-text); box-shadow: none; }
+
+.om-admin-dot { width: 10px; height: 10px; border-radius: 50%; background: #b9b2a7; }
+.om-admin-status .is-ok .om-admin-dot { background: var(--oa-ok); }
+.om-admin-status .is-warn .om-admin-dot { background: var(--oa-warn); }
+
+.om-admin-status-label { color: var(--oa-ink); font-weight: 600; }
+.om-admin-status-detail { grid-column: 2; color: var(--oa-muted); font-size: 12.5px; }
+.om-admin-status .is-warn .om-admin-status-detail { color: var(--oa-warn); }
+
+/* Before the script arranges the page, the status sits under the header. */
+.om-admin:not(.is-ready) .om-admin-status { margin-bottom: 20px; }
+
+/* ---- Save bar: at the end until something changes, then it floats. ---- */
+.om-admin-savebar {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 16px;
+	margin: 0 0 18px;
+}
+
+.om-admin-savebar.is-dirty {
+	position: sticky;
+	bottom: 12px;
+	z-index: 5;
+	padding: 12px 16px;
+	border: 1px solid var(--oa-gold);
+	border-radius: var(--oa-radius);
+	background: rgba(255, 255, 255, 0.96);
+	box-shadow: 0 10px 30px rgba(15, 26, 36, 0.12);
+	-webkit-backdrop-filter: blur(8px);
+	backdrop-filter: blur(8px);
+}
+
+.om-admin-savebar.is-away { display: none; }
+.om-admin-savebar .submit { margin: 0; padding: 0; }
+.om-admin-savebar-text { margin-right: auto; color: var(--oa-warn); font-weight: 500; }
+.om-admin-savebar-text:empty { display: none; }
+
+/* Colour fields: a live swatch. */
+.om-admin-color { display: inline-flex; align-items: center; gap: 8px; }
+.om-admin-swatch { width: 30px; height: 30px; border: 1px solid var(--oa-line); border-radius: 8px; background: transparent; }
+
+/* Tools card: its own small form. */
+.om-admin .om-card form { margin: 10px 0 14px; }
+.om-admin .om-card .widefat { border-radius: 10px; overflow: hidden; }
+
+/* ---- Small screens ---- */
+@media (max-width: 960px) {
+	.om-admin-layout { grid-template-columns: minmax(0, 1fr); }
+	.om-admin-nav { position: static; }
+	.om-admin-nav ul { display: flex; flex-wrap: wrap; gap: 4px; }
+	.om-admin-nav a { min-height: 36px; padding: 0 10px; font-size: 13px; }
+}
+
+@media (max-width: 782px) {
+	.om-admin { margin-right: 10px; }
+	.om-admin .om-card { padding: 18px 16px 8px; }
+	.om-admin .form-table th { width: auto; padding: 14px 0 4px; }
+	.om-admin .form-table td { padding: 4px 0 14px; }
+}

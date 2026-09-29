@@ -847,6 +847,15 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.30.0
+- **New settings screen**: a left-hand menu of sections (Overview,
+  Connection & cache, Pricing, Product pages, Look & feel, Ring builder &
+  diamonds, Inquiries, Search & analytics, Tools), clean cards, switches
+  instead of tick boxes, live colour swatches, a status overview (connection,
+  prices, ring builder, inquiries this week, analytics), a settings search,
+  and a save bar that appears when something changed (and warns before
+  leaving). Saving returns to the same section. Every setting is unchanged.
+
 ### 1.29.1
 - **Carat switch without a page reload**: the carat pills load the other
   carat in place (fetched in the background as soon as a pill is hovered

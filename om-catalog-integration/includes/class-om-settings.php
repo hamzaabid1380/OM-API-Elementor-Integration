@@ -18,6 +18,7 @@ class OM_Settings {
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_notices', array( $this, 'maybe_show_markup_notice' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
 		// New credentials take effect immediately: drop the cached token and
 		// any remembered login failure.
@@ -209,15 +210,76 @@ class OM_Settings {
 		}
 	}
 
+	/** The settings screen's own look (tabs, cards, switches) and script. */
+	public function enqueue_assets( $hook ) {
+		if ( 'settings_page_om-catalog-settings' !== $hook ) {
+			return;
+		}
+		wp_enqueue_style( 'om-admin', OM_CATALOG_URL . 'assets/css/om-admin.css', array(), OM_CATALOG_VERSION );
+		wp_enqueue_script( 'om-admin', OM_CATALOG_URL . 'assets/js/om-admin.js', array(), OM_CATALOG_VERSION, true );
+	}
+
+	/**
+	 * At-a-glance status for the top of the settings screen: each item is
+	 * [ state (ok|warn|off), label, detail, tab or URL ].
+	 */
+	private function status_items() {
+		$items = array();
+		if ( ! get_option( 'om_client_id' ) || ! get_option( 'om_client_secret' ) ) {
+			$items[] = array( 'warn', __( 'Overnight Mountings', 'om-catalog' ), __( 'Add your API details', 'om-catalog' ), '#connection' );
+		} elseif ( get_transient( OM_API_Client::AUTH_FAIL_TRANSIENT ) ) {
+			$items[] = array( 'warn', __( 'Overnight Mountings', 'om-catalog' ), __( 'Sign-in failed — check the details', 'om-catalog' ), '#connection' );
+		} elseif ( get_transient( OM_API_Client::TOKEN_TRANSIENT ) ) {
+			$items[] = array( 'ok', __( 'Overnight Mountings', 'om-catalog' ), __( 'Connected', 'om-catalog' ), '#connection' );
+		} else {
+			$items[] = array( 'off', __( 'Overnight Mountings', 'om-catalog' ), __( 'Set up — not used yet', 'om-catalog' ), '#tools' );
+		}
+		$priced  = function_exists( 'om_markup_is_configured' ) && om_markup_is_configured();
+		$items[] = $priced ? array( 'ok', __( 'Prices', 'om-catalog' ), __( 'Shown with your markup', 'om-catalog' ), '#pricing' ) : array( 'off', __( 'Prices', 'om-catalog' ), __( 'Hidden — "call for pricing"', 'om-catalog' ), '#pricing' );
+		$builder = (int) get_option( 'om_builder_page', 0 );
+		$items[] = $builder ? array( 'ok', __( 'Ring builder', 'om-catalog' ), get_the_title( $builder ), '#builder' ) : array( 'off', __( 'Ring builder', 'om-catalog' ), __( 'No page chosen', 'om-catalog' ), '#builder' );
+		$week    = new WP_Query(
+			array(
+				'post_type'      => 'om_inquiry',
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'no_found_rows'  => false,
+				'date_query'     => array( array( 'after' => '7 days ago' ) ),
+			)
+		);
+		/* translators: %d: number of inquiries. */
+		$items[] = array( $week->found_posts ? 'ok' : 'off', __( 'Inquiries', 'om-catalog' ), sprintf( _n( '%d this week', '%d this week', $week->found_posts, 'om-catalog' ), $week->found_posts ), admin_url( 'edit.php?post_type=om_inquiry' ) );
+		$items[] = '0' !== get_option( 'om_analytics', '1' ) ? array( 'ok', __( 'Analytics events', 'om-catalog' ), __( 'On', 'om-catalog' ), '#search' ) : array( 'off', __( 'Analytics events', 'om-catalog' ), __( 'Off', 'om-catalog' ), '#search' );
+		return $items;
+	}
+
 	public function render_settings_page() {
 		?>
-		<div class="wrap">
-			<h1>Overnight Mountings Catalog Settings</h1>
-			<p><a class="button" href="<?php echo esc_url( admin_url( 'index.php?page=om-insights' ) ); ?>">See what visitors do: Catalog insights →</a></p>
-			<form method="post" action="options.php">
+		<div class="wrap om-admin">
+			<header class="om-admin-head">
+				<div class="om-admin-brand">
+					<span class="om-admin-mark" aria-hidden="true"></span>
+					<div>
+						<h1>OM Catalog</h1>
+						<p><?php echo esc_html( sprintf( /* translators: %s: version. */ __( 'Overnight Mountings for your site · version %s', 'om-catalog' ), OM_CATALOG_VERSION ) ); ?></p>
+					</div>
+				</div>
+				<div class="om-admin-head-links">
+					<a class="om-admin-btn" href="<?php echo esc_url( admin_url( 'index.php?page=om-insights' ) ); ?>"><?php esc_html_e( 'Insights', 'om-catalog' ); ?></a>
+					<a class="om-admin-btn" href="<?php echo esc_url( admin_url( 'edit.php?post_type=om_inquiry' ) ); ?>"><?php esc_html_e( 'Inquiries', 'om-catalog' ); ?></a>
+				</div>
+			</header>
+			<hr class="wp-header-end" />
+			<ul class="om-admin-status" aria-label="<?php esc_attr_e( 'Status', 'om-catalog' ); ?>">
+				<?php foreach ( $this->status_items() as $item ) : ?>
+					<li class="is-<?php echo esc_attr( $item[0] ); ?>"><a href="<?php echo esc_url( $item[3] ); ?>"<?php echo 0 === strpos( $item[3], '#' ) ? ' data-om-go="' . esc_attr( substr( $item[3], 1 ) ) . '"' : ''; ?>><span class="om-admin-dot" aria-hidden="true"></span><span class="om-admin-status-label"><?php echo esc_html( $item[1] ); ?></span><span class="om-admin-status-detail"><?php echo esc_html( $item[2] ); ?></span></a></li>
+				<?php endforeach; ?>
+			</ul>
+			<form method="post" action="options.php" class="om-admin-form">
 				<?php settings_fields( 'om_catalog_settings' ); ?>
 
-				<h2>API Credentials</h2>
+				<h2 class="om-sec" data-om-tab="connection">API Credentials</h2>
 				<table class="form-table">
 					<tr>
 						<th><label for="om_client_id">Client ID (account number)</label></th>
@@ -230,7 +292,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Pricing Markup</h2>
+				<h2 class="om-sec" data-om-tab="pricing">Pricing Markup</h2>
 				<p class="description">The API returns <strong>wholesale</strong> prices. This markup is applied before any price is shown on the site.</p>
 				<table class="form-table">
 					<tr>
@@ -252,7 +314,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Loose Diamonds</h2>
+				<h2 class="om-sec" data-om-tab="pricing">Loose Diamonds</h2>
 				<p class="description">Markup for loose diamonds (diamond search and ring builder). Leave the value empty to use the jewelry markup above.</p>
 				<table class="form-table">
 					<tr>
@@ -271,7 +333,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Ring Builder</h2>
+				<h2 class="om-sec" data-om-tab="builder">Ring Builder</h2>
 				<table class="form-table">
 					<tr>
 						<th><label for="om_builder_page">Builder page</label></th>
@@ -300,7 +362,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Inquiries</h2>
+				<h2 class="om-sec" data-om-tab="inquiries">Inquiries</h2>
 				<table class="form-table">
 					<tr>
 						<th><label for="om_inquiry_email">Send inquiries to</label></th>
@@ -324,7 +386,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Inquiry form fields</h2>
+				<h2 class="om-sec" data-om-tab="inquiries">Inquiry form fields</h2>
 				<p class="description">The built-in inquiry form used on product pages, the diamond search and the ring builder. Add, remove and reorder fields; the first email field is used to reply to the customer. An OM Single Product widget can also use its own field list.</p>
 				<?php $this->render_field_editor(); ?>
 				<table class="form-table">
@@ -338,7 +400,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>When no price is shown</h2>
+				<h2 class="om-sec" data-om-tab="pricing">When no price is shown</h2>
 				<p class="description">Used by the built-in product page, and by the OM Single Product widget unless its own text/link is set. The widget can also show fully custom buttons instead.</p>
 				<table class="form-table">
 					<tr>
@@ -351,7 +413,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Caching</h2>
+				<h2 class="om-sec" data-om-tab="connection">Caching</h2>
 				<table class="form-table">
 					<tr>
 						<th>Background refresh</th>
@@ -368,7 +430,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Product Page Layout</h2>
+				<h2 class="om-sec" data-om-tab="product">Product Page Layout</h2>
 				<table class="form-table">
 					<tr>
 						<th><label for="om_product_layout_page">Layout</label></th>
@@ -397,7 +459,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Product page</h2>
+				<h2 class="om-sec" data-om-tab="product">Product page</h2>
 				<p class="description">Defaults for the built-in product page and the quick view. An OM Single Product widget has its own settings.</p>
 				<table class="form-table">
 					<tr>
@@ -441,7 +503,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Built-in product page rows</h2>
+				<h2 class="om-sec" data-om-tab="product">Built-in product page rows</h2>
 				<p class="description">Rows shown below the product on the built-in product page. With an Elementor product layout, add the <strong>OM Related Products</strong> widget where you want them instead.</p>
 				<table class="form-table">
 					<tr>
@@ -459,7 +521,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Complete the set</h2>
+				<h2 class="om-sec" data-om-tab="product">Complete the set</h2>
 				<p class="description">Overnight Mountings doesn't say which band matches which ring, so the "Complete the set" row picks bands of the same design family (style number), then the same style (Halo, Solitaire…) in the metal chosen, then the most viewed bands. List exact matches here to put them first. Used by the built-in product page and the <strong>OM Related Products</strong> widget (Show: Complete the set).</p>
 				<table class="form-table">
 					<tr>
@@ -469,7 +531,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Brand Colors &amp; Fonts</h2>
+				<h2 class="om-sec" data-om-tab="look">Brand Colors &amp; Fonts</h2>
 				<table class="form-table">
 					<tr>
 						<th><label for="om_style_source">Style source</label></th>
@@ -511,7 +573,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Look &amp; feel: site defaults</h2>
+				<h2 class="om-sec" data-om-tab="look">Look &amp; feel: site defaults</h2>
 				<p class="description">Each OM widget has these options itself (Style tab: <em>Card Hover, Corners &amp; Spacing</em> / <em>Corners &amp; Spacing</em>; the trust line under <em>Price &amp; Buttons</em>) — configure them there. The values here are only the starting point for widgets left on "Site default", and for the built-in product page (no Elementor layout).</p>
 				<table class="form-table">
 					<tr>
@@ -602,7 +664,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Analytics</h2>
+				<h2 class="om-sec" data-om-tab="search">Analytics</h2>
 				<table class="form-table">
 					<tr>
 						<th>Events</th>
@@ -617,7 +679,7 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<h2>Search</h2>
+				<h2 class="om-sec" data-om-tab="search">Search</h2>
 				<table class="form-table">
 					<tr>
 						<th><label for="om_search_results_page">Search results page</label></th>
@@ -649,12 +711,15 @@ class OM_Settings {
 					</tr>
 				</table>
 
-				<?php submit_button( 'Save Settings' ); ?>
+				<div class="om-admin-savebar">
+					<span class="om-admin-savebar-text" aria-live="polite"></span>
+					<?php submit_button( 'Save Settings', 'primary', 'submit', false ); ?>
+				</div>
 			</form>
 
 			<?php $this->render_tools(); ?>
 
-			<h2>Shortcuts</h2>
+			<h2 class="om-sec" data-om-tab="overview">Shortcuts</h2>
 			<p>Catalog grid shortcode: <code>[om_catalog line="engagement-rings" columns="3" per_page="12"]</code> &mdash; add <code>show_filters="yes" filter_position="left"</code> for a filter sidebar.</p>
 			<p>Product lines: <?php echo esc_html( implode( ', ', array_keys( OM_Shortcodes::line_labels( true ) ) ) ); ?>.</p>
 			<p>Single product pages are generated automatically at: <code><?php echo esc_html( home_url( '/catalog/{product-line}/{style-number}/' ) ); ?></code></p>
@@ -684,7 +749,7 @@ class OM_Settings {
 			}
 		}
 		?>
-		<h2>Tools</h2>
+		<h2 class="om-sec" data-om-tab="tools">Tools</h2>
 		<form method="get" action="<?php echo esc_url( admin_url( 'options-general.php' ) ); ?>" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
 			<input type="hidden" name="page" value="om-catalog-settings" />
 			<?php wp_nonce_field( 'om_catalog_tools', '_wpnonce', false ); ?>
