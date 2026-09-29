@@ -15,6 +15,7 @@
 		look: '<path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.9 1.4-1.9-.4-1.1.4-2.1 1.5-2.1H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10zM7.5 11.5h.01M10 7.5h.01M15 7.5h.01"/>',
 		builder: '<path d="M12 21a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM9 3h6l2 4-5 3-5-3z"/>',
 		inquiries: '<path d="M4 5h16v11H8l-4 4z"/>',
+		assistant: '<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8zM18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/>',
 		search: '<path d="M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm5-2 5 5M8 13v-2m3 2V9m3 4v-3"/>',
 		tools: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.1-.4-.4-2.1z"/>'
 	};
@@ -26,6 +27,7 @@
 		['look', 'Look & feel'],
 		['builder', 'Ring builder & diamonds'],
 		['inquiries', 'Inquiries'],
+		['assistant', 'AI assistant'],
 		['search', 'Search & analytics'],
 		['tools', 'Tools']
 	];
@@ -148,6 +150,46 @@
 		});
 		list.querySelectorAll('a').forEach(function (a) { a.removeAttribute('aria-current'); });
 	});
+
+	/* ---- AI assistant: only the chosen provider's rows; the test button ---- */
+	var providerSel = form.querySelector('[data-om-ai-provider]');
+	function syncProvider() {
+		form.querySelectorAll('[data-om-ai-for]').forEach(function (row) {
+			row.classList.toggle('om-ai-other', row.getAttribute('data-om-ai-for') !== providerSel.value);
+		});
+	}
+	if (providerSel) { providerSel.addEventListener('change', syncProvider); syncProvider(); }
+	var testBtn = form.querySelector('[data-om-ai-test]');
+	if (testBtn && window.fetch) {
+		testBtn.addEventListener('click', function () {
+			var out = form.querySelector('.om-ai-test-result');
+			testBtn.disabled = true;
+			out.className = 'om-ai-test-result';
+			out.textContent = 'Asking…';
+			var body = new URLSearchParams({ action: 'om_assistant_test', nonce: testBtn.getAttribute('data-nonce') });
+			fetch(window.ajaxurl, { method: 'POST', credentials: 'same-origin', body: body }).then(function (r) { return r.json(); }).then(function (r) {
+				out.textContent = '';
+				if (r && r.success) {
+					out.classList.add('is-ok');
+					var d = r.data;
+					[['Question', d.question], ['Reply', d.reply], ['Designs shown', (d.designs || []).join(', ') || '—'], ['Answered by', d.via + ' in ' + (d.ms / 1000).toFixed(1) + ' s']].forEach(function (row) {
+						var p = document.createElement('p');
+						var b = document.createElement('strong');
+						b.textContent = row[0] + ': ';
+						p.appendChild(b);
+						p.appendChild(document.createTextNode(row[1]));
+						out.appendChild(p);
+					});
+				} else {
+					out.classList.add('is-error');
+					out.textContent = 'No answer: ' + ((r && r.data && r.data.message) || 'unknown error') + '. Check the key and model, and that you saved.';
+				}
+			}).catch(function () {
+				out.classList.add('is-error');
+				out.textContent = 'The request failed. Please try again.';
+			}).then(function () { testBtn.disabled = false; });
+		});
+	}
 
 	/* ---- Colour fields: a live swatch beside the hex value ---- */
 	form.querySelectorAll('input.om-color-field').forEach(function (input) {

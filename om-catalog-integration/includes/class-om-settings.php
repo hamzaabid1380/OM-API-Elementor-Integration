@@ -116,6 +116,24 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_saved_email', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_float', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_analytics', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		// AI assistant.
+		register_setting( 'om_catalog_settings', 'om_ai_enabled', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_ai_provider', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, array( 'openrouter', 'gemini', 'claude' ), true ) ? $v : 'openrouter'; } ) );
+		foreach ( array( 'openrouter', 'gemini', 'claude' ) as $ai ) {
+			// Keys are never printed back: an empty field keeps the saved one.
+			register_setting( 'om_catalog_settings', 'om_ai_key_' . $ai, array( 'sanitize_callback' => static function ( $v ) use ( $ai ) { $v = trim( sanitize_text_field( (string) $v ) ); return '' === $v ? (string) get_option( 'om_ai_key_' . $ai, '' ) : ( '-' === $v ? '' : $v ); } ) );
+		}
+		register_setting( 'om_catalog_settings', 'om_ai_models_openrouter', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_model_gemini', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_model_claude', array( 'sanitize_callback' => static function ( $v ) { return isset( OM_Assistant::CLAUDE_MODELS[ $v ] ) ? $v : 'claude-opus-5-5'; } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_name', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_launcher', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_greeting', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_chips', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_about', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_show', array( 'sanitize_callback' => static function ( $v ) { return 'all' === $v ? 'all' : 'catalog'; } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_hourly', array( 'sanitize_callback' => 'absint' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_daily', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_analytics_meta', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_trust_line', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_popular_searches', array( 'sanitize_callback' => 'sanitize_text_field' ) );
@@ -250,6 +268,9 @@ class OM_Settings {
 		);
 		/* translators: %d: number of inquiries. */
 		$items[] = array( $week->found_posts ? 'ok' : 'off', __( 'Inquiries', 'om-catalog' ), sprintf( _n( '%d this week', '%d this week', $week->found_posts, 'om-catalog' ), $week->found_posts ), admin_url( 'edit.php?post_type=om_inquiry' ) );
+		$ai_today = OM_Assistant::usage_today();
+		/* translators: %d: answers. */
+		$items[]  = OM_Assistant::enabled() ? array( OM_Assistant::key() ? 'ok' : 'warn', __( 'AI assistant', 'om-catalog' ), OM_Assistant::key() ? sprintf( _n( 'On · %d answer today', 'On · %d answers today', $ai_today['n'], 'om-catalog' ), $ai_today['n'] ) : __( 'On — add an API key', 'om-catalog' ), '#assistant' ) : array( 'off', __( 'AI assistant', 'om-catalog' ), __( 'Off', 'om-catalog' ), '#assistant' );
 		$items[] = '0' !== get_option( 'om_analytics', '1' ) ? array( 'ok', __( 'Analytics events', 'om-catalog' ), __( 'On', 'om-catalog' ), '#search' ) : array( 'off', __( 'Analytics events', 'om-catalog' ), __( 'Off', 'om-catalog' ), '#search' );
 		return $items;
 	}
@@ -660,6 +681,98 @@ class OM_Settings {
 							<label>Card names <input type="number" min="0" max="60" name="om_m_card_title" value="<?php echo esc_attr( get_option( 'om_m_card_title', '' ) ); ?>" class="small-text" placeholder="15" /> px</label> &nbsp;
 							<label>Body text <input type="number" min="0" max="60" name="om_m_body" value="<?php echo esc_attr( get_option( 'om_m_body', '' ) ); ?>" class="small-text" placeholder="14" /> px</label>
 							<p class="description">Screens up to 600px wide. Leave empty for the defaults shown. Long names are balanced over two lines instead of leaving one word alone.</p>
+						</td>
+					</tr>
+				</table>
+
+				<h2 class="om-sec" data-om-tab="assistant">AI assistant</h2>
+				<p class="description">"Ask our jeweller": a friendly chat that answers questions and suggests real designs from your catalog, then hands over to your team (the chat comes with the inquiry). The plugin picks the matching designs itself; the AI only writes the reply, so it can't invent pieces or prices.</p>
+				<table class="form-table">
+					<tr>
+						<th>Assistant</th>
+						<td>
+							<input type="hidden" name="om_ai_enabled" value="0" />
+							<label><input type="checkbox" name="om_ai_enabled" value="1" <?php checked( get_option( 'om_ai_enabled', '0' ), '1' ); ?> /> Show the chat on the site</label>
+							<?php $ai_usage = OM_Assistant::usage_today(); ?>
+							<p class="description">Today: <?php echo (int) $ai_usage['n']; ?> answered by the AI<?php echo $ai_usage['f'] ? ', ' . (int) $ai_usage['f'] . ' answered without it (limit, no key or provider busy — visitors then see matching designs and the contact form)' : ''; ?>.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="om_ai_provider">AI provider</label></th>
+						<td>
+							<?php $ai_p = OM_Assistant::provider(); ?>
+							<select id="om_ai_provider" name="om_ai_provider" data-om-ai-provider>
+								<option value="openrouter" <?php selected( $ai_p, 'openrouter' ); ?>>OpenRouter (free models available)</option>
+								<option value="gemini" <?php selected( $ai_p, 'gemini' ); ?>>Google Gemini</option>
+								<option value="claude" <?php selected( $ai_p, 'claude' ); ?>>Anthropic Claude</option>
+							</select>
+							<p class="description">Keys are kept on your server and never shown again after saving; leave a key field empty to keep it, or type <code>-</code> to remove it.</p>
+						</td>
+					</tr>
+					<tr data-om-ai-for="openrouter">
+						<th><label for="om_ai_key_openrouter">OpenRouter API key</label></th>
+						<td><input type="password" id="om_ai_key_openrouter" name="om_ai_key_openrouter" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo OM_Assistant::key( 'openrouter' ) ? esc_attr__( 'Saved — leave blank to keep it', 'om-catalog' ) : 'sk-or-…'; ?>" />
+						<p class="description">From <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>. Free models allow a small number of requests a day; buying $10 of credit once raises the free allowance a lot (free models don't use the credit).</p>
+						<label for="om_ai_models_openrouter" style="display:block;margin-top:10px;font-weight:600">Models, in order</label>
+						<input type="text" id="om_ai_models_openrouter" name="om_ai_models_openrouter" value="<?php echo esc_attr( get_option( 'om_ai_models_openrouter', '' ) ); ?>" class="large-text" placeholder="<?php echo esc_attr( implode( ', ', OM_Assistant::openrouter_models() ) ); ?>" />
+						<p class="description">Comma-separated model IDs; if one is busy or gone, the next is tried. Free ones end in <code>:free</code> — see <a href="https://openrouter.ai/models?q=free" target="_blank" rel="noopener">openrouter.ai/models</a> (the list changes over time). Empty = the defaults shown.</p></td>
+					</tr>
+					<tr data-om-ai-for="gemini">
+						<th><label for="om_ai_key_gemini">Gemini API key</label></th>
+						<td><input type="password" id="om_ai_key_gemini" name="om_ai_key_gemini" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo OM_Assistant::key( 'gemini' ) ? esc_attr__( 'Saved — leave blank to keep it', 'om-catalog' ) : 'AIza…'; ?>" />
+						<p class="description">From <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>.</p>
+						<label for="om_ai_model_gemini" style="display:block;margin-top:10px;font-weight:600">Model</label>
+						<input type="text" id="om_ai_model_gemini" name="om_ai_model_gemini" value="<?php echo esc_attr( get_option( 'om_ai_model_gemini', '' ) ); ?>" class="regular-text" placeholder="gemini-2.5-flash" /></td>
+					</tr>
+					<tr data-om-ai-for="claude">
+						<th><label for="om_ai_key_claude">Claude API key</label></th>
+						<td><input type="password" id="om_ai_key_claude" name="om_ai_key_claude" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo OM_Assistant::key( 'claude' ) ? esc_attr__( 'Saved — leave blank to keep it', 'om-catalog' ) : 'sk-ant-…'; ?>" />
+						<p class="description">From <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">the Claude Console</a> (paid per use).</p>
+						<label for="om_ai_model_claude" style="display:block;margin-top:10px;font-weight:600">Model</label>
+						<?php $ai_cm = get_option( 'om_ai_model_claude', 'claude-opus-5-5' ); ?>
+						<select id="om_ai_model_claude" name="om_ai_model_claude">
+							<?php foreach ( OM_Assistant::CLAUDE_MODELS as $id => $label ) : ?>
+								<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $ai_cm, $id ); ?>><?php echo esc_html( $label ); ?></option>
+							<?php endforeach; ?>
+						</select></td>
+					</tr>
+					<tr>
+						<th>Test</th>
+						<td><button type="button" class="button" data-om-ai-test data-nonce="<?php echo esc_attr( wp_create_nonce( 'om_assistant_test' ) ); ?>">Ask a test question</button>
+						<p class="description">Uses the <strong>saved</strong> settings (save first), with a sample question about oval engagement rings.</p>
+						<div class="om-ai-test-result" aria-live="polite"></div></td>
+					</tr>
+					<tr>
+						<th><label for="om_ai_about">About your shop</label></th>
+						<td><textarea id="om_ai_about" name="om_ai_about" rows="7" class="large-text" placeholder="Address, opening hours, phone&#10;What you offer: custom design, resizing, repairs, engraving, financing…&#10;Lab-grown and natural diamonds; certificates (GIA / IGI)&#10;How viewings work, how long orders usually take"><?php echo esc_textarea( get_option( 'om_ai_about', '' ) ); ?></textarea>
+						<p class="description">The only shop facts the assistant uses. Anything not here, it passes to your team. Short lines are best.</p></td>
+					</tr>
+					<tr>
+						<th><label for="om_ai_name">Name &amp; texts</label></th>
+						<td>
+							<input type="text" id="om_ai_name" name="om_ai_name" value="<?php echo esc_attr( get_option( 'om_ai_name', '' ) ); ?>" class="regular-text" placeholder="Jewellery assistant" />
+							<p class="description">Its name in the chat.</p>
+							<input type="text" name="om_ai_launcher" value="<?php echo esc_attr( get_option( 'om_ai_launcher', '' ) ); ?>" class="regular-text" placeholder="Ask our jeweller" aria-label="Button text" style="margin-top:8px" />
+							<p class="description">The button that opens the chat.</p>
+							<textarea name="om_ai_greeting" rows="3" class="large-text" aria-label="Greeting" style="margin-top:8px" placeholder="<?php echo esc_attr( OM_Assistant::front_config() ? OM_Assistant::front_config()['greeting'] : 'Hi! I’m here to help you find the perfect piece…' ); ?>"><?php echo esc_textarea( get_option( 'om_ai_greeting', '' ) ); ?></textarea>
+							<p class="description">The first message. Empty = the text shown.</p>
+							<textarea name="om_ai_chips" rows="4" class="large-text" aria-label="Suggested questions" style="margin-top:8px" placeholder="Help me find an engagement ring&#10;Halo or hidden halo — what’s the difference?&#10;Lab-grown or natural diamond?&#10;How do I find her ring size?"><?php echo esc_textarea( get_option( 'om_ai_chips', '' ) ); ?></textarea>
+							<p class="description">Suggested questions to tap, one per line (up to 6).</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="om_ai_show">Show on</label></th>
+						<td><select id="om_ai_show" name="om_ai_show">
+							<option value="catalog" <?php selected( get_option( 'om_ai_show', 'catalog' ), 'catalog' ); ?>>Catalog, product, diamond and ring builder pages</option>
+							<option value="all" <?php selected( get_option( 'om_ai_show', 'catalog' ), 'all' ); ?>>Every page</option>
+						</select></td>
+					</tr>
+					<tr>
+						<th>Limits</th>
+						<td>
+							<label>Per visitor <input type="number" min="1" name="om_ai_hourly" value="<?php echo esc_attr( get_option( 'om_ai_hourly', 20 ) ); ?>" class="small-text" /> messages an hour</label> &nbsp;
+							<label>Whole site <input type="number" min="0" name="om_ai_daily" value="<?php echo esc_attr( get_option( 'om_ai_daily', 300 ) ); ?>" class="small-text" /> AI answers a day</label>
+							<p class="description">Keeps free allowances and costs in check. Past a limit, visitors still get matching designs and the contact form. 0 = no daily limit.</p>
 						</td>
 					</tr>
 				</table>

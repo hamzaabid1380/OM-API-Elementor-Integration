@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.30.0
+ * Version: 1.31.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.30.0' );
+define( 'OM_CATALOG_VERSION', '1.31.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -26,6 +26,7 @@ require_once OM_CATALOG_DIR . 'includes/functions-elementor.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-search.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-engage.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-saved.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-assistant.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamond-guide.php';
@@ -49,6 +50,7 @@ function om_catalog_init() {
 	OM_Search::instance();
 	OM_Engage::instance();
 	OM_Saved::instance();
+	OM_Assistant::instance();
 	OM_Inquiry::instance();
 	OM_Diamonds::instance();
 	OM_Ring_Builder::instance();
@@ -190,6 +192,17 @@ function om_catalog_enqueue_assets() {
 				/* translators: %s: design name. */
 				'unsaveThis' => __( 'Remove %s from saved', 'om-catalog' ),
 				'sending'    => __( 'Sending…', 'om-catalog' ),
+				'aiPlaceholder' => __( 'Ask about rings, diamonds, sizes…', 'om-catalog' ),
+				'aiSend'     => __( 'Send', 'om-catalog' ),
+				'aiClose'    => __( 'Close chat', 'om-catalog' ),
+				'aiTeam'     => __( 'Talk to our team', 'om-catalog' ),
+				'aiBack'     => __( 'Back to chat', 'om-catalog' ),
+				'aiThinking' => __( 'Thinking…', 'om-catalog' ),
+				'aiRestart'  => __( 'New chat', 'om-catalog' ),
+				'aiError'    => __( 'Sorry — that didn’t go through. Please try again.', 'om-catalog' ),
+				'aiView'     => __( 'View', 'om-catalog' ),
+				'aiSubtitle' => __( 'Usually replies in seconds', 'om-catalog' ),
+				'aiYou'      => __( 'You', 'om-catalog' ),
 				/* translators: %s: style number. */
 				'styleN'     => __( 'Style %s', 'om-catalog' ),
 			),
@@ -208,6 +221,8 @@ function om_catalog_enqueue_assets() {
 			// Admins can watch the events in the browser console: ?om_debug_events=1
 			'trackDebug'      => isset( $_GET['om_debug_events'] ) && current_user_can( 'manage_options' ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
 			'currency'        => (string) apply_filters( 'om_analytics_currency', 'USD' ),
+			// "Ask our jeweller" chat (false when switched off).
+			'assistant'       => OM_Assistant::front_config(),
 			'popular'   => om_popular_searches(),
 		)
 	);

@@ -362,3 +362,14 @@ body.settings_page_om-catalog-settings { background: #f6f4f0; }
 	.om-admin .form-table th { width: auto; padding: 14px 0 4px; }
 	.om-admin .form-table td { padding: 4px 0 14px; }
 }
+
+/* AI assistant: other providers' rows stay out of the way. */
+.om-admin tr.om-ai-other { display: none; }
+.om-admin .om-card tr.om-ai-other[hidden] { display: none; }
+.om-ai-test-result { margin-top: 10px; }
+.om-ai-test-result:empty { display: none; }
+.om-ai-test-result.is-ok,
+.om-ai-test-result.is-error { padding: 12px 14px; border-radius: 10px; background: var(--oa-soft); }
+.om-ai-test-result.is-ok { border-left: 3px solid var(--oa-ok); }
+.om-ai-test-result.is-error { border-left: 3px solid var(--oa-warn); color: var(--oa-warn); }
+.om-ai-test-result p { margin: 0 0 6px; }

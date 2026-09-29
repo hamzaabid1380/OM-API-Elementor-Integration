@@ -990,7 +990,7 @@
 				if (ok) {
 					var subject = $.trim($form.find('[name="om_subject"]:checked, input.om-subject-hidden').first().val() || '');
 					var leadItem = $form.find('[name="om_ctx_style"]').val();
-					var from = $form.closest('.om-builder').length ? 'ring_builder' : ($form.closest('.om-quick-view').length ? 'quick_view' : ($form.closest('.om-diamonds').length ? 'diamond' : ($form.closest('.om-product-wrap').length ? 'product_page' : 'page')));
+					var from = $form.closest('.om-ai').length ? 'assistant' : $form.closest('.om-builder').length ? 'ring_builder' : ($form.closest('.om-quick-view').length ? 'quick_view' : ($form.closest('.om-diamonds').length ? 'diamond' : ($form.closest('.om-product-wrap').length ? 'product_page' : 'page')));
 					var leadPrice = priceNumber($form.find('[name="om_ctx_price"]').val());
 					track('generate_lead', $.extend({ form_type: 'inquiry', form_location: from, subject: subject, item_id: leadItem || '' }, leadPrice ? { value: leadPrice, currency: cfg.currency || 'USD' } : {}), ['track', 'Lead', { content_name: $form.find('[name="om_ctx_title"]').val() || subject, content_category: from }]);
 					if (/viewing|appointment/i.test(subject) && cfg.track && cfg.trackMeta && typeof window.fbq === 'function' && !trackOff()) { try { window.fbq('track', 'Schedule'); } catch (err) { /* ignore */ } }
@@ -3766,6 +3766,234 @@
 		var $grid = $(this).closest('.om-catalog-wrap').find('.om-catalog-grid').first();
 		$grid.toggleClass('is-one-per-row', value === '1').toggleClass('is-two-per-row', value === '2');
 		applyGridSize($(this).closest('.om-catalog-wrap'));
+	});
+
+	/* ---------- "Ask our jeweller": the AI assistant chat ----------
+	   The conversation lives in sessionStorage, so it follows the visitor
+	   from page to page. The server finds real designs and the AI writes
+	   the reply; "Talk to our team" is the site's inquiry form, with the
+	   chat attached. */
+
+	var AI = cfg.assistant;
+	var AI_KEY = 'om_ai_chat';
+	var ai = null;
+
+	function aiRead() {
+		try { var st = JSON.parse(window.sessionStorage.getItem(AI_KEY) || 'null'); if (st && Array.isArray(st.msgs)) { return st; } } catch (err) { /* fresh */ }
+		return { open: false, msgs: [] };
+	}
+	function aiWrite(st) {
+		try { window.sessionStorage.setItem(AI_KEY, JSON.stringify({ open: !!st.open, msgs: st.msgs.slice(-30) })); } catch (err) { /* this page only */ }
+	}
+
+	// Safe, light formatting: paragraphs, **bold**, simple lists.
+	function aiFormat(text) {
+		var esc = function (s) { return $('<div></div>').text(s).html(); };
+		var html = '';
+		var list = null;
+		String(text || '').split(/\n+/).forEach(function (line) {
+			var item = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
+			var body = esc(item ? item[1] : line).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+			if (item) {
+				if (!list) { list = []; }
+				list.push('<li>' + body + '</li>');
+				return;
+			}
+			if (list) { html += '<ul>' + list.join('') + '</ul>'; list = null; }
+			if ($.trim(line)) { html += '<p>' + body + '</p>'; }
+		});
+		if (list) { html += '<ul>' + list.join('') + '</ul>'; }
+		return html;
+	}
+
+	function aiCard(d) {
+		var $card = $('<div class="om-ai-card"></div>');
+		var $a = $('<a class="om-ai-card-link"></a>').attr('href', d.u);
+		$a.append($('<span class="om-ai-card-img"></span>').append(d.i ? $('<img alt="" loading="lazy" />').attr('src', d.i) : ''));
+		$a.append($('<span class="om-ai-card-title"></span>').text(d.t), $('<span class="om-ai-card-meta"></span>').text(d.v ? d.v : t('styleN', 'Style %s').replace('%s', d.s)));
+		$card.append($a);
+		if (cfg.saved) {
+			$card.append($('<button type="button" class="om-save-toggle om-save-toggle--ai" aria-pressed="false"><span class="om-save-icon" aria-hidden="true"></span></button>')
+				.attr({ 'data-om-save': JSON.stringify({ l: d.l, s: d.s, t: d.t, i: d.i, u: d.u }), 'aria-label': t('saveThis', 'Save %s').replace('%s', d.t) }));
+		}
+		return $card;
+	}
+
+	function aiRenderMsg(m) {
+		var $row = $('<div class="om-ai-msg"></div>').addClass(m.r === 'u' ? 'is-user' : 'is-ai');
+		if (m.e) { $row.addClass('is-error'); }
+		var $bubble = $('<div class="om-ai-bubble"></div>');
+		if (m.r === 'u') { $bubble.text(m.t); } else { $bubble.html(aiFormat(m.t)); }
+		$row.append($('<span class="om-visually-hidden"></span>').text((m.r === 'u' ? t('aiYou', 'You') : AI.name) + ': '), $bubble);
+		if (m.d && m.d.length) {
+			var $cards = $('<div class="om-ai-cards"></div>');
+			m.d.forEach(function (d) { $cards.append(aiCard(d)); });
+			$row.append($cards);
+		}
+		if (m.team) {
+			$row.append($('<button type="button" class="om-ai-team-btn"></button>').text(t('aiTeam', 'Talk to our team')));
+		}
+		return $row;
+	}
+
+	function aiRender(scroll) {
+		var st = aiRead();
+		var $log = ai.find('.om-ai-log').empty();
+		$log.append(aiRenderMsg({ r: 'a', t: AI.greeting }));
+		st.msgs.forEach(function (m) { $log.append(aiRenderMsg(m)); });
+		ai.find('.om-ai-chips').prop('hidden', st.msgs.length > 0);
+		syncSaved();
+		if (scroll !== false) { aiScroll(); }
+	}
+
+	function aiScroll() {
+		var el = ai.find('.om-ai-log')[0];
+		if (el) { el.scrollTop = el.scrollHeight; }
+	}
+
+	function aiBuild() {
+		ai = $('<div class="om-ai' + (cfg.refined ? ' om-refined' : '') + '"></div>');
+		var $launch = $('<button type="button" class="om-ai-launch" aria-haspopup="dialog" aria-expanded="false"><span class="om-ai-spark" aria-hidden="true"></span><span class="om-ai-launch-text"></span></button>');
+		$launch.find('.om-ai-launch-text').text(AI.launcher);
+		var $panel = $('<div class="om-ai-panel" role="dialog" aria-modal="false" aria-labelledby="om-ai-title" hidden>'
+			+ '<div class="om-ai-head"><span class="om-ai-avatar" aria-hidden="true"><span class="om-ai-spark"></span></span><div class="om-ai-head-text"><h2 class="om-ai-title" id="om-ai-title"></h2><p class="om-ai-sub"></p></div>'
+			+ '<button type="button" class="om-ai-icon-btn om-ai-restart"><span aria-hidden="true">&#8635;</span></button><button type="button" class="om-ai-icon-btn om-ai-close"><span aria-hidden="true">&times;</span></button></div>'
+			+ '<div class="om-ai-log" role="log" aria-live="polite"></div>'
+			+ '<div class="om-ai-chips"></div>'
+			+ '<div class="om-ai-team" hidden><button type="button" class="om-ai-back"></button><div class="om-ai-team-form"></div></div>'
+			+ '<form class="om-ai-input" novalidate><label class="om-visually-hidden" for="om-ai-text"></label><textarea id="om-ai-text" rows="1" maxlength="600"></textarea><button type="submit" class="om-ai-send"><span class="om-ai-send-icon" aria-hidden="true"></span></button></form>'
+			+ '<p class="om-ai-note"></p></div>');
+		$panel.find('.om-ai-title').text(AI.name);
+		$panel.find('.om-ai-sub').text(t('aiSubtitle', 'Usually replies in seconds'));
+		$panel.find('.om-ai-restart').attr({ 'aria-label': t('aiRestart', 'New chat'), title: t('aiRestart', 'New chat') });
+		$panel.find('.om-ai-close').attr('aria-label', t('aiClose', 'Close chat'));
+		$panel.find('.om-ai-back').text('← ' + t('aiBack', 'Back to chat'));
+		$panel.find('label[for="om-ai-text"]').text(t('aiPlaceholder', 'Ask about rings, diamonds, sizes…'));
+		$panel.find('#om-ai-text').attr('placeholder', t('aiPlaceholder', 'Ask about rings, diamonds, sizes…'));
+		$panel.find('.om-ai-send').attr('aria-label', t('aiSend', 'Send'));
+		$panel.find('.om-ai-note').text(AI.note);
+		(AI.chips || []).forEach(function (c) { $panel.find('.om-ai-chips').append($('<button type="button" class="om-ai-chip"></button>').text(c)); });
+		var tpl = document.getElementById('om-ai-team-form');
+		if (tpl && tpl.content) { $panel.find('.om-ai-team-form').append(document.importNode(tpl.content, true)); }
+		ai.append($launch, $panel).appendTo(document.body);
+	}
+
+	function aiOpen(focus) {
+		if (!ai) { return; }
+		var st = aiRead();
+		aiRender();
+		ai.addClass('is-open');
+		ai.find('.om-ai-panel').prop('hidden', false);
+		ai.find('.om-ai-launch').attr('aria-expanded', 'true');
+		if (!st.open) { track('assistant_open', { page_type: $('.om-product-wrap').length ? 'product' : ($('.om-builder').length ? 'ring_builder' : 'catalog') }, ['trackCustom', 'AssistantOpen', {}]); }
+		st.open = true;
+		aiWrite(st);
+		if (focus !== false) { setTimeout(function () { ai.find('#om-ai-text').trigger('focus'); }, 30); }
+	}
+
+	function aiClose() {
+		var st = aiRead();
+		st.open = false;
+		aiWrite(st);
+		ai.removeClass('is-open');
+		ai.find('.om-ai-panel').prop('hidden', true);
+		ai.find('.om-ai-launch').attr('aria-expanded', 'false').trigger('focus');
+	}
+
+	function aiTeamView(show) {
+		ai.find('.om-ai-team').prop('hidden', !show);
+		ai.find('.om-ai-log, .om-ai-chips, .om-ai-input').toggleClass('is-away', !!show);
+		if (show) {
+			var lines = [];
+			aiRead().msgs.forEach(function (m) { if (!m.e) { lines.push((m.r === 'u' ? 'Visitor' : 'Assistant') + ': ' + m.t + (m.d && m.d.length ? ' [' + m.d.map(function (d) { return d.t + ' (' + d.s + ')'; }).join('; ') + ']' : '')); } });
+			var chat = lines.join('\n');
+			if (chat.length > 3800) { chat = '…' + chat.slice(-3800); }
+			var $form = ai.find('.om-ai-team .om-inquiry-form');
+			$form.find('[name="om_ctx_chat"]').val(chat);
+			$form.find('[name="om_ctx_url"]').val(window.location.href);
+			var first = $form.find('input:not([type=hidden]), textarea, select').filter(function () { return !$(this).closest('.om-hp').length && $(this).is(':visible'); }).first();
+			setTimeout(function () { (first[0] || ai.find('.om-ai-back')[0]).focus(); }, 30);
+		} else {
+			ai.find('#om-ai-text').trigger('focus');
+		}
+	}
+
+	function aiSend(text) {
+		text = $.trim(text || '');
+		if (!text || ai.hasClass('is-busy')) { return; }
+		var st = aiRead();
+		var history = st.msgs.filter(function (m) { return !m.e; }).slice(-10).map(function (m) { return { r: m.r, t: m.t }; });
+		st.msgs.push({ r: 'u', t: text });
+		aiWrite(st);
+		aiRender();
+		ai.find('#om-ai-text').val('').css('height', '');
+		ai.addClass('is-busy');
+		var $typing = $('<div class="om-ai-msg is-ai is-typing"><div class="om-ai-bubble"><span class="om-ai-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="om-visually-hidden"></span></div></div>');
+		$typing.find('.om-visually-hidden').text(t('aiThinking', 'Thinking…'));
+		ai.find('.om-ai-log').append($typing);
+		aiScroll();
+		var wrap = $('.om-product-wrap').not('.om-quick-view .om-product-wrap').first();
+		var qvWrap = $('.om-quick-view[open] .om-product-wrap').first();
+		var here = qvWrap.length ? qvWrap : wrap;
+		track('assistant_message', { length: text.length }, ['trackCustom', 'AssistantMessage', {}]);
+		$.ajax({
+			url: cfg.ajaxUrl, method: 'POST', timeout: 70000,
+			data: { action: 'om_assistant', message: text, history: JSON.stringify(history), line: here.attr('data-line') || '', style: here.attr('data-style') || '' }
+		}).done(function (r) {
+			var st2 = aiRead();
+			if (r && r.success) {
+				st2.msgs.push({ r: 'a', t: r.data.reply, d: r.data.designs || [], team: !!r.data.team });
+			} else {
+				st2.msgs.push({ r: 'a', t: (r && r.data && r.data.message) || t('aiError', 'Sorry — that didn’t go through. Please try again.'), e: true, team: true });
+			}
+			aiWrite(st2);
+		}).fail(function () {
+			var st2 = aiRead();
+			st2.msgs.push({ r: 'a', t: t('aiError', 'Sorry — that didn’t go through. Please try again.'), e: true, team: true });
+			aiWrite(st2);
+		}).always(function () {
+			ai.removeClass('is-busy');
+			aiRender();
+		});
+	}
+
+	$(document).on('click', '.om-ai-launch', function () { aiOpen(); });
+	$(document).on('click', '.om-ai-close', aiClose);
+	$(document).on('click', '.om-ai-restart', function () {
+		var st = aiRead();
+		st.msgs = [];
+		aiWrite(st);
+		aiTeamView(false);
+		aiRender();
+	});
+	$(document).on('click', '.om-ai-chip', function () { aiSend($(this).text()); });
+	$(document).on('click', '.om-ai-team-btn', function () { aiTeamView(true); });
+	$(document).on('click', '.om-ai-back', function () { aiTeamView(false); });
+	$(document).on('submit', '.om-ai-input', function (e) { e.preventDefault(); aiSend($(this).find('textarea').val()); });
+	$(document).on('keydown', '#om-ai-text', function (e) {
+		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); aiSend(this.value); }
+	});
+	$(document).on('input', '#om-ai-text', function () {
+		this.style.height = '';
+		this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+	});
+	// Escape closes the chat (unless another pop-up is on top of it).
+	$(document).on('keydown', function (e) {
+		if (e.key !== 'Escape' || !ai || !ai.hasClass('is-open') || $('dialog[open]').length) { return; }
+		var inChat = $(e.target).closest('.om-ai-panel').length;
+		if (inChat || e.target === document.body || !e.target.isConnected) { aiClose(); }
+	});
+	// Any link to #om-ai (e.g. a menu item or a button) opens the chat.
+	$(document).on('click', 'a[href$="#om-ai"]', function (e) {
+		if (!ai) { return; }
+		e.preventDefault();
+		aiOpen();
+	});
+
+	$(function () {
+		if (!AI || !cfg.ajaxUrl || trackOff() || !document.body) { return; }
+		aiBuild();
+		if (aiRead().open || window.location.hash === '#om-ai') { aiOpen(false); }
 	});
 
 	/* ---------- Boot ---------- */

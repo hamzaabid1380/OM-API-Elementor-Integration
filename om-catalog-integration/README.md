@@ -324,6 +324,34 @@ Developers can listen for the `om:track` event on `document`
 (`detail: { name, params }`); the currency is filterable with
 `om_analytics_currency` (default USD).
 
+## AI assistant ("Ask our jeweller")
+
+A friendly chat that answers jewellery questions and suggests real designs,
+then hands over to your team. Off until you switch it on in **Settings >
+OM Catalog > AI assistant**.
+
+- **Providers:** OpenRouter (free models work — list several and each is
+  tried in turn if one is busy), Google Gemini, or Anthropic Claude
+  (Opus 5.5 by default; Sonnet 5.5 or Haiku 4.5 selectable). Keys stay on
+  your server and are never shown again after saving.
+- **It can't invent pieces or prices:** the plugin finds the matching designs
+  in your catalog (shape, style, carat, product type, the page being viewed)
+  and gives the AI only those; the AI writes the reply and picks designs,
+  which appear as photo cards with Save hearts. Prices, discounts, stock and
+  timings are always left to your team.
+- **Your shop facts:** fill in "About your shop" (hours, services, policies);
+  it uses nothing else about the shop.
+- **Hand-over:** "Talk to our team" opens your inquiry form inside the chat,
+  with the whole conversation attached to the email and the Inquiries entry.
+- **Never broken:** with no key, a provider down, or a limit reached,
+  visitors still get matching designs and the contact form.
+- **Limits:** messages per visitor per hour and AI answers per day (keeps free
+  allowances and costs in check). Today's count shows in Settings.
+- **Test** it from Settings with one click. The conversation follows the
+  visitor across pages; any link to `#om-ai` opens it. Analytics:
+  `assistant_open`, `assistant_message`, and `generate_lead` with
+  `form_location: assistant`.
+
 ## Inquiries
 
 Product pages, diamonds and the builder review have an inquiry form. Each
@@ -846,6 +874,12 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.31.0
+- **AI assistant "Ask our jeweller"** (off by default): friendly, suggestive
+  chat with real design cards, OpenRouter (free models) / Gemini / Claude,
+  shop facts, hand-over to the inquiry form with the chat attached, limits,
+  graceful fallback, a test button, and an "AI assistant" settings section.
 
 ### 1.30.0
 - **New settings screen**: a left-hand menu of sections (Overview,

@@ -337,6 +337,8 @@ class OM_Inquiry {
 				'summary'     => '',
 				// Ring builder "Help me choose" answers, in words.
 				'guide'       => '',
+				// The AI assistant chat so far (filled by the script).
+				'chat'        => '',
 				// A small line above the send button.
 				'note'        => '',
 				// Filled by the script at send time: the page URL with the
@@ -397,7 +399,7 @@ class OM_Inquiry {
 			<form class="om-inquiry-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" novalidate>
 				<input type="hidden" name="action" value="om_inquiry" />
 				<input type="hidden" name="om_t" value="<?php echo esc_attr( self::stamp() ); ?>" />
-				<?php foreach ( array( 'title', 'style', 'line', 'url', 'price', 'diamond', 'summary', 'guide', 'link', 'color' ) as $field ) : ?>
+				<?php foreach ( array( 'title', 'style', 'line', 'url', 'price', 'diamond', 'summary', 'guide', 'chat', 'link', 'color' ) as $field ) : ?>
 					<input type="hidden" name="om_ctx_<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $context[ $field ] ); ?>" />
 				<?php endforeach; ?>
 				<input type="hidden" name="om_config" value="" class="om-inquiry-config" />
@@ -588,6 +590,7 @@ class OM_Inquiry {
 			'diamond' => mb_substr( $f( 'om_ctx_diamond' ), 0, 80 ),
 			'summary' => mb_substr( $f( 'om_ctx_summary', true ), 0, 1000 ),
 			'guide'   => mb_substr( $f( 'om_ctx_guide' ), 0, 300 ),
+			'chat'    => mb_substr( $f( 'om_ctx_chat', true ), 0, 4000 ),
 			'config'  => mb_substr( $f( 'om_config' ), 0, 300 ),
 		);
 		// phpcs:enable
@@ -651,6 +654,7 @@ class OM_Inquiry {
 				__( 'Diamond', 'om-catalog' )        => $data['diamond'],
 				__( 'Ring builder', 'om-catalog' )   => $data['summary'],
 				__( 'Help me choose', 'om-catalog' ) => $data['guide'],
+				__( 'Assistant chat', 'om-catalog' ) => '' !== $data['chat'] ? "\n" . $data['chat'] : '',
 				__( 'Page', 'om-catalog' )          => $data['link'],
 				__( 'Together with', 'om-catalog' )  => $data['pair'] ? $data['pair']['title'] . ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) . ') ' . $data['pair']['url'] : '',
 			),
@@ -772,6 +776,7 @@ class OM_Inquiry {
 				__( 'Ring builder', 'om-catalog' ) => $data['summary'] ?? '',
 				// For the shop only.
 				__( 'Help me choose', 'om-catalog' ) => $customer ? '' : ( $data['guide'] ?? '' ),
+				__( 'Assistant chat', 'om-catalog' ) => $customer ? '' : ( $data['chat'] ?? '' ),
 			),
 			'strlen'
 		);
