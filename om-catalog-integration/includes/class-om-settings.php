@@ -116,6 +116,11 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_saved_email', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_float', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_analytics', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		// Emails.
+		foreach ( array_keys( OM_Emails::notifications() ) as $email_id ) {
+			register_setting( 'om_catalog_settings', 'om_email_' . $email_id, array( 'sanitize_callback' => array( 'OM_Emails', 'sanitize_email_settings' ) ) );
+		}
+		register_setting( 'om_catalog_settings', OM_Emails::DESIGN, array( 'sanitize_callback' => array( 'OM_Emails', 'sanitize_design' ) ) );
 		// AI assistant.
 		register_setting( 'om_catalog_settings', 'om_ai_enabled', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_ai_provider', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, array( 'openrouter', 'gemini', 'claude' ), true ) ? $v : 'openrouter'; } ) );
@@ -132,6 +137,9 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_ai_chips', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_about', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_show', array( 'sanitize_callback' => static function ( $v ) { return 'all' === $v ? 'all' : 'catalog'; } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_side', array( 'sanitize_callback' => static function ( $v ) { return 'left' === $v ? 'left' : 'right'; } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_offset_x', array( 'sanitize_callback' => 'absint' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_offset_y', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_hourly', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_daily', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_analytics_meta', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -233,6 +241,7 @@ class OM_Settings {
 		if ( 'settings_page_om-catalog-settings' !== $hook ) {
 			return;
 		}
+		wp_enqueue_media();
 		wp_enqueue_style( 'om-admin', OM_CATALOG_URL . 'assets/css/om-admin.css', array(), OM_CATALOG_VERSION );
 		wp_enqueue_script( 'om-admin', OM_CATALOG_URL . 'assets/js/om-admin.js', array(), OM_CATALOG_VERSION, true );
 	}
@@ -412,12 +421,8 @@ class OM_Settings {
 				<?php $this->render_field_editor(); ?>
 				<table class="form-table">
 					<tr>
-						<th>Confirmation email</th>
-						<td>
-							<input type="hidden" name="om_inquiry_autoreply" value="0" />
-							<label><input type="checkbox" name="om_inquiry_autoreply" value="1" <?php checked( get_option( 'om_inquiry_autoreply', '0' ), '1' ); ?> /> Send the customer a confirmation email with the piece they asked about</label>
-							<textarea name="om_inquiry_autoreply_text" rows="3" class="large-text" placeholder="Thank you for your inquiry. We have received your message and will be in touch shortly."><?php echo esc_textarea( get_option( 'om_inquiry_autoreply_text', '' ) ); ?></textarea>
-						</td>
+						<th>Emails</th>
+						<td><p class="description" style="margin-top:0">The inquiry email you receive and the customer's confirmation (on/off, recipients, wording, design) are set up under <a href="#emails" data-om-go="emails">Emails</a>.</p></td>
 					</tr>
 				</table>
 
@@ -685,6 +690,122 @@ class OM_Settings {
 					</tr>
 				</table>
 
+				<h2 class="om-sec" data-om-tab="emails">Email design</h2>
+				<p class="description">The look of every email the plugin sends: your logo, colours, sender and footer. Each email's wording is below.</p>
+				<?php $email_design = OM_Emails::design(); $email_saved_design = get_option( OM_Emails::DESIGN, array() ); ?>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_email_logo">Logo</label></th>
+						<td><input type="url" id="om_email_logo" name="om_email_design[logo]" value="<?php echo esc_attr( $email_design['logo'] ); ?>" class="regular-text" placeholder="https://…/logo.png" />
+						<button type="button" class="button" data-om-media="#om_email_logo">Choose image</button>
+						<label style="margin-left:8px">Width <input type="number" min="60" max="400" name="om_email_design[logo_width]" value="<?php echo esc_attr( $email_design['logo_width'] ); ?>" class="small-text" /> px</label>
+						<p class="description">Empty = your site name in the heading font. A PNG with a transparent or white background works best.</p></td>
+					</tr>
+					<tr>
+						<th>Colours</th>
+						<td>
+							<label>Brand (headings, buttons) <input type="text" name="om_email_design[brand]" value="<?php echo esc_attr( $email_saved_design['brand'] ?? '' ); ?>" class="om-color-field" placeholder="<?php echo esc_attr( $email_design['brand'] ); ?>" style="width:110px" /></label><br />
+							<label>Accent (top line, quotes) <input type="text" name="om_email_design[accent]" value="<?php echo esc_attr( $email_saved_design['accent'] ?? '' ); ?>" class="om-color-field" placeholder="#B8925A" style="width:110px" /></label><br />
+							<label>Background <input type="text" name="om_email_design[background]" value="<?php echo esc_attr( $email_saved_design['background'] ?? '' ); ?>" class="om-color-field" placeholder="#F4F3F1" style="width:110px" /></label>
+						</td>
+					</tr>
+					<tr>
+						<th>Sender</th>
+						<td><input type="text" name="om_email_design[from_name]" value="<?php echo esc_attr( $email_design['from_name'] ); ?>" class="regular-text" placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" aria-label="From name" />
+						<input type="email" name="om_email_design[from_email]" value="<?php echo esc_attr( $email_design['from_email'] ); ?>" class="regular-text" placeholder="hello@yourdomain.com" aria-label="From email" style="margin-top:6px" />
+						<p class="description">Who the emails come from. Use an address on your own domain (and an SMTP plugin) so they don't land in spam. Empty = WordPress's default.</p></td>
+					</tr>
+					<tr>
+						<th>Footer</th>
+						<td><?php
+						wp_editor(
+							(string) ( $email_saved_design['footer'] ?? '' ),
+							'omemaildesignfooter',
+							array(
+								'textarea_name' => 'om_email_design[footer]',
+								'editor_height' => 110,
+								'media_buttons' => false,
+								'teeny'         => true,
+								'quicktags'     => true,
+							)
+						);
+						?>
+						<p class="description">Address, phone, opening hours, social links… Empty = your site name and address. Placeholders work here too.</p></td>
+					</tr>
+				</table>
+
+				<?php foreach ( OM_Emails::notifications() as $email_id => $email_def ) : ?>
+					<?php $em = OM_Emails::get( $email_id ); $em_name = 'om_email_' . $email_id; ?>
+					<h2 class="om-sec" data-om-tab="emails"><?php echo esc_html( $email_def['label'] ); ?> <span class="om-email-aud"><?php echo 'shop' === $email_def['audience'] ? 'to you' : 'to the customer'; ?></span></h2>
+					<p class="description"><?php echo esc_html( $email_def['when'] ); ?></p>
+					<table class="form-table om-email-table" data-om-email="<?php echo esc_attr( $email_id ); ?>">
+						<?php if ( $email_def['toggle'] ) : ?>
+							<tr>
+								<th>Send</th>
+								<td><input type="hidden" name="<?php echo esc_attr( $em_name ); ?>[enabled]" value="0" /><label><input type="checkbox" name="<?php echo esc_attr( $em_name ); ?>[enabled]" value="1" <?php checked( $em['enabled'], '1' ); ?> /> Send this email</label></td>
+							</tr>
+						<?php else : ?>
+							<input type="hidden" name="<?php echo esc_attr( $em_name ); ?>[enabled]" value="1" />
+						<?php endif; ?>
+						<?php if ( 'shop' === $email_def['audience'] ) : ?>
+							<tr>
+								<th>Recipients</th>
+								<td><input type="text" name="<?php echo esc_attr( $em_name ); ?>[to]" value="<?php echo esc_attr( $em['to'] ); ?>" class="regular-text" placeholder="<?php echo esc_attr( OM_Emails::shop_address() ); ?>" aria-label="To" />
+								<input type="text" name="<?php echo esc_attr( $em_name ); ?>[cc]" value="<?php echo esc_attr( $em['cc'] ); ?>" class="regular-text" placeholder="Cc (optional)" aria-label="Cc" style="margin-top:6px" />
+								<input type="text" name="<?php echo esc_attr( $em_name ); ?>[bcc]" value="<?php echo esc_attr( $em['bcc'] ); ?>" class="regular-text" placeholder="Bcc (optional)" aria-label="Bcc" style="margin-top:6px" />
+								<p class="description">Several addresses: separate with commas. Empty "To" = the address under Inquiries.</p></td>
+							</tr>
+						<?php endif; ?>
+						<tr>
+							<th><label for="<?php echo esc_attr( $em_name ); ?>_subject">Subject</label></th>
+							<td><input type="text" id="<?php echo esc_attr( $em_name ); ?>_subject" name="<?php echo esc_attr( $em_name ); ?>[subject]" value="<?php echo esc_attr( $em['subject'] ); ?>" class="large-text" data-om-token-target /></td>
+						</tr>
+						<tr>
+							<th><label for="<?php echo esc_attr( $em_name ); ?>_heading">Heading</label></th>
+							<td><input type="text" id="<?php echo esc_attr( $em_name ); ?>_heading" name="<?php echo esc_attr( $em_name ); ?>[heading]" value="<?php echo esc_attr( $em['heading'] ); ?>" class="large-text" data-om-token-target /></td>
+						</tr>
+						<tr>
+							<th>Message</th>
+							<td><?php
+							wp_editor(
+								(string) $em['body'],
+								'omemail' . str_replace( '_', '', $email_id ),
+								array(
+									'textarea_name' => $em_name . '[body]',
+									'editor_height' => 220,
+									'media_buttons' => true,
+									'teeny'         => false,
+									'quicktags'     => true,
+									'tinymce'       => array(
+										'toolbar1' => 'formatselect,bold,italic,underline,forecolor,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,unlink,hr,removeformat,undo,redo',
+										'toolbar2' => '',
+									),
+								)
+							);
+							?>
+							<div class="om-email-tokens"><span>Placeholders — click to insert:</span>
+								<?php foreach ( array_merge( array( 'site_name' ), $email_def['tokens'] ) as $tok ) : ?>
+									<button type="button" class="om-email-token" data-om-token="{<?php echo esc_attr( $tok ); ?>}" title="<?php echo esc_attr( OM_Emails::token_help()[ $tok ] ?? '' ); ?>">{<?php echo esc_html( $tok ); ?>}</button>
+								<?php endforeach; ?>
+							</div>
+							<p class="description"><code>{details}</code> is the automatic block (<?php echo 0 === strpos( $email_id, 'inquiry' ) ? 'the piece with its options and price' . ( 'inquiry_shop' === $email_id ? ', and their message' : '' ) : ( 0 === strpos( $email_id, 'saved' ) ? 'the saved designs with photos' : 'nothing extra for this one' ); ?>); without it, the block follows your text.</p></td>
+						</tr>
+						<tr>
+							<th><label for="<?php echo esc_attr( $em_name ); ?>_button">Button</label></th>
+							<td><input type="text" id="<?php echo esc_attr( $em_name ); ?>_button" name="<?php echo esc_attr( $em_name ); ?>[button]" value="<?php echo esc_attr( $em['button'] ); ?>" class="regular-text" data-om-token-target />
+							<p class="description">Links to the piece, the list or the design. Empty = no button.</p></td>
+						</tr>
+						<tr>
+							<th>Check it</th>
+							<td><button type="button" class="button" data-om-email-preview="<?php echo esc_attr( $email_id ); ?>">Preview</button>
+							<button type="button" class="button" data-om-email-test="<?php echo esc_attr( $email_id ); ?>">Send a test to <?php echo esc_html( wp_get_current_user()->user_email ); ?></button>
+							<span class="om-email-status" aria-live="polite"></span>
+							<p class="description">Both use what's on screen now (even before saving), with example details.</p></td>
+						</tr>
+					</table>
+				<?php endforeach; ?>
+				<input type="hidden" id="om-email-nonce" value="<?php echo esc_attr( wp_create_nonce( 'om_email_admin' ) ); ?>" />
+
 				<h2 class="om-sec" data-om-tab="assistant">AI assistant</h2>
 				<p class="description">"Ask our jeweller": a friendly chat that answers questions and suggests real designs from your catalog, then hands over to your team (the chat comes with the inquiry). The plugin picks the matching designs itself; the AI only writes the reply, so it can't invent pieces or prices.</p>
 				<table class="form-table">
@@ -694,7 +815,12 @@ class OM_Settings {
 							<input type="hidden" name="om_ai_enabled" value="0" />
 							<label><input type="checkbox" name="om_ai_enabled" value="1" <?php checked( get_option( 'om_ai_enabled', '0' ), '1' ); ?> /> Show the chat on the site</label>
 							<?php $ai_usage = OM_Assistant::usage_today(); ?>
-							<p class="description">Today: <?php echo (int) $ai_usage['n']; ?> answered by the AI<?php echo $ai_usage['f'] ? ', ' . (int) $ai_usage['f'] . ' answered without it (limit, no key or provider busy — visitors then see matching designs and the contact form)' : ''; ?>.</p>
+							<p class="description">Today: <?php echo (int) $ai_usage['n']; ?> answered by the AI<?php echo $ai_usage['f'] ? ', ' . (int) $ai_usage['f'] . ' not answered (visitors were asked to try again)' : ''; ?>.</p>
+							<?php $ai_err = get_option( 'om_ai_last_error' ); ?>
+							<?php if ( is_array( $ai_err ) && ! empty( $ai_err['m'] ) ) : ?>
+								<p class="description" style="color:#b4540a">Last problem (<?php echo esc_html( human_time_diff( (int) $ai_err['t'] ) ); ?> ago): <?php echo esc_html( $ai_err['m'] ); ?></p>
+							<?php endif; ?>
+							<p class="description">While logged in as an admin, the chat itself also shows why an answer failed.</p>
 						</td>
 					</tr>
 					<tr>
@@ -715,7 +841,7 @@ class OM_Settings {
 						<p class="description">From <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>. Free models allow a small number of requests a day; buying $10 of credit once raises the free allowance a lot (free models don't use the credit).</p>
 						<label for="om_ai_models_openrouter" style="display:block;margin-top:10px;font-weight:600">Models, in order</label>
 						<input type="text" id="om_ai_models_openrouter" name="om_ai_models_openrouter" value="<?php echo esc_attr( get_option( 'om_ai_models_openrouter', '' ) ); ?>" class="large-text" placeholder="<?php echo esc_attr( implode( ', ', OM_Assistant::openrouter_models() ) ); ?>" />
-						<p class="description">Comma-separated model IDs; if one is busy or gone, the next is tried. Free ones end in <code>:free</code> — see <a href="https://openrouter.ai/models?q=free" target="_blank" rel="noopener">openrouter.ai/models</a> (the list changes over time). Empty = the defaults shown.</p></td>
+						<p class="description">Comma-separated model IDs; if one is busy or gone, the next is tried, then OpenRouter's current free models (looked up automatically, so a retired name can't stop the chat). Free ones end in <code>:free</code> — see <a href="https://openrouter.ai/models?q=free" target="_blank" rel="noopener">openrouter.ai/models</a>. Empty = the defaults shown.</p></td>
 					</tr>
 					<tr data-om-ai-for="gemini">
 						<th><label for="om_ai_key_gemini">Gemini API key</label></th>
@@ -768,11 +894,20 @@ class OM_Settings {
 						</select></td>
 					</tr>
 					<tr>
+						<th>Button position</th>
+						<td>
+							<select name="om_ai_side" aria-label="Side"><option value="right" <?php selected( get_option( 'om_ai_side', 'right' ), 'right' ); ?>>Bottom right</option><option value="left" <?php selected( get_option( 'om_ai_side', 'right' ), 'left' ); ?>>Bottom left</option></select>
+							&nbsp;<label><input type="number" min="0" max="200" name="om_ai_offset_x" value="<?php echo esc_attr( get_option( 'om_ai_offset_x', 20 ) ); ?>" class="small-text" /> px from the side</label>
+							&nbsp;<label><input type="number" min="0" max="300" name="om_ai_offset_y" value="<?php echo esc_attr( get_option( 'om_ai_offset_y', 20 ) ); ?>" class="small-text" /> px from the bottom</label>
+							<p class="description">It moves up by itself only while something else sits under it (the compare tray, the phone's filter bar, the product page's bottom bar), then goes back.</p>
+						</td>
+					</tr>
+					<tr>
 						<th>Limits</th>
 						<td>
-							<label>Per visitor <input type="number" min="1" name="om_ai_hourly" value="<?php echo esc_attr( get_option( 'om_ai_hourly', 20 ) ); ?>" class="small-text" /> messages an hour</label> &nbsp;
-							<label>Whole site <input type="number" min="0" name="om_ai_daily" value="<?php echo esc_attr( get_option( 'om_ai_daily', 300 ) ); ?>" class="small-text" /> AI answers a day</label>
-							<p class="description">Keeps free allowances and costs in check. Past a limit, visitors still get matching designs and the contact form. 0 = no daily limit.</p>
+							<label>Per visitor <input type="number" min="1" name="om_ai_hourly" value="<?php echo esc_attr( get_option( 'om_ai_hourly', 0 ) ); ?>" class="small-text" /> messages an hour</label> &nbsp;
+							<label>Whole site <input type="number" min="0" name="om_ai_daily" value="<?php echo esc_attr( get_option( 'om_ai_daily', 0 ) ); ?>" class="small-text" /> AI answers a day</label>
+							<p class="description">0 = no limit (the default). Set limits later if you want to cap costs or keep within a free allowance.</p>
 						</td>
 					</tr>
 				</table>

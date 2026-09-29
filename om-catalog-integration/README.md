@@ -345,12 +345,40 @@ OM Catalog > AI assistant**.
   with the whole conversation attached to the email and the Inquiries entry.
 - **Never broken:** with no key, a provider down, or a limit reached,
   visitors still get matching designs and the contact form.
-- **Limits:** messages per visitor per hour and AI answers per day (keeps free
-  allowances and costs in check). Today's count shows in Settings.
+- **Limits:** off by default; optionally messages per visitor per hour and
+  AI answers per day. Today's count and the last problem (if any) show in
+  Settings; admins also see the reason in the chat when an answer fails.
+- **Position:** bottom right or left, distances in px; it moves up only while
+  a bar (compare tray, phone filter pill, product bar) sits under it.
 - **Test** it from Settings with one click. The conversation follows the
   visitor across pages; any link to `#om-ai` opens it. Analytics:
   `assistant_open`, `assistant_message`, and `generate_lead` with
   `form_location: assistant`.
+
+## Emails
+
+**Settings > OM Catalog > Emails** sets up every email the plugin sends:
+
+| Email | To | Can be switched off |
+| --- | --- | --- |
+| New inquiry | you (To / Cc / Bcc) | — |
+| Inquiry confirmation | the customer | yes |
+| Saved designs | the visitor who asked | (the feature itself, under Look & feel) |
+| Saved designs — your copy | you | yes |
+| Ring design | the visitor who asked | — |
+| Ring design — your copy | you | yes |
+
+For each: recipients (emails to you), subject, heading, the message in the
+WordPress visual editor (formatting, lists, links, images), button text, and
+placeholders such as `{customer_name}`, `{piece}`, `{price}`, `{link}` —
+click one to insert it. `{details}` places the automatic block (the piece
+with its options and price, the saved designs, the customer's answers).
+**Preview** and **Send a test** use what's on screen, before saving.
+
+**Email design** applies to all of them: logo (from the media library),
+brand, accent and background colours, sender name and address, and a footer
+(address, hours, links). Use a sender address on your own domain with an
+SMTP plugin so emails reach inboxes.
 
 ## Inquiries
 
@@ -874,6 +902,20 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.32.0
+- **Emails & notifications**: a new Emails section — every email (new
+  inquiry, customer confirmation, saved designs and ring design, with your
+  copies) gets on/off, To/Cc/Bcc, subject, heading, a visual editor body,
+  button text and click-to-insert placeholders, with live Preview and Send a
+  test; plus one email design (logo, colours, sender, footer).
+- **AI assistant answers properly**: it now answers questions fully from
+  jewellery knowledge and only suggests the team for prices, orders,
+  viewings or a person. Limits are off by default. When the AI can't answer,
+  admins see the actual reason in the chat and in Settings, and OpenRouter's
+  current free models are looked up automatically.
+- **Chat button position**: bottom right or left, with your own distances; it
+  only moves up while something is actually underneath it.
 
 ### 1.31.0
 - **AI assistant "Ask our jeweller"** (off by default): friendly, suggestive

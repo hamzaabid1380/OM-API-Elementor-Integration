@@ -3830,6 +3830,7 @@
 			m.d.forEach(function (d) { $cards.append(aiCard(d)); });
 			$row.append($cards);
 		}
+		if (m.dbg) { $row.append($('<p class="om-ai-debug"></p>').text(m.dbg)); }
 		if (m.team) {
 			$row.append($('<button type="button" class="om-ai-team-btn"></button>').text(t('aiTeam', 'Talk to our team')));
 		}
@@ -3851,8 +3852,37 @@
 		if (el) { el.scrollTop = el.scrollHeight; }
 	}
 
+	// The button's place: the chosen corner, lifted only while a bar
+	// (compare tray, phone filter pill, sticky product bar, ring builder
+	// bar, saved button) actually sits under it.
+	var aiPlaceTick = false;
+	function aiPlace() {
+		aiPlaceTick = false;
+		if (!ai) { return; }
+		var base = +AI.y || 20;
+		var btn = ai.find('.om-ai-launch')[0];
+		var lift = 0;
+		// (offsetParent is always null for a fixed element, so check its box.)
+		if (btn && btn.getClientRects().length) {
+			var r = btn.getBoundingClientRect();
+			var vh = window.innerHeight;
+			$('.om-compare-tray:not([hidden]), .om-sticky-bar:not([hidden]), .om-rb-bar, .om-sticky-tools.is-shown, .om-saved-float:not([hidden]), .om-toast.is-in').each(function () {
+				var b = this.getBoundingClientRect();
+				if (!b.width || !b.height || b.top >= vh || b.bottom < vh - 220) { return; }
+				if (b.right <= r.left || b.left >= r.right) { return; }
+				lift = Math.max(lift, vh - b.top + 12 - base);
+			});
+		}
+		ai[0].style.setProperty('--om-ai-y', (base + Math.max(0, Math.round(lift))) + 'px');
+	}
+	function aiQueuePlace() {
+		if (!aiPlaceTick) { aiPlaceTick = true; window.requestAnimationFrame(aiPlace); }
+	}
+	window.addEventListener('scroll', aiQueuePlace, { passive: true });
+	window.addEventListener('resize', aiQueuePlace);
+
 	function aiBuild() {
-		ai = $('<div class="om-ai' + (cfg.refined ? ' om-refined' : '') + '"></div>');
+		ai = $('<div class="om-ai' + (cfg.refined ? ' om-refined' : '') + (AI.side === 'left' ? ' om-ai--left' : '') + '"></div>');
 		var $launch = $('<button type="button" class="om-ai-launch" aria-haspopup="dialog" aria-expanded="false"><span class="om-ai-spark" aria-hidden="true"></span><span class="om-ai-launch-text"></span></button>');
 		$launch.find('.om-ai-launch-text').text(AI.launcher);
 		var $panel = $('<div class="om-ai-panel" role="dialog" aria-modal="false" aria-labelledby="om-ai-title" hidden>'
@@ -3876,6 +3906,14 @@
 		var tpl = document.getElementById('om-ai-team-form');
 		if (tpl && tpl.content) { $panel.find('.om-ai-team-form').append(document.importNode(tpl.content, true)); }
 		ai.append($launch, $panel).appendTo(document.body);
+		ai[0].style.setProperty('--om-ai-x', (AI.x === undefined ? 20 : +AI.x) + 'px');
+		aiPlace();
+		// Bars come and go (compare tray, toasts): follow them.
+		if (window.MutationObserver) {
+			new MutationObserver(aiQueuePlace).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+			new MutationObserver(aiQueuePlace).observe(document.body, { childList: true });
+		}
+		setInterval(aiQueuePlace, 1500);
 	}
 
 	function aiOpen(focus) {
@@ -3942,7 +3980,7 @@
 		}).done(function (r) {
 			var st2 = aiRead();
 			if (r && r.success) {
-				st2.msgs.push({ r: 'a', t: r.data.reply, d: r.data.designs || [], team: !!r.data.team });
+				st2.msgs.push({ r: 'a', t: r.data.reply, d: r.data.designs || [], team: !!r.data.team, dbg: r.data.debug || '' });
 			} else {
 				st2.msgs.push({ r: 'a', t: (r && r.data && r.data.message) || t('aiError', 'Sorry — that didn’t go through. Please try again.'), e: true, team: true });
 			}

@@ -704,35 +704,16 @@ class OM_Inquiry {
 			}
 		}
 
-		$to      = sanitize_email( (string) get_option( 'om_inquiry_email', '' ) );
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+		$headers = array();
 		if ( is_email( $data['email'] ) ) {
 			$headers[] = 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $data['name'] ) . ' <' . $data['email'] . '>';
 		}
-		self::send_html(
-			is_email( $to ) ? $to : get_option( 'admin_email' ),
-			wp_specialchars_decode( $subject, ENT_QUOTES ),
-			self::email_html( $data, $values, false ),
-			$body,
-			$headers
-		);
-
-		// Optional confirmation to the customer.
-		if ( is_email( $data['email'] ) && get_option( 'om_inquiry_autoreply', '' ) ) {
-			$reply = trim( (string) get_option( 'om_inquiry_autoreply_text', '' ) );
-			if ( '' === $reply ) {
-				/* translators: %s: site name. */
-				$reply = sprintf( __( "Thank you for your inquiry. We have received your message and will be in touch shortly.\n\n%s", 'om-catalog' ), get_bloginfo( 'name' ) );
-			}
-			$reply_text = $reply . "\n\n---\n" . implode( "\n", array_map( function ( $label, $value ) { return $label . ': ' . $value; }, array_keys( $lines ), $lines ) );
-			self::send_html(
-				$data['email'],
-				/* translators: %s: site name. */
-				wp_specialchars_decode( '' !== $data['subject'] ? sprintf( /* translators: 1: subject, 2: site name. */ __( 'We received your inquiry: %1$s — %2$s', 'om-catalog' ), $data['subject'], get_bloginfo( 'name' ) ) : sprintf( __( 'We received your inquiry — %s', 'om-catalog' ), get_bloginfo( 'name' ) ), ENT_QUOTES ),
-				self::email_html( $data, array(), true, $reply ),
-				$reply_text,
-				array( 'Content-Type: text/html; charset=UTF-8' )
-			);
+		$vars = self::email_vars( $data, $subject );
+		// To the shop (Settings › Emails › New inquiry).
+		OM_Emails::send( 'inquiry_shop', OM_Emails::shop_address(), $vars, self::email_details( $data, $values, false ), (string) $data['link'], $headers );
+		// The customer's confirmation, when switched on.
+		if ( is_email( $data['email'] ) ) {
+			OM_Emails::send( 'inquiry_customer', $data['email'], $vars, self::email_details( $data, array(), true ), (string) $data['link'], array( 'Reply-To: ' . OM_Emails::shop_address() ) );
 		}
 
 		$this->done( $ajax, $data['url'] );
@@ -749,130 +730,104 @@ class OM_Inquiry {
 		return $sent;
 	}
 
-	/**
-	 * The inquiry as an email: the piece (photo, title, style number,
-	 * options, price, a button to the exact configuration) and the
-	 * customer's answers. Tables and inline styles, so it looks right in
-	 * Gmail, Outlook and Apple Mail alike.
-	 *
-	 * @param array  $data     See handle_submit().
-	 * @param array  $values   Form answers: key => [ label, value ].
-	 * @param bool   $customer Copy for the customer (no answers table).
-	 * @param string $message  Text above the piece (customer copy).
-	 */
-	public static function email_html( $data, $values, $customer = false, $message = '' ) {
-		$primary = sanitize_hex_color( (string) get_option( 'om_color_primary', '' ) );
-		$primary = $primary ? $primary : '#00111C';
-		$site    = get_bloginfo( 'name' );
-		$font    = 'font-family:Helvetica,Arial,sans-serif;';
-		$serif   = 'font-family:Georgia,"Times New Roman",serif;';
-		$muted   = 'color:#6e6e6e;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;';
+	/** Placeholder values for the inquiry emails (see OM_Emails). */
+	public static function email_vars( $data, $subject_line = '' ) {
+		return array(
+			'customer_name'   => (string) ( $data['name'] ?? '' ),
+			'customer_email'  => (string) ( $data['email'] ?? '' ),
+			'customer_phone'  => (string) ( $data['phone'] ?? '' ),
+			'inquiry_subject' => '' !== (string) ( $data['subject'] ?? '' ) ? (string) $data['subject'] : __( 'New inquiry', 'om-catalog' ),
+			'subject_line'    => wp_specialchars_decode( (string) $subject_line, ENT_QUOTES ),
+			'piece'           => (string) ( $data['title'] ?? '' ),
+			'style'           => (string) ( $data['style'] ?? '' ),
+			'price'           => (string) ( $data['price'] ?? '' ),
+		);
+	}
 
+	/**
+	 * The inquiry's automatic block for its emails: the piece (photo,
+	 * title, style number, options, price, link), a paired design and — for
+	 * the shop — the customer's answers. Tables and inline styles.
+	 *
+	 * @param array $data     See handle_submit().
+	 * @param array $values   Form answers: key => [ label, value ].
+	 * @param bool  $customer Copy for the customer (no answers, no notes).
+	 */
+	public static function email_details( $data, $values, $customer = false ) {
+		$primary = class_exists( 'OM_Emails' ) ? OM_Emails::design()['brand'] : '#00111C';
+		$serif   = 'font-family:Georgia,"Times New Roman",serif;';
+		$font    = 'font-family:Helvetica,Arial,sans-serif;';
+		$muted   = $font . 'color:#6e6e6e;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;';
 		$details = array_filter(
 			array(
-				__( 'Options', 'om-catalog' )      => $data['config'] ?? '',
-				__( 'Price shown', 'om-catalog' )  => $data['price'] ?? '',
-				__( 'Diamond', 'om-catalog' )      => $data['diamond'] ?? '',
-				__( 'Ring builder', 'om-catalog' ) => $data['summary'] ?? '',
+				__( 'Options', 'om-catalog' )        => $data['config'] ?? '',
+				__( 'Price shown', 'om-catalog' )    => $data['price'] ?? '',
+				__( 'Diamond', 'om-catalog' )        => $data['diamond'] ?? '',
+				__( 'Ring builder', 'om-catalog' )   => $data['summary'] ?? '',
 				// For the shop only.
 				__( 'Help me choose', 'om-catalog' ) => $customer ? '' : ( $data['guide'] ?? '' ),
 				__( 'Assistant chat', 'om-catalog' ) => $customer ? '' : ( $data['chat'] ?? '' ),
 			),
 			'strlen'
 		);
+		$html = '';
+		if ( '' !== (string) ( $data['title'] ?? '' ) ) {
+			$html .= '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eeeeee;border-radius:10px;">';
+			if ( '' !== (string) ( $data['image'] ?? '' ) ) {
+				$html .= '<tr><td align="center" style="padding:20px;background:#fafafa;"><a href="' . esc_url( $data['link'] ) . '"><img src="' . esc_url( $data['image'] ) . '" width="240" alt="' . esc_attr( $data['title'] ) . '" style="display:block;width:100%;max-width:240px;height:auto;border:0;"></a></td></tr>';
+			}
+			$html .= '<tr><td valign="top" style="padding:18px 20px;' . $font . '">';
+			if ( '' !== (string) ( $data['style'] ?? '' ) ) {
+				/* translators: %s: style number. */
+				$html .= '<div style="' . $muted . '">' . esc_html( sprintf( __( 'Style %s', 'om-catalog' ), $data['style'] ) ) . '</div>';
+			}
+			$html .= '<div style="' . $serif . 'font-size:20px;line-height:1.3;color:' . esc_attr( $primary ) . ';margin:6px 0 10px;">' . esc_html( $data['title'] ) . '</div>';
+			foreach ( $details as $label => $value ) {
+				$html .= '<div style="font-size:13px;line-height:1.5;margin:0 0 4px;color:#464646;"><span style="color:#6e6e6e;">' . esc_html( $label ) . ':</span> ' . nl2br( esc_html( $value ) ) . '</div>';
+			}
+			if ( '' !== (string) ( $data['link'] ?? '' ) ) {
+				$html .= '<div style="font-size:11px;color:#6e6e6e;margin-top:10px;word-break:break-all;"><a href="' . esc_url( $data['link'] ) . '" style="color:#6e6e6e;">' . esc_html( $data['link'] ) . '</a></div>';
+			}
+			$html .= '</td></tr></table>';
+		} elseif ( $details ) {
+			foreach ( $details as $label => $value ) {
+				$html .= '<div style="' . $font . 'font-size:13px;line-height:1.5;margin:0 0 6px;color:#464646;"><span style="color:#6e6e6e;">' . esc_html( $label ) . ':</span> ' . nl2br( esc_html( $value ) ) . '</div>';
+			}
+		}
+		if ( ! empty( $data['pair'] ) ) {
+			$html .= '<div style="' . $muted . 'margin:18px 0 8px;">' . esc_html__( 'Together with', 'om-catalog' ) . '</div>'
+				. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eeeeee;border-radius:10px;"><tr>'
+				. ( '' !== $data['pair']['image'] ? '<td width="110" valign="middle" style="padding:12px;background:#fafafa;"><a href="' . esc_url( $data['pair']['url'] ) . '"><img src="' . esc_url( $data['pair']['image'] ) . '" width="86" alt="' . esc_attr( $data['pair']['title'] ) . '" style="display:block;width:86px;height:auto;border:0;"></a></td>' : '' )
+				/* translators: %s: style number. */
+				. '<td valign="middle" style="padding:12px 18px;' . $font . '"><div style="' . $muted . '">' . esc_html( sprintf( __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) ) . '</div>'
+				. '<div style="' . $serif . 'font-size:17px;line-height:1.3;margin:4px 0 0;"><a href="' . esc_url( $data['pair']['url'] ) . '" style="color:' . esc_attr( $primary ) . ';text-decoration:none;">' . esc_html( $data['pair']['title'] ) . '</a></div></td>'
+				. '</tr></table>';
+		}
+		if ( ! $customer && $values ) {
+			$rows = '';
+			foreach ( $values as $pair ) {
+				if ( '' === $pair[1] ) {
+					continue;
+				}
+				$rows .= '<tr><td valign="top" style="padding:8px 12px 8px 0;border-top:1px solid #f0f0f0;color:#6e6e6e;width:34%;' . $font . 'font-size:14px;">' . esc_html( $pair[0] ) . '</td><td valign="top" style="padding:8px 0;border-top:1px solid #f0f0f0;color:#222222;' . $font . 'font-size:14px;line-height:1.5;">' . nl2br( esc_html( $pair[1] ) ) . '</td></tr>';
+			}
+			if ( '' !== $rows ) {
+				$html .= '<div style="' . $muted . 'margin:18px 0 8px;">' . esc_html__( 'Their message', 'om-catalog' ) . '</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0">' . $rows . '</table>';
+			}
+		}
+		return $html;
+	}
 
-		ob_start();
-		?>
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title><?php echo esc_html( $site ); ?></title></head>
-<body style="margin:0;padding:0;background:#f4f3f1;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3f1;"><tr><td align="center" style="padding:32px 12px;">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;<?php echo $font; // phpcs:ignore WordPress.Security.EscapeOutput -- fixed string. ?>color:#464646;">
-	<tr><td style="padding:28px 32px 18px;border-bottom:1px solid #eeeeee;">
-		<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>"><?php echo esc_html( $site ); ?></div>
-		<div style="<?php echo $serif; // phpcs:ignore WordPress.Security.EscapeOutput ?>font-size:24px;color:<?php echo esc_attr( $primary ); ?>;margin-top:6px;">
-			<?php echo esc_html( $customer ? __( 'Thank you for your inquiry', 'om-catalog' ) : ( '' !== ( $data['subject'] ?? '' ) ? $data['subject'] : __( 'New inquiry', 'om-catalog' ) ) ); ?>
-		</div>
-		<?php if ( ! $customer ) : ?>
-			<div style="font-size:14px;margin-top:6px;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'From %s', 'om-catalog' ), $data['name'] ) ); ?><?php echo '' !== $data['email'] ? ' &middot; <a href="mailto:' . esc_attr( $data['email'] ) . '" style="color:' . esc_attr( $primary ) . ';">' . esc_html( $data['email'] ) . '</a>' : ''; ?><?php echo '' !== $data['phone'] ? ' &middot; <a href="tel:' . esc_attr( preg_replace( '/[^0-9+]/', '', $data['phone'] ) ) . '" style="color:' . esc_attr( $primary ) . ';">' . esc_html( $data['phone'] ) . '</a>' : ''; ?></div>
-		<?php endif; ?>
-	</td></tr>
-	<?php if ( $customer && '' !== trim( $message ) ) : ?>
-		<tr><td style="padding:24px 32px 0;font-size:15px;line-height:1.6;"><?php echo nl2br( esc_html( $message ) ); ?></td></tr>
-	<?php endif; ?>
-	<?php if ( '' !== $data['title'] ) : ?>
-	<tr><td style="padding:24px 32px;">
-		<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eeeeee;">
-			<?php if ( '' !== $data['image'] ) : ?>
-				<tr><td align="center" style="padding:20px;background:#fafafa;">
-					<a href="<?php echo esc_url( $data['link'] ); ?>"><img src="<?php echo esc_url( $data['image'] ); ?>" width="260" alt="<?php echo esc_attr( $data['title'] ); ?>" style="display:block;width:100%;max-width:260px;height:auto;border:0;"></a>
-				</td></tr>
-			<?php endif; ?>
-			<tr><td valign="top" style="padding:20px 22px;">
-				<?php if ( '' !== $data['style'] ) : ?>
-					<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>"><?php echo esc_html( sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['style'] ) ); ?></div>
-				<?php endif; ?>
-				<div style="<?php echo $serif; // phpcs:ignore WordPress.Security.EscapeOutput ?>font-size:20px;line-height:1.3;color:<?php echo esc_attr( $primary ); ?>;margin:6px 0 12px;"><?php echo esc_html( $data['title'] ); ?></div>
-				<?php foreach ( $details as $label => $value ) : ?>
-					<div style="font-size:13px;line-height:1.5;margin:0 0 4px;"><span style="color:#6e6e6e;"><?php echo esc_html( $label ); ?>:</span> <?php echo nl2br( esc_html( $value ) ); ?></div>
-				<?php endforeach; ?>
-				<?php if ( '' !== $data['link'] ) : ?>
-					<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr><td style="background:<?php echo esc_attr( $primary ); ?>;">
-						<a href="<?php echo esc_url( $data['link'] ); ?>" style="display:inline-block;padding:11px 20px;color:#ffffff;text-decoration:none;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;"><?php esc_html_e( 'View this piece', 'om-catalog' ); ?></a>
-					</td></tr></table>
-					<div style="font-size:11px;color:#6e6e6e;margin-top:8px;word-break:break-all;"><a href="<?php echo esc_url( $data['link'] ); ?>" style="color:#6e6e6e;"><?php echo esc_html( $data['link'] ); ?></a></div>
-				<?php endif; ?>
-			</td></tr>
-		</table>
-	</td></tr>
-	<?php endif; ?>
-	<?php if ( ! empty( $data['pair'] ) ) : ?>
-	<tr><td style="padding:<?php echo '' !== $data['title'] ? '0' : '24px'; ?> 32px 24px;">
-		<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>margin-bottom:8px;"><?php esc_html_e( 'Together with', 'om-catalog' ); ?></div>
-		<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eeeeee;"><tr>
-			<?php if ( '' !== $data['pair']['image'] ) : ?>
-				<td width="110" valign="middle" style="padding:12px;background:#fafafa;"><a href="<?php echo esc_url( $data['pair']['url'] ); ?>"><img src="<?php echo esc_url( $data['pair']['image'] ); ?>" width="86" alt="<?php echo esc_attr( $data['pair']['title'] ); ?>" style="display:block;width:86px;height:auto;border:0;"></a></td>
-			<?php endif; ?>
-			<td valign="middle" style="padding:12px 18px;">
-				<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>"><?php echo esc_html( sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) ); ?></div>
-				<div style="<?php echo $serif; // phpcs:ignore WordPress.Security.EscapeOutput ?>font-size:17px;line-height:1.3;color:<?php echo esc_attr( $primary ); ?>;margin:4px 0 6px;"><a href="<?php echo esc_url( $data['pair']['url'] ); ?>" style="color:<?php echo esc_attr( $primary ); ?>;text-decoration:none;"><?php echo esc_html( $data['pair']['title'] ); ?></a></div>
-				<a href="<?php echo esc_url( $data['pair']['url'] ); ?>" style="font-size:12px;color:#6e6e6e;"><?php esc_html_e( 'View this piece', 'om-catalog' ); ?></a>
-			</td>
-		</tr></table>
-	</td></tr>
-	<?php endif; ?>
-	<?php if ( ! $customer && $values ) : ?>
-	<tr><td style="padding:<?php echo '' !== $data['title'] ? '0' : '24px'; ?> 32px 24px;">
-		<div style="<?php echo $muted; // phpcs:ignore WordPress.Security.EscapeOutput ?>margin-bottom:8px;"><?php esc_html_e( 'Their message', 'om-catalog' ); ?></div>
-		<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.5;">
-			<?php foreach ( $values as $pair ) : ?>
-				<?php if ( '' === $pair[1] ) { continue; } ?>
-				<tr>
-					<td valign="top" style="padding:8px 12px 8px 0;border-top:1px solid #f0f0f0;color:#6e6e6e;width:34%;"><?php echo esc_html( $pair[0] ); ?></td>
-					<td valign="top" style="padding:8px 0;border-top:1px solid #f0f0f0;color:#222222;"><?php echo nl2br( esc_html( $pair[1] ) ); ?></td>
-				</tr>
-			<?php endforeach; ?>
-		</table>
-	</td></tr>
-	<?php endif; ?>
-	<tr><td style="padding:16px 32px 26px;border-top:1px solid #eeeeee;font-size:12px;color:#6e6e6e;line-height:1.5;">
-		<?php
-		echo esc_html(
-			$customer
-				/* translators: %s: site name. */
-				? sprintf( __( '%s — we will be in touch shortly.', 'om-catalog' ), $site )
-				: ( '' !== $data['email']
-					/* translators: %s: customer name. */
-					? sprintf( __( 'Reply to this email to answer %s directly. Saved under Inquiries in your dashboard.', 'om-catalog' ), $data['name'] )
-					: __( 'Saved under Inquiries in your dashboard.', 'om-catalog' ) )
-		);
-		?>
-	</td></tr>
-</table>
-</td></tr></table>
-</body></html>
-		<?php
-		return (string) ob_get_clean();
+	/**
+	 * The inquiry as a whole email (kept for anything that called it).
+	 *
+	 * @param array $data     See handle_submit().
+	 * @param array $values   Form answers.
+	 * @param bool  $customer The customer's confirmation instead of the shop's email.
+	 */
+	public static function email_html( $data, $values, $customer = false, $message = '' ) {
+		unset( $message );
+		return OM_Emails::render( $customer ? 'inquiry_customer' : 'inquiry_shop', self::email_vars( $data ), self::email_details( $data, $values, $customer ), (string) ( $data['link'] ?? '' ) )['html'];
 	}
 
 	private function done( $ajax, $return_url ) {

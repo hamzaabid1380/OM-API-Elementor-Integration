@@ -15,6 +15,7 @@
 		look: '<path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.9 1.4-1.9-.4-1.1.4-2.1 1.5-2.1H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10zM7.5 11.5h.01M10 7.5h.01M15 7.5h.01"/>',
 		builder: '<path d="M12 21a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM9 3h6l2 4-5 3-5-3z"/>',
 		inquiries: '<path d="M4 5h16v11H8l-4 4z"/>',
+		emails: '<path d="M3 6h18v12H3zM3 7l9 6 9-6"/>',
 		assistant: '<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8zM18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/>',
 		search: '<path d="M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm5-2 5 5M8 13v-2m3 2V9m3 4v-3"/>',
 		tools: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.1-.4-.4-2.1z"/>'
@@ -27,6 +28,7 @@
 		['look', 'Look & feel'],
 		['builder', 'Ring builder & diamonds'],
 		['inquiries', 'Inquiries'],
+		['emails', 'Emails'],
 		['assistant', 'AI assistant'],
 		['search', 'Search & analytics'],
 		['tools', 'Tools']
@@ -112,6 +114,8 @@
 			if (a.getAttribute('data-om-go') === tab) { a.setAttribute('aria-current', 'page'); } else { a.removeAttribute('aria-current'); }
 		});
 		if (savebar) { savebar.classList.toggle('is-away', !!SAVELESS[tab] && !dirty); }
+		// Visual editors that were hidden size themselves once shown.
+		setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
 		if (window.history.replaceState) { window.history.replaceState(null, '', '#' + tab); }
 		if (focus) {
 			var first = main.querySelector('.om-card:not([hidden]) h2');
@@ -191,6 +195,108 @@
 		});
 	}
 
+	/* ---- Emails: logo picker, placeholders, preview and test ---- */
+	document.querySelectorAll('[data-om-media]').forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			if (!window.wp || !window.wp.media) { return; }
+			var input = document.querySelector(btn.getAttribute('data-om-media'));
+			var frame = window.wp.media({ title: 'Choose your logo', library: { type: 'image' }, multiple: false });
+			frame.on('select', function () {
+				var img = frame.state().get('selection').first().toJSON();
+				input.value = img.url;
+				input.dispatchEvent(new Event('input', { bubbles: true }));
+			});
+			frame.open();
+		});
+	});
+
+	// The field the placeholders go into: the last one used in that email.
+	var lastField = {};
+	function emailOf(el) { var t = el.closest('[data-om-email]'); return t ? t.getAttribute('data-om-email') : ''; }
+	form.addEventListener('focusin', function (e) {
+		if (e.target.matches('[data-om-token-target]')) { lastField[emailOf(e.target)] = e.target; }
+	});
+	function hookEditor(ed) {
+		ed.on('change keyup input undo redo', function () { markDirty(); });
+		ed.on('focus', function () {
+			var area = document.getElementById(ed.id);
+			if (area) { lastField[emailOf(area)] = ed; }
+		});
+	}
+	if (window.tinymce) {
+		window.tinymce.on('AddEditor', function (e) { hookEditor(e.editor); });
+		(window.tinymce.editors || []).forEach(hookEditor);
+	}
+	form.addEventListener('click', function (e) {
+		var chip = e.target.closest('[data-om-token]');
+		if (!chip) { return; }
+		var id = emailOf(chip);
+		var token = chip.getAttribute('data-om-token');
+		var target = lastField[id];
+		if (!target) {
+			var area = chip.closest('td').querySelector('textarea.wp-editor-area');
+			target = area && window.tinymce && window.tinymce.get(area.id) && !window.tinymce.get(area.id).isHidden() ? window.tinymce.get(area.id) : area;
+		}
+		if (target && target.insertContent) {
+			target.focus();
+			target.insertContent(token);
+		} else if (target) {
+			var start = target.selectionStart || target.value.length;
+			if (start && !/\s/.test(target.value.charAt(start - 1))) { token = ' ' + token; }
+			target.value = target.value.slice(0, start) + token + target.value.slice(target.selectionEnd || start);
+			target.focus();
+			target.selectionStart = target.selectionEnd = start + token.length;
+		}
+		markDirty();
+	});
+
+	var previewDialog = null;
+	function emailPayload(id, action) {
+		if (window.tinymce) { window.tinymce.triggerSave(); }
+		var data = new FormData();
+		data.append('action', action);
+		data.append('id', id);
+		data.append('nonce', (document.getElementById('om-email-nonce') || {}).value || '');
+		new FormData(form).forEach(function (value, key) {
+			if (key.indexOf('om_email_' + id + '[') === 0 || key.indexOf('om_email_design[') === 0) { data.append(key, value); }
+		});
+		return data;
+	}
+	form.addEventListener('click', function (e) {
+		var prev = e.target.closest('[data-om-email-preview]');
+		var test = e.target.closest('[data-om-email-test]');
+		if (!prev && !test) { return; }
+		var btn = prev || test;
+		var id = btn.getAttribute(prev ? 'data-om-email-preview' : 'data-om-email-test');
+		var status = btn.parentNode.querySelector('.om-email-status');
+		btn.disabled = true;
+		status.className = 'om-email-status';
+		status.textContent = prev ? 'Preparing…' : 'Sending…';
+		fetch(window.ajaxurl, { method: 'POST', credentials: 'same-origin', body: emailPayload(id, prev ? 'om_email_preview' : 'om_email_test') })
+			.then(function (r) { return r.json(); })
+			.then(function (r) {
+				if (!(r && r.success)) { throw new Error((r && r.data && r.data.message) || 'error'); }
+				if (test) { status.classList.add('is-ok'); status.textContent = r.data.message; return; }
+				status.textContent = '';
+				if (!previewDialog) {
+					previewDialog = document.createElement('dialog');
+					previewDialog.className = 'om-email-preview';
+					previewDialog.innerHTML = '<div class="om-email-preview-head"><p class="om-email-preview-subject"></p><button type="button" class="button">Close</button></div><iframe title="Email preview"></iframe>';
+					document.body.appendChild(previewDialog);
+					previewDialog.querySelector('button').addEventListener('click', function () { previewDialog.close(); });
+					previewDialog.addEventListener('click', function (ev) { if (ev.target === previewDialog) { previewDialog.close(); } });
+				}
+				previewDialog.querySelector('.om-email-preview-subject').textContent = 'Subject: ' + r.data.subject;
+				previewDialog.querySelector('iframe').srcdoc = r.data.html;
+				if (previewDialog.showModal) { previewDialog.showModal(); }
+			})
+			.catch(function (err) {
+				status.classList.add('is-error');
+				status.textContent = err.message === 'error' ? 'That didn’t work. Please try again.' : err.message;
+			})
+			.then(function () { btn.disabled = false; });
+	});
+
 	/* ---- Colour fields: a live swatch beside the hex value ---- */
 	form.querySelectorAll('input.om-color-field').forEach(function (input) {
 		var box = document.createElement('span');
@@ -201,7 +307,10 @@
 		sw.className = 'om-admin-swatch';
 		sw.setAttribute('aria-hidden', 'true');
 		box.appendChild(sw);
-		var paint = function () { sw.style.background = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(input.value.trim()) ? input.value.trim() : 'transparent'; };
+		var paint = function () {
+			var v = input.value.trim() || input.getAttribute('placeholder') || '';
+			sw.style.background = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : 'transparent';
+		};
 		input.addEventListener('input', paint);
 		paint();
 	});

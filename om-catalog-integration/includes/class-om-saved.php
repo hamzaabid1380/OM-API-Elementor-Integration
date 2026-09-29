@@ -251,13 +251,12 @@ class OM_Saved {
 		);
 		$reopen = str_replace( array( '%2F', '%2C' ), array( '/', ',' ), $reopen );
 
-		$sent = wp_mail(
-			$email,
-			/* translators: %s: site name. */
-			sprintf( __( 'Your saved designs from %s', 'om-catalog' ), $site ),
-			self::email_html( $items, $reopen, '' ),
-			array( 'Content-Type: text/html; charset=UTF-8', 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $site ) . ' <' . $store . '>' )
+		$vars = array(
+			'customer_name'  => '' !== $name ? $name : $email,
+			'customer_email' => $email,
+			'count'          => (string) count( $items ),
 		);
+		$sent = OM_Emails::send( 'saved_customer', $email, $vars, self::email_grid( $items ), $reopen, array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $site ) . ' <' . $store . '>' ) );
 		if ( ! $sent ) {
 			wp_send_json_error( array( 'message' => __( 'The email could not be sent. Please try again.', 'om-catalog' ) ) );
 		}
@@ -291,54 +290,33 @@ class OM_Saved {
 				OM_Stats::add( 'inquiry_subject', __( 'Saved designs', 'om-catalog' ) );
 			}
 		}
-		wp_mail(
-			$store,
-			wp_specialchars_decode( $subject, ENT_QUOTES ),
-			/* translators: %s: visitor. */
-			self::email_html( $items, $reopen, sprintf( __( '%s asked for their saved designs by email. Reply to this email to reach them.', 'om-catalog' ), $who ) ),
-			array( 'Content-Type: text/html; charset=UTF-8', 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $name ) . ' <' . $email . '>' )
-		);
+		OM_Emails::send( 'saved_shop', $store, $vars, self::email_grid( $items ), $reopen, array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $name ) . ' <' . $email . '>' ) );
 		wp_send_json_success( array( 'message' => $ok ) );
 	}
 
 	/**
-	 * The list as an email: a photo, name and link per design, and a button
-	 * that reopens the whole list on the site. Tables and inline styles.
+	 * The designs for the emails' automatic block: two per row, photo,
+	 * name and style, each linking to its page. Tables and inline styles.
 	 *
-	 * @param array  $items  See lookup().
-	 * @param string $reopen Link that reopens the list.
-	 * @param string $note   Line for the shop's copy ('' = the visitor's).
+	 * @param array $items See lookup().
 	 */
-	private static function email_html( $items, $reopen, $note ) {
-		$primary = sanitize_hex_color( (string) get_option( 'om_color_primary', '' ) );
-		$primary = $primary ? $primary : '#00111C';
-		$font    = 'font-family:Helvetica,Arial,sans-serif;';
-		$serif   = 'font-family:Georgia,"Times New Roman",serif;';
+	public static function email_grid( $items ) {
+		$primary = OM_Emails::design()['brand'];
 		$rows    = '';
 		foreach ( array_chunk( $items, 2 ) as $pair ) {
 			$rows .= '<tr>';
 			foreach ( $pair as $x ) {
 				$rows .= '<td width="50%" valign="top" style="padding:8px;">'
 					. '<a href="' . esc_url( $x['u'] ) . '" style="text-decoration:none;color:' . esc_attr( $primary ) . ';">'
-					. ( '' !== $x['i'] ? '<img src="' . esc_url( $x['i'] ) . '" width="250" alt="' . esc_attr( $x['t'] ) . '" style="display:block;width:100%;max-width:250px;height:auto;border:0;background:#fafafa;">' : '' )
-					. '<span style="display:block;' . $serif . 'font-size:16px;line-height:1.3;margin:10px 0 2px;">' . esc_html( $x['t'] ) . '</span></a>'
-					. '<span style="display:block;' . $font . 'font-size:12px;color:#6e6e6e;">' . esc_html( trim( $x['v'] . ( '' !== $x['v'] ? ' · ' : '' ) . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $x['s'] ) ) ) . '</span></td>';
+					. ( '' !== $x['i'] ? '<img src="' . esc_url( $x['i'] ) . '" width="250" alt="' . esc_attr( $x['t'] ) . '" style="display:block;width:100%;max-width:250px;height:auto;border:0;background:#fafafa;border-radius:8px;">' : '' )
+					. '<span style="display:block;font-family:Georgia,serif;font-size:16px;line-height:1.3;margin:10px 0 2px;">' . esc_html( $x['t'] ) . '</span></a>'
+					. '<span style="display:block;font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#6e6e6e;">' . esc_html( trim( $x['v'] . ( '' !== $x['v'] ? ' · ' : '' ) . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $x['s'] ) ) ) . '</span></td>';
 			}
 			if ( 1 === count( $pair ) ) {
 				$rows .= '<td width="50%"></td>';
 			}
 			$rows .= '</tr>';
 		}
-		$intro = '' !== $note ? $note : __( 'Here are the designs you saved. Open any of them, or reply to this email with questions — we are happy to help.', 'om-catalog' );
-		return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head><body style="margin:0;padding:0;background:#f4f3f1;">'
-			. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3f1;"><tr><td align="center" style="padding:32px 12px;">'
-			. '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;' . $font . 'color:#464646;">'
-			. '<tr><td style="padding:28px 32px 8px;"><div style="color:#6e6e6e;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;">' . esc_html( get_bloginfo( 'name' ) ) . '</div>'
-			. '<div style="' . $serif . 'font-size:24px;color:' . esc_attr( $primary ) . ';margin-top:6px;">' . esc_html__( 'Your saved designs', 'om-catalog' ) . '</div>'
-			. '<p style="font-size:14px;line-height:1.6;margin:10px 0 0;">' . esc_html( $intro ) . '</p></td></tr>'
-			. '<tr><td style="padding:12px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">' . $rows . '</table></td></tr>'
-			. '<tr><td style="padding:8px 32px 30px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:' . esc_attr( $primary ) . ';border-radius:999px;">'
-			. '<a href="' . esc_url( $reopen ) . '" style="display:inline-block;padding:13px 24px;color:#ffffff;text-decoration:none;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;">' . esc_html__( 'Open my list', 'om-catalog' ) . '</a>'
-			. '</td></tr></table></td></tr></table></td></tr></table></body></html>';
+		return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 -8px;">' . $rows . '</table>';
 	}
 }

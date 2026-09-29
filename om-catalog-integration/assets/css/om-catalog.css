@@ -11284,8 +11284,8 @@ html:has(.om-sticky-tools.is-shown .om-st-saved:not([hidden])) .om-saved-float {
 /* Launcher */
 .om-ai .om-ai-launch.om-ai-launch {
 	position: fixed;
-	right: 20px;
-	bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+	right: var(--om-ai-x, 20px);
+	bottom: calc(var(--om-ai-y, 20px) + env(safe-area-inset-bottom, 0px));
 	z-index: 9985;
 	display: inline-flex;
 	align-items: center;
@@ -11318,12 +11318,14 @@ html:has(.om-sticky-tools.is-shown .om-st-saved:not([hidden])) .om-saved-float {
 	to { transform: none; opacity: 1; }
 }
 
-html.om-has-compare .om-ai .om-ai-launch { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+/* Left-hand placement. */
+.om-ai.om-ai--left .om-ai-launch.om-ai-launch { right: auto; left: var(--om-ai-x, 20px); }
+.om-ai.om-ai--left .om-ai-panel { right: auto; left: var(--om-ai-x, 20px); }
 
 /* Panel */
 .om-ai-panel {
 	position: fixed;
-	right: 20px;
+	right: var(--om-ai-x, 20px);
 	bottom: calc(20px + env(safe-area-inset-bottom, 0px));
 	z-index: 99990;
 	display: flex;
@@ -11611,12 +11613,10 @@ html.om-has-compare .om-ai .om-ai-launch { bottom: calc(110px + env(safe-area-in
 	}
 	.om-ai-head { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
 	.om-ai-input { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
-	.om-ai .om-ai-launch.om-ai-launch { right: 16px; width: 56px; min-height: 56px; padding: 0; justify-content: center; }
+	.om-ai .om-ai-launch.om-ai-launch { width: 56px; min-height: 56px; padding: 0; justify-content: center; }
+	.om-ai.om-ai--left .om-ai-panel { left: 0; }
 	.om-ai .om-ai-launch .om-ai-launch-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 	.om-ai .om-ai-launch .om-ai-spark { width: 24px; height: 24px; }
-	html:has(.om-sticky-tools.is-shown) .om-ai .om-ai-launch { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
-	html.om-has-sticky-bar .om-ai .om-ai-launch { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
-	html:has(.om-rb-bar) .om-ai .om-ai-launch { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 	html:has(.om-ai.is-open) body { overflow: hidden; }
 }
 
@@ -11625,3 +11625,4 @@ html.om-has-compare .om-ai .om-ai-launch { bottom: calc(110px + env(safe-area-in
 	.om-ai-panel { animation: none; transition: none; }
 	.om-ai-dots i { animation: none; opacity: 0.8; }
 }
+.om-ai .om-ai-msg p.om-ai-debug { max-width: 88%; margin: 6px 0 0; padding: 8px 10px; border-left: 3px solid #b4540a; border-radius: 8px; background: #fff7ef; color: #8a3f06; font-size: 12px; line-height: 1.45; }

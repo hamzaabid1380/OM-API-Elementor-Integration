@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.31.0
+ * Version: 1.32.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.31.0' );
+define( 'OM_CATALOG_VERSION', '1.32.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -27,6 +27,7 @@ require_once OM_CATALOG_DIR . 'includes/class-om-search.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-engage.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-saved.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-assistant.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-emails.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamond-guide.php';
@@ -51,6 +52,7 @@ function om_catalog_init() {
 	OM_Engage::instance();
 	OM_Saved::instance();
 	OM_Assistant::instance();
+	OM_Emails::instance();
 	OM_Inquiry::instance();
 	OM_Diamonds::instance();
 	OM_Ring_Builder::instance();

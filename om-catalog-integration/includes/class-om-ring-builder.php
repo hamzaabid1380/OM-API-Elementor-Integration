@@ -1163,28 +1163,18 @@ class OM_Ring_Builder {
 			set_transient( $key, $count + 1, HOUR_IN_SECONDS );
 		}
 
-		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-		/* translators: %s: site name. */
-		$subject = sprintf( __( 'Your ring design from %s', 'om-catalog' ), $site );
-		$body    = '<div style="font-family:Georgia,serif;color:#00111C;max-width:560px">'
-			. '<p style="font-size:22px;margin:0 0 12px">' . esc_html__( 'Your ring design', 'om-catalog' ) . '</p>'
-			. '<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#464646;margin:0 0 20px">' . esc_html( $title ) . '</p>'
-			. '<p style="margin:0 0 24px"><a href="' . esc_url( $url ) . '" style="display:inline-block;padding:14px 26px;border-radius:999px;background:#00111C;color:#FAF8F4;font-family:Arial,sans-serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none">' . esc_html__( 'Open my design', 'om-catalog' ) . '</a></p>'
-			. '<p style="font-family:Arial,sans-serif;font-size:13px;color:#6E6E6E;margin:0">' . esc_html__( 'Questions? Just reply to this email.', 'om-catalog' ) . '</p></div>';
-		$store   = sanitize_email( (string) get_option( 'om_inquiry_email', '' ) );
-		$store   = is_email( $store ) ? $store : get_option( 'admin_email' );
-		$sent    = wp_mail( $email, $subject, $body, array( 'Content-Type: text/html; charset=UTF-8', 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $site ) . ' <' . $store . '>' ) );
+		$site  = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$store = OM_Emails::shop_address();
+		$vars  = array(
+			'customer_email' => $email,
+			'design'         => $title,
+		);
+		$sent = OM_Emails::send( 'design_customer', $email, $vars, '', $url, array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $site ) . ' <' . $store . '>' ) );
 		if ( ! $sent ) {
 			wp_send_json_error( array( 'message' => __( 'The email could not be sent. Please try again.', 'om-catalog' ) ) );
 		}
 		// The store's copy: someone kept this design.
-		wp_mail(
-			$store,
-			/* translators: %s: design. */
-			sprintf( __( 'Ring builder: a visitor saved "%s"', 'om-catalog' ), $title ),
-			'<p style="font-family:Arial,sans-serif">' . esc_html( $email ) . ' — <a href="' . esc_url( $url ) . '">' . esc_html( $title ) . '</a></p>',
-			array( 'Content-Type: text/html; charset=UTF-8', 'Reply-To: ' . $email )
-		);
+		OM_Emails::send( 'design_shop', $store, $vars, '', $url, array( 'Reply-To: ' . $email ) );
 		wp_send_json_success( array( 'message' => $ok ) );
 	}
 }
