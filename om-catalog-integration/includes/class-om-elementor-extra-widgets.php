@@ -204,6 +204,16 @@ class OM_Elementor_Diamond_Widget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'compare',
+			array(
+				'label'       => __( '"Compare" diamonds', 'om-catalog' ),
+				'type'        => Controls_Manager::SWITCHER,
+				'default'     => 'yes',
+				'description' => __( 'Visitors tick up to 4 diamonds and see them side by side.', 'om-catalog' ),
+			)
+		);
+
 		$this->end_controls_section();
 
 		$this->register_common_style( '{{WRAPPER}} .om-diamonds', '{{WRAPPER}} .om-dd-title, {{WRAPPER}} .om-dd-price' );
@@ -266,6 +276,7 @@ class OM_Elementor_Diamond_Widget extends Widget_Base {
 				'show_select'   => (string) $s['show_select'],
 				'show_inquiry'  => (string) $s['show_inquiry'],
 				'true_size'     => 'yes' === ( $s['true_size'] ?? 'yes' ) ? 'yes' : 'no',
+				'compare'       => 'yes' === ( $s['compare'] ?? 'yes' ) ? 'yes' : 'no',
 				'show_origin'   => 'yes' === ( $s['show_origin'] ?? 'yes' ) ? 'yes' : 'no',
 				'default_shape' => (string) ( $s['default_shape'] ?? '' ),
 			),
@@ -389,6 +400,7 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 						),
 					),
 					array( 'true_size', 'switch', __( '"True size" on diamonds', 'om-catalog' ), array( 'description' => __( 'Shows the stone at its real size on a finger, compared with other carats.', 'om-catalog' ) ) ),
+					array( 'diamond_compare', 'switch', __( '"Compare" diamonds', 'om-catalog' ), array( 'description' => __( 'Visitors tick up to 4 diamonds and see them side by side.', 'om-catalog' ) ) ),
 					array( 'skip_diamond', 'switch', __( '"Continue without a diamond"', 'om-catalog' ), array( 'description' => __( 'Lets customers finish with the setting alone and send the request — the centre stone is chosen with you, or it’s their own.', 'om-catalog' ) ) ),
 					array( 'skip_text', 'text', __( 'Its text', 'om-catalog' ), array( 'condition' => array( 'skip_diamond' => 'yes' ) ) ),
 				),
@@ -424,6 +436,8 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 				__( '"Your ring" bar', 'om-catalog' ),
 				array(
 					array( 'bar', 'switch', __( 'Show the bar', 'om-catalog' ), array( 'description' => __( 'Shows the setting and diamond chosen so far, the total (when prices show) and the next step.', 'om-catalog' ) ) ),
+					array( 'bar_review', 'switch', __( 'Also on the review step', 'om-catalog' ), array( 'condition' => array( 'bar' => 'yes' ), 'description' => __( 'Off by default: the review already shows the ring and the total, and phones get the space back.', 'om-catalog' ) ) ),
+					array( 'chat_in_bar', 'switch', __( 'AI assistant button in the bar', 'om-catalog' ), array( 'description' => __( 'When the AI assistant is on, its button sits in the bar (and on the review) instead of floating over the page.', 'om-catalog' ) ) ),
 					array( 'ask_text', 'text', __( 'Questions link', 'om-catalog' ), array( 'description' => __( 'Leave empty for none.', 'om-catalog' ) ) ),
 					array( 'ask_url', 'url', __( 'Questions link goes to', 'om-catalog' ), array( 'description' => __( 'Empty: a short inquiry form opens in a pop-up. Or a page, tel: or WhatsApp link.', 'om-catalog' ) ) ),
 				),
@@ -434,6 +448,10 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 					array( 'request_heading', 'text', __( 'Form heading', 'om-catalog' ) ),
 					array( 'request_intro', 'textarea', __( 'Form intro', 'om-catalog' ) ),
 					array( 'request_button', 'text', __( 'Form button', 'om-catalog' ) ),
+					array( 'reassure', 'text', __( 'Line under the button', 'om-catalog' ), array( 'description' => __( 'A reassuring note. Leave empty for none.', 'om-catalog' ) ) ),
+					array( 'request_subject', 'text', __( 'Subject of requests', 'om-catalog' ), array( 'condition' => array( 'review_topics!' => 'yes' ) ) ),
+					array( 'review_topics', 'switch', __( '"What is it about?" choices', 'om-catalog' ), array( 'description' => __( 'Off by default: from the builder it’s always a ring request.', 'om-catalog' ) ) ),
+					array( 'hero_tag', 'switch', __( 'Name the stone and metal on the photo', 'om-catalog' ) ),
 					array( 'ring_size', 'switch', __( 'Ring size field', 'om-catalog' ) ),
 					array( 'engraving', 'switch', __( 'Engraving field', 'om-catalog' ) ),
 					array(
@@ -456,6 +474,9 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 					array( 'email_me', 'switch', __( '"Email it to me"', 'om-catalog' ), array( 'description' => __( 'Sends the visitor a link to their design; you get a copy.', 'om-catalog' ) ) ),
 					array( 'next_title', 'text', __( '"What happens next" title', 'om-catalog' ), array( 'separator' => 'before' ) ),
 					array( 'next_steps', 'textarea', __( '"What happens next" steps (separate with |)', 'om-catalog' ), array( 'description' => __( 'Up to 4 short steps. Leave empty to hide the section.', 'om-catalog' ) ) ),
+					array( 'done_title', 'text', __( 'After sending: title', 'om-catalog' ), array( 'separator' => 'before', 'description' => __( 'A thank-you panel with their ring replaces the form once it is sent.', 'om-catalog' ) ) ),
+					array( 'done_text', 'textarea', __( 'After sending: text', 'om-catalog' ) ),
+					array( 'done_steps', 'textarea', __( 'After sending: steps (separate with |)', 'om-catalog' ), array( 'description' => __( 'Up to 4. The "Booking link" above shows as a button there too.', 'om-catalog' ) ) ),
 				),
 			),
 		);

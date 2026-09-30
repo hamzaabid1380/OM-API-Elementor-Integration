@@ -1259,7 +1259,7 @@ class OM_Shortcodes {
 		$links  = 'yes' === $atts['badge_links'];
 		$style  = strtoupper( (string) ( $product['style_number'] ?? '' ) );
 		$out    = array();
-		if ( 'yes' === $atts['badge_popular'] && in_array( $style, OM_Engage::popular( $line ), true ) ) {
+		if ( 'yes' === $atts['badge_popular'] && in_array( $style, OM_Engage::popular( $line, 5, max( 1, (int) apply_filters( 'om_popular_badges', 6, $line ) ) ), true ) ) {
 			$out[] = array( __( 'Popular', 'om-catalog' ), $links && 'popular' !== $state['sort'] ? $url( array( 'sort' => 'popular', 'q' => $state['q'] ) ) : '' );
 		}
 		$shape = '';

@@ -236,6 +236,32 @@ Switching it off:
   widget, and **True size on diamonds** in the OM Ring Builder widget
   (Settings & diamonds).
 
+**Journey polish** (1.34):
+- **One strip at the bottom**: on builder steps the AI assistant's button
+  sits inside the "Your ring" bar instead of floating (OM Ring Builder ›
+  "Your ring" bar › **AI assistant button in the bar**). The bar is hidden
+  on the review step (**Also on the review step** brings it back), and
+  until a step is done it says what to do ("Pick a diamond below").
+  Elsewhere the floating button shrinks to its icon once visitors scroll
+  (Settings › AI assistant › Button position).
+- **Review**: the photo names the stone and metal; the request form has
+  no "What is it about?" choices (requests arrive as "Ring request";
+  switch the choices back under Review & request), ring size and
+  engraving sit before the message, and a reassuring line shows under
+  the button (**Line under the button**).
+- **After sending**: a thank-you panel with the ring, the total and
+  "What happens next" replaces the form (**After sending** title, text,
+  steps; a booking link shows there too).
+- **Diamonds**: a photo in each row when the feed has one, and
+  **Compare** — tick up to 4 and see them side by side, with "Only show
+  differences" (OM Diamond Search › **"Compare" diamonds**; OM Ring
+  Builder › Settings & diamonds).
+- **Product pages**: "Select this setting" is the first button under the
+  price (OM Product › Ring Builder & Inquiry › **Button position**).
+- **Follow-up email** (off by default): Settings › Emails › **Ring
+  design — gentle follow-up** — once, a few days after a visitor emails
+  themselves a design, only if no request has come from them since.
+
 **Continue without a diamond** (1.33): the diamond step has a "Continue
 without a diamond — choose it with us, or use your own stone" link, so a
 setting alone can be requested. The review and the request then say the
@@ -910,6 +936,25 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.34.0
+- Ring builder: the AI assistant's button docks into the "Your ring" bar;
+  no bar on the review step; "Pick a setting/diamond below" hint while a
+  step isn't done; no floating Saved button over the bar.
+- AI assistant: the floating button shrinks to its icon after scrolling
+  (setting).
+- Review: stone and metal named on the photo; "Ask our jeweller" next to
+  Book a viewing; request form without the topic choices (subject "Ring
+  request"), ring size and engraving before the message, reassuring line
+  under the button; a thank-you panel with the ring and next steps after
+  sending.
+- Diamonds: row photos when available; Compare up to 4 side by side.
+- Product page: "Select this setting" first under the price (option).
+- Setting step: filter rows left-aligned with the step; the page heading
+  steps back on steps; "Popular" badges limited to the 6 most viewed.
+- Helper lines ("Help me choose", "Continue without a diamond") look like
+  links.
+- New email: Ring design — gentle follow-up (off by default).
 
 ### 1.33.0
 - **Continue without a diamond** in the ring builder: a setting can be

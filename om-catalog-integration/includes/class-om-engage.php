@@ -92,8 +92,8 @@ class OM_Engage {
 	 *
 	 * @return string[] Upper-case style numbers.
 	 */
-	public static function popular( $line, $min = 5 ) {
-		return array_keys( array_slice( array_filter( self::views( $line ), static function ( $n ) use ( $min ) { return $n >= $min; } ), 0, 12, true ) );
+	public static function popular( $line, $min = 5, $top = 12 ) {
+		return array_keys( array_slice( array_filter( self::views( $line ), static function ( $n ) use ( $min ) { return $n >= $min; } ), 0, $top, true ) );
 	}
 
 	/**

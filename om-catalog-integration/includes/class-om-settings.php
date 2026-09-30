@@ -140,6 +140,7 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_ai_side', array( 'sanitize_callback' => static function ( $v ) { return 'left' === $v ? 'left' : 'right'; } ) );
 		register_setting( 'om_catalog_settings', 'om_ai_offset_x', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_offset_y', array( 'sanitize_callback' => 'absint' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_mini', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_ai_hourly', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_daily', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_analytics_meta', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -747,6 +748,12 @@ class OM_Settings {
 						<?php else : ?>
 							<input type="hidden" name="<?php echo esc_attr( $em_name ); ?>[enabled]" value="1" />
 						<?php endif; ?>
+						<?php if ( ! empty( $email_def['days'] ) ) : ?>
+							<tr>
+								<th><label for="<?php echo esc_attr( $em_name ); ?>_days">When</label></th>
+								<td><input type="number" min="1" max="30" id="<?php echo esc_attr( $em_name ); ?>_days" name="<?php echo esc_attr( $em_name ); ?>[days]" value="<?php echo esc_attr( $em['days'] ?? '3' ); ?>" class="small-text" /> days after they emailed themselves the design — only if no request has come from that address since, and at most once a month per address.</td>
+							</tr>
+						<?php endif; ?>
 						<?php if ( 'shop' === $email_def['audience'] ) : ?>
 							<tr>
 								<th>Recipients</th>
@@ -899,7 +906,9 @@ class OM_Settings {
 							<select name="om_ai_side" aria-label="Side"><option value="right" <?php selected( get_option( 'om_ai_side', 'right' ), 'right' ); ?>>Bottom right</option><option value="left" <?php selected( get_option( 'om_ai_side', 'right' ), 'left' ); ?>>Bottom left</option></select>
 							&nbsp;<label><input type="number" min="0" max="200" name="om_ai_offset_x" value="<?php echo esc_attr( get_option( 'om_ai_offset_x', 20 ) ); ?>" class="small-text" /> px from the side</label>
 							&nbsp;<label><input type="number" min="0" max="300" name="om_ai_offset_y" value="<?php echo esc_attr( get_option( 'om_ai_offset_y', 20 ) ); ?>" class="small-text" /> px from the bottom</label>
-							<p class="description">It moves up by itself only while something else sits under it (the compare tray, the phone's filter bar, the product page's bottom bar), then goes back.</p>
+							<p class="description">It moves up by itself only while something else sits under it (the compare tray, the phone's filter bar, the product page's bottom bar), then goes back. On ring builder steps it sits inside the "Your ring" bar instead (OM Ring Builder widget › "Your ring" bar).</p>
+							<input type="hidden" name="om_ai_mini" value="0" />
+							<p><label><input type="checkbox" name="om_ai_mini" value="1" <?php checked( get_option( 'om_ai_mini', '1' ), '1' ); ?> /> Shrink it to its icon once the visitor scrolls down, so it covers less of the page</label></p>
 						</td>
 					</tr>
 					<tr>

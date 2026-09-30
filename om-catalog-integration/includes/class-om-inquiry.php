@@ -341,6 +341,8 @@ class OM_Inquiry {
 				'chat'        => '',
 				// A small line above the send button.
 				'note'        => '',
+				// A reassuring line under the send button.
+				'reassure'    => '',
 				// Filled by the script at send time: the page URL with the
 				// options chosen, and the metal colour (for the right photo).
 				'link'        => '',
@@ -452,6 +454,9 @@ class OM_Inquiry {
 				<?php endif; ?>
 				<p class="om-inquiry-status" role="status" aria-live="polite" hidden></p>
 				<button type="submit" class="om-inquiry-submit"><?php echo esc_html( $context['button'] ); ?></button>
+				<?php if ( '' !== trim( (string) $context['reassure'] ) ) : ?>
+					<p class="om-inquiry-reassure"><?php echo esc_html( $context['reassure'] ); ?></p>
+				<?php endif; ?>
 			</form>
 			<?php endif; ?>
 		</div>

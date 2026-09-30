@@ -996,7 +996,17 @@
 					if (/viewing|appointment/i.test(subject) && cfg.track && cfg.trackMeta && typeof window.fbq === 'function' && !trackOff()) { try { window.fbq('track', 'Schedule'); } catch (err) { /* ignore */ } }
 					form.reset();
 					setPair($form, '', '');
-					$form.find('.om-field, .om-field-row, .om-inquiry-submit').prop('hidden', true);
+					$form.find('.om-field, .om-field-row, .om-inquiry-submit, .om-inquiry-reassure').prop('hidden', true);
+					// Ring builder: a thank-you panel with the ring and what
+					// happens next, in place of the choices and the form.
+					var $aside = $form.closest('.om-rb-review').find('.om-review-summary');
+					var $done = $aside.find('.om-rb-done');
+					if ($done.length) {
+						$aside.children().not('.om-rb-done, .om-rb-keep, .om-review-restart').prop('hidden', true);
+						$done.prop('hidden', false);
+						$done[0].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+						$done.trigger('focus');
+					}
 				}
 			})
 			.fail(function () {
@@ -2610,7 +2620,8 @@
 	function syncSavedFloat(list) {
 		if (!cfg.savedFloat) { return; }
 		var own = $('.om-saved-open, a[href$="#om-saved"]').filter(function () { return this.getClientRects().length > 0; }).length > 0;
-		if (!list.length || own) {
+		// The ring builder's bar holds the bottom of the screen: no float there.
+		if (!list.length || own || $('.om-rb-bar').length) {
 			if (savedFloat) { savedFloat.prop('hidden', true); }
 			return;
 		}
@@ -3935,8 +3946,30 @@
 		aiWrite(st);
 		ai.removeClass('is-open');
 		ai.find('.om-ai-panel').prop('hidden', true);
-		ai.find('.om-ai-launch').attr('aria-expanded', 'false').trigger('focus');
+		ai.find('.om-ai-launch').attr('aria-expanded', 'false');
+		if (aiOpener && document.contains(aiOpener) && aiOpener.getClientRects().length) { aiOpener.focus(); } else { ai.find('.om-ai-launch').trigger('focus'); }
 	}
+
+	// Docked: the page has its own button for the chat (ring builder bar or
+	// review), so the floating one stays out of the way.
+	function aiDock() {
+		if (!ai) { return; }
+		var $own = $('[data-om-ai-open]');
+		$own.prop('hidden', false);
+		ai.toggleClass('om-ai--docked', $own.length > 0);
+	}
+
+	// Scrolled down the page: the floating button shrinks to its icon so it
+	// covers less (it opens up again on hover / focus).
+	var aiMiniTick = false;
+	function aiMini() {
+		aiMiniTick = false;
+		if (!ai || !AI.mini) { return; }
+		ai.toggleClass('is-mini', (window.scrollY || window.pageYOffset || 0) > 240);
+	}
+	window.addEventListener('scroll', function () {
+		if (!aiMiniTick) { aiMiniTick = true; window.requestAnimationFrame(aiMini); }
+	}, { passive: true });
 
 	function aiTeamView(show) {
 		ai.find('.om-ai-team').prop('hidden', !show);
@@ -3995,7 +4028,14 @@
 		});
 	}
 
-	$(document).on('click', '.om-ai-launch', function () { aiOpen(); });
+	$(document).on('click', '.om-ai-launch', function () { aiOpener = null; aiOpen(); });
+	// The ring builder's own "Ask our jeweller" button (in its bar/review).
+	var aiOpener = null;
+	$(document).on('click', '[data-om-ai-open]', function () {
+		if (!ai) { return; }
+		aiOpener = this;
+		aiOpen();
+	});
 	$(document).on('click', '.om-ai-close', aiClose);
 	$(document).on('click', '.om-ai-restart', function () {
 		var st = aiRead();
@@ -4031,7 +4071,136 @@
 	$(function () {
 		if (!AI || !cfg.ajaxUrl || trackOff() || !document.body) { return; }
 		aiBuild();
+		aiDock();
+		aiMini();
 		if (aiRead().open || window.location.hash === '#om-ai') { aiOpen(false); }
+	});
+
+	/* ---------- Diamonds: compare side by side ---------- */
+
+	var DCMP_KEY = 'om_dcmp';
+	var DCMP_MAX = 4;
+	function readDcmp() {
+		try { var v = JSON.parse(window.sessionStorage.getItem(DCMP_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (err) { return []; }
+	}
+	function writeDcmp(list) {
+		try { window.sessionStorage.setItem(DCMP_KEY, JSON.stringify(list.slice(0, DCMP_MAX))); } catch (err) { /* private mode */ }
+	}
+
+	// Buttons pressed for the diamonds picked; a strip over the results.
+	function syncDcmp() {
+		var list = readDcmp();
+		var lots = list.map(function (d) { return d.lot; });
+		$('.om-dcmp-toggle').each(function () {
+			var d;
+			try { d = JSON.parse(this.getAttribute('data-om-dcmp')); } catch (err) { return; }
+			$(this).attr('aria-pressed', lots.indexOf(d.lot) > -1 ? 'true' : 'false');
+		});
+		$('.om-diamonds').each(function () {
+			var $wrap = $(this);
+			if (!$wrap.find('.om-dcmp-toggle').length && !list.length) { return; }
+			var $strip = $wrap.find('.om-dcmp-strip');
+			if (!$strip.length) {
+				$strip = $('<div class="om-dcmp-strip" role="region"><span class="om-dcmp-count" aria-live="polite"></span><button type="button" class="om-dcmp-open"></button><button type="button" class="om-dcmp-clear"></button></div>');
+				$strip.attr('aria-label', t('dcmpTitle', 'Compare diamonds'));
+				$strip.find('.om-dcmp-open').text(t('dcmpOpen', 'Compare side by side'));
+				$strip.find('.om-dcmp-clear').text(t('dcmpClear', 'Clear'));
+				var $results = $wrap.find('.om-diamond-results');
+				if ($results.length) { $results.prepend($strip); } else { return; }
+			}
+			$strip.prop('hidden', !list.length);
+			$strip.find('.om-dcmp-count').text(list.length === 1 ? t('dcmpOne', '1 diamond picked — pick another to compare') : t('dcmpN', '%d diamonds to compare').replace('%d', list.length));
+			$strip.find('.om-dcmp-open').prop('disabled', list.length < 2);
+		});
+	}
+
+	$(document).on('click', '.om-dcmp-toggle', function () {
+		var d;
+		try { d = JSON.parse(this.getAttribute('data-om-dcmp')); } catch (err) { return; }
+		var list = readDcmp().filter(function (x) { return x && x.lot !== d.lot; });
+		var adding = $(this).attr('aria-pressed') !== 'true';
+		if (adding) {
+			if (list.length >= DCMP_MAX) {
+				showToast(t('dcmpFull', 'You can compare up to 4 diamonds. Remove one first.'));
+				return;
+			}
+			list.push(d);
+			track('diamond_compare_add', { item_id: d.lot }, null);
+		}
+		writeDcmp(list);
+		syncDcmp();
+	});
+
+	$(document).on('click', '.om-dcmp-clear', function () {
+		writeDcmp([]);
+		syncDcmp();
+	});
+
+	var dcmpDialog = null;
+	function renderDcmp() {
+		var list = readDcmp();
+		var $table = dcmpDialog.find('.om-dcmp-table').empty();
+		var labels = [];
+		list.forEach(function (d) { Object.keys(d.rows || {}).forEach(function (k) { if (labels.indexOf(k) < 0) { labels.push(k); } }); });
+		var $head = $('<tr><th scope="col"><span class="om-visually-hidden"></span></th></tr>');
+		$head.find('.om-visually-hidden').text(t('dcmpDiamond', 'Diamond'));
+		list.forEach(function (d) {
+			var $th = $('<th scope="col"><div class="om-dcmp-media"></div><p class="om-dcmp-name"></p><button type="button" class="om-dcmp-remove"></button></th>');
+			if (d.img) { $th.find('.om-dcmp-media').append($('<img alt="">').attr('src', d.img)); }
+			else {
+				var $icon = $('.om-dt-shape').filter(function () { return $.trim($(this).text()) === d.shape; }).first().find('svg').first().clone();
+				$th.find('.om-dcmp-media').append($icon);
+			}
+			$th.find('.om-dcmp-name').text(d.title);
+			$th.find('.om-dcmp-remove').attr('data-lot', d.lot).text(t('dcmpRemove', 'Remove'));
+			$head.append($th);
+		});
+		$table.append($('<thead></thead>').append($head));
+		var $body = $('<tbody></tbody>');
+		labels.forEach(function (label) {
+			var $tr = $('<tr><th scope="row"></th></tr>');
+			$tr.find('th').text(label);
+			var values = list.map(function (d) { return (d.rows || {})[label] || '—'; });
+			var same = values.every(function (v) { return v === values[0]; });
+			values.forEach(function (v) { $tr.append($('<td></td>').text(v)); });
+			$tr.toggleClass('is-same', same && list.length > 1);
+			$body.append($tr);
+		});
+		var $act = $('<tr class="om-dcmp-actions"><th scope="row"><span class="om-visually-hidden"></span></th></tr>');
+		$act.find('.om-visually-hidden').text(t('dcmpChoose', 'Choose'));
+		list.forEach(function (d) {
+			var $td = $('<td></td>');
+			if (d.select) { $td.append($('<a class="om-dcmp-select"></a>').attr('href', d.select).text(t('dcmpSelect', 'Select this diamond'))); }
+			$act.append($td);
+		});
+		$body.append($act);
+		$table.append($body);
+		dcmpDialog.find('.om-dcmp-diff').prop('hidden', list.length < 2);
+	}
+
+	$(document).on('click', '.om-dcmp-open', function () {
+		if (!dcmpDialog) {
+			dcmpDialog = $('<dialog class="om-dcmp-dialog" aria-labelledby="om-dcmp-title"><div class="om-dcmp-inner"><div class="om-dcmp-top"><h2 class="om-dcmp-title" id="om-dcmp-title"></h2><label class="om-dcmp-diff"><input type="checkbox" /> <span></span></label><button type="button" class="om-dcmp-close">&times;</button></div><div class="om-dcmp-scroll"><table class="om-dcmp-table"></table></div></div></dialog>').appendTo(document.body);
+			dcmpDialog.find('.om-dcmp-title').text(t('dcmpTitle', 'Compare diamonds'));
+			dcmpDialog.find('.om-dcmp-diff span').text(t('dcmpDiff', 'Only show differences'));
+			dcmpDialog.find('.om-dcmp-close').attr('aria-label', t('aiClose', 'Close'));
+			dcmpDialog.on('click', function (e) { if (e.target === this) { this.close(); } });
+			dcmpDialog.on('click', '.om-dcmp-close', function () { dcmpDialog[0].close(); });
+			dcmpDialog.on('close', function () { $('html').removeClass('om-dialog-open'); if (this.omOpener && document.contains(this.omOpener)) { this.omOpener.focus(); } });
+			dcmpDialog.on('change', '.om-dcmp-diff input', function () { dcmpDialog.toggleClass('is-diff', this.checked); });
+		}
+		dcmpDialog[0].omOpener = this;
+		renderDcmp();
+		if (dcmpDialog[0].showModal) { dcmpDialog[0].showModal(); } else { dcmpDialog.attr('open', ''); }
+		$('html').addClass('om-dialog-open');
+		track('diamond_compare_view', { count: readDcmp().length }, null);
+	});
+
+	$(document).on('click', '.om-dcmp-remove', function () {
+		var lot = $(this).attr('data-lot');
+		writeDcmp(readDcmp().filter(function (d) { return d.lot !== lot; }));
+		syncDcmp();
+		if (readDcmp().length) { renderDcmp(); } else { dcmpDialog[0].close(); }
 	});
 
 	/* ---------- Boot ---------- */
@@ -4044,6 +4213,7 @@
 		$(root).find('.om-catalog-grid').addClass('om-fade-in');
 		observeInfinite(root);
 		syncCompare();
+		syncDcmp();
 		syncSaved();
 		queueStickyTools();
 		applyGridSize(root);

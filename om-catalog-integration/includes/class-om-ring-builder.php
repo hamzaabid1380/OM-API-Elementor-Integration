@@ -35,6 +35,7 @@ class OM_Ring_Builder {
 		add_shortcode( 'om_ring_builder', array( $this, 'shortcode' ) );
 		add_action( 'wp_ajax_om_builder_email', array( $this, 'handle_email' ) );
 		add_action( 'wp_ajax_nopriv_om_builder_email', array( $this, 'handle_email' ) );
+		add_action( 'om_design_followup', array( $this, 'send_followup' ), 10, 4 );
 	}
 
 	public function shortcode( $atts ) {
@@ -93,6 +94,7 @@ class OM_Ring_Builder {
 			'fit_rule'        => 'strict',
 			// "True size" buttons on diamonds and in the review.
 			'true_size'       => 'yes',
+			'diamond_compare' => 'yes',
 			// "Continue without a diamond": finish with the setting alone
 			// (the stone chosen with the shop, or the customer's own).
 			'skip_diamond'    => 'yes',
@@ -113,6 +115,11 @@ class OM_Ring_Builder {
 
 			// "Your ring" bar.
 			'bar'             => 'yes',
+			// The bar on the review step too (the summary is already there).
+			'bar_review'      => 'no',
+			// The AI assistant's button inside the bar (and the review)
+			// instead of floating over the page.
+			'chat_in_bar'     => 'yes',
 			'ask_text'        => __( 'Questions? Ask us', 'om-catalog' ),
 			// Empty = a short inquiry form in a pop-up.
 			'ask_url'         => '',
@@ -121,6 +128,18 @@ class OM_Ring_Builder {
 			'request_heading' => __( 'Request this ring', 'om-catalog' ),
 			'request_intro'   => __( 'Send us your design and we will confirm availability, ring size and timing.', 'om-catalog' ),
 			'request_button'  => __( 'Send request', 'om-catalog' ),
+			// The subject requests arrive with; the "What is it about?"
+			// choices are left out unless switched on.
+			'request_subject' => __( 'Ring request', 'om-catalog' ),
+			'review_topics'   => 'no',
+			// A reassuring line under the send button ('' = none).
+			'reassure'        => __( 'Nothing to pay now · We reply within one business day · No obligation', 'om-catalog' ),
+			// The stone and metal named on the photo.
+			'hero_tag'        => 'yes',
+			// After sending: a thank-you panel in place of the form.
+			'done_title'      => __( 'Thank you — your ring request is with us', 'om-catalog' ),
+			'done_text'       => __( 'We’ll check the setting and the diamond and get back to you shortly. A copy of your design is below.', 'om-catalog' ),
+			'done_steps'      => __( 'We check availability of the setting and the diamond|We contact you to confirm the price, ring size and timing|You come and see it — or we arrange delivery', 'om-catalog' ),
 			// inquiry = the form on the page with this subject; url; off.
 			'book'            => 'inquiry',
 			'book_text'       => __( 'Book a viewing', 'om-catalog' ),
@@ -415,6 +434,7 @@ class OM_Ring_Builder {
 						'default_cmax'  => $range ? $range[1] : '',
 						'select_state'  => $select_state,
 						'true_size'     => $atts['true_size'],
+						'compare'       => 'no' === $atts['diamond_compare'] ? 'no' : 'yes',
 					),
 					OM_Diamonds::request_from_globals()
 				);
@@ -424,7 +444,7 @@ class OM_Ring_Builder {
 				break;
 		}
 
-		if ( 'start' !== $step && 'no' !== $atts['bar'] ) {
+		if ( 'start' !== $step && 'no' !== $atts['bar'] && ( 'review' !== $step || 'yes' === $atts['bar_review'] ) ) {
 			$this->render_bar( $atts, 'guide' === $step ? 'diamond' : $step, $order, $state, $has_setting ? $setting : null, $has_diamond ? $diamond : ( $later ? self::LATER : null ), $link );
 		}
 		echo '</div>';
@@ -870,6 +890,13 @@ class OM_Ring_Builder {
 			);
 			if ( $ready ) {
 				$next = '<a class="om-rb-next" href="' . esc_url( $link( array( 'step' => $to ) ) ) . '">' . esc_html( $labels[ $to ] ) . '<span class="om-rb-arrow" aria-hidden="true"></span></a>';
+			} elseif ( in_array( $step, array( 'setting', 'diamond' ), true ) ) {
+				// Not done yet: say what to do here (phones see little else).
+				$hints = array(
+					'setting' => __( 'Pick a setting below', 'om-catalog' ),
+					'diamond' => __( 'Pick a diamond below', 'om-catalog' ),
+				);
+				$next  = '<span class="om-rb-next-hint">' . esc_html( $hints[ $step ] ) . '</span>';
 			}
 		}
 
@@ -883,9 +910,23 @@ class OM_Ring_Builder {
 		if ( '' !== $total ) {
 			echo '<span class="om-rb-total"><span class="om-rb-total-label">' . esc_html__( 'Total', 'om-catalog' ) . '</span> ' . esc_html( $total ) . '</span>';
 		}
+		echo self::chat_button( $atts ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in chat_button().
 		echo $this->ask_link( $atts, $link, self::guide_text( $atts, $state ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in ask_link().
 		echo $next; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 		echo '</span></div></div>';
+	}
+
+	/**
+	 * The AI assistant's button for the bar / review ('' when the assistant
+	 * is off). The script hides the floating one while this is on the page.
+	 */
+	private static function chat_button( $atts, $class = '' ) {
+		if ( 'no' === $atts['chat_in_bar'] || ! class_exists( 'OM_Assistant' ) || ! OM_Assistant::enabled() ) {
+			return '';
+		}
+		$cfg  = OM_Assistant::front_config();
+		$text = is_array( $cfg ) ? (string) $cfg['launcher'] : __( 'Ask our jeweller', 'om-catalog' );
+		return '<button type="button" class="om-rb-chat' . ( '' !== $class ? ' ' . esc_attr( $class ) : '' ) . '" data-om-ai-open hidden><span class="om-ai-spark" aria-hidden="true"></span><span class="om-rb-chat-text">' . esc_html( $text ) . '</span></button>';
 	}
 
 	/** The "Help me choose" answers in words, for the shop ('' = none or not sent). */
@@ -1018,6 +1059,29 @@ class OM_Ring_Builder {
 			/* translators: %d: characters. */
 			$fields[] = array( 'key' => 'engraving', 'label' => __( 'Engraving (optional)', 'om-catalog' ), 'type' => 'text', 'width' => 'half', 'placeholder' => sprintf( __( 'Up to %d characters', 'om-catalog' ), (int) $atts['engraving_max'] ) );
 		}
+		// Ring size and engraving belong with the contact details, before the
+		// message and any consent box.
+		$extra = array_values( array_filter( $fields, static function ( $f ) { return in_array( $f['key'], array( 'ring_size', 'engraving' ), true ) && ! isset( $f['required'] ); } ) );
+		if ( $extra ) {
+			$rest = array_values( array_filter( $fields, static function ( $f ) use ( $extra ) { return ! in_array( $f, $extra, true ); } ) );
+			$at   = count( $rest );
+			foreach ( $rest as $i => $f ) {
+				if ( in_array( $f['type'], array( 'textarea', 'checkbox', 'checkboxes' ), true ) ) {
+					$at = $i;
+					break;
+				}
+			}
+			$fields = array_merge( array_slice( $rest, 0, $at ), $extra, array_slice( $rest, $at ) );
+		}
+		// Subject: "Ring request" (or "Book a viewing" from its button); the
+		// visitor picks from the site's list only when switched on.
+		$subject_args = 'yes' === $atts['review_topics']
+			? array()
+			: array(
+				'subjects'      => array_values( array_unique( array_filter( array( trim( (string) $atts['request_subject'] ), trim( (string) $atts['book_subject'] ) ), 'strlen' ) ) ),
+				'subject_field' => false,
+				'subject'       => trim( (string) $atts['request_subject'] ),
+			);
 
 		$pill_links = static function ( $values, $current, $key, $link ) {
 			$out = '';
@@ -1036,7 +1100,17 @@ class OM_Ring_Builder {
 		<div class="om-builder-review om-rb-review">
 			<div class="om-rb-review-main">
 				<?php if ( $setting_img ) : ?>
-					<div class="om-rb-hero"><img src="<?php echo esc_url( $setting_img ); ?>" alt="<?php echo esc_attr( (string) ( $setting['title'] ?? '' ) ); ?>" /></div>
+					<div class="om-rb-hero"><img src="<?php echo esc_url( $setting_img ); ?>" alt="<?php echo esc_attr( (string) ( $setting['title'] ?? '' ) ); ?>" />
+						<?php if ( 'no' !== $atts['hero_tag'] ) : ?>
+							<p class="om-rb-hero-tag">
+								<span class="om-rb-hero-stone" aria-hidden="true"><?php echo OM_Diamonds::shape_icon( $later ? (string) self::setting_shape( $setting ) : (string) ( $diamond['shape'] ?? 'Round' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG. ?></span>
+								<span class="om-rb-hero-text">
+									<span class="om-rb-hero-line"><?php echo esc_html( $later ? __( 'Centre stone: to choose with us', 'om-catalog' ) : OM_Diamonds::describe( $diamond ) ); ?></span>
+									<span class="om-rb-hero-meta"><?php echo esc_html( implode( ' · ', array_filter( array( trim( $metal . ' ' . $color ), $later ? '' : ( ! empty( $diamond['is_lab'] ) ? __( 'Lab-grown', 'om-catalog' ) : __( 'Natural', 'om-catalog' ) ) ), 'strlen' ) ) ); ?></span>
+								</span>
+							</p>
+						<?php endif; ?>
+					</div>
 				<?php endif; ?>
 				<div class="om-review-items">
 					<div class="om-review-item">
@@ -1117,6 +1191,7 @@ class OM_Ring_Builder {
 				<?php elseif ( 'inquiry' === $atts['book'] ) : ?>
 					<a class="om-rb-book" href="<?php echo esc_attr( '#om-inquiry?subject=' . rawurlencode( (string) $atts['book_subject'] ) ); ?>"><?php echo esc_html( $atts['book_text'] ); ?></a>
 				<?php endif; ?>
+				<?php echo self::chat_button( $atts, 'om-rb-chat--review' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in chat_button(). ?>
 				<?php
 				echo OM_Inquiry::render_form( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 					array(
@@ -1132,10 +1207,12 @@ class OM_Ring_Builder {
 						'heading'     => (string) $atts['request_heading'],
 						'intro'       => (string) $atts['request_intro'],
 						'button'      => (string) $atts['request_button'],
+						'reassure'    => (string) $atts['reassure'],
 						'collapsible' => false,
 						'fields'      => $fields,
-					)
+					) + $subject_args
 				);
+				$this->render_done( $atts, $title, null !== $total ? om_format_price( $total ) : '', $setting_img );
 				?>
 				<?php if ( 'no' !== $atts['share'] || 'no' !== $atts['email_me'] ) : ?>
 					<div class="om-rb-keep">
@@ -1171,6 +1248,35 @@ class OM_Ring_Builder {
 				<?php endif; ?>
 				<a class="om-review-restart" href="<?php echo esc_url( om_builder_url() ? om_builder_url() : $link( array( 'line' => '', 'style' => '', 'metal' => '', 'color' => '', 'diamond' => '', 'first' => '', 'guide' => '', 'step' => '' ) ) ); ?>"><?php esc_html_e( 'Start over', 'om-catalog' ); ?></a>
 			</aside>
+		</div>
+		<?php
+	}
+
+	/** The thank-you panel shown in place of the form once it is sent. */
+	private function render_done( $atts, $title, $total, $img ) {
+		$steps = array_slice( array_filter( array_map( 'trim', explode( '|', (string) $atts['done_steps'] ) ), 'strlen' ), 0, 4 );
+		?>
+		<div class="om-rb-done" hidden tabindex="-1">
+			<p class="om-rb-done-mark" aria-hidden="true"></p>
+			<h3 class="om-rb-done-title"><?php echo esc_html( $atts['done_title'] ); ?></h3>
+			<?php if ( '' !== trim( (string) $atts['done_text'] ) ) : ?>
+				<p class="om-rb-done-text"><?php echo esc_html( $atts['done_text'] ); ?></p>
+			<?php endif; ?>
+			<div class="om-rb-done-ring">
+				<?php if ( $img ) : ?><span class="om-rb-done-img"><img src="<?php echo esc_url( $img ); ?>" alt="" /></span><?php endif; ?>
+				<span class="om-rb-done-name"><?php echo esc_html( $title ); ?><?php if ( '' !== $total ) : ?><span class="om-rb-done-total"><?php echo esc_html( $total ); ?></span><?php endif; ?></span>
+			</div>
+			<?php if ( $steps ) : ?>
+				<p class="om-rb-next-title"><?php echo esc_html( $atts['next_title'] ); ?></p>
+				<ol class="om-rb-done-steps">
+					<?php foreach ( $steps as $one ) : ?>
+						<li><?php echo esc_html( $one ); ?></li>
+					<?php endforeach; ?>
+				</ol>
+			<?php endif; ?>
+			<?php if ( 'url' === $atts['book'] && '' !== trim( (string) $atts['book_url'] ) ) : ?>
+				<a class="om-rb-book om-rb-book--done" href="<?php echo esc_url( $atts['book_url'] ); ?>"><?php echo esc_html( $atts['book_text'] ); ?></a>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -1218,6 +1324,58 @@ class OM_Ring_Builder {
 		}
 		// The store's copy: someone kept this design.
 		OM_Emails::send( 'design_shop', $store, $vars, '', $url, array( 'Reply-To: ' . $email ) );
+		self::schedule_followup( $email, $url, $title );
 		wp_send_json_success( array( 'message' => $ok ) );
+	}
+
+	/**
+	 * The gentle follow-up (Settings › Emails, off by default): once, some
+	 * days later, at most once a month per address.
+	 */
+	private static function schedule_followup( $email, $url, $title ) {
+		if ( ! OM_Emails::enabled( 'design_followup' ) ) {
+			return;
+		}
+		$key = 'om_rbfollow_' . md5( strtolower( $email ) );
+		if ( get_transient( $key ) ) {
+			return;
+		}
+		$days = max( 1, min( 30, (int) ( OM_Emails::get( 'design_followup' )['days'] ?? 3 ) ) );
+		set_transient( $key, 1, max( 30, $days + 1 ) * DAY_IN_SECONDS );
+		wp_schedule_single_event( time() + $days * DAY_IN_SECONDS, 'om_design_followup', array( $email, $url, $title, time() ) );
+	}
+
+	/** Sends the follow-up unless they have written to the shop since. */
+	public function send_followup( $email, $url, $title, $since = 0 ) {
+		if ( ! is_email( $email ) || ! OM_Emails::enabled( 'design_followup' ) ) {
+			return;
+		}
+		if ( class_exists( 'OM_Inquiry' ) ) {
+			$asked = get_posts(
+				array(
+					'post_type'      => OM_Inquiry::POST_TYPE,
+					'post_status'    => 'any',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+					'date_query'     => array( array( 'after' => gmdate( 'Y-m-d H:i:s', (int) $since - 60 ), 'column' => 'post_date_gmt' ) ),
+					'meta_query'     => array( array( 'key' => '_om_email', 'value' => $email ) ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- rare, one row.
+				)
+			);
+			if ( $asked ) {
+				return;
+			}
+		}
+		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		OM_Emails::send(
+			'design_followup',
+			$email,
+			array(
+				'customer_email' => $email,
+				'design'         => $title,
+			),
+			'',
+			$url,
+			array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $site ) . ' <' . OM_Emails::shop_address() . '>' )
+		);
 	}
 }

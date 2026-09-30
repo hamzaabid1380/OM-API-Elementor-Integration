@@ -114,6 +114,8 @@ class OM_Diamonds {
 				'show_inquiry'  => 'yes',
 				// "True size": the stone drawn at its real size on a finger.
 				'true_size'     => 'yes',
+				// "Compare" on each diamond, with a side-by-side table.
+				'compare'       => 'yes',
 			),
 			$atts,
 			'om_diamonds'
@@ -404,6 +406,35 @@ class OM_Diamonds {
 		);
 	}
 
+	/** What the compare table shows for one diamond. */
+	private static function compare_data( $d, $price, $select ) {
+		return array(
+			'lot'    => (string) ( $d['lot_number'] ?? '' ),
+			'title'  => self::describe( $d ),
+			'shape'  => (string) ( $d['shape'] ?? '' ),
+			'img'    => (string) ( $d['image_url'] ?? '' ),
+			'select' => (string) $select,
+			'rows'   => array_filter(
+				array(
+					__( 'Price', 'om-catalog' )        => $price,
+					__( 'Carat', 'om-catalog' )        => isset( $d['carat'] ) ? number_format( (float) $d['carat'], 2 ) : '',
+					__( 'Color', 'om-catalog' )        => (string) ( $d['color'] ?? '' ),
+					__( 'Clarity', 'om-catalog' )      => (string) ( $d['clarity'] ?? '' ),
+					__( 'Cut', 'om-catalog' )          => (string) ( $d['cut'] ?? '' ),
+					__( 'Origin', 'om-catalog' )       => ! empty( $d['is_lab'] ) ? __( 'Lab-grown', 'om-catalog' ) : __( 'Natural', 'om-catalog' ),
+					__( 'Measurements', 'om-catalog' ) => (string) ( $d['measurement'] ?? '' ),
+					__( 'Depth', 'om-catalog' )        => isset( $d['depth_percent'] ) ? $d['depth_percent'] . '%' : '',
+					__( 'Table', 'om-catalog' )        => isset( $d['table_percent'] ) ? $d['table_percent'] . '%' : '',
+					__( 'Polish', 'om-catalog' )       => (string) ( $d['polish'] ?? '' ),
+					__( 'Symmetry', 'om-catalog' )     => (string) ( $d['symmetry'] ?? '' ),
+					__( 'Fluorescence', 'om-catalog' ) => (string) ( $d['fluorescence'] ?? '' ),
+					__( 'Certificate', 'om-catalog' )  => trim( ( $d['lab'] ?? '' ) . ' ' . ( $d['certificate_number'] ?? '' ) ),
+				),
+				'strlen'
+			),
+		);
+	}
+
 	private function render_row( $d, $atts ) {
 		$retail = isset( $d['price'] ) ? om_diamond_retail( $d['price'] ) : null;
 		$price  = null !== $retail ? om_format_price_short( $retail ) : __( 'On request', 'om-catalog' );
@@ -420,7 +451,14 @@ class OM_Diamonds {
 		?>
 		<details class="om-diamond" role="listitem">
 			<summary class="om-dt-row">
-				<span class="om-dt-shape"><?php echo self::shape_icon( (string) ( $d['shape'] ?? 'Round' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG. ?><?php echo esc_html( $d['shape'] ?? '' ); ?></span>
+				<span class="om-dt-shape">
+					<?php if ( ! empty( $media['image'] ) ) : ?>
+						<span class="om-dt-thumb"><img src="<?php echo esc_url( $media['image'] ); ?>" alt="" loading="lazy" decoding="async" /></span>
+					<?php else : ?>
+						<?php echo self::shape_icon( (string) ( $d['shape'] ?? 'Round' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- static SVG. ?>
+					<?php endif; ?>
+					<?php echo esc_html( $d['shape'] ?? '' ); ?>
+				</span>
 				<span class="om-dt-carat" data-label="<?php esc_attr_e( 'Carat', 'om-catalog' ); ?>"><?php echo esc_html( isset( $d['carat'] ) ? number_format( (float) $d['carat'], 2 ) : '' ); ?></span>
 				<span data-label="<?php esc_attr_e( 'Color', 'om-catalog' ); ?>"><?php echo self::grade_badge( 'color', (string) ( $d['color'] ?? '' ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in grade_badge(). ?></span>
 				<span data-label="<?php esc_attr_e( 'Clarity', 'om-catalog' ); ?>"><?php echo self::grade_badge( 'clarity', (string) ( $d['clarity'] ?? '' ) ); // phpcs:ignore WordPress.Security.EscapeOutput ?></span>
@@ -471,6 +509,9 @@ class OM_Diamonds {
 						<?php endif; ?>
 						<?php if ( ! empty( $d['certificate_url'] ) ) : ?>
 							<a class="om-btn om-btn--outline" href="<?php echo esc_url( $d['certificate_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'View certificate', 'om-catalog' ); ?></a>
+						<?php endif; ?>
+						<?php if ( 'no' !== $atts['compare'] && '' !== $lot ) : ?>
+							<button type="button" class="om-dcmp-toggle" aria-pressed="false" data-om-dcmp="<?php echo esc_attr( wp_json_encode( self::compare_data( $d, $price, $select ) ) ); ?>"><span class="om-dcmp-box" aria-hidden="true"></span><?php esc_html_e( 'Compare', 'om-catalog' ); ?></button>
 						<?php endif; ?>
 						<?php
 						if ( 'no' !== $atts['true_size'] ) {

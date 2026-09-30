@@ -139,6 +139,8 @@ class OM_Assistant {
 			'side'     => 'left' === get_option( 'om_ai_side', 'right' ) ? 'left' : 'right',
 			'x'        => min( 200, absint( get_option( 'om_ai_offset_x', 20 ) ) ),
 			'y'        => min( 300, absint( get_option( 'om_ai_offset_y', 20 ) ) ),
+			// Shrinks to its icon once the visitor scrolls down.
+			'mini'     => '0' !== get_option( 'om_ai_mini', '1' ),
 		);
 	}
 

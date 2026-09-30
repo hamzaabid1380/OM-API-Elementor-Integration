@@ -124,6 +124,23 @@ class OM_Emails {
 					'button'  => __( 'Open the design', 'om-catalog' ),
 				),
 			),
+			'design_followup'  => array(
+				'label'    => __( 'Ring design — gentle follow-up', 'om-catalog' ),
+				'when'     => __( 'To a visitor who emailed themselves a ring design but has not sent a request since — once, a few days later. Off until you switch it on.', 'om-catalog' ),
+				'audience' => 'customer',
+				'toggle'   => true,
+				// Days after "Email it to me".
+				'days'     => true,
+				'tokens'   => array( 'customer_email', 'design', 'link' ),
+				'defaults' => array(
+					'enabled' => '0',
+					'days'    => '3',
+					'subject' => __( 'Still thinking about your ring?', 'om-catalog' ),
+					'heading' => __( 'Your ring design is waiting', 'om-catalog' ),
+					'body'    => '<p><strong>{design}</strong></p><p>' . __( 'If you have questions about the diamond, the setting, sizing or timing, just reply to this email — we are happy to help, with no obligation. You can also come and see it in person.', 'om-catalog' ) . '</p>',
+					'button'  => __( 'Open my design', 'om-catalog' ),
+				),
+			),
 		);
 	}
 
@@ -212,6 +229,7 @@ class OM_Emails {
 			'heading' => sanitize_text_field( (string) ( $value['heading'] ?? '' ) ),
 			'body'    => wp_kses_post( (string) ( $value['body'] ?? '' ) ),
 			'button'  => sanitize_text_field( (string) ( $value['button'] ?? '' ) ),
+			'days'    => (string) max( 1, min( 30, absint( $value['days'] ?? 3 ) ) ),
 		);
 	}
 

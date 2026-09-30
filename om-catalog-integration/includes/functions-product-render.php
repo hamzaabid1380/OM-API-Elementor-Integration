@@ -54,6 +54,9 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			// Ring builder: "Select this setting" on builder product lines.
 			'show_builder'        => true,
 			'builder_text'        => '',
+			// Where it sits: 'price' (the first thing under the price) or
+			// 'after_options'. The chosen metal/colour go with it either way.
+			'builder_position'    => 'price',
 			// "Inquire about this piece" form at the end of the details.
 			'show_inquiry'        => true,
 			'inquiry_heading'     => '',
@@ -287,6 +290,9 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			<?php endif; ?>
 
 			<?php
+			if ( 'after_options' !== $args['builder_position'] ) {
+				echo $builder_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+			}
 			if ( 'price' === $buttons_position ) {
 				echo $buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_render_action_buttons().
 			}
@@ -370,7 +376,9 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			<?php endif; ?>
 
 			<?php
-			echo $builder_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+			if ( 'after_options' === $args['builder_position'] ) {
+				echo $builder_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+			}
 			if ( 'after_options' === $buttons_position ) {
 				echo $buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_render_action_buttons().
 			}

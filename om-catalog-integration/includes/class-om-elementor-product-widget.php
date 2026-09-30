@@ -673,6 +673,21 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'builder_position',
+			array(
+				'label'       => __( 'Button position', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'price',
+				'options'     => array(
+					'price'         => __( 'Under the price (first)', 'om-catalog' ),
+					'after_options' => __( 'After the options', 'om-catalog' ),
+				),
+				'description' => __( 'The metal and colour chosen on the page go into the builder either way.', 'om-catalog' ),
+				'condition'   => array( 'show_builder' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
 			'show_inquiry',
 			array(
 				'label'     => __( 'Inquiry form', 'om-catalog' ),
@@ -2092,6 +2107,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		}
 		$args['show_builder']     = 'yes' === ( $settings['show_builder'] ?? 'yes' );
 		$args['builder_text']     = (string) ( $settings['builder_text'] ?? '' );
+		$args['builder_position'] = 'after_options' === ( $settings['builder_position'] ?? 'price' ) ? 'after_options' : 'price';
 		$args['show_inquiry']     = 'yes' === ( $settings['show_inquiry'] ?? 'yes' );
 		$args['inquiry_heading']  = (string) ( $settings['inquiry_heading'] ?? '' );
 		$args['inquiry_open']     = 'yes' === ( $settings['inquiry_open'] ?? '' );
