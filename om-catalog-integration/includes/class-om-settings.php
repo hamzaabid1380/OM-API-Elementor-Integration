@@ -628,7 +628,7 @@ class OM_Settings {
 					</tr>
 					<tr>
 						<th><label for="om_photo_tone">Photo background</label></th>
-						<td><input type="text" id="om_photo_tone" name="om_photo_tone" value="<?php echo esc_attr( get_option( 'om_photo_tone', '#F3EFE8' ) ); ?>" class="om-color-field" />
+						<td><input type="text" id="om_photo_tone" name="om_photo_tone" value="<?php echo esc_attr( get_option( 'om_photo_tone', '#FFFFFF' ) ); ?>" class="om-color-field" />
 						<input type="hidden" name="om_photo_blend" value="0" />
 						<label><input type="checkbox" name="om_photo_blend" value="1" <?php checked( get_option( 'om_photo_blend', '1' ), '1' ); ?> /> Blend photos' white backgrounds into this tone, so every card looks like one photoshoot</label></td>
 					</tr>

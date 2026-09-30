@@ -236,6 +236,14 @@ Switching it off:
   widget, and **True size on diamonds** in the OM Ring Builder widget
   (Settings & diamonds).
 
+**Continue without a diamond** (1.33): the diamond step has a "Continue
+without a diamond — choose it with us, or use your own stone" link, so a
+setting alone can be requested. The review and the request then say the
+diamond is still to be chosen (with you, or the customer's own stone), with
+a **Choose a diamond now** link back. Switch it off or reword it in the OM
+Ring Builder widget (Settings & diamonds > **"Continue without a
+diamond"**).
+
 **Help me choose** (1.26): a third way in on the start screen and a link
 on the diamond step. Three questions — a budget (while prices show) or a
 size (while they are hidden), what matters most (value, balance or
@@ -902,6 +910,16 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.33.0
+- **Continue without a diamond** in the ring builder: a setting can be
+  requested on its own; the request says the diamond is to be chosen with
+  you or is the customer's own. On by default, with its own switch and text
+  in the OM Ring Builder widget.
+- **White photo backgrounds everywhere**: Photo background now defaults to
+  white, and sites still on the old beige default (#F3EFE8) are moved to
+  white once. "You might also like" and the builder's setting grid follow
+  it; builder panels keep a light tint so they stay visible.
 
 ### 1.32.0
 - **Emails & notifications**: a new Emails section — every email (new

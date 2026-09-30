@@ -389,6 +389,8 @@ class OM_Elementor_Builder_Widget extends Widget_Base {
 						),
 					),
 					array( 'true_size', 'switch', __( '"True size" on diamonds', 'om-catalog' ), array( 'description' => __( 'Shows the stone at its real size on a finger, compared with other carats.', 'om-catalog' ) ) ),
+					array( 'skip_diamond', 'switch', __( '"Continue without a diamond"', 'om-catalog' ), array( 'description' => __( 'Lets customers finish with the setting alone and send the request — the centre stone is chosen with you, or it’s their own.', 'om-catalog' ) ) ),
+					array( 'skip_text', 'text', __( 'Its text', 'om-catalog' ), array( 'condition' => array( 'skip_diamond' => 'yes' ) ) ),
 				),
 			),
 			'section_rb_guide'  => array(

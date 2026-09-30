@@ -17,6 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OM_Ring_Builder {
 
+	/** rb_diamond value for "continue without a diamond". */
+	const LATER = 'later';
+
 	const PARAMS = array( 'rb_setting', 'rb_metal', 'rb_color', 'rb_diamond', 'rb_step', 'rb_first', 'rb_guide', 'rb', 'g_ct', 'g_budget', 'g_pri', 'g_origin', 'g_shape' );
 
 	private static $instance = null;
@@ -90,6 +93,10 @@ class OM_Ring_Builder {
 			'fit_rule'        => 'strict',
 			// "True size" buttons on diamonds and in the review.
 			'true_size'       => 'yes',
+			// "Continue without a diamond": finish with the setting alone
+			// (the stone chosen with the shop, or the customer's own).
+			'skip_diamond'    => 'yes',
+			'skip_text'       => __( 'Continue without a diamond — choose it with us, or use your own stone', 'om-catalog' ),
 
 			// "Help me choose": auto = by budget when diamond prices show,
 			// by size while they are hidden; budget; size; off.
@@ -267,10 +274,14 @@ class OM_Ring_Builder {
 
 		$state   = self::state();
 		$setting = ( $state['line'] && $state['style'] ) ? OM_API_Client::get_product_by_style( $state['line'], $state['style'] ) : null;
-		$diamond = '' !== $state['diamond'] ? OM_API_Client::get_diamond( $state['diamond'] ) : null;
+		// "later": no diamond yet — chosen with the shop, or their own stone.
+		$later   = self::LATER === $state['diamond'] && 'no' !== $atts['skip_diamond'];
+		$diamond = '' !== $state['diamond'] && ! $later ? OM_API_Client::get_diamond( $state['diamond'] ) : null;
 
 		$has_setting = $setting && ! is_wp_error( $setting );
 		$has_diamond = $diamond && ! is_wp_error( $diamond );
+		// Ready for the review: a diamond, or "without a diamond".
+		$diamond_ok = $has_diamond || $later;
 
 		// Setting and diamond together: set the stone in the head size made
 		// for it (each carat is its own style number at OM).
@@ -306,7 +317,7 @@ class OM_Ring_Builder {
 		// Which step to show.
 		$step = $state['step'];
 		if ( '' === $step ) {
-			if ( $has_setting && $has_diamond ) {
+			if ( $has_setting && $diamond_ok ) {
 				$step = 'review';
 			} elseif ( $has_setting ) {
 				$step = 'diamond';
@@ -316,7 +327,7 @@ class OM_Ring_Builder {
 				$step = 'start';
 			}
 		}
-		if ( 'review' === $step && ! ( $has_setting && $has_diamond ) ) {
+		if ( 'review' === $step && ! ( $has_setting && $diamond_ok ) ) {
 			$step = $has_setting ? 'diamond' : 'setting';
 		}
 		$guide_mode = self::guide_mode( $atts );
@@ -358,7 +369,7 @@ class OM_Ring_Builder {
 			echo '<h2 class="om-builder-heading">' . esc_html( $atts['heading'] ) . '</h2>';
 		}
 
-		if ( $state['diamond'] && ! $has_diamond ) {
+		if ( $state['diamond'] && ! $has_diamond && ! $later ) {
 			echo '<p class="om-builder-notice">' . esc_html__( 'The diamond you picked is no longer available. Please choose another.', 'om-catalog' ) . '</p>';
 		}
 		if ( $state['style'] && ! $has_setting ) {
@@ -369,14 +380,14 @@ class OM_Ring_Builder {
 			$this->render_start( $atts, $link, $order );
 		} elseif ( 'guide' === $step ) {
 			// The answers so far then travel on through the bar's links.
-			$state['guide'] = $this->render_guide( $atts, $state, $has_setting ? $setting : null, $link, $order, $has_setting, $has_diamond, $page_url, $guide_mode );
+			$state['guide'] = $this->render_guide( $atts, $state, $has_setting ? $setting : null, $link, $order, $has_setting, $diamond_ok, $page_url, $guide_mode );
 		} else {
 			$guides = array(
 				'setting' => $has_diamond ? self::fill( $atts['guide_setting2'], $setting_name, $diamond_name ) : $atts['guide_setting'],
 				'diamond' => $has_setting ? self::fill( $atts['guide_diamond'], $setting_name, $diamond_name ) : $atts['guide_diamond1'],
 				'review'  => $atts['guide_review'],
 			);
-			$this->render_head( $atts, $step, $order, $has_setting, $has_diamond, $link, $guides[ $step ] );
+			$this->render_head( $atts, $step, $order, $has_setting, $diamond_ok, $link, $guides[ $step ] );
 		}
 
 		switch ( $step ) {
@@ -389,6 +400,9 @@ class OM_Ring_Builder {
 			case 'diamond':
 				if ( '' !== $guide_mode && '' !== trim( (string) $atts['guide_link'] ) ) {
 					echo '<p class="om-rb-tip"><span class="om-rb-tip-icon" aria-hidden="true"></span><a href="' . esc_url( $link( array( 'step' => 'guide' ) ) ) . '">' . esc_html( $atts['guide_link'] ) . '</a></p>';
+				}
+				if ( $has_setting && 'no' !== $atts['skip_diamond'] && '' !== trim( (string) $atts['skip_text'] ) ) {
+					echo '<p class="om-rb-tip om-rb-skip"><span class="om-rb-tip-icon" aria-hidden="true"></span><a href="' . esc_url( $link( array( 'diamond' => self::LATER, 'step' => '' ) ) ) . '">' . esc_html( $atts['skip_text'] ) . '</a></p>';
 				}
 				$select_state = self::state_args( $state, array( 'step' => '' ) );
 				unset( $select_state['rb_diamond'] );
@@ -406,12 +420,12 @@ class OM_Ring_Builder {
 				);
 				break;
 			case 'review':
-				$this->render_review( $atts, $state, $setting, $diamond, $link, $head );
+				$this->render_review( $atts, $state, $setting, $later ? null : $diamond, $link, $head );
 				break;
 		}
 
 		if ( 'start' !== $step && 'no' !== $atts['bar'] ) {
-			$this->render_bar( $atts, 'guide' === $step ? 'diamond' : $step, $order, $state, $has_setting ? $setting : null, $has_diamond ? $diamond : null, $link );
+			$this->render_bar( $atts, 'guide' === $step ? 'diamond' : $step, $order, $state, $has_setting ? $setting : null, $has_diamond ? $diamond : ( $later ? self::LATER : null ), $link );
 		}
 		echo '</div>';
 		return ob_get_clean();
@@ -813,6 +827,9 @@ class OM_Ring_Builder {
 
 	/** The "Your ring" bar at the foot of every step. */
 	private function render_bar( $atts, $step, $order, $state, $setting, $diamond, $link ) {
+		// "Without a diamond": a chip that says so, and no diamond price.
+		$later   = self::LATER === $diamond;
+		$diamond = $later ? null : $diamond;
 		list( $setting_price, $diamond_price ) = self::prices( $state, $setting, $diamond );
 
 		$chip = static function ( $kind, $title, $meta, $img, $href, $empty_text ) {
@@ -834,16 +851,16 @@ class OM_Ring_Builder {
 
 		$chips = array(
 			'setting' => $chip( 'setting', $setting ? (string) ( $setting['title'] ?? $state['style'] ) : '', $setting_meta, $setting ? (string) ( om_card_images( $setting )[0] ?? '' ) : '', $link( array( 'step' => 'setting' ) ), __( 'Setting', 'om-catalog' ) ),
-			'diamond' => $chip( 'diamond', $diamond ? OM_Diamonds::describe( $diamond ) : '', $diamond_meta, $diamond ? (string) ( $diamond['image_url'] ?? '' ) : '', $link( array( 'step' => 'diamond' ) ), __( 'Diamond', 'om-catalog' ) ),
+			'diamond' => $chip( 'diamond', $diamond ? OM_Diamonds::describe( $diamond ) : ( $later ? __( 'Diamond: to choose with us', 'om-catalog' ) : '' ), $later ? __( 'or your own stone', 'om-catalog' ) : $diamond_meta, $diamond ? (string) ( $diamond['image_url'] ?? '' ) : '', $link( array( 'step' => 'diamond' ) ), __( 'Diamond', 'om-catalog' ) ),
 		);
 
 		// The next step, once this one is done.
 		$next = '';
 		$at   = array_search( $step, $order, true );
 		if ( 'review' !== $step ) {
-			$ready = ( 'setting' === $step && $setting ) || ( 'diamond' === $step && $diamond );
+			$ready = ( 'setting' === $step && $setting ) || ( 'diamond' === $step && ( $diamond || $later ) );
 			$to    = $order[ $at + 1 ] ?? 'review';
-			if ( 'review' === $to && ! ( $setting && $diamond ) ) {
+			if ( 'review' === $to && ! ( $setting && ( $diamond || $later ) ) ) {
 				$ready = false;
 			}
 			$labels = array(
@@ -943,6 +960,8 @@ class OM_Ring_Builder {
 				$setting_price = om_apply_markup( floatval( $quote['price'] ) );
 			}
 		}
+		$later         = ! $diamond;
+		$diamond       = $later ? array() : $diamond;
 		$diamond_price = isset( $diamond['price'] ) ? om_diamond_retail( $diamond['price'] ) : null;
 		$total         = ( null !== $setting_price && null !== $diamond_price ) ? $setting_price + $diamond_price : null;
 
@@ -952,16 +971,28 @@ class OM_Ring_Builder {
 		/* translators: %s: carat. */
 		$head_text = '' !== (string) $head ? sprintf( __( 'Head size set for a %s ct centre stone', 'om-catalog' ), rtrim( rtrim( number_format( (float) $head, 2 ), '0' ), '.' ) ) : '';
 
-		$summary = sprintf(
-			/* translators: 1: setting, 2: style, 3: metal/colour, 4: diamond, 5: lot. */
-			__( 'Setting: %1$s (style %2$s, %3$s). Diamond: %4$s (lot %5$s).', 'om-catalog' ),
-			(string) ( $setting['title'] ?? '' ),
-			$state['style'],
-			trim( $metal . ' ' . $color ),
-			OM_Diamonds::describe( $diamond ),
-			(string) ( $diamond['lot_number'] ?? '' )
-		);
-		$title = (string) ( $setting['title'] ?? '' ) . ' + ' . OM_Diamonds::describe( $diamond );
+		if ( $later ) {
+			$summary = sprintf(
+				/* translators: 1: setting, 2: style, 3: metal/colour. */
+				__( 'Setting: %1$s (style %2$s, %3$s). Diamond: not chosen yet — to choose with the shop, or the customer’s own stone.', 'om-catalog' ),
+				(string) ( $setting['title'] ?? '' ),
+				$state['style'],
+				trim( $metal . ' ' . $color )
+			);
+			/* translators: %s: setting. */
+			$title = sprintf( __( '%s (setting — diamond to choose)', 'om-catalog' ), (string) ( $setting['title'] ?? '' ) );
+		} else {
+			$summary = sprintf(
+				/* translators: 1: setting, 2: style, 3: metal/colour, 4: diamond, 5: lot. */
+				__( 'Setting: %1$s (style %2$s, %3$s). Diamond: %4$s (lot %5$s).', 'om-catalog' ),
+				(string) ( $setting['title'] ?? '' ),
+				$state['style'],
+				trim( $metal . ' ' . $color ),
+				OM_Diamonds::describe( $diamond ),
+				(string) ( $diamond['lot_number'] ?? '' )
+			);
+			$title = (string) ( $setting['title'] ?? '' ) . ' + ' . OM_Diamonds::describe( $diamond );
+		}
 		$guide = self::guide_text( $atts, $state );
 		$share = om_absolute_url( $link( array( 'step' => '' ) ) );
 
@@ -1023,6 +1054,17 @@ class OM_Ring_Builder {
 							<a class="om-review-change" href="<?php echo esc_url( $link( array( 'step' => 'setting' ) ) ); ?>"><?php esc_html_e( 'Change setting', 'om-catalog' ); ?></a>
 						</div>
 					</div>
+					<?php if ( $later ) : ?>
+						<div class="om-review-item om-rb-later">
+							<div class="om-review-media"><span class="om-rb-later-mark" aria-hidden="true">&#9671;</span></div>
+							<div class="om-review-info">
+								<p class="om-review-kicker"><?php esc_html_e( 'Diamond', 'om-catalog' ); ?></p>
+								<p class="om-review-title"><?php esc_html_e( 'To choose with us', 'om-catalog' ); ?></p>
+								<p class="om-rb-later-note"><?php esc_html_e( 'We’ll help you pick the centre stone — or set one you already have. Mention it in your request.', 'om-catalog' ); ?></p>
+								<a class="om-review-change" href="<?php echo esc_url( $link( array( 'diamond' => '', 'step' => 'diamond' ) ) ); ?>"><?php esc_html_e( 'Choose a diamond now', 'om-catalog' ); ?></a>
+							</div>
+						</div>
+					<?php else : ?>
 					<div class="om-review-item">
 						<div class="om-review-media">
 							<?php if ( $diamond_img ) : ?>
@@ -1046,6 +1088,7 @@ class OM_Ring_Builder {
 							?>
 						</div>
 					</div>
+					<?php endif; ?>
 				</div>
 			</div>
 			<aside class="om-review-summary">

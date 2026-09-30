@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.32.0
+ * Version: 1.33.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.32.0' );
+define( 'OM_CATALOG_VERSION', '1.33.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -53,6 +53,14 @@ function om_catalog_init() {
 	OM_Saved::instance();
 	OM_Assistant::instance();
 	OM_Emails::instance();
+	// 1.33: white photo backgrounds by default. Sites still on the old
+	// default beige (never changed) move to white once.
+	if ( '1' !== get_option( 'om_migrated_133' ) ) {
+		if ( 0 === strcasecmp( (string) get_option( 'om_photo_tone', '' ), '#F3EFE8' ) ) {
+			update_option( 'om_photo_tone', '#FFFFFF' );
+		}
+		update_option( 'om_migrated_133', '1' );
+	}
 	OM_Inquiry::instance();
 	OM_Diamonds::instance();
 	OM_Ring_Builder::instance();
@@ -390,7 +398,7 @@ function om_catalog_look_css() {
 		'--om-btn-radius'  => $shapes[ get_option( 'om_button_shape', 'pill' ) ] ?? '999px',
 		'--om-gold'        => $hex( 'om_color_gold', '#B8925A' ),
 		'--om-gold-light'  => $hex( 'om_color_gold_light', '#F4DC9C' ),
-		'--om-photo-tone'  => $hex( 'om_photo_tone', '#F3EFE8' ),
+		'--om-photo-tone'  => $hex( 'om_photo_tone', '#FFFFFF' ),
 		'--om-photo-blend' => '0' === get_option( 'om_photo_blend', '1' ) ? 'normal' : 'multiply',
 	);
 	$css = ':root{' . $line( $vars ) . '}';
