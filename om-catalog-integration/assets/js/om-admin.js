@@ -124,6 +124,24 @@
 		}
 	}
 
+	// A field the browser won't accept blocks the whole save. When it sits
+	// on another tab the browser can't point at it, so the save just seems
+	// to do nothing: open its tab and show the message instead.
+	var invalidShown = false;
+	form.addEventListener('invalid', function (e) {
+		if (invalidShown) { return; }
+		invalidShown = true;
+		var field = e.target;
+		var card = field.closest('.om-card');
+		if (card && card.hidden) { show(card.getAttribute('data-om-tab')); }
+		setTimeout(function () {
+			invalidShown = false;
+			field.scrollIntoView({ block: 'center' });
+			field.focus({ preventScroll: true });
+			if (field.reportValidity) { field.reportValidity(); }
+		}, 60);
+	}, true);
+
 	wrap.addEventListener('click', function (e) {
 		var a = e.target.closest('[data-om-go]');
 		if (!a) { return; }

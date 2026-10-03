@@ -338,7 +338,16 @@ class OM_Settings {
 					<tr>
 						<th><label for="om_client_secret">Client Secret</label></th>
 						<td><input type="password" id="om_client_secret" name="om_client_secret" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo get_option( 'om_client_secret' ) ? esc_attr__( 'Saved — leave blank to keep it', 'om-catalog' ) : ''; ?>" />
-						<p class="description">Provided by Overnight Mountings. For security the saved secret is never shown here; type a new one only to replace it.</p></td>
+						<?php $om_secret = (string) get_option( 'om_client_secret', '' ); ?>
+						<?php if ( '' !== $om_secret ) : ?>
+							<p class="om-cred-saved" style="margin:6px 0 0;color:#008a20">&#10004; <?php echo esc_html( sprintf( 'Secret saved (%d characters, ending in …%s). This box stays empty on purpose so the secret is never shown on the page.', strlen( $om_secret ), substr( $om_secret, -4 ) ) ); ?></p>
+						<?php else : ?>
+							<p class="om-cred-saved" style="margin:6px 0 0;color:#b32d2e">&#10008; No secret saved yet.</p>
+						<?php endif; ?>
+						<p class="description">Provided by Overnight Mountings. Type a new one only to replace it; leave it empty to keep the saved one. After saving, run <strong>Tools › Test connection</strong>.</p>
+						<?php if ( isset( $_SERVER['SERVER_ADDR'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
+							<p class="description">If Overnight Mountings needs to allow your server: this site's server address is <code><?php echo esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) ); ?></code> (your host can confirm the outgoing IP, which is sometimes different).</p>
+						<?php endif; ?></td>
 					</tr>
 				</table>
 
@@ -940,7 +949,7 @@ class OM_Settings {
 					<tr>
 						<th>Limits</th>
 						<td>
-							<label>Per visitor <input type="number" min="1" name="om_ai_hourly" value="<?php echo esc_attr( get_option( 'om_ai_hourly', 0 ) ); ?>" class="small-text" /> messages an hour</label> &nbsp;
+							<label>Per visitor <input type="number" min="0" name="om_ai_hourly" value="<?php echo esc_attr( get_option( 'om_ai_hourly', 0 ) ); ?>" class="small-text" /> messages an hour</label> &nbsp;
 							<label>Whole site <input type="number" min="0" name="om_ai_daily" value="<?php echo esc_attr( get_option( 'om_ai_daily', 0 ) ); ?>" class="small-text" /> AI answers a day</label>
 							<p class="description">0 = no limit (the default). Set limits later if you want to cap costs or keep within a free allowance.</p>
 						</td>

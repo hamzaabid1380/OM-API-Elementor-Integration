@@ -94,8 +94,9 @@ class OM_API_Client {
 		$response = wp_remote_post(
 			self::AUTH_URL,
 			array(
-				'timeout' => 15,
-				'headers' => array(
+				'timeout'    => 15,
+				'user-agent' => self::user_agent(),
+				'headers'    => array(
 					'Content-Type' => 'application/x-www-form-urlencoded',
 				),
 				'body'    => array(
@@ -114,7 +115,7 @@ class OM_API_Client {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( 200 !== (int) $code || empty( $body['access_token'] ) ) {
-			$message = self::auth_error_message( (int) $code, is_array( $body ) ? $body : array(), (string) wp_remote_retrieve_body( $response ) );
+			$message = self::auth_error_message( (int) $code, is_array( $body ) ? $body : array(), (string) wp_remote_retrieve_body( $response ) ) . self::firewall_details( $response );
 			set_transient( self::AUTH_FAIL_TRANSIENT, $message, 5 * MINUTE_IN_SECONDS );
 			self::note_problem( 'sign-in', $message, (int) $code );
 			return new WP_Error( 'om_auth_failed', $message );
@@ -166,6 +167,37 @@ class OM_API_Client {
 		}
 		/* translators: 1: HTTP status, 2: explanation, 3: OM's own reason. */
 		return trim( sprintf( 'Sign-in failed (HTTP %1$d). %2$s%3$s', $code, $hint, '' !== $reason ? ' OM says: "' . $reason . '"' : '' ) );
+	}
+
+	/** Names the plugin and the site in OM's logs. */
+	private static function user_agent() {
+		return 'OM-Catalog-Integration/' . ( defined( 'OM_CATALOG_VERSION' ) ? OM_CATALOG_VERSION : '1' ) . ' (WordPress; ' . home_url( '/' ) . ')';
+	}
+
+	/**
+	 * What OM's support needs to trace a blocked request: the firewall's
+	 * name, its request ID and the blocking page's title.
+	 */
+	private static function firewall_details( $response ) {
+		$bits   = array();
+		$server = (string) wp_remote_retrieve_header( $response, 'server' );
+		if ( '' !== $server ) {
+			$bits[] = 'Server: ' . $server;
+		}
+		foreach ( array( 'cf-ray' => 'Cloudflare Ray ID', 'x-amz-cf-id' => 'CloudFront ID', 'x-request-id' => 'Request ID', 'x-iinfo' => 'Incapsula ID', 'x-sucuri-id' => 'Sucuri ID' ) as $header => $label ) {
+			$value = (string) wp_remote_retrieve_header( $response, $header );
+			if ( '' !== $value ) {
+				$bits[] = $label . ': ' . mb_substr( $value, 0, 80 );
+			}
+		}
+		if ( preg_match( '#<title[^>]*>(.*?)</title>#is', (string) wp_remote_retrieve_body( $response ), $m ) ) {
+			$title = trim( wp_strip_all_tags( html_entity_decode( $m[1], ENT_QUOTES ) ) );
+			if ( '' !== $title ) {
+				$bits[] = 'Page: "' . mb_substr( $title, 0, 100 ) . '"';
+			}
+		}
+		$bits[] = 'Time: ' . gmdate( 'Y-m-d H:i' ) . ' UTC';
+		return ' [' . implode( ' · ', $bits ) . ']';
 	}
 
 	/** Remember the last problem (for Settings and the admin notice). */
@@ -257,8 +289,9 @@ class OM_API_Client {
 		$response = wp_remote_get(
 			$url,
 			array(
-				'timeout' => 15,
-				'headers' => array(
+				'timeout'    => 15,
+				'user-agent' => self::user_agent(),
+				'headers'    => array(
 					'Authorization' => 'Bearer ' . $token,
 				),
 			)

@@ -937,6 +937,19 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.34.3
+- Fix: Settings didn't save (any tab, including the API credentials)
+  while the AI assistant's "Per visitor … messages an hour" limit was 0
+  (the default since 1.32) — the browser rejected 0 and silently blocked
+  the form. 0 (no limit) is accepted now, and if a field on another tab
+  ever blocks saving, that tab opens and points at it.
+- Connection: shows that the Client Secret is saved (length and last 4
+  characters) — the box itself stays empty on purpose — and this
+  server's address for Overnight Mountings' allow-list.
+- Sign-in failures from a firewall include its name, request ID (e.g.
+  Cloudflare Ray ID), page title and time, for Overnight Mountings'
+  support. Requests identify the plugin and site in OM's logs.
+
 ### 1.34.2
 - Sign-in problems explained: instead of "Unknown auth error", the
   message gives Overnight Mountings' HTTP status, their own reason and
