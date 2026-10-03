@@ -1325,6 +1325,16 @@ class OM_Ring_Builder {
 		// The store's copy: someone kept this design.
 		OM_Emails::send( 'design_shop', $store, $vars, '', $url, array( 'Reply-To: ' . $email ) );
 		self::schedule_followup( $email, $url, $title );
+		do_action(
+			'om_lead',
+			array(
+				'event'   => 'design',
+				'email'   => $email,
+				'subject' => __( 'Ring design', 'om-catalog' ),
+				'piece'   => $title,
+				'page'    => $url,
+			)
+		);
 		wp_send_json_success( array( 'message' => $ok ) );
 	}
 

@@ -291,6 +291,19 @@ class OM_Saved {
 			}
 		}
 		OM_Emails::send( 'saved_shop', $store, $vars, self::email_grid( $items ), $reopen, array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $name ) . ' <' . $email . '>' ) );
+		do_action(
+			'om_lead',
+			array(
+				'event'   => 'saved',
+				'name'    => $name,
+				'email'   => $email,
+				'subject' => __( 'Saved designs', 'om-catalog' ),
+				'piece'   => $subject,
+				'page'    => $reopen,
+				'image'   => (string) $items[0]['i'],
+				'items'   => $items,
+			)
+		);
 		wp_send_json_success( array( 'message' => $ok ) );
 	}
 

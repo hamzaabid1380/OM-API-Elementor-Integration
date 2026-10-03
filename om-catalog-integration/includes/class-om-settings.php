@@ -116,6 +116,16 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_saved', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_email', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_float', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		// CRM (1.36).
+		register_setting( 'om_catalog_settings', 'om_crm_mode', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, array( 'off', 'ghl', 'webhook', 'both' ), true ) ? $v : 'off'; } ) );
+		register_setting( 'om_catalog_settings', 'om_crm_ghl_token', array( 'sanitize_callback' => static function ( $v ) { $v = trim( (string) $v ); return '' === $v ? (string) get_option( 'om_crm_ghl_token', '' ) : $v; } ) );
+		foreach ( array( 'om_crm_ghl_location', 'om_crm_ghl_pipeline', 'om_crm_ghl_stage', 'om_crm_tags', 'om_crm_source', 'om_crm_webhook_secret' ) as $crm_opt ) {
+			register_setting( 'om_catalog_settings', $crm_opt, array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		}
+		register_setting( 'om_catalog_settings', 'om_crm_webhook', array( 'sanitize_callback' => 'esc_url_raw' ) );
+		foreach ( array( 'inquiry', 'saved', 'design' ) as $crm_ev ) {
+			register_setting( 'om_catalog_settings', 'om_crm_ev_' . $crm_ev, array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		}
 		register_setting( 'om_catalog_settings', 'om_menu_selector', array( 'sanitize_callback' => static function ( $v ) { return mb_substr( trim( wp_strip_all_tags( (string) $v ) ), 0, 300 ); } ) );
 		register_setting( 'om_catalog_settings', 'om_analytics', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		// Emails.
@@ -998,6 +1008,91 @@ class OM_Settings {
 							<label>Per visitor <input type="number" min="0" name="om_ai_hourly" value="<?php echo esc_attr( get_option( 'om_ai_hourly', 0 ) ); ?>" class="small-text" /> messages an hour</label> &nbsp;
 							<label>Whole site <input type="number" min="0" name="om_ai_daily" value="<?php echo esc_attr( get_option( 'om_ai_daily', 0 ) ); ?>" class="small-text" /> AI answers a day</label>
 							<p class="description">0 = no limit (the default). Set limits later if you want to cap costs or keep within a free allowance.</p>
+						</td>
+					</tr>
+				</table>
+
+				<h2 class="om-sec" data-om-tab="crm">CRM</h2>
+				<p class="description">Send every lead to your CRM as it comes in — inquiries from any form (product pages, diamonds, ring builder, the AI chat's "talk to our team"), and visitors who email themselves their saved designs or ring design. Each lead carries their details, the piece, options, price shown, diamond, ring builder design, "Help me choose" answers, the chat, the page, and where the visitor came from (campaign tags, Google / Facebook ad clicks, referring site). Emails and the Inquiries list work as before.</p>
+				<?php $crm_mode = class_exists( 'OM_CRM' ) ? OM_CRM::mode() : 'off'; $crm_token = (string) get_option( 'om_crm_ghl_token', '' ); ?>
+				<table class="form-table">
+					<tr>
+						<th><label for="om_crm_mode">Send leads to</label></th>
+						<td><select id="om_crm_mode" name="om_crm_mode">
+							<option value="off" <?php selected( $crm_mode, 'off' ); ?>>Nowhere (off)</option>
+							<option value="ghl" <?php selected( $crm_mode, 'ghl' ); ?>>GoHighLevel (direct)</option>
+							<option value="webhook" <?php selected( $crm_mode, 'webhook' ); ?>>A webhook (GHL workflow, Zapier, Make, any CRM)</option>
+							<option value="both" <?php selected( $crm_mode, 'both' ); ?>>Both</option>
+						</select>
+						<p class="description">Leads are sent right after the visitor's page answers (they never wait), retried if your CRM doesn't answer, and listed below.</p></td>
+					</tr>
+					<tr data-om-crm="ghl">
+						<th><label for="om_crm_ghl_token">GoHighLevel</label></th>
+						<td>
+							<input type="password" id="om_crm_ghl_token" name="om_crm_ghl_token" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo '' !== $crm_token ? 'Saved — leave blank to keep it' : 'pit-…'; ?>" aria-label="Private integration token" />
+							<?php if ( '' !== $crm_token ) : ?><p class="om-cred-saved" style="margin:6px 0 0;color:#008a20">&#10004; Token saved (ending in …<?php echo esc_html( substr( $crm_token, -4 ) ); ?>)</p><?php endif; ?>
+							<p class="description"><strong>Private integration token</strong> — in GoHighLevel: Settings › Private Integrations › Create new, with the scopes <em>contacts.write</em>, <em>contacts.readonly</em> and (for opportunities) <em>opportunities.write</em>.</p>
+							<input type="text" name="om_crm_ghl_location" value="<?php echo esc_attr( get_option( 'om_crm_ghl_location', '' ) ); ?>" class="regular-text" placeholder="Location ID" aria-label="Location ID" style="margin-top:8px" />
+							<p class="description"><strong>Location ID</strong> — Settings › Business Profile (or the long code in your GHL web address after /location/).</p>
+							<p style="margin:10px 0 0"><input type="text" name="om_crm_ghl_pipeline" value="<?php echo esc_attr( get_option( 'om_crm_ghl_pipeline', '' ) ); ?>" class="regular-text" style="width:220px" placeholder="Pipeline ID (optional)" aria-label="Pipeline ID" />
+							<input type="text" name="om_crm_ghl_stage" value="<?php echo esc_attr( get_option( 'om_crm_ghl_stage', '' ) ); ?>" class="regular-text" style="width:220px" placeholder="Stage ID (optional)" aria-label="Stage ID" /></p>
+							<p class="description">With both set, every inquiry also opens an <strong>opportunity</strong> in that pipeline stage (named after the piece and the customer, valued at the price shown). Find the IDs in Opportunities › Pipelines (the pipeline's settings) or ask your GHL admin.</p>
+							<p class="description">Each lead creates or updates the <strong>contact</strong> (matched by email or phone, so nothing is duplicated), adds the <strong>tags</strong> below and attaches a <strong>note</strong> with every detail.</p>
+						</td>
+					</tr>
+					<tr data-om-crm="webhook">
+						<th><label for="om_crm_webhook">Webhook</label></th>
+						<td><input type="url" id="om_crm_webhook" name="om_crm_webhook" value="<?php echo esc_attr( get_option( 'om_crm_webhook', '' ) ); ?>" class="large-text" placeholder="https://services.leadconnectorhq.com/hooks/…" />
+						<p class="description">Each lead is POSTed as JSON: <code>event</code>, <code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>phone</code>, <code>subject</code>, <code>message</code>, <code>piece</code>, <code>style</code>, <code>price</code>, <code>diamond</code>, <code>summary</code>, <code>guide</code>, <code>options</code>, <code>page</code>, <code>image</code>, <code>fields</code>, <code>tags</code>, <code>source</code> (utm_…, gclid, fbclid, ref, landing), <code>note</code> (everything as text). In GoHighLevel: Automation › Workflows › trigger <em>Inbound Webhook</em>, paste its URL here, click "Send a test lead", then map the fields.</p>
+						<input type="text" name="om_crm_webhook_secret" value="<?php echo esc_attr( get_option( 'om_crm_webhook_secret', '' ) ); ?>" class="regular-text" placeholder="Signing secret (optional)" aria-label="Signing secret" style="margin-top:6px" />
+						<p class="description">Optional: requests then carry <code>X-OM-Signature: sha256=…</code> (HMAC of the body) so your endpoint can check they're from your site.</p></td>
+					</tr>
+					<tr>
+						<th>Which leads</th>
+						<td>
+							<?php foreach ( array( 'inquiry' => 'Inquiries from every form (incl. ring builder, diamonds, AI chat)', 'saved' => '"Email me my saved designs"', 'design' => '"Email my ring design"' ) as $crm_ev => $crm_label ) : ?>
+								<input type="hidden" name="om_crm_ev_<?php echo esc_attr( $crm_ev ); ?>" value="0" />
+								<label style="display:block;margin:0 0 4px"><input type="checkbox" name="om_crm_ev_<?php echo esc_attr( $crm_ev ); ?>" value="1" <?php checked( get_option( 'om_crm_ev_' . $crm_ev, '1' ), '1' ); ?> /> <?php echo esc_html( $crm_label ); ?></label>
+							<?php endforeach; ?>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="om_crm_tags">Tags &amp; source</label></th>
+						<td><input type="text" id="om_crm_tags" name="om_crm_tags" value="<?php echo esc_attr( get_option( 'om_crm_tags', 'website lead' ) ); ?>" class="regular-text" placeholder="website lead" />
+						<p class="description">Added to every lead (comma-separated). The plugin adds its own too: <em>website inquiry</em>, <em>saved designs</em>, <em>ring design saved</em>, <em>ring builder</em>, <em>diamond inquiry</em>, <em>ai assistant</em>, <em>book a viewing</em> — handy for GHL workflows.</p>
+						<input type="text" name="om_crm_source" value="<?php echo esc_attr( get_option( 'om_crm_source', 'Website' ) ); ?>" class="regular-text" style="width:220px;margin-top:6px" placeholder="Website" aria-label="Contact source" />
+						<p class="description">The contact's "source" in GoHighLevel.</p></td>
+					</tr>
+					<tr>
+						<th>Test</th>
+						<td><button type="button" class="button" data-om-crm-test data-nonce="<?php echo esc_attr( wp_create_nonce( 'om_crm_test' ) ); ?>">Send a test lead</button>
+						<p class="description">Uses the <strong>saved</strong> settings (save first). Sends "Test Lead" with your admin email — delete it in the CRM afterwards.</p>
+						<div class="om-crm-test-result" aria-live="polite"></div></td>
+					</tr>
+					<tr>
+						<th>Recent deliveries</th>
+						<td>
+							<?php
+							$crm_log = array_reverse( (array) get_option( 'om_crm_log', array() ) );
+							if ( ! $crm_log ) :
+								?>
+								<p class="description">Nothing sent yet.</p>
+							<?php else : ?>
+								<table class="widefat striped om-crm-log" style="max-width:820px">
+									<thead><tr><th>When</th><th>Lead</th><th>To</th><th>Result</th></tr></thead>
+									<tbody>
+									<?php foreach ( array_slice( $crm_log, 0, 15 ) as $row ) : ?>
+										<tr>
+											<td><?php echo esc_html( human_time_diff( (int) $row['t'] ) . ' ago' ); ?></td>
+											<td><?php echo esc_html( ( ! empty( $row['x'] ) ? 'Test · ' : '' ) . ( array( 'inquiry' => 'Inquiry', 'saved' => 'Saved designs', 'design' => 'Ring design' )[ $row['e'] ] ?? $row['e'] ) . ' — ' . $row['w'] ); ?></td>
+											<td><?php echo esc_html( 'ghl' === $row['to'] ? 'GoHighLevel' : 'Webhook' ); ?></td>
+											<td><?php echo $row['ok'] ? '<span style="color:#008a20">&#10004; Sent</span>' : '<span style="color:#d63638">&#10008; ' . esc_html( $row['m'] . ( (int) $row['a'] > 1 ? ' (try ' . (int) $row['a'] . ')' : '' ) ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped. ?></td>
+										</tr>
+									<?php endforeach; ?>
+									</tbody>
+								</table>
+								<p class="description">Failed leads are tried again after 5 minutes, 30 minutes, 2 hours and 6 hours. Every lead is also kept under <strong>Inquiries</strong>.</p>
+							<?php endif; ?>
 						</td>
 					</tr>
 				</table>

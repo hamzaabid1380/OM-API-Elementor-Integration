@@ -17,6 +17,7 @@
 		inquiries: '<path d="M4 5h16v11H8l-4 4z"/>',
 		emails: '<path d="M3 6h18v12H3zM3 7l9 6 9-6"/>',
 		assistant: '<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8zM18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/>',
+		crm: '<path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm9-2v6m3-3h-6"/>',
 		search: '<path d="M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm5-2 5 5M8 13v-2m3 2V9m3 4v-3"/>',
 		tools: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.1-.4-.4-2.1z"/>'
 	};
@@ -30,6 +31,7 @@
 		['inquiries', 'Inquiries'],
 		['emails', 'Emails'],
 		['assistant', 'AI assistant'],
+		['crm', 'CRM'],
 		['search', 'Search & analytics'],
 		['tools', 'Tools']
 	];
@@ -210,6 +212,34 @@
 				out.classList.add('is-error');
 				out.textContent = 'The request failed. Please try again.';
 			}).then(function () { testBtn.disabled = false; });
+		});
+	}
+
+	/* ---- CRM: only the chosen target's rows; "Send a test lead" ---- */
+	var crmSel = form.querySelector('#om_crm_mode');
+	function syncCrm() {
+		var v = crmSel.value;
+		form.querySelectorAll('[data-om-crm]').forEach(function (row) {
+			var t = row.getAttribute('data-om-crm');
+			row.classList.toggle('om-ai-other', !(v === t || v === 'both'));
+		});
+	}
+	if (crmSel) { crmSel.addEventListener('change', syncCrm); syncCrm(); }
+	var crmBtn = form.querySelector('[data-om-crm-test]');
+	if (crmBtn && window.fetch) {
+		crmBtn.addEventListener('click', function () {
+			var out = form.querySelector('.om-crm-test-result');
+			crmBtn.disabled = true;
+			out.className = 'om-crm-test-result om-ai-test-result';
+			out.textContent = 'Sending…';
+			fetch(window.ajaxurl, { method: 'POST', credentials: 'same-origin', body: new URLSearchParams({ action: 'om_crm_test', nonce: crmBtn.getAttribute('data-nonce') }) })
+				.then(function (r) { return r.json(); })
+				.then(function (r) {
+					out.classList.add(r && r.success ? 'is-ok' : 'is-error');
+					out.textContent = (r && r.data && r.data.message) || 'Something went wrong.';
+				})
+				.catch(function () { out.classList.add('is-error'); out.textContent = 'The request failed. Please try again.'; })
+				.then(function () { crmBtn.disabled = false; });
 		});
 	}
 

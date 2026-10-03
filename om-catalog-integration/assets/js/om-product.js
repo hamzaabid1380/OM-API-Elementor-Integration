@@ -4161,6 +4161,31 @@
 		if (aiRead().open || window.location.hash === '#om-ai') { aiOpen(false); }
 	});
 
+	/* ---------- Where the visitor came from (for the CRM) ---------- */
+
+	// First touch: campaign tags and ad click IDs when the visit came from
+	// one, else the referring site. Kept 90 days in a first-party cookie;
+	// sent with leads only (Settings › CRM), never elsewhere.
+	(function rememberSource() {
+		if (!cfg.crm) { return; }
+		try {
+			var has = /(?:^|;\s*)om_src=/.test(document.cookie);
+			var q = new URLSearchParams(window.location.search);
+			var src = {};
+			['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'msclkid'].forEach(function (k) {
+				var v = q.get(k);
+				if (v) { src[k] = v.slice(0, 120); }
+			});
+			var tagged = Object.keys(src).length > 0;
+			var ref = document.referrer && document.referrer.indexOf(window.location.host) === -1 ? document.referrer.slice(0, 200) : '';
+			// A campaign visit always wins; otherwise only the first visit counts.
+			if (!tagged && (has || !ref)) { return; }
+			if (ref) { src.ref = ref; }
+			src.landing = window.location.pathname.slice(0, 120);
+			document.cookie = 'om_src=' + encodeURIComponent(JSON.stringify(src)) + '; path=/; max-age=' + (90 * 86400) + '; SameSite=Lax' + (window.location.protocol === 'https:' ? '; Secure' : '');
+		} catch (err) { /* old browser */ }
+	})();
+
 	/* ---------- Diamonds: compare side by side ---------- */
 
 	var DCMP_KEY = 'om_dcmp';

@@ -709,6 +709,46 @@ class OM_Inquiry {
 			}
 		}
 
+		// To the CRM (Settings › CRM), with every detail.
+		$crm_fields  = array();
+		$crm_message = '';
+		foreach ( $values as $key => $pair ) {
+			if ( '' === $pair[1] || in_array( $pair[1], array( $data['email'], $data['phone'], $data['name'] ), true ) ) {
+				continue;
+			}
+			if ( 'message' === $key || ( '' === $crm_message && false !== strpos( $pair[1], "\n" ) ) ) {
+				$crm_message = $pair[1];
+				continue;
+			}
+			$crm_fields[ $pair[0] ] = $pair[1];
+		}
+		// The name: empty rather than the email/"Website visitor" fallback.
+		$crm_name = $data['name'] === $data['email'] || __( 'Website visitor', 'om-catalog' ) === $data['name'] ? '' : $data['name'];
+		do_action(
+			'om_lead',
+			array(
+				'event'   => 'inquiry',
+				'name'    => $crm_name,
+				'email'   => $data['email'],
+				'phone'   => $data['phone'],
+				'subject' => $data['subject'],
+				'message' => $crm_message,
+				'piece'   => $data['title'] . ( $data['pair'] ? ' + ' . $data['pair']['title'] : '' ),
+				'style'   => $data['style'],
+				'line'    => $data['line'],
+				'price'   => $data['price'],
+				'diamond' => $data['diamond'],
+				'summary' => $data['summary'],
+				'guide'   => $data['guide'],
+				'chat'    => $data['chat'],
+				'page'    => $data['link'],
+				'image'   => $data['image'],
+				'options' => $data['config'],
+				'fields'  => $crm_fields,
+				'inquiry_id' => $post_id && ! is_wp_error( $post_id ) ? (int) $post_id : 0,
+			)
+		);
+
 		$headers = array();
 		if ( is_email( $data['email'] ) ) {
 			$headers[] = 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $data['name'] ) . ' <' . $data['email'] . '>';

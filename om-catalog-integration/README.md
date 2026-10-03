@@ -953,7 +953,44 @@ lines), Photo background and Blend. Each OM widget can override them
 After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
+## CRM (GoHighLevel and webhooks)
+
+**Settings › OM Catalog › CRM** sends every lead to your CRM as it comes in:
+inquiries from any form (product pages, diamonds, ring builder, the AI
+chat's "talk to our team"), and visitors who email themselves their saved
+designs or ring design. Choose any of the three; emails and the Inquiries
+list carry on as before.
+
+- **GoHighLevel (direct):** paste a Private Integration token (Settings ›
+  Private Integrations; scopes contacts.write, contacts.readonly,
+  opportunities.write) and your Location ID. Each lead creates or updates
+  the contact (matched by email/phone — no duplicates), adds tags, and
+  attaches a note with every detail. With a pipeline and stage ID, every
+  inquiry also opens an opportunity valued at the price shown.
+- **Webhook:** any URL (a GHL *Inbound Webhook* workflow trigger, Zapier,
+  Make…) receives the lead as JSON; optionally signed (`X-OM-Signature`).
+- **What a lead carries:** name (first/last), email, phone, subject,
+  message, the piece and style number, options chosen, price shown,
+  diamond, ring builder design, "Help me choose" answers, the AI chat, the
+  page, other form fields, and where the visitor first came from (UTM
+  tags, Google/Facebook/Microsoft ad click IDs, referring site, landing
+  page — kept 90 days in a first-party cookie, only while a CRM is on).
+- **Tags:** your own plus *website inquiry*, *saved designs*, *ring design
+  saved*, *ring builder*, *diamond inquiry*, *ai assistant*, *book a
+  viewing* — for GHL workflows.
+- **Reliable:** sent after the visitor's page answers (they never wait),
+  retried after 5 min, 30 min, 2 h and 6 h if the CRM doesn't answer, and
+  the last deliveries are listed with any error. "Send a test lead" checks
+  the setup.
+
 ## Changelog
+
+### 1.36.0
+- CRM: every lead (inquiries from all forms, emailed saved lists and ring
+  designs) goes to GoHighLevel directly (contact upsert, tags, a detailed
+  note, optional opportunity) and/or any webhook, with the visitor's
+  first-touch source (UTM, ad click IDs, referrer). Sent without slowing
+  the visitor, retried on failure, logged; "Send a test lead" in Settings.
 
 ### 1.35.0
 - AI assistant, branded: your logo in the chat header (and optionally the
