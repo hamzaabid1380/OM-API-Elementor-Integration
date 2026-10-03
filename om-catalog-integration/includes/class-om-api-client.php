@@ -25,6 +25,17 @@ class OM_API_Client {
 	const QUOTE_CACHE_SECONDS = 300;
 
 	/**
+	 * Last good answers, kept a week and served when OM's API can't be
+	 * reached (sign-in failing, an outage), so the catalog stays up.
+	 * Prices (quotations) and diamonds are never served from it.
+	 */
+	const BACKUP_PREFIX  = 'om_bak_';
+	const BACKUP_SECONDS = 7 * DAY_IN_SECONDS;
+
+	/** Health of the connection: last success, last problem (option). */
+	const STATUS_OPTION = 'om_api_status';
+
+	/**
 	 * Forget the cached token and any cached auth failure. Called when the
 	 * credentials are saved, so new credentials take effect immediately.
 	 */
@@ -43,7 +54,8 @@ class OM_API_Client {
 		global $wpdb;
 		$names = $wpdb->get_col(
 			"SELECT option_name FROM {$wpdb->options}
-			WHERE option_name LIKE '\\_transient\\_om\\_%'"
+			WHERE option_name LIKE '\\_transient\\_om\\_%'
+			AND option_name NOT LIKE '\\_transient\\_om\\_bak\\_%'"
 		);
 		$count = 0;
 		foreach ( $names as $name ) {
@@ -102,8 +114,9 @@ class OM_API_Client {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( 200 !== (int) $code || empty( $body['access_token'] ) ) {
-			$message = isset( $body['error_description'] ) ? $body['error_description'] : 'Unknown auth error.';
+			$message = self::auth_error_message( (int) $code, is_array( $body ) ? $body : array(), (string) wp_remote_retrieve_body( $response ) );
 			set_transient( self::AUTH_FAIL_TRANSIENT, $message, 5 * MINUTE_IN_SECONDS );
+			self::note_problem( 'sign-in', $message, (int) $code );
 			return new WP_Error( 'om_auth_failed', $message );
 		}
 
@@ -117,7 +130,106 @@ class OM_API_Client {
 	}
 
 	/**
-	 * Make an authenticated GET request to the catalog API.
+	 * What the sign-in answer means, in words: OM's own reason when it
+	 * gives one, the HTTP status, and the usual cause.
+	 */
+	private static function auth_error_message( $code, $body, $raw ) {
+		$reason = '';
+		foreach ( array( 'error_description', 'message', 'error' ) as $key ) {
+			if ( ! empty( $body[ $key ] ) && is_string( $body[ $key ] ) ) {
+				$reason = $body[ $key ];
+				break;
+			}
+		}
+		if ( '' === $reason && ! empty( $body['error']['message'] ) && is_string( $body['error']['message'] ) ) {
+			$reason = $body['error']['message'];
+		}
+		$html = '' === $reason && false !== stripos( $raw, '<html' );
+		if ( '' === $reason && ! $html ) {
+			$reason = mb_substr( trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( $raw ) ) ), 0, 160 );
+		}
+		if ( in_array( $code, array( 400, 401 ), true ) ) {
+			$hint = 'Overnight Mountings did not accept the Client ID / Client Secret. Check them under Settings › OM Catalog › Connection, or ask OM whether they were changed or the account was paused.';
+		} elseif ( 403 === $code ) {
+			$hint = 'Overnight Mountings refused this server. Their firewall may be blocking your host — ask OM to allow your server\'s IP address.';
+		} elseif ( 429 === $code ) {
+			$hint = 'Too many sign-in attempts; Overnight Mountings is rate-limiting. It clears by itself.';
+		} elseif ( $code >= 500 ) {
+			$hint = 'Overnight Mountings\' sign-in service is having a problem on their side. It usually clears by itself.';
+		} elseif ( 200 === $code ) {
+			$hint = 'Overnight Mountings answered without an access token.';
+		} else {
+			$hint = 'Unexpected answer from Overnight Mountings\' sign-in service.';
+		}
+		if ( $html ) {
+			$hint .= ' (A web page came back instead of the sign-in service — often a firewall or maintenance page.)';
+		}
+		/* translators: 1: HTTP status, 2: explanation, 3: OM's own reason. */
+		return trim( sprintf( 'Sign-in failed (HTTP %1$d). %2$s%3$s', $code, $hint, '' !== $reason ? ' OM says: "' . $reason . '"' : '' ) );
+	}
+
+	/** Remember the last problem (for Settings and the admin notice). */
+	public static function note_problem( $what, $message, $code = 0 ) {
+		$status            = (array) get_option( self::STATUS_OPTION, array() );
+		$status['err_at']  = time();
+		$status['err_msg'] = mb_substr( (string) $message, 0, 400 );
+		$status['err_on']  = (string) $what;
+		$status['err_code'] = (int) $code;
+		update_option( self::STATUS_OPTION, $status, false );
+	}
+
+	/** Remember the last good call (written at most every 5 minutes). */
+	private static function note_success() {
+		$status = (array) get_option( self::STATUS_OPTION, array() );
+		if ( empty( $status['ok_at'] ) || time() - (int) $status['ok_at'] > 300 || ( ! empty( $status['err_at'] ) && (int) $status['err_at'] > (int) $status['ok_at'] ) ) {
+			$status['ok_at'] = time();
+			update_option( self::STATUS_OPTION, $status, false );
+		}
+	}
+
+	/** The connection's health: [ ok_at, err_at, err_msg, err_on, err_code, failing ]. */
+	public static function status() {
+		$s            = (array) get_option( self::STATUS_OPTION, array() );
+		$s['ok_at']   = (int) ( $s['ok_at'] ?? 0 );
+		$s['err_at']  = (int) ( $s['err_at'] ?? 0 );
+		$s['failing'] = $s['err_at'] > $s['ok_at'];
+		return $s;
+	}
+
+	/**
+	 * Make an authenticated GET request to the catalog API. When OM can't
+	 * be reached, the last good answer for the same request is used (never
+	 * for prices or diamonds).
+	 */
+	public static function request( $path, $query = array() ) {
+		$key    = self::BACKUP_PREFIX . md5( $path . '|' . wp_json_encode( $query ) );
+		$backup = false === strpos( $path, 'quotation' ) && false === strpos( $path, 'diamonds' );
+		$result = self::request_live( $path, $query );
+		if ( ! is_wp_error( $result ) ) {
+			self::note_success();
+			if ( $backup ) {
+				set_transient( $key, $result, self::BACKUP_SECONDS );
+			}
+			return $result;
+		}
+		$status = (int) ( $result->get_error_data()['status'] ?? 0 );
+		// A real "no such thing" (404) is an answer, not an outage.
+		if ( 404 !== $status && 'om_missing_credentials' !== $result->get_error_code() ) {
+			if ( 'om_auth_failed' !== $result->get_error_code() ) {
+				self::note_problem( $path, $result->get_error_message(), $status );
+			}
+			if ( $backup ) {
+				$saved = get_transient( $key );
+				if ( false !== $saved ) {
+					return $saved;
+				}
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * One live GET to the catalog API.
 	 *
 	 * @param string $path        Path relative to API_BASE, e.g. 'products/metadata'.
 	 * @param array  $query       Query string args.
@@ -126,7 +238,7 @@ class OM_API_Client {
 	 *                            (the pricing system can be briefly unreachable).
 	 * @return array|WP_Error Decoded JSON body, or WP_Error.
 	 */
-	public static function request( $path, $query = array(), $retry_auth = true, $retry_503 = true ) {
+	private static function request_live( $path, $query = array(), $retry_auth = true, $retry_503 = true ) {
 		$token = self::get_token();
 		if ( is_wp_error( $token ) ) {
 			return $token;
@@ -161,13 +273,13 @@ class OM_API_Client {
 		// Token expired mid-cache-life: clear it and retry once with a fresh one.
 		if ( 401 === (int) $code && $retry_auth ) {
 			delete_transient( self::TOKEN_TRANSIENT );
-			return self::request( $path, $query, false, $retry_503 );
+			return self::request_live( $path, $query, false, $retry_503 );
 		}
 
 		// Per the API guide, a 503 means the pricing system was briefly
 		// unreachable and should be retried.
 		if ( 503 === (int) $code && $retry_503 ) {
-			return self::request( $path, $query, $retry_auth, false );
+			return self::request_live( $path, $query, $retry_auth, false );
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );

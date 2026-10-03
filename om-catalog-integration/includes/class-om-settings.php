@@ -18,6 +18,7 @@ class OM_Settings {
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_notices', array( $this, 'maybe_show_markup_notice' ) );
+		add_action( 'admin_notices', array( $this, 'maybe_show_api_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
 		// New credentials take effect immediately: drop the cached token and
@@ -238,6 +239,21 @@ class OM_Settings {
 		}
 	}
 
+	/**
+	 * Calls to Overnight Mountings are failing right now: say so to admins
+	 * (the site keeps showing its last saved copies meanwhile).
+	 */
+	public function maybe_show_api_notice() {
+		if ( ! current_user_can( 'manage_options' ) || ! class_exists( 'OM_API_Client' ) ) {
+			return;
+		}
+		$st = OM_API_Client::status();
+		if ( ! $st['failing'] || time() - $st['err_at'] > DAY_IN_SECONDS ) {
+			return;
+		}
+		echo '<div class="notice notice-error"><p><strong>OM Catalog:</strong> calls to Overnight Mountings are failing (' . esc_html( human_time_diff( $st['err_at'] ) ) . ' ago): ' . esc_html( $st['err_msg'] ?? '' ) . '</p><p>Pages already visited keep showing their last saved copy (up to a week old); prices and diamonds can\'t load until it\'s fixed. <a href="' . esc_url( admin_url( 'options-general.php?page=om-catalog-settings#tools' ) ) . '">Test the connection</a></p></div>';
+	}
+
 	/** The settings screen's own look (tabs, cards, switches) and script. */
 	public function enqueue_assets( $hook ) {
 		if ( 'settings_page_om-catalog-settings' !== $hook ) {
@@ -257,7 +273,9 @@ class OM_Settings {
 		if ( ! get_option( 'om_client_id' ) || ! get_option( 'om_client_secret' ) ) {
 			$items[] = array( 'warn', __( 'Overnight Mountings', 'om-catalog' ), __( 'Add your API details', 'om-catalog' ), '#connection' );
 		} elseif ( get_transient( OM_API_Client::AUTH_FAIL_TRANSIENT ) ) {
-			$items[] = array( 'warn', __( 'Overnight Mountings', 'om-catalog' ), __( 'Sign-in failed — check the details', 'om-catalog' ), '#connection' );
+			$items[] = array( 'warn', __( 'Overnight Mountings', 'om-catalog' ), __( 'Sign-in failed — see Tools', 'om-catalog' ), '#tools' );
+		} elseif ( OM_API_Client::status()['failing'] ) {
+			$items[] = array( 'warn', __( 'Overnight Mountings', 'om-catalog' ), __( 'Calls failing — see Tools', 'om-catalog' ), '#tools' );
 		} elseif ( get_transient( OM_API_Client::TOKEN_TRANSIENT ) ) {
 			$items[] = array( 'ok', __( 'Overnight Mountings', 'om-catalog' ), __( 'Connected', 'om-catalog' ), '#connection' );
 		} else {
@@ -1027,6 +1045,20 @@ class OM_Settings {
 			<button class="button button-primary" name="om_tool" value="test">Test connection &amp; pricing</button>
 			<button class="button" name="om_tool" value="clear">Clear cache</button>
 		</form>
+		<?php
+		$st  = OM_API_Client::status();
+		$ago = static function ( $t ) {
+			return $t ? sprintf( '%s ago (%s)', human_time_diff( $t ), wp_date( 'M j, H:i', $t ) ) : 'never';
+		};
+		?>
+		<table class="widefat" style="max-width:900px;margin-top:12px">
+			<tbody>
+				<tr><td style="width:220px"><strong>API status</strong></td><td><?php echo $st['failing'] ? '<span style="color:#d63638">&#10008; Failing</span>' : ( $st['ok_at'] ? '<span style="color:#008a20">&#10004; Working</span>' : 'No calls yet' ); ?></td></tr>
+				<tr><td>Last successful call</td><td><?php echo esc_html( $ago( $st['ok_at'] ) ); ?></td></tr>
+				<tr><td>Last problem</td><td><?php echo $st['err_at'] ? esc_html( $ago( $st['err_at'] ) . ' — ' . ( $st['err_on'] ?? '' ) . ( ! empty( $st['err_code'] ) ? ' (HTTP ' . $st['err_code'] . ')' : '' ) . ': ' . ( $st['err_msg'] ?? '' ) ) : 'none'; ?></td></tr>
+				<tr><td>While calls fail</td><td>Listings and product pages show their last saved copy (kept a week, and kept by "Clear cache"). Live prices and diamonds need the API.</td></tr>
+			</tbody>
+		</table>
 		<?php if ( $result ) : ?>
 			<table class="widefat striped" style="max-width:900px;margin-top:12px">
 				<tbody>

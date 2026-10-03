@@ -937,6 +937,19 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.34.2
+- Sign-in problems explained: instead of "Unknown auth error", the
+  message gives Overnight Mountings' HTTP status, their own reason and
+  the usual cause (credentials rejected, server blocked by their
+  firewall, their service down, rate limit).
+- The catalog stays up when Overnight Mountings can't be reached:
+  listings and product pages fall back to their last good copy (kept a
+  week, and kept by "Clear cache"). Live prices and diamonds still need
+  the API.
+- API status: Settings › Tools shows whether calls are working, the last
+  successful call and the last problem; the status at the top of
+  Settings and a wp-admin notice (admins only) flag failures.
+
 ### 1.34.1
 - Phones: the slim Filters/Search/Sort bar (and the chat, Saved and
   compare buttons) no longer cover the site's menu. While a menu or
