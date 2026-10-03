@@ -345,9 +345,7 @@ class OM_Settings {
 							<p class="om-cred-saved" style="margin:6px 0 0;color:#b32d2e">&#10008; No secret saved yet.</p>
 						<?php endif; ?>
 						<p class="description">Provided by Overnight Mountings. Type a new one only to replace it; leave it empty to keep the saved one. After saving, run <strong>Tools › Test connection</strong>.</p>
-						<?php if ( isset( $_SERVER['SERVER_ADDR'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
-							<p class="description">If Overnight Mountings needs to allow your server: this site's server address is <code><?php echo esc_html( sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) ); ?></code> (your host can confirm the outgoing IP, which is sometimes different).</p>
-						<?php endif; ?></td>
+						<p class="description">If Overnight Mountings needs to allow your server, use <strong>Tools › Find my server's IP</strong> — it shows the public address their firewall sees. (The address the server reports about itself is often an internal one, such as 127.0.0.1, which is no use to them.)</p></td>
 					</tr>
 				</table>
 

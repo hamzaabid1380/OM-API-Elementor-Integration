@@ -937,6 +937,11 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.34.6
+- Connection: no longer shows the server's own (often internal, e.g.
+  127.0.0.1) address; it points to Tools › Find my server's IP, which
+  shows the public address Overnight Mountings' firewall sees.
+
 ### 1.34.5
 - Catalog header: a small label above the story reels ("Video highlights
   · Tap to watch", with a play icon) so visitors know what the circles
