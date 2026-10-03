@@ -1038,6 +1038,11 @@ class OM_Settings {
 			} elseif ( 'test' === $tool ) {
 				$result = $this->run_connection_test( $line );
 				$lines  = OM_Shortcodes::line_labels();
+			} elseif ( 'ip' === $tool ) {
+				$ip       = self::outgoing_ip();
+				$result[] = '' !== $ip
+					? array( true, 'This website\'s server reaches the internet from IP address ' . $ip . ' — this is the address to give Overnight Mountings to allow.' )
+					: array( false, 'Could not find the outgoing IP (the lookup services didn\'t answer). Your host can tell you, or try again in a minute.' );
 			}
 		}
 		?>
@@ -1053,6 +1058,7 @@ class OM_Settings {
 			</select>
 			<button class="button button-primary" name="om_tool" value="test">Test connection &amp; pricing</button>
 			<button class="button" name="om_tool" value="clear">Clear cache</button>
+			<button class="button" name="om_tool" value="ip">Find my server's IP</button>
 		</form>
 		<?php
 		$st  = OM_API_Client::status();
@@ -1083,6 +1089,25 @@ class OM_Settings {
 		<?php
 	}
 
+	/**
+	 * The address this server uses to reach other servers (what OM's
+	 * firewall sees), from public "what's my IP" services. Admin-only, on
+	 * request; nothing else is sent.
+	 */
+	private static function outgoing_ip() {
+		foreach ( array( 'https://api.ipify.org', 'https://icanhazip.com', 'https://ifconfig.me/ip' ) as $service ) {
+			$response = wp_remote_get( $service, array( 'timeout' => 8 ) );
+			if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+				continue;
+			}
+			$ip = trim( (string) wp_remote_retrieve_body( $response ) );
+			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+				return $ip;
+			}
+		}
+		return '';
+	}
+
 	/** @return array[] Rows of [ ok (bool), message ]. */
 	private function run_connection_test( $line ) {
 		$rows = array();
@@ -1091,6 +1116,10 @@ class OM_Settings {
 		$token = OM_API_Client::get_token();
 		if ( is_wp_error( $token ) ) {
 			$rows[] = array( false, 'Login to Overnight Mountings failed: ' . $token->get_error_message() );
+			if ( false !== strpos( $token->get_error_message(), 'HTTP 403' ) ) {
+				$ip     = self::outgoing_ip();
+				$rows[] = array( false, '' !== $ip ? 'Your server\'s outgoing IP address is ' . $ip . ' — give this to Overnight Mountings and ask them to allow it.' : 'Use "Find my server\'s IP" to get the address Overnight Mountings needs.' );
+			}
 			return $rows;
 		}
 		$rows[] = array( true, 'Logged in to Overnight Mountings (access token received). Plugin version ' . OM_CATALOG_VERSION . '.' );

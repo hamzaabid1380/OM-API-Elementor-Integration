@@ -937,6 +937,12 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.34.4
+- Settings › Tools › **Find my server's IP**: shows the address this
+  website's server uses to reach other servers (what Overnight
+  Mountings' firewall sees), looked up on request. "Test connection"
+  also shows it when sign-in is blocked (HTTP 403).
+
 ### 1.34.3
 - Fix: Settings didn't save (any tab, including the API credentials)
   while the AI assistant's "Per visitor … messages an hour" limit was 0
