@@ -369,14 +369,110 @@
 	function markDirty() {
 		if (dirty) { return; }
 		dirty = true;
-		if (savebar) { savebar.classList.add('is-dirty'); savebar.classList.remove('is-away'); }
+		if (savebar) { savebar.classList.add('is-dirty'); savebar.classList.remove('is-away', 'is-saved', 'is-failed', 'is-saving'); }
 		if (text) { text.textContent = 'You have unsaved changes'; }
 	}
 	form.addEventListener('input', markDirty);
 	form.addEventListener('change', markDirty);
-	form.addEventListener('submit', function () {
+	/* ---- Saving without a reload ----
+	   The form still goes to WordPress's own options.php (same checks, same
+	   sanitizing); the page that comes back refreshes the parts that show
+	   saved state. Anything unexpected falls back to a normal save. */
+	var saving = false;
+	var plain = false;
+	var saveBtn = savebar && savebar.querySelector('input[type=submit], button[type=submit]');
+	var saveLabel = saveBtn ? (saveBtn.value || saveBtn.textContent) : '';
+	function setSaveText(msg, state) {
+		if (text) { text.textContent = msg; }
+		if (savebar) {
+			savebar.classList.toggle('is-saving', state === 'saving');
+			savebar.classList.toggle('is-saved', state === 'saved');
+			savebar.classList.toggle('is-failed', state === 'failed');
+		}
+	}
+	function classicSave() {
+		plain = true;
 		dirty = false;
 		try { window.sessionStorage.setItem('om_admin_after_save', current); } catch (err) { /* fine */ }
+		HTMLFormElement.prototype.submit.call(form);
+	}
+	function refreshFrom(doc) {
+		// Status at the top, "saved" lines, the CRM log…
+		doc.querySelectorAll('[data-om-live]').forEach(function (fresh) {
+			var mine = form.ownerDocument.querySelector('[data-om-live="' + fresh.getAttribute('data-om-live') + '"]');
+			if (mine) { mine.innerHTML = fresh.innerHTML; }
+		});
+		// Fields show what was stored (trimmed, cleaned), unless edited since.
+		if (!dirty) {
+			form.querySelectorAll('input[type=text], input[type=url], input[type=number], input[type=email], select, textarea').forEach(function (input) {
+				if (!input.name || /\[\]$/.test(input.name) || input.closest('.wp-editor-wrap')) { return; }
+				var fresh = doc.querySelectorAll('[name="' + input.name.replace(/"/g, '\\"') + '"]');
+				if (fresh.length !== 1) { return; }
+				var v = fresh[0].tagName === 'TEXTAREA' ? fresh[0].textContent : (fresh[0].tagName === 'SELECT' ? (fresh[0].querySelector('option[selected]') || fresh[0].options[0] || {}).value : fresh[0].getAttribute('value'));
+				if (typeof v === 'string' && input.value !== v) { input.value = v; }
+			});
+		}
+		// Secrets: emptied again, with their "Saved — leave blank" hint.
+		form.querySelectorAll('input[type=password]').forEach(function (input) {
+			var fresh = doc.querySelector('input[type=password][name="' + input.name + '"]');
+			input.value = '';
+			if (fresh) { input.setAttribute('placeholder', fresh.getAttribute('placeholder') || ''); }
+		});
+	}
+	form.addEventListener('submit', function (e) {
+		if (plain || !window.fetch || !window.FormData || !window.DOMParser) {
+			dirty = false;
+			try { window.sessionStorage.setItem('om_admin_after_save', current); } catch (err) { /* fine */ }
+			return;
+		}
+		e.preventDefault();
+		if (saving) { return; }
+		if (window.tinymce && window.tinymce.triggerSave) { window.tinymce.triggerSave(); }
+		saving = true;
+		var wasDirty = dirty;
+		dirty = false;
+		if (saveBtn) { saveBtn.disabled = true; }
+		setSaveText('Saving…', 'saving');
+		fetch(form.getAttribute('action') || 'options.php', { method: 'POST', credentials: 'same-origin', body: new FormData(form) })
+			.then(function (r) { return r.text().then(function (html) { return { ok: r.ok, url: r.url || '', html: html }; }); })
+			.then(function (res) {
+				// options.php sends you back with settings-updated=true when it saved.
+				if (!res.ok || !/[?&]settings-updated=true/.test(res.url)) { throw new Error('not saved'); }
+				var doc = new window.DOMParser().parseFromString(res.html, 'text/html');
+				refreshFrom(doc);
+				// A problem a setting reported while saving (e.g. a bad value).
+				var errs = [];
+				doc.querySelectorAll('.settings-error.notice-error, .settings-error.error').forEach(function (n) { errs.push(n.textContent.replace(/\s+/g, ' ').trim()); });
+				if (errs.length) {
+					setSaveText('Saved, with a note: ' + errs.join(' '), 'failed');
+				} else {
+					setSaveText('All changes saved ✓', 'saved');
+					setTimeout(function () {
+						if (!dirty && savebar && savebar.classList.contains('is-saved')) {
+							savebar.classList.remove('is-dirty', 'is-saved');
+							if (SAVELESS[current]) { savebar.classList.add('is-away'); }
+							setSaveText('', '');
+						}
+					}, 2600);
+				}
+			})
+			.catch(function () {
+				// Never lose changes: save the usual way instead.
+				dirty = wasDirty;
+				setSaveText('Saving the usual way…', 'saving');
+				classicSave();
+			})
+			.then(function () {
+				saving = false;
+				if (saveBtn) { saveBtn.disabled = false; }
+			});
+	});
+	// Ctrl/⌘ + S saves.
+	document.addEventListener('keydown', function (e) {
+		if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 's' || e.key === 'S')) {
+			e.preventDefault();
+			if (form.requestSubmit) { form.requestSubmit(saveBtn || undefined); } else if (saveBtn) { saveBtn.click(); }
+		}
 	});
 	window.addEventListener('beforeunload', function (e) {
 		if (dirty) { e.preventDefault(); e.returnValue = ''; }

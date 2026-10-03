@@ -392,3 +392,10 @@ dialog.om-email-preview::backdrop { background: rgba(15, 26, 36, 0.5); }
 .om-email-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e6e1d9; }
 .om-email-preview-subject { margin: 0; font-weight: 600; color: #0f1a24; }
 dialog.om-email-preview iframe { display: block; width: 100%; height: calc(100% - 58px); border: 0; }
+
+/* Saving without a reload: the bar says how it went. */
+.om-admin-savebar.is-saved { border-color: var(--oa-ok); }
+.om-admin-savebar.is-saved .om-admin-savebar-text { color: var(--oa-ok); }
+.om-admin-savebar.is-saving .om-admin-savebar-text { color: #5c6670; }
+.om-admin-savebar.is-failed .om-admin-savebar-text { color: #b32d2e; }
+.om-admin-savebar input[type=submit]:disabled { opacity: 0.6; cursor: progress; }

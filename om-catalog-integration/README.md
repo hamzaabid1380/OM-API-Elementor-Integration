@@ -985,6 +985,15 @@ list carry on as before.
 
 ## Changelog
 
+### 1.37.0
+- Settings save without reloading the page: "Save Settings" (or Ctrl/⌘+S)
+  saves in the background through WordPress's own settings save — same
+  checks, same cleaning of values — and you stay where you were. The
+  status at the top, the "saved" lines for secrets, password hints, the
+  CRM delivery log and the fields themselves (as stored) update in place;
+  the bar confirms "All changes saved ✓". If anything unexpected happens,
+  it saves the usual way, so nothing is lost.
+
 ### 1.36.0
 - CRM: every lead (inquiries from all forms, emailed saved lists and ring
   designs) goes to GoHighLevel directly (contact upsert, tags, a detailed

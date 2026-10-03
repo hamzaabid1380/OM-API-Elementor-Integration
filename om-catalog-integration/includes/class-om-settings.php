@@ -342,7 +342,7 @@ class OM_Settings {
 				</div>
 			</header>
 			<hr class="wp-header-end" />
-			<ul class="om-admin-status" aria-label="<?php esc_attr_e( 'Status', 'om-catalog' ); ?>">
+			<ul class="om-admin-status" data-om-live="status" aria-label="<?php esc_attr_e( 'Status', 'om-catalog' ); ?>">
 				<?php foreach ( $this->status_items() as $item ) : ?>
 					<li class="is-<?php echo esc_attr( $item[0] ); ?>"><a href="<?php echo esc_url( $item[3] ); ?>"<?php echo 0 === strpos( $item[3], '#' ) ? ' data-om-go="' . esc_attr( substr( $item[3], 1 ) ) . '"' : ''; ?>><span class="om-admin-dot" aria-hidden="true"></span><span class="om-admin-status-label"><?php echo esc_html( $item[1] ); ?></span><span class="om-admin-status-detail"><?php echo esc_html( $item[2] ); ?></span></a></li>
 				<?php endforeach; ?>
@@ -360,11 +360,13 @@ class OM_Settings {
 						<th><label for="om_client_secret">Client Secret</label></th>
 						<td><input type="password" id="om_client_secret" name="om_client_secret" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo get_option( 'om_client_secret' ) ? esc_attr__( 'Saved — leave blank to keep it', 'om-catalog' ) : ''; ?>" />
 						<?php $om_secret = (string) get_option( 'om_client_secret', '' ); ?>
+						<div data-om-live="secret">
 						<?php if ( '' !== $om_secret ) : ?>
 							<p class="om-cred-saved" style="margin:6px 0 0;color:#008a20">&#10004; <?php echo esc_html( sprintf( 'Secret saved (%d characters, ending in …%s). This box stays empty on purpose so the secret is never shown on the page.', strlen( $om_secret ), substr( $om_secret, -4 ) ) ); ?></p>
 						<?php else : ?>
 							<p class="om-cred-saved" style="margin:6px 0 0;color:#b32d2e">&#10008; No secret saved yet.</p>
 						<?php endif; ?>
+						</div>
 						<p class="description">Provided by Overnight Mountings. Type a new one only to replace it; leave it empty to keep the saved one. After saving, run <strong>Tools › Test connection</strong>.</p>
 						<p class="description">If Overnight Mountings needs to allow your server, use <strong>Tools › Find my server's IP</strong> — it shows the public address their firewall sees. (The address the server reports about itself is often an internal one, such as 127.0.0.1, which is no use to them.)</p></td>
 					</tr>
@@ -1030,7 +1032,7 @@ class OM_Settings {
 						<th><label for="om_crm_ghl_token">GoHighLevel</label></th>
 						<td>
 							<input type="password" id="om_crm_ghl_token" name="om_crm_ghl_token" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo '' !== $crm_token ? 'Saved — leave blank to keep it' : 'pit-…'; ?>" aria-label="Private integration token" />
-							<?php if ( '' !== $crm_token ) : ?><p class="om-cred-saved" style="margin:6px 0 0;color:#008a20">&#10004; Token saved (ending in …<?php echo esc_html( substr( $crm_token, -4 ) ); ?>)</p><?php endif; ?>
+							<div data-om-live="crm-token"><?php if ( '' !== $crm_token ) : ?><p class="om-cred-saved" style="margin:6px 0 0;color:#008a20">&#10004; Token saved (ending in …<?php echo esc_html( substr( $crm_token, -4 ) ); ?>)</p><?php endif; ?></div>
 							<p class="description"><strong>Private integration token</strong> — in GoHighLevel: Settings › Private Integrations › Create new, with the scopes <em>contacts.write</em>, <em>contacts.readonly</em> and (for opportunities) <em>opportunities.write</em>.</p>
 							<input type="text" name="om_crm_ghl_location" value="<?php echo esc_attr( get_option( 'om_crm_ghl_location', '' ) ); ?>" class="regular-text" placeholder="Location ID" aria-label="Location ID" style="margin-top:8px" />
 							<p class="description"><strong>Location ID</strong> — Settings › Business Profile (or the long code in your GHL web address after /location/).</p>
@@ -1071,7 +1073,7 @@ class OM_Settings {
 					</tr>
 					<tr>
 						<th>Recent deliveries</th>
-						<td>
+						<td data-om-live="crm-log">
 							<?php
 							$crm_log = array_reverse( (array) get_option( 'om_crm_log', array() ) );
 							if ( ! $crm_log ) :
