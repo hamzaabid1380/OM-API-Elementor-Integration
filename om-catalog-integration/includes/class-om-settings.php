@@ -115,6 +115,7 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_saved', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_email', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_float', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_menu_selector', array( 'sanitize_callback' => static function ( $v ) { return mb_substr( trim( wp_strip_all_tags( (string) $v ) ), 0, 300 ); } ) );
 		register_setting( 'om_catalog_settings', 'om_analytics', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		// Emails.
 		foreach ( array_keys( OM_Emails::notifications() ) as $email_id ) {
@@ -673,6 +674,13 @@ class OM_Settings {
 							<input type="hidden" name="om_saved_float" value="0" />
 							<label><input type="checkbox" name="om_saved_float" value="1" <?php checked( get_option( 'om_saved_float', '1' ), '1' ); ?> /> A floating "Saved" button (bottom left) once something is saved — only on pages where no Saved button of your own is visible</label>
 							<p class="description">Visitors reach their list from the "View saved" message after saving, the heart in the catalog's slim toolbar, and the floating button. To open it from your header too, add the <strong>OM Saved Designs</strong> widget (heart with a count), the <code>[om_saved_button]</code> shortcode, or any menu link to <code>#om-saved</code>. Each widget can hide the heart on its cards.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="om_menu_selector">Your site's menu</label></th>
+						<td>
+							<input type="text" id="om_menu_selector" name="om_menu_selector" value="<?php echo esc_attr( get_option( 'om_menu_selector', '' ) ); ?>" class="regular-text" placeholder=".my-header .menu-panel.is-open" />
+							<p class="description">While your site's menu (or a pop-up) is open, the catalog's floating pieces — the slim Filters/Search bar, the chat button, the Saved button — step aside so they never cover it. Elementor menus and pop-ups and most themes are detected by themselves; if yours isn't, enter a CSS selector that matches the menu <em>while it is open</em>.</p>
 						</td>
 					</tr>
 					<tr>

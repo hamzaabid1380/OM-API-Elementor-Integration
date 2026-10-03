@@ -11821,3 +11821,12 @@ html .om-dcmp-dialog .om-dcmp-close.om-dcmp-close { display: flex; align-items: 
 html .om-dcmp-dialog .om-dcmp-close.om-dcmp-close:is(:hover, :focus, :focus-visible) { border-color: var(--om-color-primary, #00111C); background: #fff; color: var(--om-color-primary, #00111C); }
 html .om-dcmp-dialog .om-dcmp-select { display: inline-flex; align-items: center; min-height: 42px; padding: 0 18px; border-radius: 999px; background: var(--om-color-primary, #00111C); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--om-color-background, #fff); text-decoration: none; white-space: nowrap; }
 html .om-dcmp-dialog .om-dcmp-select:is(:hover, :focus, :focus-visible) { color: var(--om-color-background, #fff); opacity: 0.9; }
+
+/* The site's menu or a pop-up is open: our floating pieces step aside
+   (they sit above the page, so they would cover it). */
+html.om-site-menu-open :is(.om-sticky-tools, .om-saved-float, .om-compare-tray, .om-sticky-bar, .om-ai:not(.is-open) .om-ai-launch) {
+	visibility: hidden;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.15s ease, visibility 0s linear 0.15s;
+}

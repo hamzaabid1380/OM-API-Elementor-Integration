@@ -937,6 +937,14 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.34.1
+- Phones: the slim Filters/Search/Sort bar (and the chat, Saved and
+  compare buttons) no longer cover the site's menu. While a menu or
+  pop-up is open they step aside, and come back when it closes.
+  Elementor menus and pop-ups and most themes are detected
+  automatically; for anything else, Settings › Look & feel › **Your
+  site's menu** takes a CSS selector for the open menu.
+
 ### 1.34.0
 - Ring builder: the AI assistant's button docks into the "Your ring" bar;
   no bar on the review step; "Pick a setting/diamond below" hint while a

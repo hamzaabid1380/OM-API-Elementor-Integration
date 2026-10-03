@@ -3724,6 +3724,67 @@
 	window.addEventListener('scroll', queueStickyTools, { passive: true });
 	window.addEventListener('resize', queueStickyTools);
 
+	/* ---------- The site's own menu: our floating pieces step aside ---------- */
+
+	// Open-menu signals from Elementor (nav menu, pop-ups) and common themes.
+	var MENU_OPEN = [
+		'.elementor-menu-toggle.elementor-active',
+		'.elementor-popup-modal',
+		'body.menu-open', 'body.mobile-menu-open', 'body.nav-open', 'body.navigation-open',
+		'body.off-canvas-open', 'body.offcanvas-open', 'body.is-menu-open', 'body.showing-menu',
+		'body.ast-main-header-nav-open', 'body.ast-mobile-popup-open', 'body.hfe-nav-menu-open',
+		'html.menu-open', 'html.has-menu-open', 'html.nav-open'
+	].join(',');
+	var MENU_MINE = '.om-catalog-wrap, .om-product-wrap, .om-builder, .om-diamonds, .om-ai, .om-quick-view, ' + OWN_LAYERS;
+	var menuTick = false;
+
+	function siteMenuOpen() {
+		var open = false;
+		$(MENU_OPEN).each(function () {
+			if (!this.closest(MENU_MINE) && (this === document.body || this === document.documentElement || this.getClientRects().length)) { open = true; return false; }
+		});
+		if (!open) {
+			// Any menu button in the header that says it is expanded.
+			$('[aria-expanded="true"]').each(function () {
+				if (this.closest(MENU_MINE) || !this.closest('header, nav, .elementor-location-header, [class*="header"], [class*="navigation"], [class*="menu"]')) { return; }
+				// (A header button: near the top of the screen, not a footer menu.)
+				var r = this.getClientRects().length ? this.getBoundingClientRect() : null;
+				if (r && r.top < window.innerHeight * 0.5) { open = true; return false; }
+			});
+		}
+		if (!open && cfg.menuSelector) {
+			try {
+				$(cfg.menuSelector).each(function () {
+					if (this.getClientRects().length) { open = true; return false; }
+				});
+			} catch (err) { /* not a valid selector */ }
+		}
+		return open;
+	}
+
+	function syncSiteMenu() {
+		menuTick = false;
+		var open = siteMenuOpen();
+		if (open !== document.documentElement.classList.contains('om-site-menu-open')) {
+			document.documentElement.classList.toggle('om-site-menu-open', open);
+		}
+	}
+
+	function queueSiteMenu() {
+		if (!menuTick) { menuTick = true; window.requestAnimationFrame(syncSiteMenu); }
+	}
+
+	// Menus open on a tap or a key, sometimes after an animation.
+	document.addEventListener('click', function () { queueSiteMenu(); setTimeout(queueSiteMenu, 350); }, true);
+	document.addEventListener('keyup', queueSiteMenu, true);
+	$(function () {
+		if (window.MutationObserver && document.body) {
+			new MutationObserver(queueSiteMenu).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'aria-expanded'] });
+			new MutationObserver(queueSiteMenu).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+		}
+		queueSiteMenu();
+	});
+
 	function scrollToWrap($wrap, then) {
 		var bar = $wrap.find('.om-sticky-tools')[0];
 		var offset = bar ? parseFloat(window.getComputedStyle(bar).top) || 0 : 0;
