@@ -285,6 +285,9 @@ class OM_Shortcodes {
 				// Story reels of this line under the heading (count 0 = none).
 				'head_reels'       => '',
 				'head_reels_count' => 8,
+				// A small label above them, so visitors know what they are
+				// ('' = none).
+				'head_reels_title' => __( 'Video highlights · Tap to watch', 'om-catalog' ),
 				// End-of-results card after the last design: layout cell or
 				// banner; theme soft, outline, dark or image; eyebrow, title
 				// and text ({count}, {line}); a primary action (inquiry opens
@@ -823,7 +826,11 @@ class OM_Shortcodes {
 			echo '<p class="om-intro-text">' . esc_html( str_replace( '{line}', $line, (string) $atts['head_text'] ) ) . '</p>';
 		}
 		if ( 'yes' === $atts['head_reels'] && class_exists( 'OM_Reels' ) && (int) $atts['head_reels_count'] > 0 ) {
-			echo '<div class="om-intro-reels">' . OM_Reels::instance()->render( array( 'line' => $active_line, 'count' => (int) $atts['head_reels_count'] ) ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+			$reels = OM_Reels::instance()->render( array( 'line' => $active_line, 'count' => (int) $atts['head_reels_count'] ) );
+			$label = trim( (string) $atts['head_reels_title'] );
+			// The label only when there are stories to watch.
+			$label = '' !== $label && false !== strpos( $reels, 'om-reel-bubble' ) ? '<p class="om-intro-reels-title"><span class="om-intro-reels-play" aria-hidden="true"></span>' . esc_html( $label ) . '</p>' : '';
+			echo '<div class="om-intro-reels">' . $label . $reels . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above and in the renderer.
 		}
 		echo '</header>';
 	}

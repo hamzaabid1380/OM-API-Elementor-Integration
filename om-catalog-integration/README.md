@@ -937,6 +937,13 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
 
+### 1.34.5
+- Catalog header: a small label above the story reels ("Video highlights
+  · Tap to watch", with a play icon) so visitors know what the circles
+  are. Change or clear it in the OM Catalog widget › heading ›
+  **Label above the stories**; it follows the heading's alignment and
+  only shows when there are stories.
+
 ### 1.34.4
 - Settings › Tools › **Find my server's IP**: shows the address this
   website's server uses to reach other servers (what Overnight

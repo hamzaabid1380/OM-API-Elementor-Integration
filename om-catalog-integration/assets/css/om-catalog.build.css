@@ -11830,3 +11830,40 @@ html.om-site-menu-open :is(.om-sticky-tools, .om-saved-float, .om-compare-tray, 
 	pointer-events: none;
 	transition: opacity 0.15s ease, visibility 0s linear 0.15s;
 }
+
+/* Label above the header's story reels: says what the circles are. */
+html body .om-intro-reels-title {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin: 0 0 14px;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.18em;
+	line-height: 1.4;
+	text-transform: uppercase;
+	color: #6e6e6e;
+}
+.om-intro-head--left .om-intro-reels-title { justify-content: flex-start; }
+.om-intro-head--right .om-intro-reels-title { justify-content: flex-end; }
+html body .om-intro-reels-play {
+	position: relative;
+	width: 18px;
+	height: 18px;
+	flex: 0 0 auto;
+	border: 1px solid var(--om-gold, #b8925a);
+	border-radius: 50%;
+}
+html body .om-intro-reels-play::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin: -3.5px 0 0 -2px;
+	border-style: solid;
+	border-width: 3.5px 0 3.5px 6px;
+	border-color: transparent transparent transparent var(--om-gold, #b8925a);
+}
+html p.om-intro-reels-title { margin: 0 0 14px; }
+.om-intro-reels .om-reels-heading { display: none; }

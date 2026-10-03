@@ -839,6 +839,18 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'head_reels_title',
+			array(
+				'label'       => __( 'Label above the stories', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => __( 'Video highlights · Tap to watch', 'om-catalog' ),
+				'label_block' => true,
+				'description' => __( 'Tells visitors what the circles are. Leave empty for none.', 'om-catalog' ),
+				'condition'   => array( 'head' => 'yes', 'head_reels' => 'yes' ),
+			)
+		);
+
 		$this->add_responsive_control(
 			'head_align',
 			array(
@@ -2367,6 +2379,7 @@ class OM_Elementor_Catalog_Widget extends Widget_Base {
 			'head_align'      => (string) ( $settings['head_align'] ?? 'center' ),
 			'head_reels'      => 'yes' === ( $settings['head_reels'] ?? '' ) ? 'yes' : '',
 			'head_reels_count' => (int) ( $settings['head_reels_count'] ?? 8 ),
+			'head_reels_title' => (string) ( $settings['head_reels_title'] ?? __( 'Video highlights · Tap to watch', 'om-catalog' ) ),
 			'sticky_tools'       => 'yes' === ( $settings['sticky_tools'] ?? 'yes' ) ? 'yes' : '',
 			'sticky_on'          => (string) ( $settings['sticky_on'] ?? 'all' ),
 			'sticky_parts'       => implode( ',', (array) ( $settings['sticky_parts'] ?? array( 'filters', 'search', 'count', 'chips', 'sort', 'top' ) ) ),
