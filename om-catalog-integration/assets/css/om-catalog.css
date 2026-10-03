@@ -11866,3 +11866,73 @@ html.om-site-menu-open :is(.om-sticky-tools, .om-saved-float, .om-compare-tray, 
 }
 html p.om-intro-reels-title { margin: 0 0 14px; }
 .om-intro-reels .om-reels-heading { display: none; }
+
+/* =========================================================
+   1.35 Assistant: branded, and answers from the website
+   ========================================================= */
+
+/* Accent (sparkle and details): from Settings, else soft gold. */
+.om-ai .om-ai-launch .om-ai-spark,
+.om-ai-avatar { color: var(--om-ai-accent, #e8cf98); }
+.om-ai .om-ai-icon-btn.om-ai-icon-btn:focus-visible { outline-color: var(--om-ai-accent, #e8cf98); }
+
+/* The shop's logo, round: header avatar and (optionally) the button. */
+.om-ai-avatar.has-logo { overflow: hidden; background: #fff; box-shadow: 0 0 0 2px var(--om-ai-accent, #e8cf98); }
+.om-ai-avatar.has-logo img { width: 100%; height: 100%; object-fit: contain; }
+.om-ai-launch-logo {
+	display: inline-flex;
+	flex: 0 0 auto;
+	width: 30px;
+	height: 30px;
+	margin-left: -6px;
+	overflow: hidden;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 0 0 2px var(--om-ai-accent, #e8cf98);
+}
+.om-ai-launch-logo img { width: 100%; height: 100%; object-fit: contain; }
+.om-ai .om-ai-launch.has-logo.om-ai-launch { padding-left: 14px; }
+@media (max-width: 600px) {
+	.om-ai-launch-logo { width: 34px; height: 34px; margin-left: 0; }
+	.om-ai .om-ai-launch.has-logo.om-ai-launch { padding-left: 0; }
+}
+.om-ai.is-mini .om-ai-launch.has-logo.om-ai-launch:not(:hover):not(:focus-visible) { padding-left: 0; }
+.om-ai.is-mini .om-ai-launch.has-logo:not(:hover):not(:focus-visible) .om-ai-launch-logo { margin-left: 0; }
+
+/* Pages of the shop's website it answered from. */
+.om-ai-pages { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.om-ai .om-ai-page {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	max-width: 100%;
+	padding: 6px 12px 6px 9px;
+	border: 1px solid var(--om-ai-line, #e6e0d6);
+	border-radius: 999px;
+	background: #fff;
+	font-size: 12.5px;
+	line-height: 1.3;
+	color: var(--om-ai-ink, #00111C);
+	text-decoration: none;
+}
+.om-ai .om-ai-page:is(:hover, :focus-visible) { border-color: var(--om-ai-ink, #00111C); color: var(--om-ai-ink, #00111C); }
+.om-ai-page-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.om-ai-page-icon {
+	width: 14px;
+	height: 14px;
+	flex: 0 0 auto;
+	background: var(--om-ai-accent-ink, #8a6a3b);
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3h7v7M10 14 21 3M21 14v7H3V3h7'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3h7v7M10 14 21 3M21 14v7H3V3h7'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* A live diamond card (no photo: a soft diamond mark). */
+.om-ai-card-img.is-stone { display: flex; align-items: center; justify-content: center; background: var(--om-ai-soft, #f6f3ee); }
+.om-ai-card-img.is-stone::before {
+	content: "";
+	width: 40%;
+	height: 40%;
+	background: var(--om-ai-accent-ink, #8a6a3b);
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.4' stroke-linejoin='round'%3E%3Cpath d='M6 3h12l3 6-9 12L3 9z M3 9h18 M9 3l3 6 3-6 M12 9v12'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.4' stroke-linejoin='round'%3E%3Cpath d='M6 3h12l3 6-9 12L3 9z M3 9h18 M9 3l3 6 3-6 M12 9v12'/%3E%3C/svg%3E") center / contain no-repeat;
+}

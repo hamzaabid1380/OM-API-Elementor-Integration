@@ -364,6 +364,24 @@ A friendly chat that answers jewellery questions and suggests real designs,
 then hands over to your team. Off until you switch it on in **Settings >
 OM Catalog > AI assistant**.
 
+**What it answers from** (1.35, each switchable under *What it knows*):
+- **Your catalog** — real designs, shown as photo cards (always on).
+- **Product details from Overnight Mountings** — metals, colours, carat
+  sizes, stones and how each suggested design is sold.
+- **Live diamonds** — when visitors ask about stones, it reads shape,
+  carat, lab-grown/natural and budget from the question, looks up real
+  diamonds (widening the search when nothing matches exactly) and can show
+  two as cards that open the ring builder with that stone.
+- **Your website's pages** — your own pages (and optionally blog posts)
+  for shop facts: services, policies, FAQs, your story. It links the page
+  it used. Only published, public pages; leave any out by ID.
+- **Prices** — the prices your site shows ("from $1,188", diamond prices),
+  never wholesale, and only while prices are on.
+
+**Branding** (*Look*): your logo or monogram (round, in the chat header and
+optionally on the button), main and accent colours, and the line under its
+name.
+
 - **Providers:** OpenRouter (free models work — list several and each is
   tried in turn if one is busy), Google Gemini, or Anthropic Claude
   (Opus 5.5 by default; Sonnet 5.5 or Haiku 4.5 selectable). Keys stay on
@@ -936,6 +954,15 @@ After updating, regenerate Elementor's CSS once (Elementor > Tools >
 Regenerate Files & Data) so the widgets pick up the new styles.
 
 ## Changelog
+
+### 1.35.0
+- AI assistant, branded: your logo in the chat header (and optionally the
+  button), your main and accent colours, and your own line under its name.
+- AI assistant answers from more of your data (each can be switched off):
+  details of the designs it suggests from Overnight Mountings, live
+  diamonds (shown as cards linked to the ring builder), your website's own
+  pages and posts (with a link to the page it used), and the prices your
+  site shows while prices are on.
 
 ### 1.34.6
 - Connection: no longer shows the server's own (often internal, e.g.

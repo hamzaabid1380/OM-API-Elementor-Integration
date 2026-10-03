@@ -143,6 +143,17 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_ai_offset_x', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_offset_y', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_mini', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		// 1.35: branding and what the assistant knows.
+		register_setting( 'om_catalog_settings', 'om_ai_logo', array( 'sanitize_callback' => 'esc_url_raw' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_color', array( 'sanitize_callback' => static function ( $v ) { return (string) sanitize_hex_color( (string) $v ); } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_accent', array( 'sanitize_callback' => static function ( $v ) { return (string) sanitize_hex_color( (string) $v ); } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_subtitle', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_launcher_icon', array( 'sanitize_callback' => static function ( $v ) { return 'logo' === $v ? 'logo' : 'spark'; } ) );
+		foreach ( array( 'om_ai_src_details', 'om_ai_src_diamonds', 'om_ai_src_site', 'om_ai_prices' ) as $flag ) {
+			register_setting( 'om_catalog_settings', $flag, array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		}
+		register_setting( 'om_catalog_settings', 'om_ai_site_types', array( 'sanitize_callback' => static function ( $v ) { return implode( ',', array_intersect( array_map( 'sanitize_key', (array) $v ), array( 'page', 'post' ) ) ); } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_site_exclude', array( 'sanitize_callback' => static function ( $v ) { return implode( ',', array_filter( array_map( 'absint', preg_split( '/[\s,]+/', (string) $v ) ) ) ); } ) );
 		register_setting( 'om_catalog_settings', 'om_ai_hourly', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_daily', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_analytics_meta', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
@@ -912,6 +923,43 @@ class OM_Settings {
 						<th><label for="om_ai_about">About your shop</label></th>
 						<td><textarea id="om_ai_about" name="om_ai_about" rows="7" class="large-text" placeholder="Address, opening hours, phone&#10;What you offer: custom design, resizing, repairs, engraving, financing…&#10;Lab-grown and natural diamonds; certificates (GIA / IGI)&#10;How viewings work, how long orders usually take"><?php echo esc_textarea( get_option( 'om_ai_about', '' ) ); ?></textarea>
 						<p class="description">The only shop facts the assistant uses. Anything not here, it passes to your team. Short lines are best.</p></td>
+					</tr>
+					<tr>
+						<th>What it knows</th>
+						<td>
+							<p style="margin:0 0 6px"><label><input type="checkbox" checked disabled /> Your catalog — finds real designs and shows them as photo cards (always on)</label></p>
+							<input type="hidden" name="om_ai_src_details" value="0" />
+							<p style="margin:0 0 6px"><label><input type="checkbox" name="om_ai_src_details" value="1" <?php checked( get_option( 'om_ai_src_details', '1' ), '1' ); ?> /> Product details from Overnight Mountings — metals, colours, carat sizes and stones of the designs it suggests</label></p>
+							<input type="hidden" name="om_ai_src_diamonds" value="0" />
+							<p style="margin:0 0 6px"><label><input type="checkbox" name="om_ai_src_diamonds" value="1" <?php checked( get_option( 'om_ai_src_diamonds', '1' ), '1' ); ?> /> Live diamonds — when visitors ask about stones, it looks up real diamonds (shape, carat, lab-grown or natural) and can show them, linked to the ring builder</label></p>
+							<input type="hidden" name="om_ai_src_site" value="0" />
+							<p style="margin:0 0 6px"><label><input type="checkbox" name="om_ai_src_site" value="1" <?php checked( get_option( 'om_ai_src_site', '1' ), '1' ); ?> /> Your website's pages — reads your own pages to answer about the shop (services, policies, FAQs, the story…) and links the page</label></p>
+							<?php $om_types = explode( ',', (string) get_option( 'om_ai_site_types', 'page,post' ) ); ?>
+							<p style="margin:0 0 6px 24px">From:
+								<label><input type="checkbox" name="om_ai_site_types[]" value="page" <?php checked( in_array( 'page', $om_types, true ) ); ?> /> Pages</label>
+								<label style="margin-left:10px"><input type="checkbox" name="om_ai_site_types[]" value="post" <?php checked( in_array( 'post', $om_types, true ) ); ?> /> Blog posts</label>
+								<label style="margin-left:14px">Leave out page IDs <input type="text" name="om_ai_site_exclude" value="<?php echo esc_attr( get_option( 'om_ai_site_exclude', '' ) ); ?>" class="regular-text" style="width:160px" placeholder="12, 48" /></label>
+							</p>
+							<input type="hidden" name="om_ai_prices" value="0" />
+							<p style="margin:0 0 6px"><label><input type="checkbox" name="om_ai_prices" value="1" <?php checked( get_option( 'om_ai_prices', '1' ), '1' ); ?> /> It may mention prices — the same prices your site shows ("from $1,188", diamond prices), never wholesale; only while prices are on (Pricing)</label></p>
+							<p class="description">Everything it is given comes from your own site, your catalog and Overnight Mountings — "About your shop" above still comes first for shop facts. Only published, public pages are read; password-protected and private ones never are.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="om_ai_logo">Look</label></th>
+						<td>
+							<input type="url" id="om_ai_logo" name="om_ai_logo" value="<?php echo esc_attr( get_option( 'om_ai_logo', '' ) ); ?>" class="regular-text" placeholder="https://…/logo-mark.png" />
+							<button type="button" class="button" data-om-media="#om_ai_logo">Choose image</button>
+							<p class="description">Your logo or monogram, shown round in the chat header (a square image works best). Empty = a sparkle.</p>
+							<p style="margin:10px 0 0"><label>Main colour <input type="text" name="om_ai_color" value="<?php echo esc_attr( get_option( 'om_ai_color', '' ) ); ?>" class="om-color-field" placeholder="<?php echo esc_attr( get_option( 'om_color_primary', '#00111C' ) ); ?>" /></label>
+							<label style="margin-left:14px">Accent <input type="text" name="om_ai_accent" value="<?php echo esc_attr( get_option( 'om_ai_accent', '' ) ); ?>" class="om-color-field" placeholder="#E8CF98" /></label></p>
+							<p class="description">Main = the header, the button and the visitor's messages (empty = your site colour). Accent = the sparkle and small details.</p>
+							<p style="margin:10px 0 0"><label>Button icon <select name="om_ai_launcher_icon">
+								<option value="spark" <?php selected( get_option( 'om_ai_launcher_icon', 'spark' ), 'spark' ); ?>>Sparkle</option>
+								<option value="logo" <?php selected( get_option( 'om_ai_launcher_icon', 'spark' ), 'logo' ); ?>>Your logo</option>
+							</select></label>
+							<label style="margin-left:14px">Line under the name <input type="text" name="om_ai_subtitle" value="<?php echo esc_attr( get_option( 'om_ai_subtitle', '' ) ); ?>" class="regular-text" style="width:240px" placeholder="Usually replies in seconds" /></label></p>
+						</td>
 					</tr>
 					<tr>
 						<th><label for="om_ai_name">Name &amp; texts</label></th>

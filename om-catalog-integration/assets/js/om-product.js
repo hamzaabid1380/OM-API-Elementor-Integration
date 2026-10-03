@@ -3884,6 +3884,12 @@
 		$a.append($('<span class="om-ai-card-img"></span>').append(d.i ? $('<img alt="" loading="lazy" />').attr('src', d.i) : ''));
 		$a.append($('<span class="om-ai-card-title"></span>').text(d.t), $('<span class="om-ai-card-meta"></span>').text(d.v ? d.v : t('styleN', 'Style %s').replace('%s', d.s)));
 		$card.append($a);
+		// A live diamond: opens the ring builder with it; not a "saved" design.
+		if (d.k === 'd') {
+			$card.addClass('om-ai-card--diamond');
+			if (!d.i) { $a.find('.om-ai-card-img').addClass('is-stone'); }
+			return $card;
+		}
 		if (cfg.saved) {
 			$card.append($('<button type="button" class="om-save-toggle om-save-toggle--ai" aria-pressed="false"><span class="om-save-icon" aria-hidden="true"></span></button>')
 				.attr({ 'data-om-save': JSON.stringify({ l: d.l, s: d.s, t: d.t, i: d.i, u: d.u }), 'aria-label': t('saveThis', 'Save %s').replace('%s', d.t) }));
@@ -3901,6 +3907,15 @@
 			var $cards = $('<div class="om-ai-cards"></div>');
 			m.d.forEach(function (d) { $cards.append(aiCard(d)); });
 			$row.append($cards);
+		}
+		// Pages of the shop's own website it answered from.
+		if (m.p && m.p.length) {
+			var $pages = $('<div class="om-ai-pages"></div>');
+			m.p.forEach(function (pg) {
+				if (!pg || !pg.u) { return; }
+				$pages.append($('<a class="om-ai-page"></a>').attr('href', pg.u).append($('<span class="om-ai-page-icon" aria-hidden="true"></span>'), $('<span class="om-ai-page-text"></span>').text(pg.t)));
+			});
+			$row.append($pages);
 		}
 		if (m.dbg) { $row.append($('<p class="om-ai-debug"></p>').text(m.dbg)); }
 		if (m.team) {
@@ -3966,7 +3981,14 @@
 			+ '<form class="om-ai-input" novalidate><label class="om-visually-hidden" for="om-ai-text"></label><textarea id="om-ai-text" rows="1" maxlength="600"></textarea><button type="submit" class="om-ai-send"><span class="om-ai-send-icon" aria-hidden="true"></span></button></form>'
 			+ '<p class="om-ai-note"></p></div>');
 		$panel.find('.om-ai-title').text(AI.name);
-		$panel.find('.om-ai-sub').text(t('aiSubtitle', 'Usually replies in seconds'));
+		$panel.find('.om-ai-sub').text(AI.sub || t('aiSubtitle', 'Usually replies in seconds'));
+		// Branding: the shop's logo (round) in the header and, if chosen, the button.
+		if (AI.logo) {
+			$panel.find('.om-ai-avatar').addClass('has-logo').empty().append($('<img alt="" />').attr('src', AI.logo));
+			if (AI.icon === 'logo') {
+				$launch.addClass('has-logo').find('.om-ai-spark').replaceWith($('<span class="om-ai-launch-logo" aria-hidden="true"></span>').append($('<img alt="" />').attr('src', AI.logo)));
+			}
+		}
 		$panel.find('.om-ai-restart').attr({ 'aria-label': t('aiRestart', 'New chat'), title: t('aiRestart', 'New chat') });
 		$panel.find('.om-ai-close').attr('aria-label', t('aiClose', 'Close chat'));
 		$panel.find('.om-ai-back').text('← ' + t('aiBack', 'Back to chat'));
@@ -3979,6 +4001,8 @@
 		if (tpl && tpl.content) { $panel.find('.om-ai-team-form').append(document.importNode(tpl.content, true)); }
 		ai.append($launch, $panel).appendTo(document.body);
 		ai[0].style.setProperty('--om-ai-x', (AI.x === undefined ? 20 : +AI.x) + 'px');
+		if (/^#[0-9a-f]{3,6}$/i.test(AI.color || '')) { ai[0].style.setProperty('--om-ai-ink', AI.color); }
+		if (/^#[0-9a-f]{3,6}$/i.test(AI.accent || '')) { ai[0].style.setProperty('--om-ai-accent', AI.accent); }
 		aiPlace();
 		// Bars come and go (compare tray, toasts): follow them.
 		if (window.MutationObserver) {
@@ -4074,7 +4098,7 @@
 		}).done(function (r) {
 			var st2 = aiRead();
 			if (r && r.success) {
-				st2.msgs.push({ r: 'a', t: r.data.reply, d: r.data.designs || [], team: !!r.data.team, dbg: r.data.debug || '' });
+				st2.msgs.push({ r: 'a', t: r.data.reply, d: r.data.designs || [], p: r.data.pages || [], team: !!r.data.team, dbg: r.data.debug || '' });
 			} else {
 				st2.msgs.push({ r: 'a', t: (r && r.data && r.data.message) || t('aiError', 'Sorry — that didn’t go through. Please try again.'), e: true, team: true });
 			}
