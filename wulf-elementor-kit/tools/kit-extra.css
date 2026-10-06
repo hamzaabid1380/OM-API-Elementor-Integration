@@ -1,0 +1,72 @@
+/* ===== Wulf kit: rules for running inside WordPress / Elementor ===== */
+
+.wk .slot-tag { display: none !important; }
+.wk-site-header { position: relative; z-index: 70; }
+.wk-sticky { position: sticky; z-index: 60; }
+.elementor-widget-container > .wk { width: 100%; }
+.e-con > .elementor-widget[class*="elementor-widget-wk-"] { width: 100%; }
+.wk { display: block; }
+.wk.wk-portal { display: contents; }
+
+/* Header search overlay. */
+.wk .hd > .wrap { position: relative; }
+.wk .hd-search { position: absolute; inset: 0 var(--gut); display: flex; align-items: center; gap: 10px; background: inherit; z-index: 3; }
+.wk .hd.searching .hd-search { background: var(--bg); }
+.wk .hd-search[hidden] { display: none; }
+.wk .hd-search input { flex: 1; height: 46px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); font: 500 16px/1 var(--sans); }
+.wk .hd-search input:focus { outline: none; border-color: var(--ink); }
+.wk .hd.searching { background: var(--bg); color: var(--ink); }
+.wk .hd .lg-solid { display: none; }
+.wk .hd.solid .lg-solid, .wk .hd.mega-on .lg-solid, .wk .hd.searching .lg-solid { display: block; }
+.wk .hd.solid .lg-solid + .lg-top, .wk .hd.solid .lg-top:has(+ .lg-solid), .wk .hd.mega-on .lg-top:has(+ .lg-solid) { display: none; }
+.wk .logo img { max-height: 46px; width: auto; }
+.wk .mega-grid { grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); }
+.wk .mega-grid > .mega-feature { grid-column: span 1; }
+
+/* Metal swatches. */
+.wk .sw-white, .wk .sw.sw-white { background: linear-gradient(135deg, #fff, #aeb5be); }
+.wk .sw-yellow, .wk .sw.sw-yellow { background: linear-gradient(135deg, #fdf1c9, #c49b46); }
+.wk .sw-rose, .wk .sw.sw-rose { background: linear-gradient(135deg, #fde6db, #c57e64); }
+.wk .sw-platinum, .wk .sw.sw-platinum { background: linear-gradient(135deg, #f4f6f8, #8f99a5); }
+
+/* Product row: columns per screen come from the widget settings. */
+.wk .prow { --per: 4; --gap: 20px; gap: var(--gap); grid-auto-columns: calc((100% - (var(--per) - 1) * var(--gap)) / var(--per)); }
+@media (max-width: 1100px) { .wk .prow { grid-auto-columns: calc((100% - 2 * var(--gap)) / 3); } }
+@media (max-width: 760px) { .wk .prow { grid-auto-columns: 62%; } }
+
+/* Product photo on white vs. photo filling the frame. */
+.wk .slot.pv { background: #fff; }
+.wk .slot.pv > img, .wk .slot.pv > video { width: 100%; height: 100%; object-fit: contain; }
+.wk .slot.pv.fit-cover > img, .wk .slot.pv.fit-cover > video { object-fit: cover; }
+.wk .post .slot.pv { aspect-ratio: 4 / 3; border: 1px solid var(--line); border-radius: var(--r); display: grid; place-items: center; }
+.wk .post .slot.pv:not(.fit-cover) > img { width: 72%; height: 72%; }
+
+/* "How can we help" circles: count follows the items. */
+.wk .help ul { grid-template-columns: repeat(var(--n, 7), minmax(0, 1fr)); }
+@media (max-width: 1100px) { .wk .help ul { grid-template-columns: repeat(var(--n, 7), 132px); } }
+@media (max-width: 760px) { .wk .help ul { grid-template-columns: repeat(var(--n, 7), 112px); } }
+@media (max-width: 420px) { .wk .help ul { grid-template-columns: repeat(var(--n, 7), 96px); } }
+
+/* Story text from the editor. */
+.wk .ch-text p { margin: 0 0 14px; }
+.wk .ch-text p:last-child { margin-bottom: 0; }
+.wk .ch-text a { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Visit: optional form / map. */
+.wk .visit.no-form { grid-template-columns: 1fr; }
+.wk .visit-media.one { grid-template-columns: 1fr; }
+.wk .visit-media .map iframe { display: block; width: 100%; height: 100%; min-height: 260px; border: 0; }
+.wk .visit-media div.map { position: relative; border-left: 1px solid var(--line); background: #eef0f2; }
+@media (max-width: 860px) { .wk .visit-media div.map { border-left: 0; border-top: 1px solid var(--line); height: 220px; } }
+
+/* Shine sweep across a product photo. */
+.wk .pv.flash::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .7) 50%, transparent 70%); transform: translateX(-100%); animation: wkflash .9s ease both; pointer-events: none; }
+@keyframes wkflash { to { transform: translateX(100%); } }
+
+/* Editor: keep animated bits visible while editing. */
+.elementor-editor-active .wk .rv { opacity: 1 !important; transform: none !important; }
+.elementor-editor-active .wk-sticky { position: relative; }
+
+/* "Tuck under the section above": read as one section with the one before it. */
+.wk .sec.join { padding-top: 0; margin-top: calc(-1 * var(--sec)); }
+.elementor-editor-active .wk .sec.join { margin-top: 0; }
