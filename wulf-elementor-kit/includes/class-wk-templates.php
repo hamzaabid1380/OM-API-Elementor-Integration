@@ -175,6 +175,9 @@ class WK_Templates {
 			return 0;
 		}
 		update_post_meta( $id, WK_Pages::META, $key );
+		foreach ( WK_Pages::meta( $key ) as $mk => $mv ) {
+			update_post_meta( $id, $mk, $mv );
+		}
 		self::save_elementor( $id, self::page_data( $key ), 'wp-page' );
 		update_post_meta( $id, '_wp_page_template', 'elementor_header_footer' );
 		return (int) $id;
@@ -231,7 +234,8 @@ class WK_Templates {
 			$r['parts'][] = 'sitewide';
 		}
 		if ( $o['front'] ) {
-			$home = WK_Pages::built( true )['home'] ?? 0;
+			$have = WK_Pages::built( true );
+			$home = $r['built']['home-simple'] ?? ( $r['built']['home'] ?? ( $have['home'] ?? 0 ) );
 			if ( $home && 'publish' === get_post_status( $home ) ) {
 				update_option( 'show_on_front', 'page' );
 				update_option( 'page_on_front', (int) $home );
@@ -261,7 +265,7 @@ class WK_Templates {
 		}
 		$id   = $b[ $key ];
 		$slug = $c[ $key ][1];
-		if ( 'home' !== $key ) {
+		if ( ! WK_Pages::is_home( $key ) ) {
 			foreach ( self::others_at( $slug, $id ) as $old ) {
 				if ( (int) get_option( 'page_on_front' ) === $old ) {
 					continue;
@@ -270,7 +274,7 @@ class WK_Templates {
 			}
 		}
 		wp_update_post( array( 'ID' => $id, 'post_status' => 'publish', 'post_name' => $slug ) );
-		if ( 'home' === $key ) {
+		if ( WK_Pages::is_home( $key ) ) {
 			update_option( 'show_on_front', 'page' );
 			update_option( 'page_on_front', (int) $id );
 		}
@@ -387,9 +391,10 @@ class WK_Templates {
 								}
 								$id     = $built[ $key ] ?? 0;
 								$st     = $id ? get_post_status( $id ) : '';
-								$taken  = 'home' === $key ? 0 : self::address_taken( $p[1], $id );
-								$addr   = 'home' === $key ? home_url( '/' ) : home_url( '/' . $p[1] . '/' );
-								$islive = $id && 'publish' === $st && ( 'home' !== $key || $front === $id );
+								$ishome = WK_Pages::is_home( $key );
+								$taken  = $ishome ? 0 : self::address_taken( $p[1], $id );
+								$addr   = $ishome ? home_url( '/' ) : home_url( '/' . $p[1] . '/' );
+								$islive = $id && 'publish' === $st && ( ! $ishome || $front === $id );
 								?>
 								<tr id="wk-row-<?php echo esc_attr( $key ); ?>">
 									<th scope="row" class="check-column"><input type="checkbox" name="pages[]" value="<?php echo esc_attr( $key ); ?>" data-g="<?php echo esc_attr( $g ); ?>" data-built="<?php echo $id ? '1' : '0'; ?>" id="wk-p-<?php echo esc_attr( $key ); ?>"></th>
@@ -410,7 +415,7 @@ class WK_Templates {
 											<a href="<?php echo esc_url( 'publish' === $st ? get_permalink( $id ) : get_preview_post_link( $id ) ); ?>" target="_blank"><?php echo 'publish' === $st ? esc_html__( 'View', 'wulf-kit' ) : esc_html__( 'Preview', 'wulf-kit' ); ?></a>
 											<?php if ( ! $islive ) : ?>
 												<?php
-												$msg = 'home' === $key
+												$msg = $ishome
 													? __( 'Make this the homepage of your site now? Your current homepage is kept (not deleted).', 'wulf-kit' )
 													: ( $taken ? __( 'Put this page live now? Your current page at this address moves to the trash (you can restore it for 30 days).', 'wulf-kit' ) : __( 'Publish this page now?', 'wulf-kit' ) );
 												?>
@@ -440,7 +445,7 @@ class WK_Templates {
 							<?php if ( self::tpl_alive( $set['header_tpl'] ) ) : ?><em>(<?php esc_html_e( 'already set up; kept as is', 'wulf-kit' ); ?>)</em><?php endif; ?></label><br>
 						<label><input type="checkbox" name="menu" value="1" checked> <?php esc_html_e( 'Create or refresh the "Wulf main menu" so it links to these pages', 'wulf-kit' ); ?></label><br>
 						<label><input type="checkbox" name="saved" value="1"> <?php esc_html_e( 'Also save each page in Elementor › Saved Templates, to insert into any page later', 'wulf-kit' ); ?></label><br>
-						<label><input type="checkbox" name="front" value="1"> <?php esc_html_e( 'Make the new Home page the site\'s homepage (only when it\'s published)', 'wulf-kit' ); ?></label>
+						<label><input type="checkbox" name="front" value="1"> <?php esc_html_e( 'Make the new homepage (Home or Home (simpler)) the site\'s homepage (only when it\'s published)', 'wulf-kit' ); ?></label>
 					</p>
 					<?php submit_button( __( 'Build selected pages', 'wulf-kit' ), 'primary large', 'submit', false ); ?>
 					<p class="description"><?php esc_html_e( 'Nothing on your site is deleted when building. Pages keep the same addresses as your live site, so links and Google keep working once they go live.', 'wulf-kit' ); ?></p>

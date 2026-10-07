@@ -253,3 +253,31 @@
 
 /* OM Catalog widgets placed by the page library: page width and side margins. */
 .e-con.wk-om-box, .elementor-element.wk-om-box { box-sizing: border-box; width: 100%; max-width: calc(1240px + 2 * clamp(20px, 5vw, 56px)); margin-inline: auto; padding: 8px clamp(20px, 5vw, 56px) clamp(40px, 5vw, 64px); }
+
+/* ================= Calmer look =================
+   On "Home (simpler)" (page style "calm") or everywhere via Wulf Kit › Settings › Calmer look. */
+body.wk-calm .wk { font-size: 17.5px; }
+body.wk-calm .wk .lead { font-size: clamp(18px, 1.3vw, 19.5px); }
+body.wk-calm .wk .gold-em { font-style: inherit; color: inherit; }
+body.wk-calm .wk .hero .gold-em { font-style: italic; color: var(--gold); }
+body.wk-calm .wk .shead .eyebrow { display: none; }
+body.wk-calm .wk .shead .h2 { margin-top: 0; }
+body.wk-calm .wk .rule { border-top-color: transparent; }
+body.wk-calm .wk .sec { padding-block: calc(var(--sec) * 1.1); }
+body.wk-calm .wk .sec.join { padding-top: 0; margin-top: calc(-1.1 * var(--sec)); }
+body.wk-calm .wk .vals li { border-color: transparent; background: transparent; padding: 8px 4px; }
+body.wk-calm .wk .vals li:hover { transform: none; box-shadow: none; }
+body.wk-calm .wk .svc:not(.custom):not(.fin-card) { border-color: transparent; background: transparent; padding: 0; gap: 10px; }
+body.wk-calm .wk .svc:not(.custom):not(.fin-card) .svc-ph { margin: 0 0 8px; border-radius: var(--r); }
+body.wk-calm .wk .tile .meta { border-top-color: transparent; }
+body.wk-calm .wk .split .eyebrow { color: var(--sub); }
+
+/* Google rating line beside a section title */
+.wk .v-rating { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font: 600 15px/1.3 var(--sans); color: var(--sub); }
+.wk .v-rating .stars { display: flex; gap: 2px; color: var(--gold-deep); }
+.wk .v-rating .stars svg { width: 17px; height: 17px; }
+.wk .v-rating b { font: 400 24px/1 var(--serif); color: var(--ink); }
+.wk .v-rating > svg { width: 17px; height: 17px; transition: transform .2s; }
+.wk .v-rating:hover > svg { transform: translateX(3px); }
+.wk .dark .v-rating { color: var(--sub-night); }
+.wk .dark .v-rating b { color: #fff; }

@@ -226,6 +226,9 @@ class WK_Plugin {
 		if ( WK_Settings::get( 'actbar' ) ) {
 			$classes[] = 'wk-has-actbar';
 		}
+		if ( WK_Settings::get( 'calm_all' ) || ( is_singular() && 'calm' === get_post_meta( get_queried_object_id(), '_wk_style', true ) ) ) {
+			$classes[] = 'wk-calm';
+		}
 		return $classes;
 	}
 

@@ -44,6 +44,13 @@ class WK_Values_Widget extends WK_Widget {
 		) );
 		$this->end_controls_section();
 
+		$this->start_controls_section( 'c_rating', array( 'label' => __( 'Google rating line', 'wulf-kit' ) ) );
+		$this->add_control( 'rating_on', array( 'label' => __( 'Show a rating line next to the title', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes' ) );
+		$this->add_control( 'rating', array( 'label' => __( 'Rating', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '[4.9]', 'description' => __( 'Your real Google rating. Used when no Google API key is set in Wulf Kit › Settings; with a key, the live rating is shown.', 'wulf-kit' ), 'condition' => array( 'rating_on' => 'yes' ) ) );
+		$this->add_control( 'rating_label', array( 'label' => __( 'Text after the rating', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'on Google · [N] reviews', 'wulf-kit' ), 'description' => __( '{count} becomes the live review count when a Google key is set.', 'wulf-kit' ), 'condition' => array( 'rating_on' => 'yes' ) ) );
+		$this->add_control( 'rating_link', array( 'label' => __( 'Link', 'wulf-kit' ), 'type' => Controls_Manager::URL, 'default' => array( 'url' => 'https://share.google/ZIKvRTnr9JcbLdgex', 'is_external' => 'on' ), 'condition' => array( 'rating_on' => 'yes' ) ) );
+		$this->end_controls_section();
+
 		$this->style_section();
 		$this->style_head();
 		$this->start_controls_section( 's_grid', array( 'label' => __( 'Grid', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE ) );
@@ -64,13 +71,29 @@ class WK_Values_Widget extends WK_Widget {
 		$this->end_controls_section();
 		$this->text_style( 't', __( 'Card titles', 'wulf-kit' ), '.vals .h3' );
 		$this->text_style( 'x', __( 'Card text', 'wulf-kit' ), '.vals p' );
+		$this->text_style( 'rt', __( 'Rating line', 'wulf-kit' ), '.v-rating', '.v-rating:hover', true, array(
+			'star' => array( 'label' => __( 'Stars', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk .v-rating .stars' => 'color: {{VALUE}};' ) ),
+		) );
+	}
+
+	/** "★★★★★ 4.9 on Google · 650 reviews →" (live from Google when a key is set). */
+	private function rating_line( $s ) {
+		if ( 'yes' !== ( $s['rating_on'] ?? '' ) ) {
+			return '';
+		}
+		$g      = class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
+		$rating = $g ? number_format_i18n( $g['rating'], 1 ) : (string) $s['rating'];
+		$label  = (string) $s['rating_label'];
+		$label  = $g ? str_replace( array( '{count}', '[N]' ), number_format_i18n( $g['count'] ), $label ) : str_replace( '{count}', '[N]', $label );
+		$stars  = str_repeat( WK_Icons::svg( 'star' ), 5 );
+		return '<a class="v-rating"' . self::link_attrs( $s['rating_link'] ) . '><span class="stars" aria-hidden="true">' . $stars . '</span><b>' . esc_html( $rating ) . '</b> <span>' . esc_html( $label ) . '</span> ' . WK_Icons::svg( 'arr' ) . '</a>';
 	}
 
 	protected function render() {
 		$s = $this->get_settings_for_display();
 		$this->open( $s );
 		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		$this->head( $s );
+		$this->head( $s, $this->rating_line( $s ) );
 		echo '<ul class="vals">';
 		foreach ( (array) $s['items'] as $it ) {
 			echo '<li><span class="v-ic">' . WK_Icons::svg( $it['icon'] ) . '</span><h3 class="h3">' . esc_html( $it['title'] ) . '</h3><p>' . esc_html( $it['text'] ) . '</p></li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

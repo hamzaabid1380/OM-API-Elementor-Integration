@@ -888,7 +888,7 @@
 		var chips = $('.chips[role=group]', form);
 		if (chips) chips.addEventListener('click', function (e) { var b = e.target.closest('[data-topic-opt]'); if (b) b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); });
 		var pref = $('[data-pref]', form);
-		pref.addEventListener('click', function (e) { var b = e.target.closest('.opt'); if (!b) return; $$('.opt', pref).forEach(function (x) { x.setAttribute('aria-checked', String(x === b)); }); });
+		if (pref) pref.addEventListener('click', function (e) { var b = e.target.closest('.opt'); if (!b) return; $$('.opt', pref).forEach(function (x) { x.setAttribute('aria-checked', String(x === b)); }); });
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
 			var name = form.elements.name, phone = form.elements.phone, err = $('[data-form-err]', form);
@@ -900,7 +900,7 @@
 			var btn = form.querySelector('[type=submit]'), label = btn.innerHTML;
 			btn.disabled = true; btn.textContent = T.sending || 'Sending…'; err.hidden = true;
 			var topics = $$('[data-topic-opt][aria-pressed=true]', form).map(function (b) { return b.dataset.topicOpt; });
-			var prefV = ($$('.opt', pref).filter(function (x) { return x.getAttribute('aria-checked') === 'true'; })[0] || {}).textContent || '';
+			var prefV = !pref ? (T.callOrText || 'Call or text') : ($$('.opt', pref).filter(function (x) { return x.getAttribute('aria-checked') === 'true'; })[0] || {}).textContent || '';
 			var fd = new FormData();
 			fd.append('action', 'wk_book'); fd.append('nonce', CFG.nonce || '');
 			['name', 'phone', 'email', 'day', 'time', 'note', 'website'].forEach(function (k) { if (form.elements[k]) fd.append(k, form.elements[k].value); });

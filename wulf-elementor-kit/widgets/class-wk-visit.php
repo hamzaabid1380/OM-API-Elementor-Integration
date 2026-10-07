@@ -46,6 +46,7 @@ class WK_Visit_Widget extends WK_Widget {
 
 		$this->start_controls_section( 'c_form', array( 'label' => __( 'Booking form', 'wulf-kit' ) ) );
 		$this->add_control( 'form_on', array( 'label' => __( 'Show the form', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control( 'f_short', array( 'label' => __( 'Short form', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Only name, mobile, topics, day and time. Hides email, "best way to reach you" and the notes box.', 'wulf-kit' ), 'condition' => array( 'form_on' => 'yes' ) ) );
 		$this->add_control( 'f_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Book a visit', 'wulf-kit' ) ) );
 		$this->add_control( 'f_sub', array( 'label' => __( 'Under the title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Free, no obligation. We\'ll confirm by call or text.', 'wulf-kit' ), 'label_block' => true ) );
 		$r = new Repeater();
@@ -188,18 +189,24 @@ class WK_Visit_Widget extends WK_Widget {
 			}
 			echo '<div class="row2"><div class="field"><label for="' . esc_attr( $uid ) . '-name">' . esc_html__( 'Name', 'wulf-kit' ) . '</label><input id="' . esc_attr( $uid ) . '-name" name="name" autocomplete="name"><span class="err" hidden>' . esc_html__( 'Please add your name.', 'wulf-kit' ) . '</span></div>';
 			echo '<div class="field"><label for="' . esc_attr( $uid ) . '-phone">' . esc_html__( 'Mobile', 'wulf-kit' ) . '</label><input id="' . esc_attr( $uid ) . '-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(219) 000-0000"><span class="err" hidden>' . esc_html__( 'Please add a 10-digit number.', 'wulf-kit' ) . '</span></div></div>';
-			echo '<div class="field"><label for="' . esc_attr( $uid ) . '-email">' . esc_html__( 'Email', 'wulf-kit' ) . ' <span>' . esc_html__( '(optional)', 'wulf-kit' ) . '</span></label><input id="' . esc_attr( $uid ) . '-email" name="email" type="email" autocomplete="email"></div>';
-			echo '<div class="field"><span class="lbl" id="' . esc_attr( $uid ) . '-p">' . esc_html__( 'Best way to reach you', 'wulf-kit' ) . '</span><div class="chips" role="radiogroup" aria-labelledby="' . esc_attr( $uid ) . '-p" data-pref>';
-			foreach ( array( __( 'Call', 'wulf-kit' ), __( 'Text', 'wulf-kit' ), __( 'Email', 'wulf-kit' ) ) as $i => $p ) {
-				echo '<button class="opt" type="button" role="radio" aria-checked="' . ( 1 === $i ? 'true' : 'false' ) . '">' . esc_html( $p ) . '</button>';
+			$short = 'yes' === ( $s['f_short'] ?? '' );
+			if ( ! $short ) {
+				echo '<div class="field"><label for="' . esc_attr( $uid ) . '-email">' . esc_html__( 'Email', 'wulf-kit' ) . ' <span>' . esc_html__( '(optional)', 'wulf-kit' ) . '</span></label><input id="' . esc_attr( $uid ) . '-email" name="email" type="email" autocomplete="email"></div>';
+				echo '<div class="field"><span class="lbl" id="' . esc_attr( $uid ) . '-p">' . esc_html__( 'Best way to reach you', 'wulf-kit' ) . '</span><div class="chips" role="radiogroup" aria-labelledby="' . esc_attr( $uid ) . '-p" data-pref>';
+				foreach ( array( __( 'Call', 'wulf-kit' ), __( 'Text', 'wulf-kit' ), __( 'Email', 'wulf-kit' ) ) as $i => $p ) {
+					echo '<button class="opt" type="button" role="radio" aria-checked="' . ( 1 === $i ? 'true' : 'false' ) . '">' . esc_html( $p ) . '</button>';
+				}
+				echo '</div></div>';
 			}
-			echo '</div></div><div class="row2"><div class="field"><label for="' . esc_attr( $uid ) . '-day">' . esc_html__( 'Day', 'wulf-kit' ) . '</label><select id="' . esc_attr( $uid ) . '-day" name="day" data-days></select></div>';
+			echo '<div class="row2"><div class="field"><label for="' . esc_attr( $uid ) . '-day">' . esc_html__( 'Day', 'wulf-kit' ) . '</label><select id="' . esc_attr( $uid ) . '-day" name="day" data-days></select></div>';
 			echo '<div class="field"><label for="' . esc_attr( $uid ) . '-time">' . esc_html__( 'Time', 'wulf-kit' ) . '</label><select id="' . esc_attr( $uid ) . '-time" name="time">';
 			foreach ( $times as $t ) {
 				echo '<option>' . esc_html( $t ) . '</option>';
 			}
 			echo '</select></div></div>';
-			echo '<div class="field"><label for="' . esc_attr( $uid ) . '-note">' . esc_html__( 'Anything we should have ready?', 'wulf-kit' ) . ' <span>' . esc_html__( '(optional)', 'wulf-kit' ) . '</span></label><textarea id="' . esc_attr( $uid ) . '-note" name="note"></textarea></div>';
+			if ( ! $short ) {
+				echo '<div class="field"><label for="' . esc_attr( $uid ) . '-note">' . esc_html__( 'Anything we should have ready?', 'wulf-kit' ) . ' <span>' . esc_html__( '(optional)', 'wulf-kit' ) . '</span></label><textarea id="' . esc_attr( $uid ) . '-note" name="note"></textarea></div>';
+			}
 			echo '<input type="text" name="website" tabindex="-1" autocomplete="off" class="sr" aria-hidden="true">';
 			echo '<button class="btn btn-ink" type="submit">' . esc_html( $s['f_btn'] ) . ' ' . WK_Icons::svg( 'arr', 'arr' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo '<p class="err" data-form-err hidden></p>';

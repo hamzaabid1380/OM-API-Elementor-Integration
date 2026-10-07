@@ -47,6 +47,7 @@ class WK_Settings {
 			'font_serif'    => 'Fraunces',
 			'font_sans'     => 'Manrope',
 			'google_fonts'  => '1',
+			'calm_all'      => '',
 			'radius'        => '10',
 			'max_width'     => '1240',
 			'tray'          => '1',
@@ -199,7 +200,7 @@ class WK_Settings {
 				$out[ $k ] = esc_url_raw( $val );
 			} elseif ( 'email' === $k ) {
 				$out[ $k ] = sanitize_email( $val );
-			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'to_om_leads' ), true ) ) {
+			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'to_om_leads', 'calm_all' ), true ) ) {
 				$out[ $k ] = empty( $val ) ? '' : '1';
 			} else {
 				$out[ $k ] = sanitize_text_field( $val );
@@ -291,6 +292,7 @@ class WK_Settings {
 					self::field( 'font_serif', __( 'Heading font', 'wulf-kit' ) );
 					self::field( 'font_sans', __( 'Body font', 'wulf-kit' ) );
 					self::field( 'google_fonts', __( 'Load from Google Fonts', 'wulf-kit' ), 'check', __( 'Turn off if your theme or Elementor already loads these fonts.', 'wulf-kit' ) );
+					self::field( 'calm_all', __( 'Calmer look everywhere', 'wulf-kit' ), 'check', __( 'Use the quieter style of "Home (simpler)" on every page: fewer boxes and small labels, gold italics only in the hero, slightly larger text.', 'wulf-kit' ) );
 					self::field( 'radius', __( 'Corner radius (px)', 'wulf-kit' ), 'number' );
 					self::field( 'max_width', __( 'Content width (px)', 'wulf-kit' ), 'number' );
 					?>

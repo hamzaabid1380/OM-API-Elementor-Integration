@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -35,10 +35,10 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Call to action band or card
 * Text (long text: headings, lists, quotes)
 
-27 page templates, one for every page on the live site, with the wording from that page and the
+28 page templates: one for every page on the live site, plus "Home (simpler)",, with the wording from that page and the
 same web address:
 
-* Main: Home, About, Free Consultation, Blog, Thank You, Page not found
+* Main: Home, Home (simpler), About, Free Consultation, Blog, Thank You, Page not found
 * Shop (with the OM Catalog plugin): Engagement Rings, Ring Builder, Wedding Bands, Fashion Rings,
   Earrings, Necklaces, Pendants, Bracelets, Catalogue, Single Product layout
 * Diamonds & gems: Diamond Jewelry, Where to Buy Engagement Rings, Gems
@@ -84,6 +84,15 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.2.0 =
+* New "Home (simpler)" template: 8 sections instead of 13 (hero, collection and favorites, ring designer,
+  why Wulf with the Google rating, a short story, services, visit, footer), in a calmer style.
+  Build it next to Home, compare, and "Go live" with the one you prefer.
+* Calmer look: fewer boxes and small labels, gold italics only in the hero, slightly larger text.
+  Used by "Home (simpler)", or on every page via Wulf Kit > Settings > Calmer look everywhere.
+* Visit widget: "Short form" option (name, mobile, topics, day and time).
+* Values widget: optional Google rating line beside the title (live with a Google API key).
 
 = 1.1.1 =
 * 4Cs tabs (and every other button) keep their text centered when the theme's button styles are neutralised.
