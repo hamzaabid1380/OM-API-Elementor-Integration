@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Wulf Elementor Kit
  * Description:       The Wulf Diamond Jewelers website kit for Elementor: every section as an editable widget, every page of the site as a ready-made template, a visit booking form wired to your leads, and site-wide brand settings.
- * Version:           1.4.0
+ * Version:           1.4.1
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            Wulf Diamond Jewelers
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WK_VERSION', '1.4.0' );
+define( 'WK_VERSION', '1.4.1' );
 define( 'WK_FILE', __FILE__ );
 define( 'WK_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WK_URL', plugin_dir_url( __FILE__ ) );

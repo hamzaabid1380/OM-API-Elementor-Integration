@@ -95,10 +95,10 @@ class WK_Craft_Widget extends WK_Widget {
 			'range'      => array( 'vh' => array( 'min' => 20, 'max' => 100 ), 'px' => array( 'min' => 200, 'max' => 900 ) ),
 			'selectors'  => array( '{{WRAPPER}} .wk .cr-step' => 'min-height: {{SIZE}}{{UNIT}};' ),
 		) );
-		$this->end_controls_section();
 		$this->color( 'prog', __( 'Step timer bar (compact)', 'wulf-kit' ), '.craft-compact .cr-step.is-active::after', 'background-color' );
 		$this->color( 'step_hbg', __( 'Step background on hover (compact)', 'wulf-kit' ), '.craft-compact .cr-step:hover', 'background-color' );
 		$this->color( 'step_abg', __( 'Current step background (compact)', 'wulf-kit' ), '.craft-compact .cr-step.is-active', 'background-color' );
+		$this->end_controls_section();
 		$this->text_style( 'k', __( 'Step labels', 'wulf-kit' ), '.cr-step .k' );
 		$this->text_style( 'st', __( 'Step titles', 'wulf-kit' ), '.cr-step .h3' );
 		$this->text_style( 'sx', __( 'Step text', 'wulf-kit' ), '.cr-step p:last-child' );

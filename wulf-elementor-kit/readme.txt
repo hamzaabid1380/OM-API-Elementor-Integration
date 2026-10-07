@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -85,6 +85,11 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.4.1 =
+* Fix: "Edit with Elementor" stopped with "WK_Craft_Widget … Cannot add a control outside of a
+  section". Three color settings added in 1.3.0 were outside their settings group; they're now under
+  Style › Steps. All 24 widgets checked the way the Elementor editor loads them.
 
 = 1.4.0 =
 * 360° ring videos turn at a relaxed pace (Wulf Kit > Settings > "360° videos turn": slow, relaxed,
