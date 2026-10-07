@@ -344,3 +344,37 @@ body.wk-calm .wk .split .eyebrow { color: var(--sub); }
 /* Calmer look: sections ease in as they scroll into view */
 .wk .wk-rv { opacity: 0; transform: translateY(22px); transition: opacity .8s ease, transform .9s cubic-bezier(.2, .7, .2, 1); transition-delay: var(--rv-d, 0ms); }
 .wk .wk-rv.in { opacity: 1; transform: none; }
+
+/* ================= Ring designer: cleaner, with a stage that glows in the chosen metal ================= */
+.wk .studio-card { border-color: transparent; border-radius: calc(var(--r) * 2); box-shadow: 0 36px 70px -48px rgba(15, 18, 23, .32); overflow: hidden; }
+.wk .preview { --glow: rgba(176, 190, 206, .38); border-right: 0; padding: clamp(24px, 3vw, 40px); gap: 18px; justify-items: center; background: #fff; }
+.wk .preview[data-metal="yellow"] { --glow: rgba(214, 185, 127, .42); }
+.wk .preview[data-metal="rose"] { --glow: rgba(222, 160, 140, .4); }
+.wk .preview .main { position: relative; width: 100%; isolation: isolate; background: transparent; }
+.wk .preview .main::before { content: ""; position: absolute; left: 12%; right: 12%; top: 22%; bottom: 14%; z-index: -1; border-radius: 50%; background: var(--glow); filter: blur(48px); transition: background-color .6s ease; }
+.wk .preview .main > img, .wk .preview .main > video { width: 86%; height: 86%; background: transparent; mix-blend-mode: multiply; }
+.wk .alts { display: flex; justify-content: center; gap: 12px; grid-template-columns: none; }
+.wk .alts button { width: 64px; height: 64px; aspect-ratio: auto; padding: 4px; border-radius: 50%; border: 1.5px solid var(--line); transition: border-color .2s, transform .2s; }
+.wk .alts button:hover { border-color: var(--ink); transform: translateY(-2px); }
+.wk .alts button img { border-radius: 50%; }
+.wk .preview .shown { justify-content: center; text-align: center; font-size: 14.5px; max-width: 52ch; }
+.wk .controls { padding: clamp(28px, 3.4vw, 44px); gap: 26px; }
+.wk .ctl-head b span { border: 1.5px solid var(--gold-deep); color: var(--gold-ink); font-weight: 700; }
+.wk .controls .opt { min-height: 42px; border-width: 1px; border-color: var(--line); font-size: 14px; transition: border-color .2s, background-color .2s, color .2s; }
+.wk .controls .opt:hover { border-color: var(--ink); }
+.wk .controls .opt[aria-checked="true"] { border-color: var(--ink); }
+.wk .shape-opts { display: flex; flex-wrap: wrap; gap: 8px; grid-template-columns: none; }
+.wk .shape-opts .opt { flex: 1 1 0; min-width: 72px; max-width: 112px; min-height: 64px; border-radius: 12px; }
+.wk .shape-opts .opt[aria-disabled="true"] { display: none; }
+.wk .hint:empty { display: none; }
+.wk .studio-go { border-top: 0; padding-top: 4px; }
+.wk .studio-go .row2 .btn { min-height: 46px; font-size: 14.5px; }
+@media (max-width: 860px) {
+	.wk .preview { justify-items: stretch; background: #fff; }
+	.wk .preview .main::before { filter: blur(26px); }
+	.wk .preview .shown { text-align: left; }
+}
+
+/* Hero showcase: give each piece some breathing room in its frame */
+.wk .hero-media .sc-item.pr video { inset: 4% 6%; width: 88%; height: 92%; }
+.wk .hero-media .sc-item.pr > img { width: 88%; height: 92%; margin: auto; }

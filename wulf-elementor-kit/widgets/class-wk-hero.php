@@ -193,9 +193,9 @@ class WK_Hero_Widget extends WK_Widget {
 				$alt = $p['n'];
 				if ( $m['v'] ) {
 					$src = 0 === $i ? ' src="' . esc_url( $m['v'] ) . '" autoplay preload="auto"' : ' data-src="' . esc_url( $m['v'] ) . '" preload="none"';
-					echo '<figure class="sc-item' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><video muted loop playsinline' . $src . ( $m['poster'] ? ' poster="' . esc_url( $m['poster'] ) . '"' : '' ) . ' aria-label="' . esc_attr( $alt ) . '"></video></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><video muted loop playsinline' . $src . ( $m['poster'] ? ' poster="' . esc_url( $m['poster'] ) . '"' : '' ) . ' aria-label="' . esc_attr( $alt ) . '"></video></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				} else {
-					echo '<figure class="sc-item' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><img src="' . esc_url( $m['poster'] ? $m['poster'] : $p['img'] ) . '" alt="' . esc_attr( $alt ) . '"></figure>';
+					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><img src="' . esc_url( $m['poster'] ? $m['poster'] : $p['img'] ) . '" alt="' . esc_attr( $alt ) . '"></figure>';
 				}
 			}
 			echo '</div><span class="glow" aria-hidden="true"></span>' . ( 'yes' === $s['sweep'] ? '<span class="sweep" aria-hidden="true"></span>' : '' );

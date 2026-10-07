@@ -442,6 +442,12 @@
 		});
 	}
 
+	/* ================= 360° videos turn at a relaxed pace (Wulf Kit › Settings) ================= */
+	var TURN = +CFG.turn || 0.6;
+	var slow = function (e) { var v = e.target; if (v && v.tagName === 'VIDEO' && v.closest && v.closest('.sc-item.pr, .slot.pv, .spot-ring, .preview .main') && Math.abs(v.playbackRate - TURN) > 0.01) { v.defaultPlaybackRate = TURN; v.playbackRate = TURN; } };
+	document.addEventListener('loadedmetadata', slow, true);
+	document.addEventListener('play', slow, true);
+
 	/* ================= Visit-form topics, from any link with data-topic ================= */
 	function pickTopic(t, only) {
 		$$('[data-topic-opt]').forEach(function (b) {
@@ -735,6 +741,7 @@
 		document.addEventListener('wk:tray', syncSave);
 		function draw() {
 			var r = pick(), ct = carats[st.carat], fc = Math.cbrt(ct), sh = SH[st.shape] || SH.round, md = media(r), has = !!r.media[st.metal];
+			var pv = main.closest('.preview'); if (pv) pv.dataset.metal = st.metal;
 			if (st.pid + st.metal !== last) {
 				last = st.pid + st.metal;
 				swapEl(main, md.v ? '<video muted loop playsinline' + (reduce ? '' : ' autoplay') + ' preload="auto"' + (md.poster ? ' poster="' + esc(md.poster) + '"' : '') + ' src="' + esc(md.v) + '" aria-label="' + esc(r.n) + '"></video>' : '<img src="' + esc(md.poster || r.img) + '" alt="' + esc(r.n) + '">');

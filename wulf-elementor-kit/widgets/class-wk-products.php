@@ -41,14 +41,14 @@ class WK_Products_Widget extends WK_Widget {
 			'fields'      => $r->get_controls(),
 			'title_field' => '{{{ name }}}',
 			'default'     => array(
-				self::demo_product( '85121', 'Round 4-Prong Solitaire Engagement Ring', '$1,561', 'engagement-rings/85121-2/', 'white', array( 'white' ) ),
-				self::demo_product( '51157-E', 'Oval Hidden Halo Engagement Ring', '$1,350', 'engagement-rings/51157-E-6X4/', 'white', array( 'white', 'yellow' ) ),
 				self::demo_product( '84842', 'Single Row Diamond Engagement Ring', '$2,650', 'engagement-rings/84842-2/', 'white', array( 'white' ) ),
 				self::demo_product( '85264', 'Tulip Solitaire Engagement Ring', '$1,144', 'engagement-rings/85264-1/', 'white', array( 'white' ) ),
-				self::demo_product( '51156-E', 'Emerald Cut Hidden Halo Engagement Ring', '$1,645', 'engagement-rings/51156-E-7.5X5.5/', 'white', array( 'white' ) ),
 				self::demo_product( '85158', 'Accented Round Engagement Ring', '$2,317', 'engagement-rings/85158-2/', 'white', array( 'white' ) ),
-				self::demo_product( '83364', '3-Stone Single Row Engagement Ring', '$4,540', 'engagement-rings/83364-25/', 'white', array( 'white' ) ),
-				self::demo_product( '85275', 'Nature Inspired Engagement Ring', '$1,510', 'engagement-rings/85275-1/', 'white', array( 'white' ) ),
+				self::demo_product( '85121', 'Round 4-Prong Solitaire Engagement Ring', '$1,561', 'engagement-rings/85121-2/', 'white', array( 'white' ) ),
+				self::demo_product( '51157-E', 'Oval Hidden Halo Engagement Ring', '$1,350', 'engagement-rings/51157-E-6X4/', 'white', array( 'white', 'yellow' ) ),
+				self::demo_product( '51156-E', 'Emerald Cut Hidden Halo Engagement Ring', '$1,645', 'engagement-rings/51156-E-7.5X5.5/', 'white', array( 'white', 'yellow', 'rose' ) ),
+				self::demo_product( '83364', '3-Stone Single Row Engagement Ring', '$4,540', 'engagement-rings/83364-25/', 'white', array( 'white', 'yellow', 'rose' ) ),
+				self::demo_product( '85275', 'Nature Inspired Engagement Ring', '$1,510', 'engagement-rings/85275-1/', 'white', array( 'white', 'yellow', 'rose' ) ),
 			),
 		) );
 		$this->end_controls_section();

@@ -45,15 +45,15 @@ class WK_Studio_Widget extends WK_Widget {
 		$rings = array(
 			array( '51157-E', 'Oval Hidden Halo Engagement Ring', '$1,350', 'engagement-rings/51157-E-6X4/', 'Hidden halo', 'oval', array( 'white', 'yellow' ) ),
 			array( '51162-E', 'Oval Hidden Halo Engagement Ring, Diamond Band', '$2,383', 'engagement-rings/51162-E-8X6/', 'Hidden halo', 'oval', array( 'white', 'rose' ) ),
-			array( '51156-E', 'Emerald Cut Hidden Halo Engagement Ring', '$1,645', 'engagement-rings/51156-E-7.5X5.5/', 'Hidden halo', 'emerald', array( 'white' ) ),
+			array( '51156-E', 'Emerald Cut Hidden Halo Engagement Ring', '$1,645', 'engagement-rings/51156-E-7.5X5.5/', 'Hidden halo', 'emerald', array( 'white', 'yellow', 'rose' ) ),
 			array( '51163-E', 'Hidden Halo Emerald Cut Engagement Ring', '$2,282', 'engagement-rings/51163-E-7.5X5.5/', 'Hidden halo', 'emerald', array() ),
 			array( '85121', 'Round 4-Prong Solitaire Engagement Ring', '$1,561', 'engagement-rings/85121-2/', 'Solitaire', 'round', array( 'white' ) ),
 			array( '85264', 'Tulip Solitaire Engagement Ring', '$1,144', 'engagement-rings/85264-1/', 'Solitaire', 'round', array( 'white' ) ),
 			array( '84842', 'Single Row Diamond Engagement Ring', '$2,650', 'engagement-rings/84842-2/', 'Diamond band', 'round', array( 'white' ) ),
 			array( '85158', 'Accented Round Engagement Ring', '$2,317', 'engagement-rings/85158-2/', 'Diamond band', 'round', array( 'white' ) ),
 			array( '83438', 'Single Row Trellis Prong Set Engagement Ring', '$1,921', 'engagement-rings/83438-5X3/', 'Diamond band', 'emerald', array() ),
-			array( '83364', '3-Stone Single Row Engagement Ring', '$4,540', 'engagement-rings/83364-25/', 'Three stone', 'emerald', array( 'white' ) ),
-			array( '85275', 'Nature Inspired Engagement Ring', '$1,510', 'engagement-rings/85275-1/', 'Accented', 'round', array( 'white' ) ),
+			array( '83364', '3-Stone Single Row Engagement Ring', '$4,540', 'engagement-rings/83364-25/', 'Three stone', 'emerald', array( 'white', 'yellow', 'rose' ) ),
+			array( '85275', 'Nature Inspired Engagement Ring', '$1,510', 'engagement-rings/85275-1/', 'Accented', 'round', array( 'white', 'yellow', 'rose' ) ),
 			array( '85255', 'Scattered Diamond Engagement Ring', '$17,521', 'engagement-rings/85255-1/', 'Accented', 'round', array() ),
 		);
 		$def = array();
@@ -95,7 +95,7 @@ class WK_Studio_Widget extends WK_Widget {
 			'description' => __( 'Your ring builder. {style}, {metal}, {shape} and {carat} are filled in. Empty: the setting\'s own link.', 'wulf-kit' ),
 		) );
 		$this->add_control( 'save_text', array( 'label' => __( 'Save button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Add to my tray', 'wulf-kit' ) ) );
-		$this->add_control( 'book_text', array( 'label' => __( 'Book button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Book a visit to see it', 'wulf-kit' ) ) );
+		$this->add_control( 'book_text', array( 'label' => __( 'Book button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'See it in person', 'wulf-kit' ) ) );
 		$this->add_control( 'note', array( 'label' => __( 'Small note', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( '*Every ring includes free cleaning & inspection*, whenever you stop by.', 'wulf-kit' ), 'description' => __( '*Stars* make words bold.', 'wulf-kit' ) ) );
 		$this->end_controls_section();
 
@@ -204,7 +204,7 @@ class WK_Studio_Widget extends WK_Widget {
 			echo '<button class="btn btn-line studio-save" type="button" data-save aria-pressed="false">' . esc_html( $s['save_text'] ) . '</button>';
 		}
 		if ( $s['book_text'] ) {
-			echo '<a class="btn btn-line" href="' . esc_url( WK_Settings::get( 'book_url', '#visit' ) ) . '" data-book data-topic="Engagement ring">' . esc_html( $s['book_text'] ) . '</a>';
+			echo '<a class="btn btn-line"' . self::link_attrs( array( 'url' => '#visit' ) ) . ' data-book data-topic="Engagement ring">' . esc_html( $s['book_text'] ) . '</a>';
 		}
 		echo '</div>';
 		if ( $s['note'] ) {

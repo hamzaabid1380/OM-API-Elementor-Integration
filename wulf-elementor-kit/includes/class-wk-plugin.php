@@ -169,6 +169,7 @@ class WK_Plugin {
 			'hours'    => WK_Settings::hours_for_js(),
 			'tz'       => $s['timezone'] ? $s['timezone'] : wp_timezone_string(),
 			'phone'    => $s['phone'],
+			'turn'     => (float) ( $s['turn_speed'] ? $s['turn_speed'] : 0.6 ),
 			'tel'      => WK_Settings::tel(),
 			'maps'     => $s['maps_url'],
 			'book'     => $s['book_url'] ? $s['book_url'] : '#visit',

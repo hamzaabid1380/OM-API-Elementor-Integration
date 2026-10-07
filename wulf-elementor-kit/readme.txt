@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -36,7 +36,7 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Text (long text: headings, lists, quotes)
 * Spotlight (one ring, large, in 360°, with live metal buttons and a choice of rings)
 
-28 page templates: one for every page on the live site, plus "Home (simpler)",, with the wording from that page and the
+28 page templates: one for every page on the live site, plus "Home (simpler)", with the wording from that page and the
 same web address:
 
 * Main: Home, Home (simpler), About, Free Consultation, Blog, Thank You, Page not found
@@ -85,6 +85,17 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.4.0 =
+* 360° ring videos turn at a relaxed pace (Wulf Kit > Settings > "360° videos turn": slow, relaxed,
+  a little slower, or as filmed). Works for videos from OM too.
+* Demo videos re-made from the original OM films, uncropped, so pieces sit in their frame with
+  breathing room instead of looking zoomed in. Hero pieces get a little extra space around them.
+* Spotlight shows different rings from the hero (three stone, emerald hidden halo, nature inspired),
+  each in white, yellow and rose gold. The favorites row starts with rings the hero doesn't show.
+* Ring designer, cleaner: the ring turns on a soft glow that changes with the chosen metal, other
+  designs as small circles, lighter option buttons, only the shapes you have, no divider lines,
+  "See it in person" button (and it now opens the consultation form from any page).
 
 = 1.3.0 =
 * "Home (simpler)" gets its wow moments back, kept clean: a new Spotlight (one ring, large, turning

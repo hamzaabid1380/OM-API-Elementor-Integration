@@ -36,9 +36,9 @@ class WK_Spotlight_Widget extends WK_Widget {
 			'fields'      => $r->get_controls(),
 			'title_field' => '{{{ name }}}',
 			'default'     => array(
-				self::demo_product( '51157-E', 'Oval Hidden Halo Engagement Ring', '$1,350', 'engagement-rings/51157-E-6X4/', 'yellow', array( 'white', 'yellow' ) ),
-				self::demo_product( '51162-E', 'Oval Hidden Halo Ring, Diamond Band', '$2,383', 'engagement-rings/51162-E-8X6/', 'rose', array( 'white', 'rose' ) ),
-				self::demo_product( '85121', 'Round 4-Prong Solitaire Engagement Ring', '$1,561', 'engagement-rings/85121-2/', 'white', array( 'white' ) ),
+				self::demo_product( '83364', '3-Stone Single Row Engagement Ring', '$4,540', 'engagement-rings/83364-25/', 'rose', array( 'white', 'yellow', 'rose' ) ),
+				self::demo_product( '51156-E', 'Emerald Cut Hidden Halo Engagement Ring', '$1,645', 'engagement-rings/51156-E-7.5X5.5/', 'yellow', array( 'white', 'yellow', 'rose' ) ),
+				self::demo_product( '85275', 'Nature Inspired Engagement Ring', '$1,510', 'engagement-rings/85275-1/', 'white', array( 'white', 'yellow', 'rose' ) ),
 			),
 		) );
 		$this->add_control( 'show_price', array( 'label' => __( 'Show price', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );

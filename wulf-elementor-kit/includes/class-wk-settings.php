@@ -48,6 +48,7 @@ class WK_Settings {
 			'font_sans'     => 'Manrope',
 			'google_fonts'  => '1',
 			'calm_all'      => '',
+			'turn_speed'    => '0.6',
 			'radius'        => '10',
 			'max_width'     => '1240',
 			'tray'          => '1',
@@ -200,6 +201,8 @@ class WK_Settings {
 				$out[ $k ] = esc_url_raw( $val );
 			} elseif ( 'email' === $k ) {
 				$out[ $k ] = sanitize_email( $val );
+			} elseif ( 'turn_speed' === $k ) {
+				$out[ $k ] = in_array( (string) $val, array( '0.5', '0.6', '0.75', '1' ), true ) ? (string) $val : $v;
 			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'to_om_leads', 'calm_all' ), true ) ) {
 				$out[ $k ] = empty( $val ) ? '' : '1';
 			} else {
@@ -219,6 +222,13 @@ class WK_Settings {
 			$help = '';
 		} elseif ( 'color' === $type ) {
 			echo '<input type="text" class="wk-color" id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $v ) . '" data-default-color="' . esc_attr( self::defaults()[ $key ] ) . '">';
+		} elseif ( 'speed' === $type ) {
+			$opts = array( '0.5' => __( 'Slow', 'wulf-kit' ), '0.6' => __( 'Relaxed (recommended)', 'wulf-kit' ), '0.75' => __( 'A little slower than normal', 'wulf-kit' ), '1' => __( 'Normal (as filmed)', 'wulf-kit' ) );
+			echo '<select id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '">';
+			foreach ( $opts as $ov => $ol ) {
+				echo '<option value="' . esc_attr( $ov ) . '"' . selected( $ov, (string) self::all()[ $key ], false ) . '>' . esc_html( $ol ) . '</option>';
+			}
+			echo '</select>';
 		} elseif ( 'template' === $type ) {
 			$posts = get_posts( array( 'post_type' => 'elementor_library', 'numberposts' => 100, 'post_status' => 'publish' ) );
 			echo '<select id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '"><option value="">' . esc_html__( '— Use the theme\'s own —', 'wulf-kit' ) . '</option>';
@@ -293,6 +303,7 @@ class WK_Settings {
 					self::field( 'font_sans', __( 'Body font', 'wulf-kit' ) );
 					self::field( 'google_fonts', __( 'Load from Google Fonts', 'wulf-kit' ), 'check', __( 'Turn off if your theme or Elementor already loads these fonts.', 'wulf-kit' ) );
 					self::field( 'calm_all', __( 'Calmer look everywhere', 'wulf-kit' ), 'check', __( 'Use the quieter style of "Home (simpler)" on every page: fewer boxes and small labels, gold italics only in the hero, slightly larger text.', 'wulf-kit' ) );
+					self::field( 'turn_speed', __( '360° videos turn', 'wulf-kit' ), 'speed', __( 'How fast the turning ring videos play everywhere on the site.', 'wulf-kit' ) );
 					self::field( 'radius', __( 'Corner radius (px)', 'wulf-kit' ), 'number' );
 					self::field( 'max_width', __( 'Content width (px)', 'wulf-kit' ), 'number' );
 					?>
