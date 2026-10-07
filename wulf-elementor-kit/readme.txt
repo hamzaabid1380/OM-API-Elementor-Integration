@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -84,6 +84,9 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.1.1 =
+* 4Cs tabs (and every other button) keep their text centered when the theme's button styles are neutralised.
 
 = 1.1.0 =
 * Every page of the live site as a template, with a pick-and-choose builder and "Go live".
