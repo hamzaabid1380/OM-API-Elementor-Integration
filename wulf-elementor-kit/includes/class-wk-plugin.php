@@ -37,6 +37,7 @@ class WK_Plugin {
 		'faq'      => 'WK_Faq_Widget',
 		'cta'      => 'WK_Cta_Widget',
 		'prose'    => 'WK_Prose_Widget',
+		'spotlight' => 'WK_Spotlight_Widget',
 	);
 
 	public static function instance() {

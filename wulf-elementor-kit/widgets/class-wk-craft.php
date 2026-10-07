@@ -66,6 +66,14 @@ class WK_Craft_Widget extends WK_Widget {
 				array( 'k' => __( 'Step 4', 'wulf-kit' ), 'name' => __( 'Ready to wear', 'wulf-kit' ), 'title' => __( 'Set, checked, ready to wear', 'wulf-kit' ), 'text' => __( 'Your diamond is set and the ring is checked before it\'s yours. After that, bring it back any time for free cleaning and inspection.', 'wulf-kit' ), 'visual' => 'image', 'image' => array( 'url' => WK_URL . 'assets/media/51162-E.webp' ) ),
 			),
 		) );
+		$this->add_control( 'layout', array(
+			'label'       => __( 'Layout', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'scroll',
+			'options'     => array( 'scroll' => __( 'Scroll story (steps change as you scroll)', 'wulf-kit' ), 'compact' => __( 'Compact (one screen, steps play in turn)', 'wulf-kit' ) ),
+			'description' => __( 'Compact keeps the section to one screen: the steps play one after another, and visitors can click any step.', 'wulf-kit' ),
+		) );
+		$this->add_control( 'interval', array( 'label' => __( 'Seconds per step (compact)', 'wulf-kit' ), 'type' => Controls_Manager::NUMBER, 'default' => 4, 'min' => 2, 'max' => 15, 'condition' => array( 'layout' => 'compact' ) ) );
 		$this->add_control( 'step_word', array( 'label' => __( 'Counter wording', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Step %1$s of %2$s', 'wulf-kit' ), 'description' => __( '%1$s is the step, %2$s the total.', 'wulf-kit' ) ) );
 		$this->add_control( 'sweep', array( 'label' => __( 'Light sweep on the last step', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
 		$this->button_fields( 'b1', __( 'Button 1', 'wulf-kit' ), __( 'Start designing yours', 'wulf-kit' ), '#studio' );
@@ -88,6 +96,9 @@ class WK_Craft_Widget extends WK_Widget {
 			'selectors'  => array( '{{WRAPPER}} .wk .cr-step' => 'min-height: {{SIZE}}{{UNIT}};' ),
 		) );
 		$this->end_controls_section();
+		$this->color( 'prog', __( 'Step timer bar (compact)', 'wulf-kit' ), '.craft-compact .cr-step.is-active::after', 'background-color' );
+		$this->color( 'step_hbg', __( 'Step background on hover (compact)', 'wulf-kit' ), '.craft-compact .cr-step:hover', 'background-color' );
+		$this->color( 'step_abg', __( 'Current step background (compact)', 'wulf-kit' ), '.craft-compact .cr-step.is-active', 'background-color' );
 		$this->text_style( 'k', __( 'Step labels', 'wulf-kit' ), '.cr-step .k' );
 		$this->text_style( 'st', __( 'Step titles', 'wulf-kit' ), '.cr-step .h3' );
 		$this->text_style( 'sx', __( 'Step text', 'wulf-kit' ), '.cr-step p:last-child' );
@@ -104,10 +115,11 @@ class WK_Craft_Widget extends WK_Widget {
 			return;
 		}
 		$names = array_map( static function ( $x ) { return (string) $x['name']; }, $steps );
-		$this->open( $s, '', array( 'names' => $names, 'word' => $s['step_word'], 'sweep' => 'yes' === $s['sweep'] ) );
+		$compact = 'compact' === ( $s['layout'] ?? 'scroll' );
+		$this->open( $s, '', array( 'names' => $names, 'word' => $s['step_word'], 'sweep' => 'yes' === $s['sweep'], 'compact' => $compact, 'interval' => max( 2, (int) ( $s['interval'] ?? 4 ) ) ) );
 		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		$this->head( $s );
-		echo '<div class="craft-grid"><div class="craft-stage"><div class="cr-frame slot" aria-hidden="true">';
+		echo '<div class="craft-grid' . ( $compact ? ' craft-compact' : '' ) . '"><div class="craft-stage"><div class="cr-frame slot" aria-hidden="true">';
 		foreach ( $steps as $i => $st ) {
 			$on  = $i === $n - 1 ? ' is-on' : '';
 			$art = '';
@@ -137,7 +149,7 @@ class WK_Craft_Widget extends WK_Widget {
 		echo '<div class="cr-meta"><p class="cr-label">' . esc_html( $last ) . ' · <b>' . esc_html( $names[ $n - 1 ] ) . '</b></p><ol class="cr-dots">' . str_repeat( '<li class="on"></li>', $n ) . '</ol></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '</div></div><ol class="craft-steps">';
 		foreach ( $steps as $i => $st ) {
-			echo '<li class="cr-step" data-stage="' . (int) ( $i + 1 ) . '">' . ( $st['k'] ? '<p class="k">' . esc_html( $st['k'] ) . '</p>' : '' ) . '<h3 class="h3">' . esc_html( $st['title'] ) . '</h3><p>' . esc_html( $st['text'] ) . '</p></li>';
+			echo '<li class="cr-step" data-stage="' . (int) ( $i + 1 ) . '"' . ( $compact ? ' tabindex="0" role="button" aria-pressed="false"' : '' ) . '>' . ( $st['k'] ? '<p class="k">' . esc_html( $st['k'] ) . '</p>' : '' ) . '<h3 class="h3">' . esc_html( $st['title'] ) . '</h3><p>' . esc_html( $st['text'] ) . '</p></li>';
 		}
 		echo '</ol></div>';
 		$b = $this->button( $s, 'b1', 'btn btn-ink', true ) . $this->button( $s, 'b2', 'btn btn-line' );

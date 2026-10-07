@@ -641,6 +641,26 @@
 			if (n === total && seen && c.sweep) sweepRun(sweep);
 		}
 		if (document.body.classList.contains('elementor-editor-active')) return;
+		if (c.compact) {
+			// One screen: steps play in turn while the section is visible; click or Enter picks one.
+			var timer = null, paused = false, vis = false, ms = (c.interval || 4) * 1000;
+			var mark = function () { steps.forEach(function (s) { s.setAttribute('aria-pressed', String(s.classList.contains('is-active'))); s.style.setProperty('--t', ms + 'ms'); }); };
+			var go = function (n) { cur = 0; set(n); mark(); };
+			var tick = function () { clearTimeout(timer); if (!vis || paused || reduce) return; timer = setTimeout(function () { go(cur % total + 1); tick(); }, ms); };
+			var grid = $('.craft-grid', el);
+			steps.forEach(function (s) {
+				s.addEventListener('click', function () { go(+s.dataset.stage); paused = true; clearTimeout(timer); grid.classList.add('picked'); });
+				s.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.click(); } });
+			});
+			grid.addEventListener('mouseenter', function () { paused = true; clearTimeout(timer); });
+			grid.addEventListener('mouseleave', function () { if (grid.classList.contains('picked')) return; paused = false; tick(); });
+			new IntersectionObserver(function (es) {
+				vis = es[0].isIntersecting;
+				if (vis && !seen) { seen = true; go(1); if (layers[0] === sketch) draw(); }
+				tick();
+			}, { threshold: 0.35 }).observe(grid);
+			return;
+		}
 		if (el.getBoundingClientRect().top > innerHeight * 0.5) set(1);
 		var fo = new IntersectionObserver(function (es) { if (!es[0].isIntersecting) return; fo.disconnect(); seen = true; if (layers[cur - 1] === sketch) draw(); }, { rootMargin: '0px 0px -5% 0px' });
 		fo.observe($('.cr-frame', el));
@@ -652,6 +672,37 @@
 		};
 		watch();
 		if (narrow.addEventListener) narrow.addEventListener('change', watch);
+	};
+
+	INIT.spotlight = function (el, c) {
+		var items = c.items || [], names = c.names || {}, ring = $('[data-spot-ring]', el), mBox = $('[data-spot-metals]', el), cap = $('[data-spot-cap]', el), pick = $('[data-spot-pick]', el);
+		if (!items.length) return;
+		var cur = 0, metal = items[0].m;
+		var media = function (it, m) { var x = it.media[m] || it.media[Object.keys(it.media)[0]]; return x.v ? '<video muted loop playsinline autoplay preload="auto" poster="' + esc(x.poster) + '" src="' + esc(x.v) + '" aria-label="' + esc(it.n) + '"></video>' : '<img src="' + esc(x.poster) + '" alt="' + esc(it.n) + '">'; };
+		var show = function () {
+			var it = items[cur];
+			swapEl(ring, media(it, metal));
+			var v = ring.lastElementChild; if (v && v.play && !reduce) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); }
+			$$('[data-m]', mBox).forEach(function (b) { b.setAttribute('aria-checked', String(b.dataset.m === metal)); });
+		};
+		var caption = function () {
+			var it = items[cur];
+			cap.innerHTML = '<b>' + esc(it.n) + '</b>' + (c.price && it.p ? ' · ' + esc(T.from || 'From') + ' ' + esc(it.p) : '') + (c.link && it.u ? ' <a href="' + esc(it.u) + '"' + (it.ext ? ' target="_blank" rel="noopener"' : '') + '>' + esc(c.link) + ' ' + icon('arr') + '</a>' : '');
+			mBox.innerHTML = Object.keys(it.media).map(function (m) { return '<button type="button" role="radio" aria-checked="' + (m === metal) + '" data-m="' + m + '"><i class="sw sw-' + m + '"></i>' + esc(names[m] || m) + '</button>'; }).join('');
+		};
+		mBox.addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (!b || b.dataset.m === metal) return; metal = b.dataset.m; show(); });
+		mBox.addEventListener('keydown', function (e) {
+			var k = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]; if (!k) return;
+			var ms = Object.keys(items[cur].media), i = (ms.indexOf(metal) + k + ms.length) % ms.length; e.preventDefault(); metal = ms[i]; show(); var nb = mBox.querySelector('[data-m="' + metal + '"]'); if (nb) nb.focus();
+		});
+		if (pick) pick.addEventListener('click', function (e) {
+			var b = e.target.closest('[data-i]'); if (!b || +b.dataset.i === cur) return;
+			cur = +b.dataset.i; var it = items[cur]; if (!it.media[metal]) metal = it.m;
+			$$('[data-i]', pick).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+			caption(); show(); flash(ring);
+		});
+		// Play only while on screen.
+		new IntersectionObserver(function (es) { var v = ring.querySelector('video'); if (!v || reduce) return; if (es[0].isIntersecting) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } else v.pause(); }, { threshold: 0.2 }).observe(ring);
 	};
 
 	INIT.studio = function (el, c) {
@@ -954,6 +1005,25 @@
 			if (fn) { try { fn(el, cfgOf(el)); } catch (e) { if (window.console) console.error('[wulf-kit]', el.dataset.wk, e); } }
 		});
 		if (document.querySelector('.wk[data-wk]') || CFG.actbar) ensurePortal();
+		reveal(root);
+	}
+
+	/* ================= Calmer look: sections ease in as they scroll into view ================= */
+	var RV = '.shead, .cats > *, .prow-head, .prow, .vals > li, .svc, .split-copy, .split-fig, .spot-stage, .craft-grid, .studio-card, .st-grid, .cs-grid, .visit, .lists > div, .steps > li, .faq-list, .cta-box';
+	var rvIO = null;
+	function reveal(root) {
+		if (reduce || !document.body.classList.contains('wk-calm') || document.body.classList.contains('elementor-editor-active') || !('IntersectionObserver' in window)) return;
+		rvIO = rvIO || new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); rvIO.unobserve(e.target); } }); }, { rootMargin: '0px 0px -8% 0px' });
+		$$('.wk:not(.wk-hero):not(.wk-header):not(.wk-announce):not(.wk-footer):not(.wk-portal)', root.nodeType === 9 ? root : root.ownerDocument).forEach(function (w) {
+			$$(RV, w).forEach(function (n) {
+				if (n.classList.contains('wk-rv') || n.closest('.wk-rv')) return;
+				var r = n.getBoundingClientRect();
+				if (r.top < innerHeight * 0.92) return; // already on screen: leave it be
+				var sib = n.parentNode ? [].indexOf.call(n.parentNode.children, n) : 0;
+				n.style.setProperty('--rv-d', Math.min(sib, 5) * 70 + 'ms');
+				n.classList.add('wk-rv'); rvIO.observe(n);
+			});
+		});
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { boot(document); });
 	else boot(document);

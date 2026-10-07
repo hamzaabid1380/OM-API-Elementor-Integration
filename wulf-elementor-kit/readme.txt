@@ -2,14 +2,14 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
 
 == What you get ==
 
-23 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
+24 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
 
 * Announcement bar (live "Open now / Closed now" from your hours)
 * Header (logo, menu with drop-down panels, search, phone, tray, "Book a visit", phone menu)
@@ -34,6 +34,7 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Questions (open/close answers, with FAQ markup for Google)
 * Call to action band or card
 * Text (long text: headings, lists, quotes)
+* Spotlight (one ring, large, in 360°, with live metal buttons and a choice of rings)
 
 28 page templates: one for every page on the live site, plus "Home (simpler)",, with the wording from that page and the
 same web address:
@@ -84,6 +85,15 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.3.0 =
+* "Home (simpler)" gets its wow moments back, kept clean: a new Spotlight (one ring, large, turning
+  in 360°, with live metal buttons), the ring that builds itself in a compact one-screen layout,
+  the ring designer and the 4Cs.
+* New Spotlight widget.
+* "How your ring comes together": new Compact layout. Steps play in turn while the section is on
+  screen; visitors can click any step.
+* Calmer look: sections ease in gently as they scroll into view (off for visitors who prefer less motion).
 
 = 1.2.0 =
 * New "Home (simpler)" template: 8 sections instead of 13 (hero, collection and favorites, ring designer,

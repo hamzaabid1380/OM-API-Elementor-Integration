@@ -34,7 +34,7 @@ class WK_Pages {
 	public static function catalog() {
 		return array(
 			'home'                        => array( __( 'Home', 'wulf-kit' ), 'home', 'main', __( 'The full homepage: showcase, categories, ring studio, story, 4Cs, services, visit.', 'wulf-kit' ) ),
-			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer, shorter homepage: 8 sections, fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
+			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer homepage with a few big moments: the 360° spotlight, the ring that builds itself, the ring designer and the 4Cs. Fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
 			'about-us'                    => array( __( 'About', 'wulf-kit' ), 'about-us', 'main', __( 'Your story since 1971, Cullen, concierge service, values, reviews, visit.', 'wulf-kit' ) ),
 			'contact-us'                  => array( __( 'Free Consultation', 'wulf-kit' ), 'contact-us', 'main', __( 'Contact and booking form, map, hours, common questions.', 'wulf-kit' ) ),
 			'blog'                        => array( __( 'Blog', 'wulf-kit' ), 'blog', 'main', __( 'Your latest blog posts.', 'wulf-kit' ) ),
@@ -247,7 +247,10 @@ class WK_Pages {
 					array( 'hero', array() ),
 					array( 'tiles', array() ),
 					array( 'products', array( 'join' => 'yes' ) ),
+					array( 'spotlight', array() ),
+					array( 'craft', array( 'layout' => 'compact', 'rule' => '', 'lead' => '' ) ),
 					array( 'studio', array() ),
+					array( 'fourcs', array() ),
 					array( 'values', array( 'head_align' => 'left', 'rule' => '', 'rating_on' => 'yes' ) ),
 					self::split( __( 'Our story · Independent since 1971', 'wulf-kit' ), __( 'It started with a suitcase of gems.', 'wulf-kit' ), '<p>' . __( 'In 1971 Tom Moriarty traded his tool belt for a suitcase of fine gems. Today Cullen Wulf, a GIA-certified jeweler who joined in 2008, carries on the same promise from a newly built showroom on Broadway in Crown Point: transparent, honest advice, and never a rushed decision.', 'wulf-kit' ) . '</p>', array( 'tone' => 'ivory', 'image' => self::img( 'cullen.webp' ), 'side' => 'left', 'cap' => __( 'Cullen Wulf, owner · GIA-certified jeweler', 'wulf-kit' ), 'b1_text' => '', 'b2_text' => __( 'Read our story', 'wulf-kit' ), 'b2_link' => self::link( 'about-us' ) ) ),
 					array( 'services', array(
