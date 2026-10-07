@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.4.1
+Stable tag: 1.5.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -34,7 +34,8 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Questions (open/close answers, with FAQ markup for Google)
 * Call to action band or card
 * Text (long text: headings, lists, quotes)
-* Spotlight (one ring, large, in 360°, with live metal buttons and a choice of rings)
+* Spotlight (one ring, large, in 360°, with live metal buttons and a choice of rings; four layouts,
+  three frames and a video background you can change)
 
 28 page templates: one for every page on the live site, plus "Home (simpler)", with the wording from that page and the
 same web address:
@@ -85,6 +86,17 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.5.0 =
+* Text stays readable on any section background. Pick any color or gradient in Style › Section and the
+  words switch to dark or light on their own; white cards inside a dark section keep dark text. To
+  choose yourself, use Content › Text colors (Automatic, Dark text, Light text). Sections built dark
+  (4Cs, call to action) get dark text and dark buttons when placed on a light color.
+* Spotlight: four layouts (centered; side by side with the words left or right; wide, edge to edge),
+  three frames (rounded card, circle, no frame) and a video background you can change: white as
+  filmed, blended into the section color, or a color you choose. Glow can be turned off.
+* Header: with six menu items the written phone number gave way to the phone icon, so "About" no
+  longer runs into the number on wide screens.
 
 = 1.4.1 =
 * Fix: "Edit with Elementor" stopped with "WK_Craft_Widget … Cannot add a control outside of a

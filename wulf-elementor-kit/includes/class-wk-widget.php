@@ -71,6 +71,13 @@ abstract class WK_Widget extends Widget_Base {
 			'default'      => $d['rule'],
 			'return_value' => 'yes',
 		) );
+		$this->add_control( 'text_on', array(
+			'label'       => __( 'Text colors', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'auto',
+			'options'     => array( 'auto' => __( 'Automatic (readable on the background)', 'wulf-kit' ), 'dark' => __( 'Dark text (for light backgrounds)', 'wulf-kit' ), 'light' => __( 'Light text (for dark backgrounds)', 'wulf-kit' ) ),
+			'description' => __( 'Automatic checks the background, including a color or gradient you set in Style › Section, and picks dark or light text so it stays readable. For a background photo, choose one yourself.', 'wulf-kit' ),
+		) );
 		$this->add_control( 'join', array(
 			'label'        => __( 'Tuck under the section above', 'wulf-kit' ),
 			'type'         => Controls_Manager::SWITCHER,
@@ -510,6 +517,16 @@ abstract class WK_Widget extends Widget_Base {
 		}
 		if ( 'yes' === ( $s['join'] ?? '' ) ) {
 			$c[] = 'join';
+		}
+		$t = $s['text_on'] ?? 'auto';
+		if ( 'light' === $t ) {
+			$c[] = 'txt-light';
+			if ( ! in_array( 'dark', $c, true ) ) {
+				$c[] = 'dark';
+			}
+		} elseif ( 'dark' === $t ) {
+			$c   = array_values( array_diff( $c, array( 'dark' ) ) );
+			$c[] = 'txt-dark';
 		}
 		return implode( ' ', $c );
 	}

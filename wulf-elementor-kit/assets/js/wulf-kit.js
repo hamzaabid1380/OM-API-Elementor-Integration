@@ -1006,6 +1006,7 @@
 			if (el.__wk) return;
 			el.__wk = 1;
 			fillArt(el);
+			contrast(el);
 			applyHours(el);
 			$$('.pv[data-autoplay]', el).forEach(function (box) { new IntersectionObserver(function (es) { playIn(box, es[0].isIntersecting); }, { threshold: 0.35 }).observe(box); });
 			var fn = INIT[el.dataset.wk];
@@ -1015,8 +1016,55 @@
 		reveal(root);
 	}
 
+	/* ================= Readable text on any section background ================= */
+	var rgb = function (s) { var m = String(s || '').match(/rgba?\(([^)]+)\)/); if (!m) return null; var p = m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+	var lum = function (c) { var f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+	// The colour actually behind an element: its own, its gradient's first colour, or the first ancestor's.
+	function bgBehind(node) {
+		for (var n = node; n && n.nodeType === 1; n = n.parentElement) {
+			var cs = getComputedStyle(n), img = cs.backgroundImage;
+			if (img && img !== 'none') { if (/url\(/.test(img)) return 'photo'; var g = rgb(img); if (g && g.a > 0.5) return { c: g, own: n === node }; }
+			var c = rgb(cs.backgroundColor); if (c && c.a > 0.5) return { c: c, own: n === node };
+		}
+		return { c: { r: 255, g: 255, b: 255, a: 1 }, own: false };
+	}
+	function contrast(el) {
+		if (el.dataset.wk === 'hero') {
+			var hs = $('.hero', el), hc = $('.hero-copy', el);
+			if (!hs || !hc) return;
+			hs.classList.remove('on-light');
+			var hb = bgBehind(hc);
+			if (hb !== 'photo') hs.classList.toggle('on-light', lum(hb.c) > 0.45);
+			return;
+		}
+		$$(':scope > section, :scope > .sec', el).forEach(function (s) {
+			if (s.classList.contains('txt-light') || s.classList.contains('txt-dark')) return;
+			if (s.dataset.tone === undefined) s.dataset.tone = s.classList.contains('dark') ? 'dark' : '';
+			// Judge the background without our own dark styling in the way.
+			s.classList.remove('dark'); s.style.backgroundColor = '';
+			var b = bgBehind(s);
+			var dark = b === 'photo' ? s.dataset.tone === 'dark' : lum(b.c) < 0.36;
+			if (s.dataset.tone === 'dark' && b !== 'photo' && !b.own) dark = true; // "Dark" background with no colour of its own set
+			s.classList.toggle('dark', dark);
+			s.classList.toggle('is-light', s.dataset.tone === 'dark' && !dark); // designed dark, but the background turned out light
+			if (dark && b !== 'photo' && !b.own && s.dataset.tone !== 'dark') s.style.backgroundColor = 'transparent';
+		});
+		// Light cards inside a dark section (white product boxes, white panels) keep dark text; see-through ones don't.
+		$$('.tile, .studio-card, .box, .rev, .cr-frame, .split-media, .pgh-media, .pgh-cap, .slot, .svc, .vals > li, .card, .post, .faq-item, .cta-box', el).forEach(function (n) {
+			var c = n.closest('.dark') ? rgb(getComputedStyle(n).backgroundColor) : null;
+			n.classList.toggle('wk-isl', !!(c && c.a > 0.5 && lum(c) > 0.4));
+		});
+		// Spotlight "blend into the section": paint the ring's frame the exact section colour, the white film multiplies into it.
+		$$('.spot.vb-section .spot-ring', el).forEach(function (r) {
+			r.style.backgroundColor = '';
+			if (r.closest('.spot').classList.contains('dark')) return;
+			var b = bgBehind(r.parentElement);
+			if (b !== 'photo') r.style.backgroundColor = 'rgb(' + b.c.r + ',' + b.c.g + ',' + b.c.b + ')';
+		});
+	}
+
 	/* ================= Calmer look: sections ease in as they scroll into view ================= */
-	var RV = '.shead, .cats > *, .prow-head, .prow, .vals > li, .svc, .split-copy, .split-fig, .spot-stage, .craft-grid, .studio-card, .st-grid, .cs-grid, .visit, .lists > div, .steps > li, .faq-list, .cta-box';
+	var RV = '.shead, .cats > *, .prow-head, .prow, .vals > li, .svc, .split-copy, .split-fig, .spot-media, .spot-ctl, .craft-grid, .studio-card, .st-grid, .cs-grid, .visit, .lists > div, .steps > li, .faq-list, .cta-box';
 	var rvIO = null;
 	function reveal(root) {
 		if (reduce || !document.body.classList.contains('wk-calm') || document.body.classList.contains('elementor-editor-active') || !('IntersectionObserver' in window)) return;

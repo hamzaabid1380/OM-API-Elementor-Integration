@@ -37,6 +37,7 @@
 /* Product photo on white vs. photo filling the frame. */
 .wk .slot.pv { background: #fff; }
 .wk .slot.pv > img, .wk .slot.pv > video { width: 100%; height: 100%; object-fit: contain; }
+.wk .slot.pv:not(.fit-cover) > :is(img, video), .wk .sc-item.pr :is(video, img) { mix-blend-mode: multiply; }
 .wk .slot.pv.fit-cover > img, .wk .slot.pv.fit-cover > video { object-fit: cover; }
 .wk .post .slot.pv { aspect-ratio: 4 / 3; border: 1px solid var(--line); border-radius: var(--r); display: grid; place-items: center; }
 .wk .post .slot.pv:not(.fit-cover) > img { width: 72%; height: 72%; }
@@ -309,11 +310,49 @@ body.wk-calm .wk .split .eyebrow { color: var(--sub); }
 }
 
 /* Spotlight: one ring, large, in 360° */
-.wk .spot .shead { margin-bottom: clamp(24px, 3vw, 40px); }
-.wk .spot-stage { position: relative; display: grid; justify-items: center; gap: 22px; }
-.wk .spot-stage::before { content: ""; position: absolute; left: 50%; top: 42%; width: min(92vw, 980px); aspect-ratio: 2 / 1; transform: translate(-50%, -50%); border-radius: 50%; background-color: rgba(214, 185, 127, .16); filter: blur(60px); pointer-events: none; z-index: 0; }
+.wk .spot { overflow-x: clip; }
+.wk .spot .shead { margin-bottom: 0; }
+.wk .spot-grid { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: clamp(24px, 3vw, 40px); }
+.wk .spot-head { width: 100%; }
+.wk .spot-media { position: relative; width: 100%; display: grid; justify-items: center; }
+.wk .spot-media::before { content: ""; position: absolute; left: 50%; top: 50%; width: min(92vw, 980px); max-width: 140%; aspect-ratio: 2 / 1; transform: translate(-50%, -50%); border-radius: 50%; background-color: rgba(214, 185, 127, .16); filter: blur(60px); pointer-events: none; z-index: 0; }
+.wk .spot.glow-off .spot-media::before { display: none; }
+.wk .spot-ctl { position: relative; z-index: 1; display: grid; justify-items: center; gap: 22px; width: 100%; }
 .wk .spot-ring { position: relative; z-index: 1; width: min(100%, 720px); aspect-ratio: 720 / 460; border-radius: calc(var(--r) * 2); overflow: hidden; background-color: #fff; box-shadow: 0 40px 80px -50px rgba(15, 18, 23, .35); }
 .wk .spot-ring > video, .wk .spot-ring > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* Frame shapes */
+.wk .spot.st-circle .spot-ring { width: min(100%, 560px); aspect-ratio: 1; border-radius: 50%; }
+.wk .spot.st-circle .spot-ring > video, .wk .spot.st-circle .spot-ring > img { inset: 6%; width: 88%; height: 88%; }
+.wk .spot.st-none .spot-ring { border-radius: 0; box-shadow: none; }
+/* Video background: the films are white, "multiply" turns that white into the color behind */
+.wk .spot.vb-section .spot-ring { background-color: transparent; box-shadow: none; }
+.wk .spot.vb-section:not(.dark) .spot-media::before { display: none; }
+.wk .spot.vb-section .spot-ring > video, .wk .spot.vb-section .spot-ring > img,
+.wk .spot.vb-custom .spot-ring > video, .wk .spot.vb-custom .spot-ring > img { mix-blend-mode: multiply; }
+.wk .spot.vb-custom .spot-ring { background-color: #f3ede4; }
+.wk .spot.dark.vb-section .spot-ring { background-color: #fff; box-shadow: 0 40px 80px -50px rgba(0, 0, 0, .6); }
+/* Side by side */
+.wk .spot.lay-split .spot-grid, .wk .spot.lay-split-r .spot-grid { grid-template-columns: minmax(0, var(--spot-split, 40%)) minmax(0, 1fr); grid-template-areas: "head media" "ctl media"; grid-template-rows: auto 1fr; align-items: start; justify-items: start; column-gap: clamp(32px, 5vw, 80px); row-gap: 28px; }
+.wk .spot.lay-split-r .spot-grid { grid-template-columns: minmax(0, 1fr) minmax(0, var(--spot-split, 40%)); grid-template-areas: "media head" "media ctl"; }
+.wk .spot:is(.lay-split, .lay-split-r) .spot-head { grid-area: head; align-self: end; }
+.wk .spot:is(.lay-split, .lay-split-r) .spot-media { grid-area: media; align-self: center; }
+.wk .spot:is(.lay-split, .lay-split-r) .spot-ctl { grid-area: ctl; justify-items: start; }
+.wk .spot:is(.lay-split, .lay-split-r) .shead.center { justify-content: flex-start; text-align: left; }
+.wk .spot:is(.lay-split, .lay-split-r) .shead.center .lead { margin-inline: 0; }
+.wk .spot:is(.lay-split, .lay-split-r) :is(.spot-metals, .spot-pick, .spot-cta) { justify-content: flex-start; }
+.wk .spot:is(.lay-split, .lay-split-r) .spot-cap { text-align: left; }
+.wk .spot:is(.lay-split, .lay-split-r) .spot-cta { margin-top: 8px; }
+.wk .spot:is(.lay-split, .lay-split-r) .spot-ring { width: 100%; }
+.wk .spot:is(.lay-split, .lay-split-r).st-circle .spot-ring { width: min(100%, 560px); }
+/* Wide: the ring fills the screen width */
+.wk .spot.lay-wide .spot-media { width: 100vw; margin-inline: calc(50% - 50vw); }
+.wk .spot.lay-wide .spot-ring { width: 100%; aspect-ratio: 16 / 7; max-height: 78vh; }
+.wk .spot.lay-wide.st-card .spot-ring { width: calc(100% - 2 * clamp(16px, 3vw, 40px)); }
+.wk .spot.lay-wide.st-circle .spot-ring { width: min(100%, 640px); aspect-ratio: 1; max-height: none; }
+@media (max-width: 860px) {
+	.wk .spot:is(.lay-split, .lay-split-r) .spot-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "media" "ctl"; grid-template-rows: none; row-gap: 24px; }
+	.wk .spot.lay-wide .spot-ring { aspect-ratio: 4 / 3; }
+}
 .wk .spot-metals { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .wk .spot-metals button { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 18px 0 12px; border: 1px solid var(--line); border-radius: 999px; background-color: #fff; color: var(--ink); font: 600 14.5px/1 var(--sans); cursor: pointer; transition: border-color .2s, background-color .2s, color .2s; }
 .wk .spot-metals button:hover { border-color: var(--ink); }
@@ -378,3 +417,64 @@ body.wk-calm .wk .split .eyebrow { color: var(--sub); }
 /* Hero showcase: give each piece some breathing room in its frame */
 .wk .hero-media .sc-item.pr video { inset: 4% 6%; width: 88%; height: 92%; }
 .wk .hero-media .sc-item.pr > img { width: 88%; height: 92%; margin: auto; }
+
+/* ================= Readable on any background =================
+   On a dark section every colour flips (text, lines, links, buttons). Light "cards" inside a dark
+   section (product photos, white boxes) keep the light-scheme colours. The script switches a section
+   to dark automatically when its background is dark, or follows Section › Text colors. */
+.wk { --ink-l: var(--ink); --text-l: var(--text); --sub-l: var(--sub); --line-l: var(--line); --field-l: var(--field); --gold-ink-l: var(--gold-ink); }
+.wk .dark { --ink: #fff; --text: #e3e6eb; --sub: var(--sub-night); --line: var(--line-night); --field: rgba(255, 255, 255, .45); --gold-ink: var(--gold); color: var(--text); }
+.wk .dark :is(.wk-isl, .spot-ring, .spot-pick button, .sc-thumbs button, .alts button, .seg button[aria-selected="true"], .spot-metals button:not([aria-checked="true"])) { --ink: var(--ink-l); --text: var(--text-l); --sub: var(--sub-l); --line: var(--line-l); --field: var(--field-l); --gold-ink: var(--gold-ink-l); color: var(--text); }
+.wk .dark .wk-isl.wk-isl :is(.h1, .h2, .h3, .link) { color: var(--ink); }
+/* Buttons that are "ink" on light become white on dark, and back again inside light cards. */
+.wk .dark .btn-ink { background: #fff; color: var(--night); }
+.wk .dark .btn-ink:hover { background: #e6e8eb; color: var(--night); }
+.wk .dark .btn-line:hover { color: var(--night); }
+.wk .dark :is(.opt[aria-checked="true"], .opt[aria-pressed="true"], .spot-metals button[aria-checked="true"]) { color: var(--night); }
+.wk .dark .wk-isl.wk-isl .btn-ink { background: var(--ink-l); color: #fff; }
+.wk .dark .wk-isl.wk-isl .btn-line:hover { color: #fff; }
+.wk .dark .wk-isl.wk-isl :is(.opt[aria-checked="true"], .opt[aria-pressed="true"]) { color: #fff; }
+.wk .dark .shead .lead, .wk .dark .lead { color: var(--sub-night); }
+.wk .dark input, .wk .dark select, .wk .dark textarea { color: var(--ink-l); }
+
+/* The hero's text side on a light background */
+.wk .hero.on-light { color: var(--ink); }
+.wk .hero.on-light .h1 { color: var(--ink); }
+.wk .hero.on-light .kicker { color: var(--gold-ink); }
+.wk .hero.on-light .gold-em { color: var(--gold-deep); }
+.wk .hero.on-light .hero-copy .lead, .wk .hero.on-light .hero-call { color: var(--sub); }
+.wk .hero.on-light .hero-call a { color: var(--ink); }
+.wk .hero.on-light .trust { border-top-color: var(--line); }
+.wk .hero.on-light .trust li { color: var(--text); }
+.wk .hero.on-light .trust svg { color: var(--gold-ink); }
+.wk .hero.on-light .btn-ghost { border-color: var(--ink); color: var(--ink); }
+.wk .hero.on-light .btn-ghost:hover { background: var(--ink); color: #fff; }
+
+/* Header: with six or more menu items there's no room for the written phone number; the phone icon stays (the number is in the top bar) */
+@media (min-width: 1240px) {
+	.wk .hd:has(.nav > ul > li:nth-child(6)) .tel { display: none; }
+	.wk .hd:has(.nav > ul > li:nth-child(6)) .tel-icon { display: grid; }
+}
+@media (min-width: 1241px) and (max-width: 1360px) {
+	.wk .hd:has(.nav > ul > li:nth-child(6)) .nav > ul { gap: 14px; }
+}
+
+/* Sections designed dark (4Cs, call to action) placed on a light background, or set to "Dark text" */
+.wk :where(.sec:not(.dark):not(.hero)) .gold-em { color: var(--gold-ink); }
+.wk :is(.is-light, .txt-dark) .btn-gold { background: var(--ink); border-color: var(--ink); color: #fff; }
+.wk :is(.is-light, .txt-dark) .btn-gold:hover { background: #2a2f38; border-color: #2a2f38; color: #fff; }
+.wk :is(.is-light, .txt-dark) .btn-ghost { border-color: var(--ink); color: var(--ink); }
+.wk :is(.is-light, .txt-dark) .btn-ghost:hover { background: var(--ink); color: #fff; }
+.wk :is(.is-light, .txt-dark) .seg { background: rgba(15, 18, 23, .07); }
+.wk :is(.is-light, .txt-dark) .seg button { color: var(--sub); }
+.wk :is(.is-light, .txt-dark) .seg button:hover:not([aria-selected="true"]) { color: var(--ink); }
+.wk :is(.is-light, .txt-dark) .seg button[aria-selected="true"] { background: var(--ink); color: #fff; }
+.wk :is(.is-light, .txt-dark) .cs-value small { color: var(--sub); }
+.wk :is(.is-light, .txt-dark) .cs-value b { color: var(--ink); }
+.wk :is(.is-light, .txt-dark) .cs-panel input[type="range"] { --fill: var(--gold-deep); --track: var(--line); }
+.wk :is(.is-light, .txt-dark) .cs-panel input[type="range"]::-webkit-slider-thumb { background: #fff; border-color: var(--gold-deep); }
+.wk :is(.is-light, .txt-dark) .cs-panel .ticks { color: var(--sub); }
+.wk :is(.is-light, .txt-dark) .cs-panel .ticks span.on { color: var(--gold-ink); }
+.wk :is(.is-light, .txt-dark) .cs-text { color: var(--text); }
+.wk :is(.is-light, .txt-dark) .tip { color: var(--text); border-color: rgba(122, 91, 36, .3); }
+.wk :is(.is-light, .txt-dark) .tip svg { color: var(--gold-ink); }

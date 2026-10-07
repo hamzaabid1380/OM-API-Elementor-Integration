@@ -46,6 +46,41 @@ class WK_Spotlight_Widget extends WK_Widget {
 		$this->button_fields( 'b1', __( 'Button', 'wulf-kit' ), __( 'Book a visit to see it', 'wulf-kit' ), '#visit', 'Engagement ring' );
 		$this->end_controls_section();
 
+		$this->start_controls_section( 'c_layout', array( 'label' => __( 'Layout & video background', 'wulf-kit' ) ) );
+		$this->add_control( 'layout', array(
+			'label'   => __( 'Layout', 'wulf-kit' ),
+			'type'    => Controls_Manager::SELECT,
+			'default' => 'center',
+			'options' => array(
+				'center'  => __( 'Centered: title, ring, then the choices', 'wulf-kit' ),
+				'split'   => __( 'Side by side: words left, ring right', 'wulf-kit' ),
+				'split-r' => __( 'Side by side: ring left, words right', 'wulf-kit' ),
+				'wide'    => __( 'Wide: the ring fills the screen width', 'wulf-kit' ),
+			),
+		) );
+		$this->add_control( 'shape', array(
+			'label'   => __( 'Frame around the ring', 'wulf-kit' ),
+			'type'    => Controls_Manager::SELECT,
+			'default' => 'card',
+			'options' => array( 'card' => __( 'Rounded card', 'wulf-kit' ), 'circle' => __( 'Circle', 'wulf-kit' ), 'none' => __( 'No frame (the ring floats)', 'wulf-kit' ) ),
+		) );
+		$this->add_control( 'video_bg', array(
+			'label'       => __( 'Video background', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'white',
+			'options'     => array( 'white' => __( 'White, as filmed', 'wulf-kit' ), 'section' => __( 'Blend into the section background', 'wulf-kit' ), 'custom' => __( 'A color I choose', 'wulf-kit' ) ),
+			'description' => __( 'The ring videos are filmed on white. "Blend" and "A color I choose" turn that white into the color behind it. Light colors look best (ivory, champagne, blush, pale grey); on a dark section the ring stays on white so it stays bright.', 'wulf-kit' ),
+		) );
+		$this->add_control( 'video_color', array(
+			'label'     => __( 'Video background color', 'wulf-kit' ),
+			'type'      => Controls_Manager::COLOR,
+			'default'   => '#f3ede4',
+			'selectors' => array( '{{WRAPPER}} .wk .spot.vb-custom .spot-ring' => 'background-color: {{VALUE}};' ),
+			'condition' => array( 'video_bg' => 'custom' ),
+		) );
+		$this->add_control( 'glow_on', array( 'label' => __( 'Soft glow behind the ring', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->end_controls_section();
+
 		$this->style_section();
 		$this->style_head();
 		$this->start_controls_section( 's_stage', array( 'label' => __( 'Ring stage', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE ) );
@@ -56,8 +91,21 @@ class WK_Spotlight_Widget extends WK_Widget {
 			'range'      => array( 'px' => array( 'min' => 240, 'max' => 1000 ), '%' => array( 'min' => 30, 'max' => 100 ) ),
 			'selectors'  => array( '{{WRAPPER}} .wk .spot-ring' => 'width: {{SIZE}}{{UNIT}};' ),
 		) );
-		$this->color( 'stage_bg', __( 'Stage background', 'wulf-kit' ), '.spot-ring', 'background-color' );
-		$this->color( 'glow', __( 'Glow behind the stage', 'wulf-kit' ), '.spot-stage::before', 'background-color' );
+		$this->color( 'stage_bg', __( 'Frame color (with a white video background)', 'wulf-kit' ), '.spot.vb-white .spot-ring', 'background-color' );
+		$this->color( 'glow', __( 'Glow color', 'wulf-kit' ), '.spot-media::before', 'background-color' );
+		$this->add_responsive_control( 'stage_r', array(
+			'label'     => __( 'Card corners', 'wulf-kit' ),
+			'type'      => Controls_Manager::SLIDER,
+			'range'     => array( 'px' => array( 'min' => 0, 'max' => 60 ) ),
+			'selectors' => array( '{{WRAPPER}} .wk .spot.st-card .spot-ring' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+		) );
+		$this->add_responsive_control( 'split_w', array(
+			'label'      => __( 'Words column width, side by side (%)', 'wulf-kit' ),
+			'type'       => Controls_Manager::SLIDER,
+			'size_units' => array( '%' ),
+			'range'      => array( '%' => array( 'min' => 25, 'max' => 60 ) ),
+			'selectors'  => array( '{{WRAPPER}} .wk .spot' => '--spot-split: {{SIZE}}%;' ),
+		) );
 		$this->add_control( 'scale_in', array( 'label' => __( 'Grow into view while scrolling', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
 		$this->end_controls_section();
 		$this->start_controls_section( 's_metals', array( 'label' => __( 'Metal buttons', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE ) );
@@ -95,16 +143,21 @@ class WK_Spotlight_Widget extends WK_Widget {
 		$m     = $f['m'];
 		$names = array( 'white' => __( 'White gold', 'wulf-kit' ), 'yellow' => __( 'Yellow gold', 'wulf-kit' ), 'rose' => __( 'Rose gold', 'wulf-kit' ) );
 		$this->open( $s, '', array( 'items' => $items, 'names' => $names, 'price' => 'yes' === $s['show_price'], 'link' => $s['link_text'] ) );
-		echo '<section class="' . esc_attr( $this->sec_class( $s, 'sec spot' ) . ( 'yes' === $s['scale_in'] ? ' scale-in' : '' ) ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$lay   = in_array( $s['layout'] ?? 'center', array( 'center', 'split', 'split-r', 'wide' ), true ) ? $s['layout'] : 'center';
+		$shape = in_array( $s['shape'] ?? 'card', array( 'card', 'circle', 'none' ), true ) ? $s['shape'] : 'card';
+		$vbg   = in_array( $s['video_bg'] ?? 'white', array( 'white', 'section', 'custom' ), true ) ? $s['video_bg'] : 'white';
+		$cls   = $this->sec_class( $s, 'sec spot' ) . ' lay-' . $lay . ' st-' . $shape . ' vb-' . $vbg . ( 'yes' === ( $s['glow_on'] ?? 'yes' ) ? '' : ' glow-off' ) . ( 'yes' === $s['scale_in'] ? ' scale-in' : '' );
+		echo '<section class="' . esc_attr( $cls ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap spot-grid"><div class="spot-head">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		$this->head( $s );
+		echo '</div>';
 		$med = $f['media'][ $m ];
-		echo '<div class="spot-stage"><div class="spot-ring swap pv" data-spot-ring>';
+		echo '<div class="spot-media"><div class="spot-ring swap pv" data-spot-ring>';
 		if ( $med['v'] ) {
 			echo '<video muted loop playsinline autoplay preload="metadata" poster="' . esc_url( $med['poster'] ) . '" src="' . esc_url( $med['v'] ) . '" aria-label="' . esc_attr( $f['n'] ) . '"></video>';
 		} else {
 			echo '<img src="' . esc_url( $med['poster'] ) . '" alt="' . esc_attr( $f['n'] ) . '">';
 		}
-		echo '</div>';
+		echo '</div></div><div class="spot-ctl">';
 		echo '<div class="spot-metals" role="radiogroup" aria-label="' . esc_attr__( 'Metal', 'wulf-kit' ) . '" data-spot-metals>';
 		foreach ( array_keys( $f['media'] ) as $mm ) {
 			$on = $mm === $m;
@@ -121,11 +174,11 @@ class WK_Spotlight_Widget extends WK_Widget {
 			}
 			echo '</div>';
 		}
-		echo '</div>';
-		$b = $this->button( $s, 'b1', 'btn ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true );
+		$b = $this->button( $s, 'b1', 'btn btn-main ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true );
 		if ( $b ) {
 			echo '<div class="spot-cta">' . $b . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
+		echo '</div>';
 		echo '</div></section>';
 		$this->close();
 	}
