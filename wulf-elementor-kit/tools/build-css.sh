@@ -12,4 +12,4 @@ cat tools/kit-reset.css > assets/css/wulf-kit.css
 	python3 tools/scope-css.py tools/mockup-v8.css \
 		| sed -e 's/#dr-count/.dr-count/g' -e 's/#studio-save/.studio-save/g' -e 's/#tray-thumbs/.tray-thumbs/g' -e 's/#ann-status/.ann-status/g' -e 's/^\.wk { padding-bottom: 76px; }/body.wk-has-actbar { padding-bottom: 76px; }/'
 	cat tools/kit-extra.css
-} | sed -e 's/\(^\|[ ,{(]\)\.wk \([.:#[a-z]\)/\1.wk.wk \2/g' >> assets/css/wulf-kit.css
+} | sed -e 's/\(^\|[	 ,{(]\)\.wk \([.:#[a-z]\)/\1.wk.wk \2/g' >> assets/css/wulf-kit.css

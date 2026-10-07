@@ -48,11 +48,11 @@ class WK_Tiles_Widget extends WK_Widget {
 			'fields'      => $r->get_controls(),
 			'title_field' => '{{{ title }}}',
 			'default'     => array(
-				array( 'title' => __( 'Engagement rings', 'wulf-kit' ), 'text' => __( 'Solitaire, hidden halo, three stone and more. From $1,144.', 'wulf-kit' ), 'link' => array( 'url' => $h . '#studio' ), 'image' => array( 'url' => $m . '51162-E.webp' ), 'video' => array( 'url' => $m . '51162-E.mp4' ), 'big' => 'yes' ),
-				array( 'title' => __( 'Earrings', 'wulf-kit' ), 'text' => __( 'Studs, halos, hoops and huggies.', 'wulf-kit' ), 'link' => array( 'url' => $h . '#collection' ), 'image' => array( 'url' => $m . '40927.webp' ) ),
-				array( 'title' => __( 'Bracelets', 'wulf-kit' ), 'text' => __( 'Nameplate, monogram and polished.', 'wulf-kit' ), 'link' => array( 'url' => $h . '#collection' ), 'image' => array( 'url' => $m . 'PBR0026.webp' ) ),
-				array( 'title' => __( 'Necklaces', 'wulf-kit' ), 'text' => __( 'Tennis, station and paperclip.', 'wulf-kit' ), 'link' => array( 'url' => $h . '#collection' ), 'image' => array( 'url' => $m . '60023.webp' ) ),
-				array( 'title' => __( 'Pendants', 'wulf-kit' ), 'text' => __( 'Solitaires, circles, crosses and initials.', 'wulf-kit' ), 'link' => array( 'url' => $h . '#collection' ), 'image' => array( 'url' => $m . '31483.webp' ) ),
+				array( 'title' => __( 'Engagement rings', 'wulf-kit' ), 'text' => __( 'Solitaire, hidden halo, three stone and more. From $1,144.', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'engagement-rings' ) ), 'image' => array( 'url' => $m . '51162-E.webp' ), 'video' => array( 'url' => $m . '51162-E.mp4' ), 'big' => 'yes' ),
+				array( 'title' => __( 'Earrings', 'wulf-kit' ), 'text' => __( 'Studs, halos, hoops and huggies.', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'earrings' ) ), 'image' => array( 'url' => $m . '40927.webp' ) ),
+				array( 'title' => __( 'Bracelets', 'wulf-kit' ), 'text' => __( 'Nameplate, monogram and polished.', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'bracelets' ) ), 'image' => array( 'url' => $m . 'PBR0026.webp' ) ),
+				array( 'title' => __( 'Necklaces', 'wulf-kit' ), 'text' => __( 'Tennis, station and paperclip.', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'necklaces' ) ), 'image' => array( 'url' => $m . '60023.webp' ) ),
+				array( 'title' => __( 'Pendants', 'wulf-kit' ), 'text' => __( 'Solitaires, circles, crosses and initials.', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'pendants' ) ), 'image' => array( 'url' => $m . '31483.webp' ) ),
 			),
 		) );
 		$this->end_controls_section();

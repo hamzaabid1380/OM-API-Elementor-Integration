@@ -452,7 +452,23 @@
 	document.addEventListener('click', function (e) {
 		var a = e.target.closest('[data-topic]');
 		if (a && !a.matches('[data-topic-opt]')) pickTopic(a.dataset.topic, true);
+		// "Book a visit" links: stay on this page when it has its own visit form,
+		// otherwise carry the topic to the page that does.
+		var v = e.target.closest('a[href*="#visit"]');
+		if (!v || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey) return;
+		var here = document.getElementById('visit');
+		if (here) {
+			e.preventDefault();
+			here.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+			if (history.replaceState) history.replaceState(null, '', '#visit');
+		} else if (v.dataset.topic) {
+			try { var u = new URL(v.href, location.href); u.searchParams.set('topic', v.dataset.topic); v.href = u.toString(); } catch (er) {}
+		}
 	});
+	try {
+		var qt = new URLSearchParams(location.search).get('topic');
+		if (qt) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { pickTopic(qt, true); }); else pickTopic(qt, true); }
+	} catch (e) {}
 
 	/* ================= Widgets ================= */
 	var INIT = {};

@@ -551,6 +551,10 @@ abstract class WK_Widget extends Widget_Base {
 		$url = '' === $url ? $fallback : $url;
 		if ( '#visit' === $url ) {
 			$url = WK_Settings::get( 'book_url', '#visit' );
+			if ( '#visit' === $url && class_exists( 'WK_Pages' ) ) {
+				// The script keeps visitors on this page when it has its own visit form.
+				$url = WK_Pages::url( 'contact-us', '#visit' );
+			}
 		}
 		$out = ' href="' . esc_url( $url ) . '"';
 		if ( is_array( $link ) && ! empty( $link['is_external'] ) ) {

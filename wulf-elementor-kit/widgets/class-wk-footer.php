@@ -51,9 +51,9 @@ class WK_Footer_Widget extends WK_Widget {
 			'fields'      => $r->get_controls(),
 			'title_field' => '{{{ title }}}',
 			'default'     => array(
-				array( 'title' => 'Shop', 'links' => "Engagement rings | {$h}#studio\nLoose diamonds | {$h}#learn\nWedding bands | {$h}#collection\nFine jewelry | {$h}#collection\nGift cards | https://www.giftly.com/gift-card/wulf-diamond-jewelers-crown-point" ),
-				array( 'title' => 'Services', 'links' => "Custom design | {$h}#services\nRepair & sizing | {$h}#services\nAppraisals | {$h}#services\nSell gold & diamonds | {$h}#services\nFinancing | {$h}#services" ),
-				array( 'title' => 'About', 'links' => "Our story | {$h}#story\nReviews | {$h}#reviews\nJournal | {$h}#journal\nFacebook | https://www.facebook.com/WulfDiamondJewelers/" ),
+				array( 'title' => 'Shop', 'links' => 'Engagement rings | ' . WK_Pages::url( 'engagement-rings' ) . "\nDesign your ring | " . WK_Pages::url( 'ring-builder' ) . "\nWedding bands | " . WK_Pages::url( 'wedding-bands' ) . "\nDiamond jewelry | " . WK_Pages::url( 'best-diamonds' ) . "\nFull catalogue | " . WK_Pages::url( 'catalogue' ) . "\nGift cards | https://www.giftly.com/gift-card/wulf-diamond-jewelers-crown-point" ),
+				array( 'title' => 'Services', 'links' => 'Custom jewelry | ' . WK_Pages::url( 'custom-jewelry' ) . "\nRepairs & services | " . WK_Pages::url( 'jewelry-services-and-repairs' ) . "\nAppraisals | " . WK_Pages::url( 'jewelry-appraisals' ) . "\nSell gold & silver | " . WK_Pages::url( 'gold-silver-platinum' ) . "\nSell diamonds | " . WK_Pages::url( 'diamond-buyers' ) . "\nCoins & currency | " . WK_Pages::url( 'coins-currency' ) ),
+				array( 'title' => 'About', 'links' => 'Our story | ' . WK_Pages::url( 'about-us' ) . "\nFree consultation | " . WK_Pages::url( 'contact-us' ) . "\nBlog | " . WK_Pages::url( 'blog' ) . "\nFacebook | https://www.facebook.com/WulfDiamondJewelers/" ),
 			),
 		) );
 		$this->add_control( 'visit_on', array( 'label' => __( 'Visit column (address, phones, hours)', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ) );
@@ -62,7 +62,7 @@ class WK_Footer_Widget extends WK_Widget {
 
 		$this->start_controls_section( 'c_legal', array( 'label' => __( 'Bottom line', 'wulf-kit' ) ) );
 		$this->add_control( 'copy', array( 'label' => __( 'Copyright', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '© {year} Wulf Diamond Jewelers · Since 1971', 'label_block' => true, 'description' => __( '{year} becomes the current year.', 'wulf-kit' ) ) );
-		$this->add_control( 'legal', array( 'label' => __( 'Links: one per line, "Label | link"', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => 'Privacy | ' . ( get_privacy_policy_url() ? get_privacy_policy_url() : $h . 'privacy-policy/' ) . "\nAccessibility | {$h}accessibility/\nTerms | {$h}terms/" ) );
+		$this->add_control( 'legal', array( 'label' => __( 'Links: one per line, "Label | link"', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => get_privacy_policy_url() ? 'Privacy | ' . get_privacy_policy_url() : '' ) );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 's_ft', array( 'label' => __( 'Footer', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE ) );
@@ -114,7 +114,7 @@ class WK_Footer_Widget extends WK_Widget {
 		echo '<footer class="ft"><div class="wrap">';
 		if ( 'yes' === $s['news_on'] ) {
 			$id = 'wk-n-' . $this->get_id();
-			echo '<div class="news"><div><h2 class="h3">' . esc_html( $s['news_title'] ) . '</h2>' . ( $s['news_text'] ? '<p>' . esc_html( $s['news_text'] ) . '</p>' : '' ) . '</div>';
+			echo '<div class="news" id="subscribe"><div><h2 class="h3">' . esc_html( $s['news_title'] ) . '</h2>' . ( $s['news_text'] ? '<p>' . esc_html( $s['news_text'] ) . '</p>' : '' ) . '</div>';
 			echo '<form novalidate data-news><label class="sr" for="' . esc_attr( $id ) . '">' . esc_html__( 'Email address', 'wulf-kit' ) . '</label><input id="' . esc_attr( $id ) . '" type="email" name="email" placeholder="' . esc_attr( $s['news_ph'] ) . '" autocomplete="email"><input type="text" name="website" tabindex="-1" autocomplete="off" class="sr" aria-hidden="true"><button class="btn btn-gold" type="submit">' . esc_html( $s['news_btn'] ) . '</button></form></div>';
 		}
 		echo '<div class="cols"><div>';

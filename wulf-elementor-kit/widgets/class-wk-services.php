@@ -33,7 +33,7 @@ class WK_Services_Widget extends WK_Widget {
 		$this->add_control( 'cu_eyebrow', array( 'label' => __( 'Small label', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Custom design', 'wulf-kit' ) ) );
 		$this->add_control( 'cu_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'One of one, designed with you.', 'wulf-kit' ), 'label_block' => true ) );
 		$this->add_control( 'cu_text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'default' => __( 'Bring a sketch, a photo or a family stone. We\'ll design it together, show you a 3D render before anything is made, and craft a piece no one else will ever wear.', 'wulf-kit' ) ) );
-		$this->button_fields( 'cub', __( 'Button', 'wulf-kit' ), __( 'Start a custom design', 'wulf-kit' ), '#visit', 'Custom design' );
+		$this->button_fields( 'cub', __( 'Button', 'wulf-kit' ), __( 'Start a custom design', 'wulf-kit' ), WK_Pages::url( 'custom-jewelry' ), 'Custom design' );
 		$frames = array( 1 => array( __( '1 · Sketch', 'wulf-kit' ), 'f-sketch' ), 2 => array( __( '2 · 3D render', 'wulf-kit' ), 'f-cad' ), 3 => array( __( '3 · Finished', 'wulf-kit' ), 'f-final' ) );
 		foreach ( $frames as $i => $f ) {
 			/* translators: %d: frame number */
@@ -57,9 +57,9 @@ class WK_Services_Widget extends WK_Widget {
 			'fields'      => $r->get_controls(),
 			'title_field' => '{{{ title }}}',
 			'default'     => array(
-				array( 'image' => array( 'url' => $m . 'svc-repair.webp' ), 'title' => __( 'Repair, sizing & cleaning', 'wulf-kit' ), 'facts' => "Done in-house by our own bench\nFree cleaning & inspection, any time\nProngs, sizing, chains, polishing", 'link_text' => __( 'Plan a repair', 'wulf-kit' ), 'topic' => 'Repair' ),
-				array( 'image' => array( 'url' => $m . 'svc-appraisal.webp' ), 'title' => __( 'Appraisals', 'wulf-kit' ), 'facts' => "For insurance or replacement\nWritten by a GIA-certified jeweler\nReady in [X] days", 'link_text' => __( 'Book an appraisal', 'wulf-kit' ), 'topic' => 'Appraisal' ),
-				array( 'image' => array( 'url' => $m . 'svc-gold.webp' ), 'title' => __( 'Sell gold, silver & diamonds', 'wulf-kit' ), 'facts' => "Tested and weighed in front of you\nEvery offer explained piece by piece\nNo pressure to accept", 'link_text' => __( 'Get an offer', 'wulf-kit' ), 'topic' => 'Selling' ),
+				array( 'image' => array( 'url' => $m . 'svc-repair.webp' ), 'title' => __( 'Repair, sizing & cleaning', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'jewelry-services-and-repairs' ) ), 'facts' => "Done in-house by our own goldsmiths\nFree cleaning & inspection, any time\nProngs, sizing, chains, clasps, pearls", 'link_text' => __( 'Plan a repair', 'wulf-kit' ), 'topic' => 'Repair' ),
+				array( 'image' => array( 'url' => $m . 'svc-appraisal.webp' ), 'title' => __( 'Appraisals', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'jewelry-appraisals' ) ), 'facts' => "For insurance or replacement\nBy GIA-certified professionals\nEngagement, estate and pre-owned pieces", 'link_text' => __( 'Book an appraisal', 'wulf-kit' ), 'topic' => 'Appraisal' ),
+				array( 'image' => array( 'url' => $m . 'svc-gold.webp' ), 'title' => __( 'Sell gold, silver & diamonds', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'gold-silver-platinum' ) ), 'facts' => "Evaluated in front of you\nGold, silver, platinum, diamonds & coins\nNo pressure to accept", 'link_text' => __( 'Get an offer', 'wulf-kit' ), 'topic' => 'Selling' ),
 			),
 		) );
 		$this->end_controls_section();

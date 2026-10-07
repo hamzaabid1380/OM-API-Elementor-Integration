@@ -181,31 +181,39 @@ class WK_Header_Widget extends WK_Widget {
 
 	/** The built-in menu, the same shape as a WordPress menu tree. */
 	public static function default_menu() {
-		$h   = home_url( '/' );
-		$l   = static function ( $title, $url, $desc = '', $kids = array(), $cls = '' ) {
+		$u = static function ( $key ) {
+			return WK_Pages::url( $key );
+		};
+		$l = static function ( $title, $url, $desc = '', $kids = array(), $cls = '' ) {
 			return array( 'title' => $title, 'url' => $url, 'desc' => $desc, 'children' => $kids, 'classes' => $cls );
 		};
 		return array(
-			$l( 'Engagement', $h . '#studio', '', array(
-				$l( 'Shop by shape', $h . '#studio', '', array(), 'wk-shapes' ),
-				$l( 'Shop by style', '', '', array( $l( 'Solitaire', $h . '#studio' ), $l( 'Hidden halo', $h . '#studio' ), $l( 'Diamond band', $h . '#studio' ), $l( 'Three stone', $h . '#studio' ), $l( 'Accented', $h . '#studio' ) ) ),
-				$l( 'Shop by metal', '', '', array( $l( 'Yellow gold', $h . '#studio' ), $l( 'White gold & platinum', $h . '#studio' ), $l( 'Rose gold', $h . '#studio' ) ) ),
-				$l( 'Design your ring', $h . '#studio', 'Pick a style, metal and shape, then choose your diamond.', array(), 'wk-feature' ),
+			$l( 'Engagement', $u( 'engagement-rings' ), '', array(
+				$l( 'Shop by shape', $u( 'ring-builder' ), '', array(), 'wk-shapes' ),
+				$l( 'Engagement rings', '', '', array( $l( 'All engagement rings', $u( 'engagement-rings' ) ), $l( 'Design your ring', $u( 'ring-builder' ) ), $l( 'Wedding bands', $u( 'wedding-bands' ) ), $l( 'Why buy from Wulf', $u( 'engagement-rings-2' ) ) ) ),
+				$l( 'Learn', '', '', array( $l( 'The 4Cs, in plain words', $u( 'best-diamonds' ) ), $l( 'Custom engagement rings', $u( 'custom-jewelry' ) ), $l( 'Financing: 12 months same as cash*', $u( 'contact-us' ) ) ) ),
+				$l( 'Design your ring', $u( 'ring-builder' ), 'Pick a setting, then the diamond that fits it.', array(), 'wk-feature' ),
 			) ),
-			$l( 'Diamonds', $h . '#learn', '', array(
-				$l( 'Loose diamonds by shape', $h . '#learn', '', array(), 'wk-shapes' ),
-				$l( 'Search diamonds', '', '', array( $l( 'Natural diamonds', $h . '#learn' ), $l( 'Lab-grown diamonds', $h . '#learn' ), $l( 'Compare diamonds', $h . '#learn' ) ) ),
-				$l( 'Learn', '', '', array( $l( 'The 4Cs, in plain words', $h . '#learn' ), $l( 'Lab-grown or natural?', $h . '#journal' ), $l( 'Help me choose', $h . '#learn' ) ) ),
-				$l( 'Compare them in person', $h . '#visit', 'Sit down with Cullen and see diamonds side by side.', array(), 'wk-feature' ),
+			$l( 'Diamonds', $u( 'best-diamonds' ), '', array(
+				$l( 'Diamonds by shape', $u( 'ring-builder' ), '', array(), 'wk-shapes' ),
+				$l( 'Diamonds & gems', '', '', array( $l( 'Diamond jewelry', $u( 'best-diamonds' ) ), $l( 'The Wulf gem vault', $u( 'gems' ) ), $l( 'Start with a diamond', $u( 'ring-builder' ) ) ) ),
+				$l( 'Compare them in person', $u( 'contact-us' ), 'Sit down with Cullen and see diamonds side by side.', array(), 'wk-feature' ),
 			) ),
-			$l( 'Wedding bands', $h . '#collection' ),
-			$l( 'Jewelry', $h . '#collection' ),
-			$l( 'Services', $h . '#services', '', array(
-				$l( 'We make', '', '', array( $l( 'Custom design', $h . '#services', 'One of one, designed with you' ), $l( 'Engagement & bridal', $h . '#services', 'Settings and certified diamonds' ) ) ),
-				$l( 'We look after', '', '', array( $l( 'Repair & ring sizing', $h . '#services', 'Done in-house, free estimates' ), $l( 'Cleaning & inspection', $h . '#services', 'Free, any time' ), $l( 'Appraisals', $h . '#services', 'For insurance or replacement' ) ) ),
-				$l( 'We buy & finance', '', '', array( $l( 'Sell gold, silver & diamonds', $h . '#services', 'Fair offers, explained' ), $l( 'Financing', $h . '#services', '12 months same as cash*' ) ) ),
+			$l( 'Wedding bands', $u( 'wedding-bands' ) ),
+			$l( 'Jewelry', $u( 'catalogue' ), '', array(
+				$l( 'Shop jewelry', '', '', array( $l( 'Earrings', $u( 'earrings' ) ), $l( 'Necklaces', $u( 'necklaces' ) ), $l( 'Pendants', $u( 'pendants' ) ), $l( 'Bracelets', $u( 'bracelets' ) ), $l( 'Fashion rings', $u( 'rings' ) ) ) ),
+				$l( 'Browse', '', '', array( $l( 'Full catalogue', $u( 'catalogue' ) ), $l( 'Diamond jewelry', $u( 'best-diamonds' ) ), $l( 'Gem vault', $u( 'gems' ) ) ) ),
+				$l( 'Custom jewelry', $u( 'custom-jewelry' ), 'One of one, designed with you.', array(), 'wk-feature' ),
 			) ),
-			$l( 'Visit', $h . '#visit' ),
+			$l( 'Services', $u( 'jewelry-services-and-repairs' ), '', array(
+				$l( 'We make', '', '', array( $l( 'Custom jewelry', $u( 'custom-jewelry' ), 'One of one, designed with you' ), $l( 'Engagement & bridal', $u( 'engagement-rings' ), 'Settings and certified diamonds' ) ) ),
+				$l( 'We look after', '', '', array( $l( 'Repairs & services', $u( 'jewelry-services-and-repairs' ), 'Done in-house, any brand' ), $l( 'Appraisals', $u( 'jewelry-appraisals' ), 'For insurance or replacement' ) ) ),
+				$l( 'We buy', '', '', array( $l( 'Gold, silver & platinum', $u( 'gold-silver-platinum' ) ), $l( 'Diamonds', $u( 'diamond-buyers' ) ), $l( 'Coins & currency', $u( 'coins-currency' ) ), $l( 'Sterling silver', $u( 'sterling-silver' ) ), $l( 'Estate & broken jewelry', $u( 'fine-jewelry' ) ) ) ),
+			) ),
+			$l( 'About', $u( 'about-us' ), '', array(
+				$l( 'Wulf Diamond Jewelers', '', '', array( $l( 'Our story', $u( 'about-us' ) ), $l( 'Blog', $u( 'blog' ) ), $l( 'Free consultation', $u( 'contact-us' ) ) ) ),
+				$l( 'Visit the showroom', $u( 'contact-us' ), WK_Settings::get( 'address' ) . '. Walk-ins welcome.', array(), 'wk-feature' ),
+			) ),
 		);
 	}
 

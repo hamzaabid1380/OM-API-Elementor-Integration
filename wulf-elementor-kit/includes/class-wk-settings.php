@@ -306,7 +306,7 @@ class WK_Settings {
 					self::field( 'act_call', __( 'Action bar: call label', 'wulf-kit' ) );
 					self::field( 'act_book', __( 'Action bar: book label', 'wulf-kit' ) );
 					self::field( 'act_dir', __( 'Action bar: directions label', 'wulf-kit' ) );
-					self::field( 'book_url', __( 'Book a visit link', 'wulf-kit' ), 'text', __( 'Where "Book a visit" buttons go. #visit jumps to the Visit widget on the same page; use a full link for a separate page.', 'wulf-kit' ) );
+					self::field( 'book_url', __( 'Book a visit link', 'wulf-kit' ), 'text', __( 'Where "Book a visit" buttons go. Leave it as #visit: buttons then jump to the visit form on the same page, or open the Free Consultation page\'s form when the page has none. Or paste any full link.', 'wulf-kit' ) );
 					?>
 				</table>
 

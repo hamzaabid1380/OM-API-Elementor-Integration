@@ -37,13 +37,13 @@ class WK_Help_Widget extends WK_Widget {
 			'fields'      => $r->get_controls(),
 			'title_field' => '{{{ label }}}',
 			'default'     => array(
-				array( 'icon' => 'ring', 'label' => __( 'Engagement rings', 'wulf-kit' ), 'link' => array( 'url' => $h . '#studio' ) ),
-				array( 'icon' => 'bands', 'label' => __( 'Wedding bands', 'wulf-kit' ), 'link' => array( 'url' => $h . '#collection' ) ),
-				array( 'icon' => 'ear', 'label' => __( 'Fine jewelry', 'wulf-kit' ), 'link' => array( 'url' => $h . '#collection' ) ),
-				array( 'icon' => 'gift', 'label' => __( 'Gifts', 'wulf-kit' ), 'link' => array( 'url' => $h . '#collection' ) ),
-				array( 'icon' => 'pencil', 'label' => __( 'Custom design', 'wulf-kit' ), 'link' => array( 'url' => $h . '#services' ) ),
-				array( 'icon' => 'tool', 'label' => __( 'Repair & sizing', 'wulf-kit' ), 'link' => array( 'url' => $h . '#services' ) ),
-				array( 'icon' => 'cash', 'label' => __( 'Sell your gold', 'wulf-kit' ), 'link' => array( 'url' => $h . '#services' ) ),
+				array( 'icon' => 'ring', 'label' => __( 'Engagement rings', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'engagement-rings' ) ) ),
+				array( 'icon' => 'bands', 'label' => __( 'Wedding bands', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'wedding-bands' ) ) ),
+				array( 'icon' => 'ear', 'label' => __( 'Fine jewelry', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'best-diamonds' ) ) ),
+				array( 'icon' => 'gift', 'label' => __( 'Gifts', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'catalogue' ) ) ),
+				array( 'icon' => 'pencil', 'label' => __( 'Custom design', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'custom-jewelry' ) ) ),
+				array( 'icon' => 'tool', 'label' => __( 'Repair & sizing', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'jewelry-services-and-repairs' ) ) ),
+				array( 'icon' => 'cash', 'label' => __( 'Sell your gold', 'wulf-kit' ), 'link' => array( 'url' => WK_Pages::url( 'gold-silver-platinum' ) ) ),
 			),
 		) );
 		$this->end_controls_section();

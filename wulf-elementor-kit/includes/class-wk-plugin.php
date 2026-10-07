@@ -30,6 +30,13 @@ class WK_Plugin {
 		'posts'    => 'WK_Posts_Widget',
 		'visit'    => 'WK_Visit_Widget',
 		'footer'   => 'WK_Footer_Widget',
+		'pagehero' => 'WK_Pagehero_Widget',
+		'split'    => 'WK_Split_Widget',
+		'steps'    => 'WK_Steps_Widget',
+		'lists'    => 'WK_Lists_Widget',
+		'faq'      => 'WK_Faq_Widget',
+		'cta'      => 'WK_Cta_Widget',
+		'prose'    => 'WK_Prose_Widget',
 	);
 
 	public static function instance() {
