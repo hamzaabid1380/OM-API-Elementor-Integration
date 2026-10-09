@@ -660,6 +660,10 @@
 		ctx.innerHTML = items.length ? '<p class="lbl">' + esc(bkS.piece && bkS.piece.name ? (T.bkLooking || 'You\'re asking about') : fmt(items.length === 1 ? (T.pieces || 'Your tray · %d piece') : (T.piecesN || 'Your tray · %d pieces'), items.length)) + '</p><ul>' +
 			items.slice(0, 3).map(function (t) { return '<li>' + (t.img ? '<img src="' + esc(t.img) + '" alt="">' : '') + '<span><b>' + esc(t.name) + '</b>' + (t.sub ? '<small>' + esc(t.sub) + '</small>' : '') + '</span></li>'; }).join('') + '</ul>' : '';
 		bkDayBtns();
+		if (opts.day !== undefined && opts.day !== '') {
+			var db = $('[data-d="' + (opts.day === 'flex' ? 'flex' : +opts.day) + '"]', bk);
+			if (db) { bkRadio(db.parentNode, db); bkS.day = opts.day === 'flex' ? 'flex' : db.parentNode._days[+opts.day]; bkTimes(bkS.day); }
+		}
 		$('[data-bk-done]', bk).hidden = true; $('.bk-form', bk).hidden = false; $('.bk-prog', bk).hidden = false;
 		$$('.bk [aria-invalid]').forEach(function (x) { x.removeAttribute('aria-invalid'); });
 		$$('.bk .field .err, [data-bk-dayerr]').forEach(function (x) { x.hidden = true; });
@@ -667,7 +671,7 @@
 		bk.hidden = false;
 		document.body.style.overflow = 'hidden';
 		track('booking_open', { cta_location: bkS.source || 'page', topic: known ? opts.topic : '' }, ['trackCustom', 'BookingOpen']);
-		bkGo(known ? 2 : 1);
+		bkGo(known ? (bkS.day ? 3 : 2) : 1);
 		requestAnimationFrame(function () { requestAnimationFrame(function () {
 			bk.classList.add('open');
 			var first = $('.bk-step:not([hidden]) button, .bk-step:not([hidden]) input', bk); if (first) first.focus({ preventScroll: true });
@@ -1229,6 +1233,24 @@
 				btn.disabled = false; btn.innerHTML = label;
 				err.textContent = (er && er.message) || T.error || 'Sorry, that didn\'t send.'; err.hidden = false;
 			});
+		});
+	};
+
+	// Booking bar: topic + day here, name and number in the panel.
+	INIT.bookbar = function (el, c) {
+		var f = $('[data-bkbar]', el), sel = $('[data-bkbar-days]', el);
+		if (!f || !sel) return;
+		if (sel.options.length < 2) {
+			bkDays().forEach(function (d, i) { sel.add(new Option(d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }), String(i))); });
+			sel.add(new Option(c.flex || 'I\'m flexible', 'flex'));
+		}
+		f.addEventListener('submit', function (e) {
+			e.preventDefault();
+			var topic = f.elements.topic.value, day = sel.value;
+			track('cta_click', { cta_text: 'booking bar', cta_location: 'bookbar', topic: topic });
+			if (CFG.panel) return bookOpen({ topic: topic, day: day, source: 'bookbar' });
+			var to = f.getAttribute('data-fallback') || '#visit';
+			try { var u = new URL(to, location.href); if (topic) u.searchParams.set('topic', topic); location.href = u.toString(); } catch (er) { location.href = to; }
 		});
 	};
 

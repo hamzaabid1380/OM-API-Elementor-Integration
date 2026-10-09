@@ -2,14 +2,14 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
 
 == What you get ==
 
-25 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
+26 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
 
 * Announcement bar (live "Open now / Closed now" from your hours)
 * Header (logo, menu with drop-down panels, search, phone, tray, "Book a visit", phone menu)
@@ -36,8 +36,9 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Text (long text: headings, lists, quotes)
 * Spotlight (one ring, large, in 360°, with live metal buttons and a choice of rings; four layouts,
   three frames and a video background you can change)
-* What brings you in? (six photo choices near the top; each opens a page, the ring designer, or the
-  booking panel with its topic chosen)
+* What brings you in? (six choices with real product photos on white; each opens a page, the ring
+  designer, or the booking panel with its topic chosen)
+* Booking bar (what it's about + preferred day, then the booking panel opens at name and number)
 
 29 page templates: one for every page on the live site, plus "Home (simpler)" and "Home (conversion)", with the
 wording from that page and the same web address:
@@ -105,6 +106,18 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.7.0 =
+* "What brings you in?" cards now show real product photos on white (the same look as the rest of
+  the site). Each card can also take an Overnight Mountings style number, or show the first design of
+  an OM product line (Wedding bands does this by default, live from the OM Catalog plugin).
+* New Booking bar under the hero of "Home (conversion)": "I'd like to talk about" and "Preferred day",
+  then Continue opens the booking panel straight at the last step (name and number).
+* Hero: your live Google rating leads the trust line once Google is connected in Settings (it never
+  shows placeholder numbers).
+* "Home (conversion)": "See all engagement rings" beside the favorites, and "Before you visit"
+  questions (appointment, free consultation, pieces bought elsewhere, selling) before the booking section.
+* Style numbers on product cards are darker, to meet the WCAG AA contrast standard.
 
 = 1.6.0 =
 * New "Home (conversion)" template, built to turn visitors into booked visits: one clear promise with

@@ -34,7 +34,7 @@ class WK_Pages {
 	public static function catalog() {
 		return array(
 			'home'                        => array( __( 'Home', 'wulf-kit' ), 'home', 'main', __( 'The full homepage: showcase, categories, ring studio, story, 4Cs, services, visit.', 'wulf-kit' ) ),
-			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, "What brings you in?" choices that each lead somewhere, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, and booking. Every "Book" button opens a three-step booking panel.', 'wulf-kit' ) ),
+			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, a booking bar right under it, "What brings you in?" choices that each lead somewhere, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, common questions, and booking. Every "Book" button opens a three-step booking panel.', 'wulf-kit' ) ),
 			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer homepage with a few big moments: the 360° spotlight, the ring that builds itself, the ring designer and the 4Cs. Fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
 			'about-us'                    => array( __( 'About', 'wulf-kit' ), 'about-us', 'main', __( 'Your story since 1971, Cullen, concierge service, values, reviews, visit.', 'wulf-kit' ) ),
 			'contact-us'                  => array( __( 'Free Consultation', 'wulf-kit' ), 'contact-us', 'main', __( 'Contact and booking form, map, hours, common questions.', 'wulf-kit' ) ),
@@ -188,6 +188,16 @@ class WK_Pages {
 		return array( 'steps', array_merge( array( 'eyebrow' => $eyebrow, 'title' => $title, 'items' => $st ), $o ) );
 	}
 
+	/** The common questions before a visit (Free Consultation page and the conversion homepage). */
+	private static function visit_questions() {
+		return array(
+			__( 'Do I need an appointment?', 'wulf-kit' ) => '<p>' . __( 'No, walk-ins are always welcome. If you book ahead we\'ll have a private table and the pieces you\'re interested in ready for you.', 'wulf-kit' ) . '</p>',
+			__( 'Is the consultation really free?', 'wulf-kit' ) => '<p>' . __( 'Yes. Consultations are free and there\'s never any pressure to buy.', 'wulf-kit' ) . '</p>',
+			__( 'Will you look at jewelry I bought somewhere else?', 'wulf-kit' ) => '<p>' . __( 'Of course. Our in-house experts help with all aspects of your jewelry, including pieces purchased from another store.', 'wulf-kit' ) . '</p>',
+			__( 'Can I sell jewelry, gold or coins during my visit?', 'wulf-kit' ) => '<p>' . __( 'Yes. Bring the pieces with you and we\'ll evaluate them in front of you and make you an offer, with no obligation.', 'wulf-kit' ) . '</p>',
+		);
+	}
+
 	private static function reviews( $o = array() ) {
 		return array( 'reviews', array_merge( array( 'tone' => 'ivory' ), $o ) );
 	}
@@ -278,9 +288,10 @@ class WK_Pages {
 						'b_note'  => __( 'Free, no obligation | We confirm by call or text', 'wulf-kit' ),
 						'm_first' => 'words',
 					) ),
+					array( 'bookbar', array() ),
 					array( 'paths', class_exists( 'WK_Paths_Widget' ) ? array( 'items' => WK_Paths_Widget::default_items( '#studio' ) ) : array() ),
 					array( 'spotlight', array( 'b1_text' => __( 'Book to see it in person', 'wulf-kit' ) ) ),
-					array( 'products', array() ),
+					array( 'products', array( 'more_text' => __( 'See all engagement rings', 'wulf-kit' ) ) ),
 					array( 'values', array( 'head_align' => 'left', 'rule' => '', 'rating_on' => 'yes' ) ),
 					self::steps( __( 'How a visit works', 'wulf-kit' ), __( 'Three easy steps, no pressure.', 'wulf-kit' ), array(
 						array( __( 'Book a time', 'wulf-kit' ), __( 'Choose what you\'d like to talk about and a day that suits you. We confirm by call or text.', 'wulf-kit' ), 'calendar' ),
@@ -288,7 +299,8 @@ class WK_Pages {
 						array( __( 'Decide in your own time', 'wulf-kit' ), __( 'We set your stone, or design one from scratch with you, when you\'re ready.', 'wulf-kit' ), 'spark' ),
 					), array( 'tone' => 'ivory', 'b1_text' => __( 'Book a free consultation', 'wulf-kit' ), 'b1_link' => array( 'url' => '#visit' ) ) ),
 					array( 'studio', array( 'main_btn' => 'book', 'book_text' => __( 'Book to see it in person', 'wulf-kit' ), 'tone' => 'white' ) ),
-					array( 'visit', array( 'f_short' => 'yes', 'after' => array(), 'f_title' => __( 'Book your free consultation', 'wulf-kit' ) ) ),
+					self::faq( __( 'Before you visit.', 'wulf-kit' ), self::visit_questions(), array( 'tone' => 'ivory' ) ),
+					array( 'visit', array( 'f_short' => 'yes', 'after' => array(), 'f_title' => __( 'Book your free consultation', 'wulf-kit' ), 'tone' => 'white' ) ),
 				);
 
 			case 'about-us':
@@ -307,12 +319,7 @@ class WK_Pages {
 				return array(
 					self::banner( __( 'Contact us', 'wulf-kit' ), __( 'Free *consultation*.', 'wulf-kit' ), __( 'Speak to a Wulf Diamond representative, or schedule your own appointment below. Walk-ins are always welcome.', 'wulf-kit' ), array( 'tone' => 'ivory', 'media' => 'image', 'image' => self::img( 'showroom.webp' ), 'fit' => 'cover', 'b1_text' => __( 'Schedule my appointment', 'wulf-kit' ), 'b2_text' => __( 'Get directions', 'wulf-kit' ), 'b2_link' => self::maps() ) ),
 					array( 'visit', array( 'tone' => 'white' ) ),
-					self::faq( __( 'Before you visit.', 'wulf-kit' ), array(
-						__( 'Do I need an appointment?', 'wulf-kit' ) => '<p>' . __( 'No, walk-ins are always welcome. If you book ahead we\'ll have a private table and the pieces you\'re interested in ready for you.', 'wulf-kit' ) . '</p>',
-						__( 'Is the consultation really free?', 'wulf-kit' ) => '<p>' . __( 'Yes. Consultations are free and there\'s never any pressure to buy.', 'wulf-kit' ) . '</p>',
-						__( 'Will you look at jewelry I bought somewhere else?', 'wulf-kit' ) => '<p>' . __( 'Of course. Our in-house experts help with all aspects of your jewelry, including pieces purchased from another store.', 'wulf-kit' ) . '</p>',
-						__( 'Can I sell jewelry, gold or coins during my visit?', 'wulf-kit' ) => '<p>' . __( 'Yes. Bring the pieces with you and we\'ll evaluate them in front of you and make you an offer, with no obligation.', 'wulf-kit' ) . '</p>',
-					) ),
+					self::faq( __( 'Before you visit.', 'wulf-kit' ), self::visit_questions() ),
 				);
 
 			case 'thank-you':

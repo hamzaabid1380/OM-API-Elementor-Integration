@@ -28,7 +28,7 @@ class WK_Paths_Widget extends WK_Widget {
 		$m = WK_URL . 'assets/media/';
 		return array(
 			array(
-				'image'  => array( 'url' => $m . 'hero-solitaire.webp', 'id' => '' ),
+				'image'  => array( 'url' => $m . '51162-E.webp', 'id' => '' ),
 				'icon'   => 'ring',
 				'title'  => __( 'Engagement rings', 'wulf-kit' ),
 				'text'   => $design ? __( 'Design yours in a minute, then see it in person.', 'wulf-kit' ) : __( 'Real settings in 360°, and a GIA-certified jeweler to guide you.', 'wulf-kit' ),
@@ -38,7 +38,8 @@ class WK_Paths_Widget extends WK_Widget {
 				'topic'  => '',
 			),
 			array(
-				'image'  => array( 'url' => $m . 'wear-ring.webp', 'id' => '' ),
+				'image'  => array( 'url' => '', 'id' => '' ),
+				'om_line' => 'wedding-bands',
 				'icon'   => 'bands',
 				'title'  => __( 'Wedding bands', 'wulf-kit' ),
 				'text'   => __( 'Classic and diamond bands, matched to your engagement ring.', 'wulf-kit' ),
@@ -48,7 +49,7 @@ class WK_Paths_Widget extends WK_Widget {
 				'topic'  => '',
 			),
 			array(
-				'image'  => array( 'url' => $m . 'custom-wax.webp', 'id' => '' ),
+				'image'  => array( 'url' => $m . 'card-custom.webp', 'id' => '' ),
 				'icon'   => 'pencil',
 				'title'  => __( 'Custom design', 'wulf-kit' ),
 				'text'   => __( 'Bring a sketch, a photo or a family stone.', 'wulf-kit' ),
@@ -58,7 +59,7 @@ class WK_Paths_Widget extends WK_Widget {
 				'topic'  => 'Custom design',
 			),
 			array(
-				'image'  => array( 'url' => $m . 'repair-bench.webp', 'id' => '' ),
+				'image'  => array( 'url' => $m . '32623.webp', 'id' => '' ),
 				'icon'   => 'tool',
 				'title'  => __( 'Repairs & cleaning', 'wulf-kit' ),
 				'text'   => __( 'Done in-house by our own goldsmiths. Free cleaning and inspection, any time.', 'wulf-kit' ),
@@ -68,7 +69,7 @@ class WK_Paths_Widget extends WK_Widget {
 				'topic'  => 'Repair',
 			),
 			array(
-				'image'  => array( 'url' => $m . 'appraisal-loupe.webp', 'id' => '' ),
+				'image'  => array( 'url' => $m . 'F754.webp', 'id' => '' ),
 				'icon'   => 'cert',
 				'title'  => __( 'Appraisals', 'wulf-kit' ),
 				'text'   => __( 'For insurance or replacement, by GIA-certified professionals.', 'wulf-kit' ),
@@ -78,7 +79,7 @@ class WK_Paths_Widget extends WK_Widget {
 				'topic'  => 'Appraisal',
 			),
 			array(
-				'image'  => array( 'url' => $m . 'svc-gold.webp', 'id' => '' ),
+				'image'  => array( 'url' => $m . 'card-sell.webp', 'id' => '' ),
 				'icon'   => 'cash',
 				'title'  => __( 'Sell gold & diamonds', 'wulf-kit' ),
 				'text'   => __( 'Evaluated in front of you, with no pressure to accept.', 'wulf-kit' ),
@@ -103,11 +104,19 @@ class WK_Paths_Widget extends WK_Widget {
 		$this->add_control( 'look', array(
 			'label'   => __( 'Look', 'wulf-kit' ),
 			'type'    => Controls_Manager::SELECT,
-			'default' => 'photo',
-			'options' => array( 'photo' => __( 'Photo cards', 'wulf-kit' ), 'icon' => __( 'Icon cards (no photos)', 'wulf-kit' ), 'list' => __( 'Compact rows', 'wulf-kit' ) ),
+			'default' => 'product',
+			'options' => array( 'product' => __( 'Product photos on white', 'wulf-kit' ), 'photo' => __( 'Photos that fill the card', 'wulf-kit' ), 'icon' => __( 'Icon cards (no photos)', 'wulf-kit' ), 'list' => __( 'Compact rows', 'wulf-kit' ) ),
 		) );
 		$r = new Repeater();
 		$r->add_control( 'image', array( 'label' => __( 'Photo', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA ) );
+		$r->add_control( 'om_style', array( 'label' => __( 'Or an OM style number', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'description' => __( 'Shows that design\'s photo from Overnight Mountings, e.g. 85121.', 'wulf-kit' ) ) );
+		$r->add_control( 'om_line', array(
+			'label'       => __( 'Or a design from an OM product line', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => '',
+			'options'     => array( '' => __( 'None', 'wulf-kit' ), 'engagement-rings' => __( 'Engagement rings', 'wulf-kit' ), 'wedding-bands' => __( 'Wedding bands', 'wulf-kit' ), 'fashion-rings' => __( 'Fashion rings', 'wulf-kit' ), 'earrings' => __( 'Earrings', 'wulf-kit' ), 'necklaces' => __( 'Necklaces', 'wulf-kit' ), 'pendants' => __( 'Pendants', 'wulf-kit' ), 'bracelets' => __( 'Bracelets', 'wulf-kit' ) ),
+			'description' => __( 'Used when no photo or style number is set: the first design of that line, live from the OM Catalog plugin.', 'wulf-kit' ),
+		) );
 		$r->add_control( 'icon', array( 'label' => __( 'Icon (for icon cards and rows)', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'ring', 'options' => WK_Icons::options() ) );
 		$r->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
 		$r->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => '' ) );
@@ -160,6 +169,43 @@ class WK_Paths_Widget extends WK_Widget {
 		$this->text_style( 'more', __( 'Line under the choices', 'wulf-kit' ), '.paths-more a', true );
 	}
 
+	/** A card's picture: an OM style number, an uploaded photo, or the first design of an OM line. */
+	private function card_img( $it, $look ) {
+		if ( ! in_array( $look, array( 'product', 'photo' ), true ) ) {
+			return '';
+		}
+		$style = trim( (string) ( $it['om_style'] ?? '' ) );
+		if ( '' !== $style ) {
+			return trailingslashit( WK_Settings::get( 'om_media' ) ) . rawurlencode( $style ) . '.jpg';
+		}
+		$img = $this->img_url( $it['image'] ?? array() );
+		return $img ? $img : self::om_line_image( (string) ( $it['om_line'] ?? '' ) );
+	}
+
+	/** First photo of an OM product line, through the OM Catalog plugin (kept for 12 hours). */
+	private static function om_line_image( $line ) {
+		if ( '' === $line || ! class_exists( 'OM_API_Client' ) || ! function_exists( 'om_image_url' ) ) {
+			return '';
+		}
+		$key = 'wk_path_img_' . md5( $line );
+		$hit = get_transient( $key );
+		if ( false !== $hit ) {
+			return (string) $hit;
+		}
+		$url = '';
+		$res = OM_API_Client::get_products( $line, array( 'limit' => 6 ) );
+		if ( ! is_wp_error( $res ) && ! empty( $res['products'] ) ) {
+			foreach ( (array) $res['products'] as $p ) {
+				if ( ! empty( $p['images'][0] ) ) {
+					$url = (string) om_image_url( $p['images'][0] );
+					break;
+				}
+			}
+		}
+		set_transient( $key, $url, $url ? 12 * HOUR_IN_SECONDS : 30 * MINUTE_IN_SECONDS );
+		return $url;
+	}
+
 	protected function render() {
 		$s     = $this->get_settings_for_display();
 		$items = array_filter( (array) $s['items'], static function ( $it ) {
@@ -168,7 +214,7 @@ class WK_Paths_Widget extends WK_Widget {
 		if ( ! $items ) {
 			return;
 		}
-		$look = in_array( $s['look'] ?? 'photo', array( 'photo', 'icon', 'list' ), true ) ? $s['look'] : 'photo';
+		$look = in_array( $s['look'] ?? 'product', array( 'product', 'photo', 'icon', 'list' ), true ) ? $s['look'] : 'product';
 		$this->open( $s );
 		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . ' paths-sec look-' . esc_attr( $look ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		$this->head( $s );
@@ -176,12 +222,15 @@ class WK_Paths_Widget extends WK_Widget {
 		foreach ( $items as $it ) {
 			$book  = 'book' === ( $it['action'] ?? 'link' );
 			$attrs = $book ? self::link_attrs( array( 'url' => '#visit' ) ) . ( $it['topic'] ? ' data-topic="' . esc_attr( $it['topic'] ) . '"' : '' ) : self::link_attrs( $it['link'] ?? '' );
-			$img   = 'photo' === $look ? $this->img_url( $it['image'] ?? array() ) : '';
+			$img   = $this->card_img( $it, $look );
+			$ic    = '<span class="path-ic">' . WK_Icons::svg( $it['icon'] ? $it['icon'] : 'spark' ) . '</span>';
 			echo '<li><a class="path"' . $attrs . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			if ( $img ) {
 				echo '<span class="path-media"><img src="' . esc_url( $img ) . '" alt="" loading="lazy" decoding="async"></span>';
+			} elseif ( in_array( $look, array( 'product', 'photo' ), true ) ) {
+				echo '<span class="path-media no-img">' . $ic . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			} else {
-				echo '<span class="path-ic">' . WK_Icons::svg( $it['icon'] ? $it['icon'] : 'spark' ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				echo $ic; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 			echo '<span class="path-body"><span class="path-t">' . esc_html( $it['title'] ) . '</span>';
 			if ( $it['text'] ) {

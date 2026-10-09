@@ -29,6 +29,8 @@ class WK_Products_Widget extends WK_Widget {
 		$this->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Engagement ring favorites', 'wulf-kit' ), 'label_block' => true ) );
 		$this->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'Real settings from our catalog, turning in 360°. Save the ones you like for your visit.', 'wulf-kit' ) ) );
 		$this->add_control( 'arrows', array( 'label' => __( 'Arrows', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control( 'more_text', array( 'label' => __( '"See all" link text', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'description' => __( 'Optional, e.g. "See all engagement rings". Empty hides it.', 'wulf-kit' ) ) );
+		$this->add_control( 'more_link', array( 'label' => __( '"See all" link', 'wulf-kit' ), 'type' => Controls_Manager::URL, 'default' => array( 'url' => WK_Pages::url( 'engagement-rings' ) ), 'dynamic' => array( 'active' => true ) ) );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'c_items', array( 'label' => __( 'Pieces', 'wulf-kit' ) ) );
@@ -118,8 +120,13 @@ class WK_Products_Widget extends WK_Widget {
 		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . ' prod-sec"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		if ( $s['title'] || $s['text'] || 'yes' === $s['arrows'] ) {
 			echo '<div class="row-head"><div>' . ( $s['title'] ? '<h3 class="h3">' . esc_html( $s['title'] ) . '</h3>' : '' ) . ( $s['text'] ? '<p>' . esc_html( $s['text'] ) . '</p>' : '' ) . '</div>';
-			if ( 'yes' === $s['arrows'] ) {
-				echo '<div class="arrows"><button type="button" data-scroll="-1" aria-label="' . esc_attr__( 'Previous', 'wulf-kit' ) . '">' . WK_Icons::svg( 'left' ) . '</button><button type="button" data-scroll="1" aria-label="' . esc_attr__( 'Next', 'wulf-kit' ) . '">' . WK_Icons::svg( 'arr' ) . '</button></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			$more = '' !== trim( (string) ( $s['more_text'] ?? '' ) ) ? '<a class="row-more"' . self::link_attrs( $s['more_link'] ?? '' ) . '>' . esc_html( $s['more_text'] ) . ' ' . WK_Icons::svg( 'arr' ) . '</a>' : '';
+			if ( 'yes' === $s['arrows'] || $more ) {
+				echo '<div class="arrows">' . $more; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				if ( 'yes' === $s['arrows'] ) {
+					echo '<button type="button" data-scroll="-1" aria-label="' . esc_attr__( 'Previous', 'wulf-kit' ) . '">' . WK_Icons::svg( 'left' ) . '</button><button type="button" data-scroll="1" aria-label="' . esc_attr__( 'Next', 'wulf-kit' ) . '">' . WK_Icons::svg( 'arr' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				}
+				echo '</div>';
 			}
 			echo '</div>';
 		}

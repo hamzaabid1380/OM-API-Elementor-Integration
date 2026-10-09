@@ -39,6 +39,7 @@ class WK_Plugin {
 		'prose'    => 'WK_Prose_Widget',
 		'spotlight' => 'WK_Spotlight_Widget',
 		'paths'    => 'WK_Paths_Widget',
+		'bookbar'  => 'WK_Bookbar_Widget',
 	);
 
 	public static function instance() {

@@ -44,6 +44,7 @@ class WK_Hero_Widget extends WK_Widget {
 		$r = new Repeater();
 		$r->add_control( 'icon', array( 'label' => __( 'Icon', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'clock', 'options' => WK_Icons::options() ) );
 		$r->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
+		$this->add_control( 'g_rating', array( 'label' => __( 'Live Google rating in the trust line', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'Shows "4.9 · 120 Google reviews" first, only once your Google key and Place ID are in Wulf Kit › Settings. Nothing shows until then.', 'wulf-kit' ) ) );
 		$this->add_control( 'trust', array(
 			'label'       => __( 'Trust points', 'wulf-kit' ),
 			'type'        => Controls_Manager::REPEATER,
@@ -192,9 +193,15 @@ class WK_Hero_Widget extends WK_Widget {
 		if ( 'yes' === $s['call_line'] && $phone ) {
 			echo '<p class="hero-call">' . esc_html( $s['call_text'] ) . ' <a href="' . esc_attr( WK_Settings::tel() ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>';
 		}
-		if ( $s['trust'] ) {
+		$g = 'yes' === ( $s['g_rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
+		if ( $s['trust'] || $g ) {
 			echo '<ul class="trust">';
-			foreach ( $s['trust'] as $t ) {
+			if ( $g && $g['count'] ) {
+				/* translators: 1: rating like 4.9, 2: number of reviews */
+				$txt = sprintf( _n( '%1$s · %2$s Google review', '%1$s · %2$s Google reviews', $g['count'], 'wulf-kit' ), number_format_i18n( $g['rating'], 1 ), number_format_i18n( $g['count'] ) );
+				echo '<li class="t-rating">' . ( $g['url'] ? '<a href="' . esc_url( $g['url'] ) . '" target="_blank" rel="noopener">' : '' ) . WK_Icons::svg( 'star' ) . esc_html( $txt ) . ( $g['url'] ? '</a>' : '' ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			foreach ( (array) $s['trust'] as $t ) {
 				echo '<li>' . WK_Icons::svg( $t['icon'] ) . esc_html( $t['text'] ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 			echo '</ul>';
