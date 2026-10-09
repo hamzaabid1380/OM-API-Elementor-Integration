@@ -187,6 +187,9 @@ class WK_Plugin {
 				'done'   => $s['book_done'],
 				'name'   => $s['name'],
 				'addr'   => $s['address'],
+				'style'  => $s['book_style'],
+				'img'    => $s['book_img'] ? $s['book_img'] : WK_URL . 'assets/media/showroom-tall.webp',
+				'points' => array_values( array_filter( array_map( 'trim', preg_split( '/\r\n|\r|\n/', (string) $s['book_points'] ) ) ) ),
 			),
 			'icons'    => WK_Icons::for_js(),
 			'i18n'     => array(
@@ -244,6 +247,8 @@ class WK_Plugin {
 				'bkNeedTel'  => __( 'Please add a 10-digit number.', 'wulf-kit' ),
 				'bkNeedDay'  => __( 'Please pick a day, or "I\'m flexible".', 'wulf-kit' ),
 				'bkLooking'  => __( 'You\'re asking about', 'wulf-kit' ),
+				'bkYour'     => __( 'Your visit', 'wulf-kit' ),
+				'bkChange'   => __( 'Change', 'wulf-kit' ),
 				'bkOrCall'   => __( 'Prefer to talk? Call %s', 'wulf-kit' ),
 				'bkThanks'   => __( 'Thank you, %s.', 'wulf-kit' ),
 				'bkBring'    => __( 'What to bring', 'wulf-kit' ),

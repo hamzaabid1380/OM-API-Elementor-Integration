@@ -26,6 +26,12 @@ class WK_Steps_Widget extends WK_Widget {
 		$this->section_controls( array( 'tone' => 'ivory' ) );
 		$this->head_controls( array( 'eyebrow' => __( 'How it works', 'wulf-kit' ), 'title' => __( 'Simple, from start to finish.', 'wulf-kit' ), 'align' => 'center' ) );
 		$this->start_controls_section( 'c_items', array( 'label' => __( 'Steps', 'wulf-kit' ) ) );
+		$this->add_control( 'look', array(
+			'label'   => __( 'Look', 'wulf-kit' ),
+			'type'    => Controls_Manager::SELECT,
+			'default' => 'timeline',
+			'options' => array( 'timeline' => __( 'Showcase: a gold line that draws in, with photos', 'wulf-kit' ), 'cards' => __( 'Boxes', 'wulf-kit' ) ),
+		) );
 		$this->add_control( 'marker', array(
 			'label'   => __( 'Marker', 'wulf-kit' ),
 			'type'    => Controls_Manager::SELECT,
@@ -34,6 +40,7 @@ class WK_Steps_Widget extends WK_Widget {
 		) );
 		$r = new Repeater();
 		$r->add_control( 'icon', array( 'label' => __( 'Icon', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'spark', 'options' => WK_Icons::options() ) );
+		$r->add_control( 'image', array( 'label' => __( 'Photo (optional, Showcase look)', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'default' => array( 'url' => '' ) ) );
 		$r->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
 		$r->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => '' ) );
 		$this->add_control( 'items', array(
@@ -49,6 +56,7 @@ class WK_Steps_Widget extends WK_Widget {
 			),
 		) );
 		$this->button_fields( 'b1', __( 'Button under the steps', 'wulf-kit' ), '', '#visit', true );
+		$this->add_control( 'call_line', array( 'label' => __( 'Phone line with open status under the button', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes' ) );
 		$this->end_controls_section();
 
 		$this->style_section();
@@ -64,6 +72,17 @@ class WK_Steps_Widget extends WK_Widget {
 		$this->color( 'mk_hbg', __( 'Circle on hover', 'wulf-kit' ), '.steps li:hover .st-mk', 'background-color' );
 		$this->color( 'mk_hc', __( 'Number / icon on hover', 'wulf-kit' ), '.steps li:hover .st-mk' );
 		$this->end_controls_section();
+		$this->start_controls_section( 's_line', array( 'label' => __( 'Line & photos (Showcase)', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE, 'condition' => array( 'look' => 'timeline' ) ) );
+		$this->color( 'line_c', __( 'Line and dots', 'wulf-kit' ), '.steps.tl', '--tl' );
+		$this->color( 'num_c', __( 'Big numbers', 'wulf-kit' ), '.tl-n' );
+		$this->add_responsive_control( 'img_ratio', array(
+			'label'     => __( 'Photo shape', 'wulf-kit' ),
+			'type'      => Controls_Manager::SELECT,
+			'default'   => '',
+			'options'   => array( '' => __( 'Default', 'wulf-kit' ), '1 / 1' => __( 'Square', 'wulf-kit' ), '4 / 3' => __( 'Landscape', 'wulf-kit' ), '3 / 4' => __( 'Portrait', 'wulf-kit' ), '16 / 9' => __( 'Wide', 'wulf-kit' ) ),
+			'selectors' => array( '{{WRAPPER}} .wk .tl-img' => 'aspect-ratio: {{VALUE}};' ),
+		) );
+		$this->end_controls_section();
 		$this->text_style( 't', __( 'Step titles', 'wulf-kit' ), '.steps .h3' );
 		$this->text_style( 'x', __( 'Step text', 'wulf-kit' ), '.steps p' );
 		$this->button_style( 'b1', __( 'Button', 'wulf-kit' ), '.steps-cta .btn' );
@@ -75,15 +94,38 @@ class WK_Steps_Widget extends WK_Widget {
 		$this->open( $s );
 		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		$this->head( $s );
-		echo '<ol class="steps" style="--n:' . (int) max( 1, min( 4, count( $items ) ) ) . '">';
-		foreach ( $items as $i => $it ) {
-			$mk = 'icon' === $s['marker'] ? WK_Icons::svg( $it['icon'] ) : (string) ( $i + 1 );
-			echo '<li><span class="st-mk" aria-hidden="true">' . $mk . '</span><h3 class="h3">' . esc_html( $it['title'] ) . '</h3>' . ( $it['text'] ? '<p>' . esc_html( $it['text'] ) . '</p>' : '' ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$tl = 'cards' !== ( $s['look'] ?? 'timeline' );
+		if ( $tl ) {
+			// Showcase: a gold line through numbered dots, photo (optional), title and text.
+			$imgs = array_map( function ( $it ) {
+				return $this->img_url( $it['image'] ?? array() );
+			}, $items );
+			$has  = (bool) array_filter( $imgs );
+			echo '<ol class="steps tl' . ( $has ? ' has-img' : '' ) . '" style="--n:' . (int) max( 1, min( 5, count( $items ) ) ) . '">';
+			foreach ( array_values( $items ) as $i => $it ) {
+				$num = sprintf( '%02d', $i + 1 );
+				echo '<li><span class="tl-dot" aria-hidden="true"></span>';
+				if ( $has ) {
+					echo '<span class="tl-img">' . ( $imgs[ $i ] ? '<img src="' . esc_url( $imgs[ $i ] ) . '" alt="" loading="lazy" decoding="async">' : '' ) . '<span class="tl-n" aria-hidden="true">' . esc_html( $num ) . '</span></span>';
+				} else {
+					echo '<span class="tl-n" aria-hidden="true">' . esc_html( $num ) . '</span>';
+				}
+				echo '<h3 class="h3">' . esc_html( $it['title'] ) . '</h3>' . ( $it['text'] ? '<p>' . esc_html( $it['text'] ) . '</p>' : '' ) . '</li>';
+			}
+			echo '</ol>';
+		} else {
+			echo '<ol class="steps" style="--n:' . (int) max( 1, min( 4, count( $items ) ) ) . '">';
+			foreach ( $items as $i => $it ) {
+				$mk = 'icon' === $s['marker'] ? WK_Icons::svg( $it['icon'] ) : (string) ( $i + 1 );
+				echo '<li><span class="st-mk" aria-hidden="true">' . $mk . '</span><h3 class="h3">' . esc_html( $it['title'] ) . '</h3>' . ( $it['text'] ? '<p>' . esc_html( $it['text'] ) . '</p>' : '' ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			echo '</ol>';
 		}
-		echo '</ol>';
-		$b = $this->button( $s, 'b1', 'btn ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true );
-		if ( $b ) {
-			echo '<div class="steps-cta">' . $b . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$b     = $this->button( $s, 'b1', 'btn ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true );
+		$phone = WK_Settings::get( 'phone' );
+		$call  = 'yes' === ( $s['call_line'] ?? '' ) && $phone ? '<p class="cta-call">' . WK_Icons::svg( 'phone' ) . '<span>' . esc_html__( 'Or call', 'wulf-kit' ) . '</span> <a href="' . esc_attr( WK_Settings::tel( $phone ) ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>' : '';
+		if ( $b || $call ) {
+			echo '<div class="steps-cta">' . $b . $call . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 		echo '</div></section>';
 		$this->close();

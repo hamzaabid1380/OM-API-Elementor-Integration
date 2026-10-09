@@ -26,6 +26,12 @@ class WK_Values_Widget extends WK_Widget {
 		$this->section_controls( array( 'anchor' => 'values', 'rule' => 'yes' ) );
 		$this->head_controls( array( 'eyebrow' => __( 'A different kind of jeweler', 'wulf-kit' ), 'title' => __( 'We build relationships, not just rings.', 'wulf-kit' ), 'align' => 'center' ) );
 		$this->start_controls_section( 'c_items', array( 'label' => __( 'Cards', 'wulf-kit' ) ) );
+		$this->add_control( 'look', array(
+			'label'   => __( 'Look', 'wulf-kit' ),
+			'type'    => Controls_Manager::SELECT,
+			'default' => 'showcase',
+			'options' => array( 'showcase' => __( 'Showcase: photo beside numbered promises, with buttons', 'wulf-kit' ), 'cards' => __( 'Cards in a row', 'wulf-kit' ) ),
+		) );
 		$r = new Repeater();
 		$r->add_control( 'icon', array( 'label' => __( 'Icon', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'cert', 'options' => WK_Icons::options() ) );
 		$r->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
@@ -42,6 +48,15 @@ class WK_Values_Widget extends WK_Widget {
 				array( 'icon' => 'spark', 'title' => __( 'We make it easy', 'wulf-kit' ), 'text' => __( 'A wide selection, custom options and concierge service, so choosing your jewelry is fun and easy.', 'wulf-kit' ) ),
 			),
 		) );
+		$this->end_controls_section();
+
+		$this->start_controls_section( 'c_show', array( 'label' => __( 'Photo, badge & buttons (Showcase)', 'wulf-kit' ), 'condition' => array( 'look' => 'showcase' ) ) );
+		$this->add_control( 'image', array( 'label' => __( 'Photo', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'default' => array( 'url' => WK_URL . 'assets/media/cullen-desk.webp' ) ) );
+		$this->add_control( 'image_alt', array( 'label' => __( 'Photo description (for screen readers)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
+		$this->add_control( 'badge_text', array( 'label' => __( 'Badge: small words', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Independent since', 'wulf-kit' ), 'separator' => 'before' ) );
+		$this->add_control( 'badge_num', array( 'label' => __( 'Badge: big number', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '1971', 'description' => __( 'Empty hides the badge.', 'wulf-kit' ) ) );
+		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit', true );
+		$this->button_fields( 'b2', __( 'Second link', 'wulf-kit' ), __( 'Our story', 'wulf-kit' ), WK_Pages::url( 'about-us' ) );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'c_rating', array( 'label' => __( 'Google rating line', 'wulf-kit' ) ) );
@@ -71,6 +86,15 @@ class WK_Values_Widget extends WK_Widget {
 		$this->end_controls_section();
 		$this->text_style( 't', __( 'Card titles', 'wulf-kit' ), '.vals .h3' );
 		$this->text_style( 'x', __( 'Card text', 'wulf-kit' ), '.vals p' );
+		$this->start_controls_section( 's_show', array( 'label' => __( 'Photo & badge (Showcase)', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE, 'condition' => array( 'look' => 'showcase' ) ) );
+		$this->color( 'frame', __( 'Thin frame behind the photo', 'wulf-kit' ), '.vs-media::before', 'border-color' );
+		$this->color( 'badge_bg', __( 'Badge background', 'wulf-kit' ), '.vs-badge', 'background-color' );
+		$this->color( 'badge_c', __( 'Badge number', 'wulf-kit' ), '.vs-badge b' );
+		$this->color( 'badge_s', __( 'Badge small words', 'wulf-kit' ), '.vs-badge span' );
+		$this->color( 'div', __( 'Lines between promises', 'wulf-kit' ), '.vs-list li', 'border-color' );
+		$this->end_controls_section();
+		$this->button_style( 'b1', __( 'Main button', 'wulf-kit' ), '.vs-cta .btn' );
+		$this->text_style( 'b2', __( 'Second link', 'wulf-kit' ), '.vs-cta .link', true );
 		$this->text_style( 'rt', __( 'Rating line', 'wulf-kit' ), '.v-rating', '.v-rating:hover', true, array(
 			'star' => array( 'label' => __( 'Stars', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk .v-rating .stars' => 'color: {{VALUE}};' ) ),
 		) );
@@ -91,6 +115,10 @@ class WK_Values_Widget extends WK_Widget {
 
 	protected function render() {
 		$s = $this->get_settings_for_display();
+		if ( 'cards' !== ( $s['look'] ?? 'showcase' ) ) {
+			$this->render_showcase( $s );
+			return;
+		}
 		$this->open( $s );
 		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		$this->head( $s, $this->rating_line( $s ) );
@@ -99,6 +127,35 @@ class WK_Values_Widget extends WK_Widget {
 			echo '<li><span class="v-ic">' . WK_Icons::svg( $it['icon'] ) . '</span><h3 class="h3">' . esc_html( $it['title'] ) . '</h3><p>' . esc_html( $it['text'] ) . '</p></li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 		echo '</ul></div></section>';
+		$this->close();
+	}
+
+	/** Showcase: a photo with a "since" badge beside the promises, numbered, then the buttons. */
+	private function render_showcase( $s ) {
+		$img = $this->img_url( $s['image'] ?? array(), WK_URL . 'assets/media/cullen-desk.webp' );
+		$this->open( $s );
+		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . ' vals-sec look-showcase"' . $this->anchor_attr( $s ) . '><div class="wrap"><div class="vs-grid">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		if ( $img ) {
+			echo '<figure class="vs-media"><img src="' . esc_url( $img ) . '" alt="' . esc_attr( $s['image_alt'] ?? '' ) . '" loading="lazy" decoding="async">';
+			if ( '' !== trim( (string) ( $s['badge_num'] ?? '' ) ) ) {
+				echo '<figcaption class="vs-badge">' . ( $s['badge_text'] ? '<span>' . esc_html( $s['badge_text'] ) . '</span>' : '' ) . '<b>' . esc_html( $s['badge_num'] ) . '</b></figcaption>';
+			}
+			echo '</figure>';
+		}
+		echo '<div class="vs-copy">';
+		$s['head_align'] = 'left';
+		$this->head( $s );
+		echo $this->rating_line( $s ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<ol class="vs-list">';
+		foreach ( array_values( (array) $s['items'] ) as $i => $it ) {
+			echo '<li><span class="v-ic">' . WK_Icons::svg( $it['icon'] ) . '</span><div><h3 class="h3"><span class="vs-n" aria-hidden="true">' . esc_html( sprintf( '%02d', $i + 1 ) ) . '</span>' . esc_html( $it['title'] ) . '</h3><p>' . esc_html( $it['text'] ) . '</p></div></li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		echo '</ol>';
+		$b = $this->button( $s, 'b1', 'btn ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true ) . $this->button( $s, 'b2', 'link', true );
+		if ( $b ) {
+			echo '<div class="vs-cta">' . $b . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		echo '</div></div></div></section>';
 		$this->close();
 	}
 }

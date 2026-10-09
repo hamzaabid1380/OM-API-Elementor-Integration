@@ -58,6 +58,9 @@ class WK_Settings {
 			'act_dir'       => 'Directions',
 			'book_url'      => '#visit',
 			'book_panel'    => '1',
+			'book_style'    => 'popup',
+			'book_img'      => '',
+			'book_points'   => "Free, no obligation\nGIA-certified jewelers\nIndependent since 1971",
 			'book_title'    => 'Book your free consultation',
 			'book_sub'      => 'Free, no obligation. We\'ll confirm by call or text.',
 			'book_topics'   => "Engagement ring | Any inspiration photos you love\nWedding bands | Your engagement ring, so we can match it\nCustom design | Sketches, photos or a family stone\nRepair | The piece that needs work\nAppraisal | The piece and any grading reports\nSelling | The pieces you want to sell and a photo ID\nFinancing | A photo ID",
@@ -215,7 +218,7 @@ class WK_Settings {
 			$val = $in[ $k ] ?? '';
 			if ( 0 === strpos( $k, 'c_' ) ) {
 				$out[ $k ] = sanitize_hex_color( $val ) ? sanitize_hex_color( $val ) : $v;
-			} elseif ( in_array( $k, array( 'maps_url', 'om_media' ), true ) ) {
+			} elseif ( in_array( $k, array( 'maps_url', 'om_media', 'book_img' ), true ) ) {
 				$out[ $k ] = esc_url_raw( $val );
 			} elseif ( 'email' === $k ) {
 				$out[ $k ] = sanitize_email( $val );
@@ -223,7 +226,9 @@ class WK_Settings {
 				$out[ $k ] = in_array( (string) $val, array( '0.5', '0.6', '0.75', '1' ), true ) ? (string) $val : $v;
 			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'to_om_leads', 'calm_all', 'book_panel', 'track' ), true ) ) {
 				$out[ $k ] = empty( $val ) ? '' : '1';
-			} elseif ( 'book_topics' === $k ) {
+			} elseif ( 'book_style' === $k ) {
+				$out[ $k ] = in_array( (string) $val, array( 'popup', 'drawer' ), true ) ? (string) $val : $v;
+			} elseif ( in_array( $k, array( 'book_topics', 'book_points' ), true ) ) {
 				$out[ $k ] = sanitize_textarea_field( $val );
 			} else {
 				$out[ $k ] = sanitize_text_field( $val );
@@ -233,7 +238,7 @@ class WK_Settings {
 		return $out;
 	}
 
-	private static function field( $key, $label, $type = 'text', $help = '' ) {
+	private static function field( $key, $label, $type = 'text', $help = '', $opts = array() ) {
 		$v    = self::get( $key );
 		$name = self::OPTION . '[' . $key . ']';
 		echo '<tr><th scope="row"><label for="wk-' . esc_attr( $key ) . '">' . esc_html( $label ) . '</label></th><td>';
@@ -247,6 +252,12 @@ class WK_Settings {
 			echo '<select id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '">';
 			foreach ( $opts as $ov => $ol ) {
 				echo '<option value="' . esc_attr( $ov ) . '"' . selected( $ov, (string) self::all()[ $key ], false ) . '>' . esc_html( $ol ) . '</option>';
+			}
+			echo '</select>';
+		} elseif ( 'select' === $type ) {
+			echo '<select id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '">';
+			foreach ( $opts as $ov => $ol ) {
+				echo '<option value="' . esc_attr( $ov ) . '"' . selected( (string) $ov, (string) self::all()[ $key ], false ) . '>' . esc_html( $ol ) . '</option>';
 			}
 			echo '</select>';
 		} elseif ( 'textarea' === $type ) {
@@ -350,6 +361,9 @@ class WK_Settings {
 				<table class="form-table" role="presentation">
 					<?php
 					self::field( 'book_panel', __( 'Booking panel', 'wulf-kit' ), 'check', __( '"Book" buttons open the booking panel on the same page (recommended). Untick to jump to the visit form instead.', 'wulf-kit' ) );
+					self::field( 'book_style', __( 'How it opens', 'wulf-kit' ), 'select', __( 'The popup sits in the middle of the screen with a showroom picture beside the form on wide screens. The side panel slides in from the right.', 'wulf-kit' ), array( 'popup' => __( 'Popup in the middle of the screen (recommended)', 'wulf-kit' ), 'drawer' => __( 'Panel that slides in from the side', 'wulf-kit' ) ) );
+					self::field( 'book_img', __( 'Popup picture', 'wulf-kit' ), 'url', __( 'Link to a picture shown beside the form in the popup (copy it from the Media Library). Leave empty for the showroom photo.', 'wulf-kit' ) );
+					self::field( 'book_points', __( 'Popup reassurance points', 'wulf-kit' ), 'textarea', __( 'One per line, shown on the picture with a check mark. Keep them short and true.', 'wulf-kit' ) );
 					self::field( 'book_title', __( 'Panel title', 'wulf-kit' ) );
 					self::field( 'book_sub', __( 'Under the title', 'wulf-kit' ) );
 					self::field( 'book_topics', __( 'Topics', 'wulf-kit' ), 'textarea', __( 'One per line. After a | you can add what to bring, shown on the thank-you screen. For example: <code>Repair | The piece that needs work</code>', 'wulf-kit' ) );

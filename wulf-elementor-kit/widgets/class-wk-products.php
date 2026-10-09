@@ -26,11 +26,19 @@ class WK_Products_Widget extends WK_Widget {
 	protected function register_controls() {
 		$this->section_controls( array( 'anchor' => 'favorites' ) );
 		$this->start_controls_section( 'c_head', array( 'label' => __( 'Heading', 'wulf-kit' ) ) );
+		$this->add_control( 'look', array(
+			'label'   => __( 'Look', 'wulf-kit' ),
+			'type'    => Controls_Manager::SELECT,
+			'default' => 'showcase',
+			'options' => array( 'showcase' => __( 'Showcase: large title and buttons beside the pieces', 'wulf-kit' ), 'row' => __( 'Title above a row of pieces', 'wulf-kit' ) ),
+		) );
+		$this->add_control( 'eyebrow', array( 'label' => __( 'Small label above (Showcase)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'In 360°', 'wulf-kit' ), 'condition' => array( 'look' => 'showcase' ) ) );
 		$this->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Engagement ring favorites', 'wulf-kit' ), 'label_block' => true ) );
 		$this->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'Real settings from our catalog, turning in 360°. Save the ones you like for your visit.', 'wulf-kit' ) ) );
 		$this->add_control( 'arrows', array( 'label' => __( 'Arrows', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
 		$this->add_control( 'more_text', array( 'label' => __( '"See all" link text', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'description' => __( 'Optional, e.g. "See all engagement rings". Empty hides it.', 'wulf-kit' ) ) );
 		$this->add_control( 'more_link', array( 'label' => __( '"See all" link', 'wulf-kit' ), 'type' => Controls_Manager::URL, 'default' => array( 'url' => WK_Pages::url( 'engagement-rings' ) ), 'dynamic' => array( 'active' => true ) ) );
+		$this->button_fields( 'b1', __( 'Second link (Showcase)', 'wulf-kit' ), __( 'Book to try them on', 'wulf-kit' ), '#visit', __( 'Engagement ring', 'wulf-kit' ) );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'c_items', array( 'label' => __( 'Pieces', 'wulf-kit' ) ) );
@@ -116,9 +124,22 @@ class WK_Products_Widget extends WK_Widget {
 				$items[]    = $p;
 			}
 		}
+		$show = 'row' !== ( $s['look'] ?? 'showcase' );
 		$this->open( $s, '', array( 'play' => $s['play'], 'items' => $items, 'prefix' => $s['price_prefix'] ) );
-		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . ' prod-sec"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		if ( $s['title'] || $s['text'] || 'yes' === $s['arrows'] ) {
+		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . ' prod-sec' . ( $show ? ' look-showcase' : '' ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		if ( $show ) {
+			// Showcase: a large title, both actions and the arrows in a column beside the pieces.
+			echo '<div class="ps-grid"><div class="row-head ps-intro"><div>' . ( ! empty( $s['eyebrow'] ) ? '<span class="eyebrow">' . esc_html( $s['eyebrow'] ) . '</span>' : '' ) . ( $s['title'] ? '<h2 class="h3 ps-t">' . esc_html( $s['title'] ) . '</h2>' : '' ) . ( $s['text'] ? '<p>' . esc_html( $s['text'] ) . '</p>' : '' ) . '</div>';
+			$more = '' !== trim( (string) ( $s['more_text'] ?? '' ) ) ? '<a class="btn btn-ink"' . self::link_attrs( $s['more_link'] ?? '' ) . '>' . esc_html( $s['more_text'] ) . ' ' . WK_Icons::svg( 'arr', 'arr' ) . '</a>' : '';
+			$b    = $more . $this->button( $s, 'b1', 'link', true );
+			if ( $b ) {
+				echo '<div class="ps-btns">' . $b . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			if ( 'yes' === $s['arrows'] ) {
+				echo '<div class="arrows"><button type="button" data-scroll="-1" aria-label="' . esc_attr__( 'Previous', 'wulf-kit' ) . '">' . WK_Icons::svg( 'left' ) . '</button><button type="button" data-scroll="1" aria-label="' . esc_attr__( 'Next', 'wulf-kit' ) . '">' . WK_Icons::svg( 'arr' ) . '</button></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			echo '</div>';
+		} elseif ( $s['title'] || $s['text'] || 'yes' === $s['arrows'] ) {
 			echo '<div class="row-head"><div>' . ( $s['title'] ? '<h3 class="h3">' . esc_html( $s['title'] ) . '</h3>' : '' ) . ( $s['text'] ? '<p>' . esc_html( $s['text'] ) . '</p>' : '' ) . '</div>';
 			$more = '' !== trim( (string) ( $s['more_text'] ?? '' ) ) ? '<a class="row-more"' . self::link_attrs( $s['more_link'] ?? '' ) . '>' . esc_html( $s['more_text'] ) . ' ' . WK_Icons::svg( 'arr' ) . '</a>' : '';
 			if ( 'yes' === $s['arrows'] || $more ) {
@@ -164,7 +185,7 @@ class WK_Products_Widget extends WK_Widget {
 			}
 			echo '</article>';
 		}
-		echo '</div></div></section>';
+		echo '</div>' . ( $show ? '</div>' : '' ) . '</div></section>';
 		$this->close();
 	}
 }

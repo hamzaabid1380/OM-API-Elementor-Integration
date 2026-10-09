@@ -510,10 +510,25 @@
 		$('[data-bk-back]', bk).hidden = n === 1;
 		$('[data-bk-next]', bk).innerHTML = (n === 3 ? esc(T.bkSend || 'Request my visit') : esc(T.bkNext || 'Continue')) + ' ' + icon('arr', 'arr');
 		$('[data-bk-err]', bk).hidden = true;
+		if (n === 3) bkSum();
 		var first = $('.bk-step[data-step="' + n + '"] input, .bk-step[data-step="' + n + '"] button', bk);
 		if (first && bk.classList.contains('open')) first.focus({ preventScroll: true });
 		$('.bk-form', bk).scrollTop = 0;
 		track('booking_step', { step: n, cta_location: bkS.source || 'page' });
+	}
+	// The last step repeats what was chosen before it (in the panel or in a booking bar), with a way back to change it.
+	function bkSum() {
+		var box = $('[data-bk-sum]', bk), topics = $$('[data-bk-topic][aria-pressed=true]', bk).map(function (b) { return b.dataset.bkTopic; });
+		var day = bkS.day instanceof Date ? bkS.day.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : (bkS.day === 'flex' ? (T.bkFlex || 'I\'m flexible') : '');
+		var bits = topics.concat(day ? [day, bkS.time ? bkS.time.n + ' ' + hshort(bkS.time.a) + '–' + hshort(bkS.time.b) : (T.bkAny || 'Any time')] : []);
+		box.hidden = !bits.length;
+		box.innerHTML = bits.length ? '<p class="lbl">' + esc(T.bkYour || 'Your visit') + '</p><ul class="bk-sum-v">' + bits.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul><button class="bk-edit" type="button" data-bk-edit>' + esc(T.bkChange || 'Change') + '</button>' : '';
+	}
+	// A small picture for each topic, from its words.
+	function bkIcon(t) {
+		var m = [[/engag/i, 'ring'], [/wedding|band/i, 'bands'], [/custom|design|idea/i, 'pencil'], [/repair|resiz|clean|fix/i, 'tool'], [/apprais|insur/i, 'cert'], [/sell|buy|cash|gold|coin/i, 'cash'], [/financ|pay/i, 'calendar'], [/earring/i, 'ear'], [/gift/i, 'gift'], [/diamond|stone/i, 'gem']];
+		for (var i = 0; i < m.length; i++) if (m[i][0].test(t)) return m[i][1];
+		return 'spark';
 	}
 	function bkPiece() { var p = bkS.piece; return p && p.name ? p.name + (p.sub ? ' (' + p.sub + ')' : '') : ''; }
 	function bkIcs(day, win) {
@@ -574,33 +589,41 @@
 	}
 	function bkBuild() {
 		bk = document.createElement('div');
-		bk.className = 'bk'; bk.hidden = true;
+		var pop = BK.style !== 'drawer';
+		bk.className = 'bk' + (pop ? ' pop' : ''); bk.hidden = true;
 		bk.setAttribute('role', 'dialog'); bk.setAttribute('aria-modal', 'true'); bk.setAttribute('aria-labelledby', 'wk-bk-h');
 		var tel = CFG.tel && CFG.phone ? '<a href="' + esc(CFG.tel) + '">' + esc(CFG.phone) + '</a>' : '';
-		bk.innerHTML = '<div class="bk-panel">' +
+		// Popup: a showroom picture beside the form on wide screens, with where we are, today's hours and a few promises.
+		var aside = pop ? '<aside class="bk-aside">' + (BK.img ? '<img src="' + esc(BK.img) + '" alt="" loading="lazy" decoding="async">' : '') + '<div class="bk-aside-in">' +
+			(BK.name ? '<p class="bk-aside-n">' + esc(BK.name) + '</p>' : '') + (BK.addr ? '<p class="bk-aside-a">' + icon('pin') + esc(BK.addr) + '</p>' : '') +
+			'<p class="bk-aside-s" data-wk-status><i></i><span data-status-text></span></p>' +
+			((BK.points || []).length ? '<ul class="bk-pts">' + BK.points.map(function (x) { return '<li>' + icon('check') + esc(x) + '</li>'; }).join('') + '</ul>' : '') + '</div></aside>' : '';
+		bk.innerHTML = '<div class="bk-panel">' + aside + '<div class="bk-main">' +
 			'<div class="bk-head"><div><p class="bk-eye">' + esc(T.bkEyebrow || 'Free consultation') + '</p><h2 class="h3" id="wk-bk-h">' + esc(BK.title || 'Book your free consultation') + '</h2>' + (BK.sub ? '<p class="bk-sub">' + esc(BK.sub) + '</p>' : '') + '</div><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div>' +
 			'<div class="bk-prog" aria-hidden="true"><span></span></div>' +
 			'<form class="bk-form" novalidate>' +
 			'<p class="bk-count" data-bk-count aria-live="polite"></p>' +
 			'<div class="bk-ctx" data-bk-ctx hidden></div>' +
 			'<fieldset class="bk-step" data-step="1"><legend class="h3">' + esc(T.bkQ1 || '') + '</legend><p class="bk-hint">' + esc(T.bkQ1s || '') + '</p><div class="bk-topics">' +
-				(BK.topics || []).map(function (t) { return '<button class="opt" type="button" aria-pressed="false" data-bk-topic="' + esc(t[0]) + '">' + esc(t[0]) + '</button>'; }).join('') + '</div></fieldset>' +
+				(BK.topics || []).map(function (t) { return '<button class="opt" type="button" aria-pressed="false" data-bk-topic="' + esc(t[0]) + '"><span class="bk-ti">' + icon(bkIcon(t[0])) + '</span><span>' + esc(t[0]) + '</span></button>'; }).join('') + '</div></fieldset>' +
 			'<fieldset class="bk-step" data-step="2" hidden><legend class="h3">' + esc(T.bkQ2 || '') + '</legend><p class="bk-hint">' + esc(T.bkQ2s || '') + '</p>' +
 				'<p class="lbl" id="wk-bk-dl">' + esc(T.bkDay || 'Day') + '</p><div class="bk-days" role="radiogroup" aria-labelledby="wk-bk-dl" data-bk-days></div>' +
 				'<p class="lbl" id="wk-bk-tl">' + esc(T.bkTime || 'Time of day') + '</p><div class="bk-times" role="radiogroup" aria-labelledby="wk-bk-tl" data-bk-times></div>' +
 				'<p class="err" data-bk-dayerr hidden>' + esc(T.bkNeedDay || '') + '</p></fieldset>' +
 			'<fieldset class="bk-step" data-step="3" hidden><legend class="h3">' + esc(T.bkQ3 || '') + '</legend><p class="bk-hint">' + esc(T.bkQ3s || '') + '</p>' +
-				'<div class="field"><label for="wk-bk-name">' + esc(T.bkName || 'Name') + '</label><input id="wk-bk-name" name="name" autocomplete="name"><span class="err" hidden>' + esc(T.bkNeedName || '') + '</span></div>' +
-				'<div class="field"><label for="wk-bk-phone">' + esc(T.bkPhone || 'Mobile') + '</label><input id="wk-bk-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(219) 000-0000"><span class="err" hidden>' + esc(T.bkNeedTel || '') + '</span></div>' +
+				'<div class="bk-sum" data-bk-sum hidden></div>' +
+				'<div class="bk-row"><div class="field"><label for="wk-bk-name">' + esc(T.bkName || 'Name') + '</label><input id="wk-bk-name" name="name" autocomplete="name"><span class="err" hidden>' + esc(T.bkNeedName || '') + '</span></div>' +
+				'<div class="field"><label for="wk-bk-phone">' + esc(T.bkPhone || 'Mobile') + '</label><input id="wk-bk-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(219) 000-0000"><span class="err" hidden>' + esc(T.bkNeedTel || '') + '</span></div></div>' +
 				'<div class="field"><label for="wk-bk-email">' + esc(T.bkEmail || 'Email') + ' <span>' + esc(T.bkOpt || '(optional)') + '</span></label><input id="wk-bk-email" name="email" type="email" autocomplete="email"></div>' +
 				'<div class="field"><p class="lbl" id="wk-bk-pl">' + esc(T.bkPref || 'Best way to reach you') + '</p><div class="chips" role="radiogroup" aria-labelledby="wk-bk-pl" data-bk-pref>' +
 					[T.bkCall || 'Call', T.bkText || 'Text', T.bkEmail || 'Email'].map(function (x, i) { return '<button class="opt" type="button" role="radio" aria-checked="' + (i === 1) + '"' + (i === 1 ? '' : ' tabindex="-1"') + '>' + esc(x) + '</button>'; }).join('') + '</div></div>' +
 				'<input type="text" name="website" tabindex="-1" autocomplete="off" class="sr" aria-hidden="true"></fieldset>' +
 			'<p class="err" data-bk-err role="alert" hidden></p>' +
 			(tel ? '<p class="bk-call">' + fmt(esc(T.bkOrCall || 'Prefer to talk? Call %s'), tel) + '</p>' : '') +
-			'<div class="bk-nav"><button class="btn btn-line" type="button" data-bk-back>' + esc(T.bkBack || 'Back') + '</button><button class="btn btn-gold" type="submit" data-bk-next></button></div>' +
-			'</form><div class="bk-done" data-bk-done hidden tabindex="-1"></div></div>';
+			'<div class="bk-nav"><button class="btn btn-line" type="button" data-bk-back>' + icon('left') + '<span>' + esc(T.bkBack || 'Back') + '</span></button><button class="btn btn-gold" type="submit" data-bk-next></button></div>' +
+			'</form><div class="bk-done" data-bk-done hidden tabindex="-1"></div></div></div>';
 		ensurePortal().appendChild(bk);
+		if (pop) applyHours(bk);
 		var form = $('.bk-form', bk);
 		bk.addEventListener('click', function (e) {
 			if (e.target === bk || e.target.closest('[data-close]')) return bookClose();
@@ -617,6 +640,7 @@
 			var pr = e.target.closest('[data-bk-pref] .opt');
 			if (pr) return bkRadio(pr.parentNode, pr);
 			if (e.target.closest('[data-bk-back]')) return bkGo(Math.max(1, bkS.step - 1));
+			if (e.target.closest('[data-bk-edit]')) return bkGo(1);
 		});
 		// A fixed field loses its error as soon as it's valid.
 		form.addEventListener('input', function (e) {
@@ -1237,6 +1261,16 @@
 	};
 
 	// Booking bar: topic + day here, name and number in the panel.
+	// "What brings you in?" Showcase: a soft light follows the mouse over each card.
+	INIT.paths = function (el) {
+		if (!fine.matches || reduce) return;
+		$$('.sc .path', el).forEach(function (a) {
+			a.addEventListener('pointermove', function (e) {
+				var r = a.getBoundingClientRect();
+				a.style.setProperty('--mx', Math.round(e.clientX - r.left) + 'px'); a.style.setProperty('--my', Math.round(e.clientY - r.top) + 'px');
+			});
+		});
+	};
 	INIT.bookbar = function (el, c) {
 		var f = $('[data-bkbar]', el), sel = $('[data-bkbar-days]', el);
 		if (!f || !sel) return;
@@ -1326,10 +1360,11 @@
 			if (s.dataset.tone === 'dark' && b !== 'photo' && !b.own) dark = true; // "Dark" background with no colour of its own set
 			s.classList.toggle('dark', dark);
 			s.classList.toggle('is-light', s.dataset.tone === 'dark' && !dark); // designed dark, but the background turned out light
+			s.classList.toggle('acc-ink', !dark && b !== 'photo' && lum(b.c) < 0.7); // mid-tone light (e.g. gold): gold-ink small text would be too faint
 			if (dark && b !== 'photo' && !b.own && s.dataset.tone !== 'dark') s.style.backgroundColor = 'transparent';
 		});
 		// Light cards inside a dark section (white product boxes, white panels) keep dark text; see-through ones don't.
-		$$('.tile, .studio-card, .box, .rev, .cr-frame, .split-media, .pgh-media, .pgh-cap, .slot, .svc, .vals > li, .card, .post, .faq-item, .cta-box, .path', el).forEach(function (n) {
+		$$('.tile, .studio-card, .box, .rev, .cr-frame, .split-media, .pgh-media, .pgh-cap, .slot, .svc, .vals > li, .card, .post, .faq-item, .cta-box, .path, .faq-help, .bkbar', el).forEach(function (n) {
 			var c = n.closest('.dark') ? rgb(getComputedStyle(n).backgroundColor) : null;
 			n.classList.toggle('wk-isl', !!(c && c.a > 0.5 && lum(c) > 0.4));
 		});
@@ -1343,7 +1378,7 @@
 	}
 
 	/* ================= Calmer look: sections ease in as they scroll into view ================= */
-	var RV = '.shead, .cats > *, .paths > li, .prow-head, .prow, .vals > li, .svc, .split-copy, .split-fig, .spot-media, .spot-ctl, .craft-grid, .studio-card, .st-grid, .cs-grid, .visit, .lists > div, .steps > li, .faq-list, .cta-box';
+	var RV = '.shead, .cats > *, .paths > li, .vs-media, .vs-list > li, .prow-head, .prow, .vals > li, .svc, .split-copy, .split-fig, .spot-media, .spot-ctl, .craft-grid, .studio-card, .st-grid, .cs-grid, .visit, .lists > div, .steps > li, .faq-list, .cta-box';
 	var rvIO = null;
 	function reveal(root) {
 		if (reduce || !document.body.classList.contains('wk-calm') || document.body.classList.contains('elementor-editor-active') || !('IntersectionObserver' in window)) return;

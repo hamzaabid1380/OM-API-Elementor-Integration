@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -106,6 +106,34 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.8.0 =
+* Booking popup: "Book" buttons now open a popup in the middle of the screen instead of a panel
+  sliding in from the side. On wide screens a showroom photo sits beside the form with the address,
+  today's hours and three short promises; on phones it is a card near the bottom, where the thumb is.
+  The booking bar's Continue opens it straight on the details form, with the chosen topic and day
+  shown on top and a "Change" link. Topics are tiles with small pictures; name and mobile sit side by
+  side. Settings › Booking: choose popup or side panel, the photo and the promises.
+* "What brings you in?" Showcase look (new default): engagement rings shown large with a 360° view,
+  the other choices around it, the last one across the full width, numbered cards, a soft gold light
+  that follows the mouse over the photos, and a clear button on every card. "Not sure yet? Talk to
+  a jeweler" moves beside the title.
+* Values Showcase look (new default): a photo with an "Independent since 1971" badge beside the four
+  promises, numbered, with "Book a free consultation" and "Our story".
+* Steps Showcase look (new default): a gold line that draws itself through numbered dots, optional
+  photos for each step, and the button with "Or call" and today's hours under it. Vertical on phones.
+* Favorites Showcase look (new default): a large title, "See all" and "Book to try them on" beside the
+  turning pieces.
+* Questions: a "Still have a question?" card beside the answers with a photo, a booking button, the
+  phone number and today's hours (after the questions on phones).
+* Call to action Showcase layout (new default): the piece sits in a pool of light with a thin gold
+  ring and a spark circling it; it can play a 360° video. The page library picks a fitting piece for
+  each page (rings, a necklace, earrings, a halo ring).
+* Page library: the custom-design steps and "How a visit works" now have photos; "Home (conversion)"
+  uses every showcase look. Every older look is still one click away in each widget's Look setting.
+* Readability: on mid-tone light backgrounds (for example a gold section) small gold text turns dark
+  so it stays readable (WCAG AA).
+* Fixed a thin green line along the top of the yellow halo ring photo.
 
 = 1.7.0 =
 * "What brings you in?" cards now show real product photos on white (the same look as the rest of

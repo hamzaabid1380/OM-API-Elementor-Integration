@@ -50,6 +50,15 @@ class WK_Faq_Widget extends WK_Widget {
 		$this->button_fields( 'b1', __( 'Link under the heading', 'wulf-kit' ), __( 'Ask us anything', 'wulf-kit' ), '#visit' );
 		$this->end_controls_section();
 
+		$this->start_controls_section( 'c_help', array( 'label' => __( 'Help card', 'wulf-kit' ) ) );
+		$this->add_control( 'help_on', array( 'label' => __( 'Show a "Still have a question?" card', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'A card beside the questions with a photo, a booking button, the phone number and today\'s hours. It replaces the link under the heading.', 'wulf-kit' ) ) );
+		$this->add_control( 'help_img', array( 'label' => __( 'Photo', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'default' => array( 'url' => WK_URL . 'assets/media/cullen-face.webp' ), 'condition' => array( 'help_on' => 'yes' ) ) );
+		$this->add_control( 'help_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Still have a question?', 'wulf-kit' ), 'label_block' => true, 'condition' => array( 'help_on' => 'yes' ) ) );
+		$this->add_control( 'help_text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'Talk it through with one of our jewelers, in person or by phone. Free, and no pressure.', 'wulf-kit' ), 'condition' => array( 'help_on' => 'yes' ) ) );
+		$this->button_fields( 'hb', __( 'Card button', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit', true );
+		$this->add_control( 'help_call', array( 'label' => __( 'Call button with the main phone', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'condition' => array( 'help_on' => 'yes' ) ) );
+		$this->end_controls_section();
+
 		$this->style_section();
 		$this->style_head();
 		$this->start_controls_section( 's_list', array( 'label' => __( 'Questions', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE ) );
@@ -65,6 +74,23 @@ class WK_Faq_Widget extends WK_Widget {
 			'link' => array( 'label' => __( 'Link color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk .faq-a a' => 'color: {{VALUE}};' ) ),
 		) );
 		$this->text_style( 'b1', __( 'Link', 'wulf-kit' ), '.faq-side .link', true );
+		$this->box_style( 'help', __( 'Help card', 'wulf-kit' ), '.faq-help', false );
+		$this->button_style( 'hb', __( 'Help card button', 'wulf-kit' ), '.faq-help .btn-main' );
+	}
+
+	/** "Still have a question?": photo, a booking button, the phone and today's hours. */
+	private function help_card( $s ) {
+		$img   = $this->img_url( $s['help_img'] ?? array() );
+		$phone = WK_Settings::get( 'phone' );
+		$out   = '<div class="faq-help">' . ( $img ? '<img class="fh-img" src="' . esc_url( $img ) . '" alt="" loading="lazy" decoding="async">' : '' );
+		$out  .= '<div class="fh-copy">' . ( $s['help_title'] ? '<p class="fh-t">' . esc_html( $s['help_title'] ) . '</p>' : '' ) . ( $s['help_text'] ? '<p class="fh-x">' . esc_html( $s['help_text'] ) . '</p>' : '' ) . '</div>';
+		$btns  = $this->button( $s, 'hb', 'btn btn-main ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true );
+		if ( 'yes' === ( $s['help_call'] ?? '' ) && $phone ) {
+			$btns .= '<a class="btn btn-line" href="' . esc_attr( WK_Settings::tel( $phone ) ) . '">' . WK_Icons::svg( 'phone' ) . esc_html( $phone ) . '</a>';
+		}
+		$out .= $btns ? '<div class="fh-btns">' . $btns . '</div>' : '';
+		$out .= '<p class="fh-s" data-wk-status><i></i><span data-status-text></span></p></div>';
+		return $out;
 	}
 
 	protected function render() {
@@ -75,7 +101,8 @@ class WK_Faq_Widget extends WK_Widget {
 		$this->open( $s );
 		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap faq' . ( 'stack' === $s['layout'] ? ' stack' : '' ) . '"><div class="faq-side">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		$this->head( $s );
-		echo $this->button( $s, 'b1', 'link', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$help = 'yes' === ( $s['help_on'] ?? '' );
+		echo $help ? $this->help_card( $s ) : $this->button( $s, 'b1', 'link', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '</div><div class="faq-list">';
 		$ld = array();
 		foreach ( array_values( $items ) as $i => $it ) {

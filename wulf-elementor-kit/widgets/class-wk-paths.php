@@ -29,6 +29,7 @@ class WK_Paths_Widget extends WK_Widget {
 		return array(
 			array(
 				'image'  => array( 'url' => $m . '51162-E.webp', 'id' => '' ),
+				'video'  => array( 'url' => $m . '51162-E.mp4', 'id' => '' ),
 				'icon'   => 'ring',
 				'title'  => __( 'Engagement rings', 'wulf-kit' ),
 				'text'   => $design ? __( 'Design yours in a minute, then see it in person.', 'wulf-kit' ) : __( 'Real settings in 360°, and a GIA-certified jeweler to guide you.', 'wulf-kit' ),
@@ -104,11 +105,13 @@ class WK_Paths_Widget extends WK_Widget {
 		$this->add_control( 'look', array(
 			'label'   => __( 'Look', 'wulf-kit' ),
 			'type'    => Controls_Manager::SELECT,
-			'default' => 'product',
-			'options' => array( 'product' => __( 'Product photos on white', 'wulf-kit' ), 'photo' => __( 'Photos that fill the card', 'wulf-kit' ), 'icon' => __( 'Icon cards (no photos)', 'wulf-kit' ), 'list' => __( 'Compact rows', 'wulf-kit' ) ),
+			'default' => 'showcase',
+			'options' => array( 'showcase' => __( 'Showcase: one large choice, the rest around it', 'wulf-kit' ), 'product' => __( 'Product photos on white', 'wulf-kit' ), 'photo' => __( 'Photos that fill the card', 'wulf-kit' ), 'icon' => __( 'Icon cards (no photos)', 'wulf-kit' ), 'list' => __( 'Compact rows', 'wulf-kit' ) ),
 		) );
+		$this->add_control( 'look_note', array( 'type' => Controls_Manager::RAW_HTML, 'raw' => __( 'Showcase: the first choice is shown large (with its 360° video if it has one), each choice gets its own button, and a soft light follows the mouse over the photos. With the title on the left, the line under the choices moves up beside the title.', 'wulf-kit' ), 'content_classes' => 'elementor-descriptor', 'condition' => array( 'look' => 'showcase' ) ) );
 		$r = new Repeater();
 		$r->add_control( 'image', array( 'label' => __( 'Photo', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA ) );
+		$r->add_control( 'video', array( 'label' => __( '360° video (large first choice only)', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'media_types' => array( 'video' ), 'description' => __( 'A video on a white background. It plays when the section comes into view, in the Showcase look.', 'wulf-kit' ) ) );
 		$r->add_control( 'om_style', array( 'label' => __( 'Or an OM style number', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'description' => __( 'Shows that design\'s photo from Overnight Mountings, e.g. 85121.', 'wulf-kit' ) ) );
 		$r->add_control( 'om_line', array(
 			'label'       => __( 'Or a design from an OM product line', 'wulf-kit' ),
@@ -121,6 +124,7 @@ class WK_Paths_Widget extends WK_Widget {
 		$r->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
 		$r->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => '' ) );
 		$r->add_control( 'go', array( 'label' => __( 'Link text', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
+		$r->add_control( 'tag', array( 'label' => __( 'Small label (optional)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'description' => __( 'A short word in the corner of the card, e.g. New. Showcase look only.', 'wulf-kit' ) ) );
 		$r->add_control( 'action', array(
 			'label'   => __( 'When clicked', 'wulf-kit' ),
 			'type'    => Controls_Manager::SELECT,
@@ -144,6 +148,7 @@ class WK_Paths_Widget extends WK_Widget {
 			'mobile_default' => '2',
 			'options'        => array( '1' => '1', '2' => '2', '3' => '3', '4' => '4', '6' => '6' ),
 			'selectors'      => array( '{{WRAPPER}} .wk .paths' => '--cols: {{VALUE}};' ),
+			'condition'      => array( 'look!' => 'showcase' ),
 		) );
 		$this->button_fields( 'b1', __( 'Line under the choices', 'wulf-kit' ), __( 'Not sure yet? Talk to a jeweler', 'wulf-kit' ), '#visit' );
 		$this->end_controls_section();
@@ -158,7 +163,10 @@ class WK_Paths_Widget extends WK_Widget {
 			'default'   => '4 / 3',
 			'options'   => array( '1 / 1' => __( 'Square', 'wulf-kit' ), '4 / 3' => __( 'Landscape', 'wulf-kit' ), '3 / 4' => __( 'Portrait', 'wulf-kit' ), '16 / 9' => __( 'Wide', 'wulf-kit' ) ),
 			'selectors' => array( '{{WRAPPER}} .wk .path-media' => 'aspect-ratio: {{VALUE}};' ),
+			'condition' => array( 'look!' => 'showcase' ),
 		) );
+		$this->color( 'glow', __( 'Light that follows the mouse (Showcase)', 'wulf-kit' ), '.sc .path', '--glow' );
+		$this->color( 'num', __( 'Numbers (Showcase)', 'wulf-kit' ), '.path-n' );
 		$this->color( 'ic', __( 'Icon', 'wulf-kit' ), '.path-ic' );
 		$this->color( 'ic_bg', __( 'Icon background', 'wulf-kit' ), '.path-ic', 'background-color' );
 		$this->color( 'shade', __( 'Photo tint on hover', 'wulf-kit' ), '.path-media::after', 'background-color' );
@@ -206,6 +214,60 @@ class WK_Paths_Widget extends WK_Widget {
 		return $url;
 	}
 
+	/**
+	 * Showcase: the first choice large (two by two), the others around it, and the last one stretched
+	 * across whatever room is left in its row. Every card ends in its own clear action.
+	 */
+	private function render_showcase( $s, $items ) {
+		$n    = count( $items );
+		$feat = $n >= 3;
+		$r    = ( $n + 3 ) % 4;
+		$span = $feat && $r ? 5 - $r : 0;
+		$more = '' !== trim( (string) ( $s['b1_text'] ?? '' ) ) ? '<a class="sc-more"' . self::link_attrs( $s['b1_link'] ?? '' ) . '>' . esc_html( $s['b1_text'] ) . ' ' . WK_Icons::svg( 'arr', 'arr' ) . '</a>' : '';
+		$side = 'center' !== ( $s['head_align'] ?? '' );
+		$this->open( $s );
+		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . ' paths-sec look-showcase"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$this->head( $s, $side ? $more : '' );
+		echo '<ul class="paths sc' . ( $feat ? ' has-feat' : '' ) . '" role="list">';
+		foreach ( $items as $i => $it ) {
+			$cls   = $feat && 0 === $i ? 'feat' : ( $span > 1 && $i === $n - 1 ? 'wide' : '' );
+			$book  = 'book' === ( $it['action'] ?? 'link' );
+			$attrs = $book ? self::link_attrs( array( 'url' => '#visit' ) ) . ( $it['topic'] ? ' data-topic="' . esc_attr( $it['topic'] ) . '"' : '' ) : self::link_attrs( $it['link'] ?? '' );
+			$img   = $this->card_img( $it, 'product' );
+			$vid   = 'feat' === $cls ? (string) ( $it['video']['url'] ?? '' ) : '';
+			echo '<li' . ( $cls ? ' class="' . esc_attr( $cls ) . '"' : '' ) . ( 'wide' === $cls ? ' style="--span:' . (int) $span . '"' : '' ) . '><a class="path"' . $attrs . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo '<span class="sc-media' . ( $vid ? ' pv" data-autoplay' : '"' ) . '>';
+			if ( $img ) {
+				echo '<img src="' . esc_url( $img ) . '" alt="" loading="lazy" decoding="async">';
+			} else {
+				echo '<span class="path-ic">' . WK_Icons::svg( $it['icon'] ? $it['icon'] : 'spark' ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			if ( $vid ) {
+				echo '<video muted loop playsinline preload="none" data-src="' . esc_url( $vid ) . '" aria-hidden="true"></video>';
+			}
+			echo '</span><span class="path-n" aria-hidden="true">' . esc_html( sprintf( '%02d', $i + 1 ) ) . '</span>';
+			if ( '' !== trim( (string) ( $it['tag'] ?? '' ) ) ) {
+				echo '<span class="sc-tag">' . esc_html( $it['tag'] ) . '</span>';
+			} elseif ( $vid ) {
+				echo '<span class="sc-tag">' . esc_html__( '360° view', 'wulf-kit' ) . '</span>';
+			}
+			echo '<span class="path-body"><span class="path-t">' . esc_html( $it['title'] ) . '</span>';
+			if ( $it['text'] ) {
+				echo '<span class="path-x">' . esc_html( $it['text'] ) . '</span>';
+			}
+			if ( $it['go'] ) {
+				echo '<span class="path-go"><span>' . esc_html( $it['go'] ) . '</span><span class="sc-arr">' . WK_Icons::svg( 'arr', 'arr' ) . '</span></span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			echo '</span></a></li>';
+		}
+		echo '</ul>';
+		if ( ! $side && $more ) {
+			echo '<p class="paths-more">' . $more . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		echo '</div></section>';
+		$this->close();
+	}
+
 	protected function render() {
 		$s     = $this->get_settings_for_display();
 		$items = array_filter( (array) $s['items'], static function ( $it ) {
@@ -214,7 +276,11 @@ class WK_Paths_Widget extends WK_Widget {
 		if ( ! $items ) {
 			return;
 		}
-		$look = in_array( $s['look'] ?? 'product', array( 'product', 'photo', 'icon', 'list' ), true ) ? $s['look'] : 'product';
+		$look = in_array( $s['look'] ?? 'showcase', array( 'showcase', 'product', 'photo', 'icon', 'list' ), true ) ? $s['look'] : 'showcase';
+		if ( 'showcase' === $look ) {
+			$this->render_showcase( $s, array_values( $items ) );
+			return;
+		}
 		$this->open( $s );
 		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . ' paths-sec look-' . esc_attr( $look ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		$this->head( $s );
