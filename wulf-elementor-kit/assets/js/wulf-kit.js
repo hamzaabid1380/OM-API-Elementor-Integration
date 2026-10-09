@@ -495,6 +495,16 @@
 		else if (a.classList.contains('btn') || a.closest('.actbar') || a.closest('[data-wk="paths"]')) track('cta_click', { cta_text: txt, cta_location: where(a), link_url: href });
 	}, true);
 
+	// "Drop a hint" (OM Catalog): a piece from its catalog link, in the metal on screen.
+	var hintReady = function () { return !!(window.omHint && window.omHint.enabled && window.omHint.enabled()); };
+	function hintItem(r, metal) {
+		var m = /\/catalog\/([a-z0-9-]+)\/([^\/?#]+)/.exec(r && r.u || '');
+		if (!m) return null;
+		var x = (r.media || {})[metal] || {};
+		var s; try { s = decodeURIComponent(m[2]); } catch (e) { s = m[2]; }
+		return { l: m[1], s: s.replace(/~/g, '/'), t: r.n, i: x.poster || r.img, c: { white: 'White', yellow: 'Yellow', rose: 'Rose' }[metal] || '' };
+	}
+
 	// Phones: "See all hours" opens the week under today's row.
 	document.addEventListener('click', function (e) {
 		var b = e.target.closest('[data-hours-more]'); if (!b) return;
@@ -1044,6 +1054,15 @@
 		}
 		// "Book" from here carries the ring on screen into the booking panel.
 		el.wkContext = function () { var it = items[cur], x = it.media[metal] || it.media[Object.keys(it.media)[0]] || {}; return { piece: { name: it.n, sub: names[metal] || '', img: x.poster || it.img } }; };
+		// "Drop a hint": the ring on screen, in its metal, when it has a catalog page.
+		var hintBtn = $('[data-wk-hint]', el);
+		var syncHint = function () { if (hintBtn) hintBtn.hidden = !(hintReady() && hintItem(items[cur], metal)); };
+		if (hintBtn) {
+			hintBtn.addEventListener('click', function () { var it = hintItem(items[cur], metal); if (it && hintReady()) window.omHint.open({ items: [it], from: 'spotlight' }); });
+			if (pick) pick.addEventListener('click', function () { setTimeout(syncHint, 0); });
+			mBox.addEventListener('click', function () { setTimeout(syncHint, 0); });
+			syncHint();
+		}
 		// The film loads once the section comes near, and plays only while on screen.
 		new IntersectionObserver(function (es) { var v = ring.querySelector('video'); if (!v) return; if (es[0].isIntersecting) { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (reduce) return; var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } else v.pause(); }, { rootMargin: '250px 0px' }).observe(ring);
 	};
@@ -1496,6 +1515,7 @@
 			bl.innerHTML = bv ? fmt(esc(t.budgetIs || 'Your budget: %s.'), '<b>' + esc(bv) + '</b>') + ' ' + esc(t.budget || '') : '';
 			show(0);
 			save(true);
+			syncHint();
 			if (quiet) return;
 			track('quiz_complete', { cta_location: 'quiz', shape: A.shape || 'not_sure', style: styleN() || 'mix', metal: A.metal || 'not_sure', budget: bv || 'not_sure', top_match: matches[0].r.id || matches[0].r.n });
 			var nm = $('[data-qz-name]', el); if (nm) nm.focus({ preventScroll: true });
@@ -1526,6 +1546,11 @@
 			if (user) { flash(art); var rr = art.getBoundingClientRect(); if (rr.bottom < 80) art.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }); }
 		}
 		function trayItem(r) { var m = metalOf(r), md = mediaOf(r); return { key: 'sp-' + (r.id || r.n) + '-' + m, name: r.n, sub: (names[m] || '') + (r.id ? ' · style ' + r.id : '') + (r.p ? ' · from ' + r.p : ''), img: md.poster || r.img }; }
+		// "Drop a hint": the three matches, each in the gold shown.
+		var hintBtn = $('[data-wk-hint]', el);
+		var hintList = function () { return matches.map(function (x) { return hintItem(x.r, metalOf(x.r)); }).filter(Boolean); };
+		function syncHint() { if (hintBtn) hintBtn.hidden = !(hintReady() && hintList().length); }
+		if (hintBtn) hintBtn.addEventListener('click', function () { var list = hintList(); if (list.length && hintReady()) window.omHint.open({ items: list, from: 'quiz' }); });
 		// "Book to try these on": the three rings go on the visitor's tray, so they're out for the visit.
 		var bookBtn = $('[data-qz-book]', el);
 		if (bookBtn) bookBtn.addEventListener('click', function () {

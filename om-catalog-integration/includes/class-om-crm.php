@@ -65,7 +65,7 @@ class OM_CRM {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * A lead from the site. Keys: event (inquiry|saved|design), name, email,
+	 * A lead from the site. Keys: event (inquiry|saved|design|hint), name, email,
 	 * phone, subject, message, piece, style, line, price, diamond, summary,
 	 * guide, chat, page, image, fields [ label => value ], items [].
 	 */
@@ -148,6 +148,7 @@ class OM_CRM {
 			'inquiry' => 'website inquiry',
 			'saved'   => 'saved designs',
 			'design'  => 'ring design saved',
+			'hint'    => 'drop a hint',
 		);
 		$tags[] = $map[ $lead['event'] ] ?? 'website lead';
 		if ( '' !== $lead['summary'] ) {
@@ -237,7 +238,7 @@ class OM_CRM {
 			'message' => __( 'Message', 'om-catalog' ),
 			'page'    => __( 'Page', 'om-catalog' ),
 		);
-		$out = '[' . wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) . '] ' . ( array( 'inquiry' => 'Website inquiry', 'saved' => 'Saved designs (emailed to themselves)', 'design' => 'Ring design (emailed to themselves)' )[ $lead['event'] ] ?? 'Website lead' ) . "\n\n";
+		$out = '[' . wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) . '] ' . ( array( 'inquiry' => 'Website inquiry', 'saved' => 'Saved designs (emailed to themselves)', 'design' => 'Ring design (emailed to themselves)', 'hint' => 'Dropped a hint (sent a design to someone special)' )[ $lead['event'] ] ?? 'Website lead' ) . "\n\n";
 		foreach ( $labels as $key => $label ) {
 			if ( '' !== (string) $lead[ $key ] ) {
 				$out .= $label . ': ' . $lead[ $key ] . "\n";

@@ -330,6 +330,63 @@ can hide the heart on its cards (Quick View, Compare & Save section), and
 the product widget has a **"Save" (heart) button** switch under Sections.
 Insights shows the **most saved** designs and how many became inquiries.
 
+## Drop a hint (1.39)
+
+A small **Drop a hint** link (with an envelope) lets a visitor send a
+design to a partner or friend. It shows:
+
+- on product pages, under the buttons (and in the quick view),
+- in the **Saved** panel, to send up to 6 saved designs at once,
+- with the Wulf Elementor Kit 1.9.1 or later: on the Spotlight ring and
+  on the ring style quiz results.
+
+The visitor fills in a short form: the other person's name and email,
+their own name and email, an optional note (up to 300 characters, with
+three ready-made ideas to tap), their ring size (taken from the product
+page when they already picked one), **Leave the prices out** (ticked to
+start with) and **Send me a copy**.
+
+**What the other person gets**
+
+- An email ("Sam has dropped you a hint") with the photos, the note, the
+  ring size and a button to a **private page**.
+- The private page shows the designs in the chosen metal, the note and
+  size, **Book a viewing** and **Ask about it**, and your promise line
+  ("Free, no obligation, and we will keep it between us."). With the Wulf
+  Kit, Book a viewing opens its booking popup with the design already
+  filled in; otherwise it opens your inquiry form.
+- The page has a private address that search engines are told to skip,
+  isn't cached, and works for a year. Anything they send from it is marked
+  "From a hint" in your inquiry email.
+
+**What you get**
+
+- A copy of every hint by email (reply to reach the sender), also kept
+  under **Inquiries** as "Drop a hint: ...".
+- A short email the **first time** the hint page is opened, so you can
+  expect their call. Opens by the sender, by you (from your email) or by
+  anyone logged in to WordPress don't count.
+- The sender goes to your CRM (tag *drop a hint*). The person they sent it
+  to is **never** added anywhere: their address is used for this one email
+  and only appears in your copy.
+
+**Settings**: Settings > OM Catalog > Look & feel > **Drop a hint** turns it
+on or off site-wide, and sets the link text and the promise line on the
+hint page. The four emails (to the other person, the sender's copy, your
+copy and "opened") are under **Emails**; your two can be switched off. The
+OM Single Product widget has a **"Drop a hint" link** switch under
+Sections. Insights counts **Hints sent** and **Hints opened**.
+
+**Spam protection**: the emails only carry designs from the catalog (the
+form can't send anything else), notes and names can't contain web links,
+and there are limits per connection (5 an hour), per sender (6 a day) and
+per recipient (2 a day), plus the same hidden checks as the inquiry form.
+
+For developers: `window.omHint.open({ items: [{ l: line, s: style, c:
+'Yellow' }], from: 'my-button' })` opens the form for any designs, the
+`om_hint_sent` action runs after a hint is sent, and a theme can replace
+the page with `om-catalog/hint.php`.
+
 ## Analytics
 
 What visitors do is sent to the tracking already on your site — Google
@@ -344,11 +401,13 @@ none is installed.
 | `compare_designs` | the compare table opens | CompareDesigns |
 | `share` (`content_type`: product, compare, saved_list, ring_design) | a share link | Share |
 | `search` | a catalog search | Search |
-| `generate_lead` (`form_type`: inquiry, saved_list_email, ring_design_email) | a form is sent | Lead (+ Schedule for viewings) |
+| `generate_lead` (`form_type`: inquiry, saved_list_email, ring_design_email, drop_a_hint) | a form is sent | Lead (+ Schedule for viewings) |
 | `ring_builder_step` | each builder step | RingBuilderStep |
 | `diamond_guide`, `diamond_guide_choose` | Help me choose answers / a suggestion chosen | DiamondGuide… |
 | `book_viewing_click` | Book a viewing | BookViewingClick |
 | `true_size` | See true size | TrueSize |
+| `hint_open`, `hint_sent` | the Drop a hint form opens / a hint is sent | (Lead, via `generate_lead`) |
+| `hint_view`, `hint_cta` (`cta`: book, ask) | the hint page is opened / a button on it | |
 
 Items carry the style number, name, line and (when shown) the price. In GA4,
 mark `generate_lead` as a key event to count inquiries as conversions.
@@ -428,6 +487,10 @@ name.
 | Saved designs — your copy | you | yes |
 | Ring design | the visitor who asked | — |
 | Ring design — your copy | you | yes |
+| Drop a hint | the person they send it to | (the feature itself, under Look & feel) |
+| Drop a hint: their copy | the visitor who sent it, if they ask | (the feature itself) |
+| Drop a hint: your copy | you | yes |
+| Drop a hint: opened | you, the first time the hint page is opened | yes |
 
 For each: recipients (emails to you), subject, heading, the message in the
 WordPress visual editor (formatting, lists, links, images), button text, and
@@ -967,8 +1030,9 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 **Settings › OM Catalog › CRM** sends every lead to your CRM as it comes in:
 inquiries from any form (product pages, diamonds, ring builder, the AI
 chat's "talk to our team"), and visitors who email themselves their saved
-designs or ring design. Choose any of the three; emails and the Inquiries
-list carry on as before.
+designs or ring design, and visitors who drop a hint (only the sender;
+the person they send it to is never added). Choose any of the three;
+emails and the Inquiries list carry on as before.
 
 - **GoHighLevel (direct):** paste a Private Integration token (Settings ›
   Private Integrations; scopes contacts.write, contacts.readonly,
@@ -986,13 +1050,34 @@ list carry on as before.
   page — kept 90 days in a first-party cookie, only while a CRM is on).
 - **Tags:** your own plus *website inquiry*, *saved designs*, *ring design
   saved*, *ring builder*, *diamond inquiry*, *ai assistant*, *book a
-  viewing* — for GHL workflows.
+  viewing*, *drop a hint* (for GHL workflows).
 - **Reliable:** sent after the visitor's page answers (they never wait),
   retried after 5 min, 30 min, 2 h and 6 h if the CRM doesn't answer, and
   the last deliveries are listed with any error. "Send a test lead" checks
   the setup.
 
 ## Changelog
+
+### 1.39.0
+- **Drop a hint**: a link on product pages, the quick view and the Saved
+  panel sends one or more designs to a partner or friend, with a note,
+  ring size and the option to leave prices out. They get a branded email
+  and a private page (photos, note, Book a viewing, Ask about it) that
+  works for a year and is hidden from search engines.
+- You get a copy (also under Inquiries) and a short email the first time
+  the hint is opened. Inquiries sent from the hint page say "From a hint".
+- Only the sender goes to the CRM (new event and tag *drop a hint*); the
+  person they send it to is never added.
+- Settings > Look & feel > Drop a hint: on/off, link text and the promise
+  line on the hint page. Four new emails under Emails. The OM Single
+  Product widget has a "Drop a hint" link switch. Insights counts hints
+  sent and opened.
+- Spam protection: catalog designs only, no web links in notes or names,
+  hourly and daily limits, plus the inquiry form's hidden checks.
+- `window.omHint.open()` for other plugins (the Wulf Elementor Kit 1.9.1
+  uses it on the Spotlight ring and the ring style quiz).
+- Phones: the sideways scrolling filter pills no longer push the page a few
+  pixels wider when the theme's side margin is under 16px.
 
 ### 1.38.0
 - "Ask our jeweller" can show on the homepage as well as the catalog

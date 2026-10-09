@@ -30,6 +30,8 @@ class OM_Stats {
 			'compare'        => __( 'Compared designs', 'om-catalog' ),
 			'compare_pair'   => __( 'Compared pairs', 'om-catalog' ),
 			'saved'          => __( 'Saved designs', 'om-catalog' ),
+			'hint'           => __( 'Hints sent', 'om-catalog' ),
+			'hint_opened'    => __( 'Hints opened', 'om-catalog' ),
 			'reel_view'      => __( 'Reel views', 'om-catalog' ),
 			'reel_tap'       => __( 'Reel taps to product', 'om-catalog' ),
 		);

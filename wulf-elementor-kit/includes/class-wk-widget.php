@@ -562,6 +562,24 @@ abstract class WK_Widget extends Widget_Base {
 		echo '</div>' . $extra . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
+	/**
+	 * "Drop a hint" (OM Catalog 1.39+): is it available, and the link itself. The script shows
+	 * it once the piece on screen has a catalog page, and opens the OM Catalog's hint form.
+	 */
+	public static function hint_available() {
+		return class_exists( 'OM_Hint' ) && OM_Hint::enabled();
+	}
+
+	protected function hint_link( $class = 'link' ) {
+		if ( ! self::hint_available() ) {
+			return '';
+		}
+		// The form and its styles come from the OM Catalog plugin.
+		wp_enqueue_style( 'om-catalog-css' );
+		wp_enqueue_script( 'om-catalog-js' );
+		return '<button class="' . esc_attr( $class ) . ' wk-hint" type="button" data-wk-hint aria-haspopup="dialog" hidden>' . WK_Icons::svg( 'mail' ) . '<span>' . esc_html( OM_Hint::label() ) . '</span></button>';
+	}
+
 	/** href/target/rel for a URL control value. */
 	public static function link_attrs( $link, $fallback = '#' ) {
 		$url = is_array( $link ) ? ( $link['url'] ?? '' ) : (string) $link;

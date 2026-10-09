@@ -116,6 +116,10 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_saved', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_email', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_saved_float', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		// Drop a hint (1.39).
+		register_setting( 'om_catalog_settings', 'om_hint', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
+		register_setting( 'om_catalog_settings', 'om_hint_label', array( 'sanitize_callback' => static function ( $v ) { return mb_substr( sanitize_text_field( (string) $v ), 0, 40 ); } ) );
+		register_setting( 'om_catalog_settings', 'om_hint_promise', array( 'sanitize_callback' => static function ( $v ) { return mb_substr( sanitize_text_field( (string) $v ), 0, 160 ); } ) );
 		// CRM (1.36).
 		register_setting( 'om_catalog_settings', 'om_crm_mode', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, array( 'off', 'ghl', 'webhook', 'both' ), true ) ? $v : 'off'; } ) );
 		register_setting( 'om_catalog_settings', 'om_crm_ghl_token', array( 'sanitize_callback' => static function ( $v ) { $v = trim( (string) $v ); return '' === $v ? (string) get_option( 'om_crm_ghl_token', '' ) : $v; } ) );
@@ -123,7 +127,7 @@ class OM_Settings {
 			register_setting( 'om_catalog_settings', $crm_opt, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		}
 		register_setting( 'om_catalog_settings', 'om_crm_webhook', array( 'sanitize_callback' => 'esc_url_raw' ) );
-		foreach ( array( 'inquiry', 'saved', 'design' ) as $crm_ev ) {
+		foreach ( array( 'inquiry', 'saved', 'design', 'hint' ) as $crm_ev ) {
 			register_setting( 'om_catalog_settings', 'om_crm_ev_' . $crm_ev, array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		}
 		register_setting( 'om_catalog_settings', 'om_menu_selector', array( 'sanitize_callback' => static function ( $v ) { return mb_substr( trim( wp_strip_all_tags( (string) $v ) ), 0, 300 ); } ) );
@@ -727,6 +731,16 @@ class OM_Settings {
 						</td>
 					</tr>
 					<tr>
+						<th>Drop a hint</th>
+						<td>
+							<input type="hidden" name="om_hint" value="0" />
+							<label><input type="checkbox" name="om_hint" value="1" <?php checked( get_option( 'om_hint', '1' ), '1' ); ?> /> A "Drop a hint" link on product pages, in the quick view and in the Saved panel: visitors send a design to a partner or friend, who gets a branded email and a private page to see it and book a viewing</label>
+							<p><label for="om_hint_label">Link text</label><br /><input type="text" id="om_hint_label" name="om_hint_label" value="<?php echo esc_attr( get_option( 'om_hint_label', '' ) ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Drop a hint', 'om-catalog' ); ?>" /></p>
+							<p><label for="om_hint_promise">Promise under the buttons on the hint page</label><br /><input type="text" id="om_hint_promise" name="om_hint_promise" value="<?php echo esc_attr( (string) get_option( 'om_hint_promise', __( 'Free, no obligation, and we will keep it between us.', 'om-catalog' ) ) ); ?>" class="large-text" /></p>
+							<p class="description">You get a copy of every hint (saved under Inquiries) and a short email the first time it is opened. Only the sender goes to your CRM; the person they send it to gets this one email and is not added anywhere. The emails are under Emails.</p>
+						</td>
+					</tr>
+					<tr>
 						<th><label for="om_menu_selector">Your site's menu</label></th>
 						<td>
 							<input type="text" id="om_menu_selector" name="om_menu_selector" value="<?php echo esc_attr( get_option( 'om_menu_selector', '' ) ); ?>" class="regular-text" placeholder=".my-header .menu-panel.is-open" />
@@ -795,7 +809,7 @@ class OM_Settings {
 
 				<?php foreach ( OM_Emails::notifications() as $email_id => $email_def ) : ?>
 					<?php $em = OM_Emails::get( $email_id ); $em_name = 'om_email_' . $email_id; ?>
-					<h2 class="om-sec" data-om-tab="emails"><?php echo esc_html( $email_def['label'] ); ?> <span class="om-email-aud"><?php echo 'shop' === $email_def['audience'] ? 'to you' : 'to the customer'; ?></span></h2>
+					<h2 class="om-sec" data-om-tab="emails"><?php echo esc_html( $email_def['label'] ); ?> <span class="om-email-aud"><?php echo esc_html( array( 'shop' => 'to you', 'partner' => 'to the person they hint' )[ $email_def['audience'] ] ?? 'to the customer' ); ?></span></h2>
 					<p class="description"><?php echo esc_html( $email_def['when'] ); ?></p>
 					<table class="form-table om-email-table" data-om-email="<?php echo esc_attr( $email_id ); ?>">
 						<?php if ( $email_def['toggle'] ) : ?>
@@ -853,7 +867,7 @@ class OM_Settings {
 									<button type="button" class="om-email-token" data-om-token="{<?php echo esc_attr( $tok ); ?>}" title="<?php echo esc_attr( OM_Emails::token_help()[ $tok ] ?? '' ); ?>">{<?php echo esc_html( $tok ); ?>}</button>
 								<?php endforeach; ?>
 							</div>
-							<p class="description"><code>{details}</code> is the automatic block (<?php echo 0 === strpos( $email_id, 'inquiry' ) ? 'the piece with its options and price' . ( 'inquiry_shop' === $email_id ? ', and their message' : '' ) : ( 0 === strpos( $email_id, 'saved' ) ? 'the saved designs with photos' : 'nothing extra for this one' ); ?>); without it, the block follows your text.</p></td>
+							<p class="description"><code>{details}</code> is the automatic block (<?php echo 0 === strpos( $email_id, 'inquiry' ) ? 'the piece with its options and price' . ( 'inquiry_shop' === $email_id ? ', and their message' : '' ) : ( 0 === strpos( $email_id, 'saved' ) ? 'the saved designs with photos' : ( 0 === strpos( $email_id, 'hint' ) ? 'their note, the designs with photos and the ring size' : 'nothing extra for this one' ) ); ?>); without it, the block follows your text.</p></td>
 						</tr>
 						<tr>
 							<th><label for="<?php echo esc_attr( $em_name ); ?>_button">Button</label></th>
@@ -1063,7 +1077,7 @@ class OM_Settings {
 					<tr>
 						<th>Which leads</th>
 						<td>
-							<?php foreach ( array( 'inquiry' => 'Inquiries from every form (incl. ring builder, diamonds, AI chat)', 'saved' => '"Email me my saved designs"', 'design' => '"Email my ring design"' ) as $crm_ev => $crm_label ) : ?>
+							<?php foreach ( array( 'inquiry' => 'Inquiries from every form (incl. ring builder, diamonds, AI chat)', 'saved' => '"Email me my saved designs"', 'design' => '"Email my ring design"', 'hint' => '"Drop a hint" (the person who sends it; the one they send it to is never added)' ) as $crm_ev => $crm_label ) : ?>
 								<input type="hidden" name="om_crm_ev_<?php echo esc_attr( $crm_ev ); ?>" value="0" />
 								<label style="display:block;margin:0 0 4px"><input type="checkbox" name="om_crm_ev_<?php echo esc_attr( $crm_ev ); ?>" value="1" <?php checked( get_option( 'om_crm_ev_' . $crm_ev, '1' ), '1' ); ?> /> <?php echo esc_html( $crm_label ); ?></label>
 							<?php endforeach; ?>
@@ -1097,7 +1111,7 @@ class OM_Settings {
 									<?php foreach ( array_slice( $crm_log, 0, 15 ) as $row ) : ?>
 										<tr>
 											<td><?php echo esc_html( human_time_diff( (int) $row['t'] ) . ' ago' ); ?></td>
-											<td><?php echo esc_html( ( ! empty( $row['x'] ) ? 'Test · ' : '' ) . ( array( 'inquiry' => 'Inquiry', 'saved' => 'Saved designs', 'design' => 'Ring design' )[ $row['e'] ] ?? $row['e'] ) . ' — ' . $row['w'] ); ?></td>
+											<td><?php echo esc_html( ( ! empty( $row['x'] ) ? 'Test · ' : '' ) . ( array( 'inquiry' => 'Inquiry', 'saved' => 'Saved designs', 'design' => 'Ring design', 'hint' => 'Drop a hint' )[ $row['e'] ] ?? $row['e'] ) . ' · ' . $row['w'] ); ?></td>
 											<td><?php echo esc_html( 'ghl' === $row['to'] ? 'GoHighLevel' : 'Webhook' ); ?></td>
 											<td><?php echo $row['ok'] ? '<span style="color:#008a20">&#10004; Sent</span>' : '<span style="color:#d63638">&#10008; ' . esc_html( $row['m'] . ( (int) $row['a'] > 1 ? ' (try ' . (int) $row['a'] . ')' : '' ) ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped. ?></td>
 										</tr>

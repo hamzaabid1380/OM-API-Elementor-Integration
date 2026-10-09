@@ -107,6 +107,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 			'show_line_label'  => __( 'Product line label', 'om-catalog' ),
 			'show_title'       => __( 'Title', 'om-catalog' ),
 			'show_save'        => __( '"Save" (heart) button', 'om-catalog' ),
+			'show_hint'        => __( '"Drop a hint" link', 'om-catalog' ),
 			'show_meta'        => __( 'Carat / style number line', 'om-catalog' ),
 			'show_price'       => __( 'Price', 'om-catalog' ),
 			'show_description' => __( 'Description', 'om-catalog' ),
@@ -2079,7 +2080,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		}
 
 		$args = array();
-		foreach ( array( 'show_gallery', 'show_line_label', 'show_title', 'show_save', 'show_meta', 'show_price', 'show_description', 'show_options', 'show_stones', 'show_variants' ) as $key ) {
+		foreach ( array( 'show_gallery', 'show_line_label', 'show_title', 'show_save', 'show_hint', 'show_meta', 'show_price', 'show_description', 'show_options', 'show_stones', 'show_variants' ) as $key ) {
 			$args[ $key ] = 'yes' === ( $settings[ $key ] ?? 'yes' );
 		}
 

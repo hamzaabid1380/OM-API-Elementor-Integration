@@ -157,6 +157,7 @@ class WK_Quiz_Widget extends WK_Widget {
 		$this->add_control( 'r_mail', array( 'label' => __( 'Email button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Email me my matches', 'wulf-kit' ), 'description' => __( 'Leave empty to hide. Sends the three rings to the visitor and a copy to your shop email.', 'wulf-kit' ) ) );
 		$this->add_control( 'r_fine', array( 'label' => __( 'Small print', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Free and no obligation. We\'ll set them out for your visit.', 'wulf-kit' ), 'label_block' => true ) );
 		$this->add_control( 'r_again', array( 'label' => __( 'Start over', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Start over', 'wulf-kit' ) ) );
+		$this->add_control( 'hint_on', array( 'label' => __( '"Drop a hint" link', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'Visitors send their three matches to someone special by email (needs the OM Catalog plugin, version 1.39 or later).', 'wulf-kit' ) ) );
 		$this->end_controls_section();
 
 		$this->style_section();
@@ -334,7 +335,8 @@ class WK_Quiz_Widget extends WK_Widget {
 		if ( $s['r_mail'] ) {
 			echo '<form class="qz-mail" id="' . esc_attr( $mail_id ) . '" data-qz-mail hidden novalidate><label for="' . esc_attr( $mail_id ) . '-e">' . esc_html__( 'Your email', 'wulf-kit' ) . '</label><div class="qz-mail-row"><input id="' . esc_attr( $mail_id ) . '-e" type="email" name="email" autocomplete="email" inputmode="email" required><button class="btn btn-ink" type="submit">' . esc_html__( 'Send my matches', 'wulf-kit' ) . '</button></div><input type="text" name="website" tabindex="-1" autocomplete="off" class="sr" aria-hidden="true"><p class="qz-mail-note">' . esc_html__( 'We\'ll send your three matches to this address.', 'wulf-kit' ) . '</p><p class="err" data-qz-err role="alert" hidden></p></form><p class="qz-sent" data-qz-sent role="status" hidden></p>';
 		}
-		echo '<p class="qz-fine">' . ( $s['r_fine'] ? esc_html( $s['r_fine'] ) . ' ' : '' ) . '<button class="qz-again" type="button" data-qz-again>' . esc_html( $s['r_again'] ) . '</button></p></div>';
+		$hint = 'yes' === ( $s['hint_on'] ?? 'yes' ) ? $this->hint_link( 'qz-again qz-hint' ) : '';
+		echo ( $s['r_fine'] ? '<p class="qz-fine">' . esc_html( $s['r_fine'] ) . '</p>' : '' ) . '<p class="qz-more">' . $hint . '<button class="qz-again" type="button" data-qz-again>' . esc_html( $s['r_again'] ) . '</button></p></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
 		echo '</div></div></div></section>';
 		$this->close();

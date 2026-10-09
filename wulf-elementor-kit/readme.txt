@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -124,6 +124,17 @@ quiz_email_open to the Google Analytics, Tag Manager or Meta pixel
 already on the site (nothing is added). Mark generate_lead as a key event in GA4 to count bookings as
 conversions. Add ?wk_debug_events=1 to a page address to watch them in the browser console.
 
+== Drop a hint ==
+
+With the OM Catalog plugin 1.39.0 or later, the Spotlight (beside its buttons) and the ring style quiz
+results (beside "Start over") show a small "Drop a hint" link. It opens the OM Catalog's hint form with
+the ring on screen in the gold showing (the quiz sends its three matches), so a visitor can email it to
+a partner with a note and their ring size. The partner's private page has "Book a viewing", which opens
+this kit's booking popup with the ring filled in and "From a hint" in the request email.
+
+Each widget has a "Drop a hint" link switch (Spotlight: Rings; quiz: Results). The link text, and
+turning the feature off everywhere, are in Settings > OM Catalog > Look & feel > Drop a hint.
+
 == Visit requests and newsletter ==
 
 The "Book a visit" form and the footer sign-up email you (Wulf Kit > Settings > "Visit requests
@@ -131,6 +142,12 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.9.1 =
+* "Drop a hint" link on the Spotlight and on the ring style quiz results (needs OM Catalog 1.39.0 or
+  later): visitors email the ring on screen, or their three matches, to someone special. Each widget
+  has a switch for it.
+* Booking popup: a booking that starts from a hint page says "From a hint" in the request email.
 
 = 1.9.0 =
 * Ring style quiz (new widget, on "Home (conversion)" after "What brings you in?"): four picture

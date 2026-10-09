@@ -990,7 +990,7 @@
 				if (ok) {
 					var subject = $.trim($form.find('[name="om_subject"]:checked, input.om-subject-hidden').first().val() || '');
 					var leadItem = $form.find('[name="om_ctx_style"]').val();
-					var from = $form.closest('.om-ai').length ? 'assistant' : $form.closest('.om-builder').length ? 'ring_builder' : ($form.closest('.om-quick-view').length ? 'quick_view' : ($form.closest('.om-diamonds').length ? 'diamond' : ($form.closest('.om-product-wrap').length ? 'product_page' : 'page')));
+					var from = $form.closest('.om-ai').length ? 'assistant' : $form.closest('.om-builder').length ? 'ring_builder' : ($form.closest('.om-quick-view').length ? 'quick_view' : ($form.closest('.om-diamonds').length ? 'diamond' : ($form.closest('.om-product-wrap').length ? 'product_page' : ($form.closest('.om-hint-page').length ? 'hint_page' : 'page'))));
 					var leadPrice = priceNumber($form.find('[name="om_ctx_price"]').val());
 					track('generate_lead', $.extend({ form_type: 'inquiry', form_location: from, subject: subject, item_id: leadItem || '' }, leadPrice ? { value: leadPrice, currency: cfg.currency || 'USD' } : {}), ['track', 'Lead', { content_name: $form.find('[name="om_ctx_title"]').val() || subject, content_category: from }]);
 					if (/viewing|appointment/i.test(subject) && cfg.track && cfg.trackMeta && typeof window.fbq === 'function' && !trackOff()) { try { window.fbq('track', 'Schedule'); } catch (err) { /* ignore */ } }
@@ -2701,6 +2701,7 @@
 		}
 		$actions.append(
 			$('<button type="button" class="om-saved-share"><span class="om-qv-share-icon" aria-hidden="true"></span></button>').append(document.createTextNode(t('savedShare', 'Share list'))),
+			cfg.hint ? $('<button type="button" class="om-saved-hint" aria-haspopup="dialog"><span class="om-hint-icon" aria-hidden="true"></span></button>').append(document.createTextNode(t('hintEyebrow', 'Drop a hint'))) : null,
 			$('<button type="button" class="om-saved-clear"></button>').text(t('savedClear', 'Clear list'))
 		);
 		$foot.append($actions);
@@ -2832,6 +2833,252 @@
 	});
 
 	window.addEventListener('storage', function (e) { if (e.key === SAVED_KEY) { syncSaved(); } });
+
+	/* ---------- Drop a hint ----------
+	   A design (or the Saved list) sent to someone special: their name and
+	   email, a note and ring size; they get an email and a private page.
+	   window.omHint.open({ items: [{ l, s, t, i, c, m }], size, from }) lets
+	   other plugins (e.g. the Wulf kit's homepage sections) open it too. */
+
+	var hintDialog = null;
+	var hintItems = [];
+	var hintFrom = 'page';
+	var hintStamp = '';
+	var hintOpener = null;
+	var HINT_ME = 'om_hint_me';
+	var HINT_SENT = 'om_hints_sent';
+	var HINT_LINK = /(https?:|www\.|\b[a-z0-9-]{2,}\.(com|net|org|info|biz|io|co|us|uk|ca|ru|cn|xyz|top|site|online|shop|store|link|click|live|app|me|ly|gl)\b)/i;
+
+	function hintGet(key) { try { return JSON.parse(window.localStorage.getItem(key) || 'null'); } catch (err) { return null; } }
+	function hintPut(key, value) { try { window.localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* storage unavailable */ } }
+	function hintEsc(text) { return $('<div></div>').text(String(text == null ? '' : text)).html(); }
+
+	function hintBuild() {
+		var H = cfg.hint || {};
+		var max = H.max || 300;
+		var field = function (id, name, label, type, auto, extra) {
+			return '<p class="om-hint-field"><label for="' + id + '">' + hintEsc(label) + '</label><input id="' + id + '" name="' + name + '" type="' + type + '" autocomplete="' + auto + '"' + (type === 'email' ? ' inputmode="email"' : ' maxlength="40"') + ' required' + (extra || '') + ' /></p>';
+		};
+		var sizes = (H.sizes || []).map(function (v) { return '<option value="' + hintEsc(v) + '">' + hintEsc(v) + '</option>'; }).join('');
+		var chips = (H.chips || []).map(function (c) { return '<button type="button" class="om-hint-chip" data-om-hint-chip>' + hintEsc(c) + '</button>'; }).join('');
+		hintDialog = $('<dialog class="om-hint-dialog' + (cfg.refined ? ' om-refined' : '') + '" aria-labelledby="om-hint-title" aria-describedby="om-hint-sub">' +
+			'<div class="om-hint-inner">' +
+			'<button type="button" class="om-hint-close" aria-label="' + hintEsc(t('close', 'Close')) + '">&times;</button>' +
+			'<div class="om-hint-head"><p class="om-hint-eyebrow"><span class="om-hint-icon" aria-hidden="true"></span>' + hintEsc(t('hintEyebrow', 'Drop a hint')) + '</p>' +
+			'<h2 class="om-hint-title" id="om-hint-title">' + hintEsc(t('hintTitle', 'Hoping someone gets the hint?')) + '</h2><p class="om-hint-sub" id="om-hint-sub"></p></div>' +
+			'<ul class="om-hint-items"></ul>' +
+			'<form class="om-hint-form" novalidate>' +
+			'<fieldset class="om-hint-set"><legend>' + hintEsc(t('hintFor', 'Who is it for?')) + '</legend><div class="om-hint-row">' +
+				field('om-hint-to-name', 'to_name', t('hintTheirName', 'Their name'), 'text', 'off') + field('om-hint-to-email', 'to_email', t('hintTheirEmail', 'Their email'), 'email', 'off') + '</div></fieldset>' +
+			'<fieldset class="om-hint-set"><legend>' + hintEsc(t('hintFromYou', 'From you')) + '</legend><div class="om-hint-row">' +
+				field('om-hint-from-name', 'from_name', t('hintYourName', 'Your name'), 'text', 'name') + field('om-hint-from-email', 'from_email', t('hintYourEmail', 'Your email'), 'email', 'email') + '</div></fieldset>' +
+			'<p class="om-hint-field om-hint-field--note"><label for="om-hint-note">' + hintEsc(t('hintNote', 'A note')) + ' <span>' + hintEsc(t('hintOptional', '(optional)')) + '</span></label><textarea id="om-hint-note" name="note" rows="3" maxlength="' + max + '" placeholder="' + hintEsc(t('hintNotePh', 'I keep coming back to this one…')) + '"></textarea><span class="om-hint-count" aria-hidden="true">0 / ' + max + '</span></p>' +
+			(chips ? '<div class="om-hint-chips" role="group" aria-label="' + hintEsc(t('hintIdeas', 'Note ideas')) + '">' + chips + '</div>' : '') +
+			'<div class="om-hint-row om-hint-row--opts"><p class="om-hint-field"><label for="om-hint-size">' + hintEsc(t('hintSize', 'Your ring size')) + ' <span>' + hintEsc(t('hintOptional', '(optional)')) + '</span></label><select id="om-hint-size" name="size"><option value="">' + hintEsc(t('hintSizeNot', 'Not sure')) + '</option>' + sizes + '</select></p>' +
+			'<div class="om-hint-checks"><label class="om-hint-check"><input type="checkbox" name="noprice" value="1" checked /><span>' + hintEsc(t('hintNoPrice', 'Leave the prices out')) + '</span></label><label class="om-hint-check"><input type="checkbox" name="copy" value="1" /><span>' + hintEsc(t('hintCopy', 'Send me a copy')) + '</span></label></div></div>' +
+			'<input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="om-hp" aria-hidden="true" />' +
+			'<p class="om-hint-status" role="alert" hidden></p>' +
+			'<button type="submit" class="om-hint-send">' + hintEsc(t('hintSend', 'Send the hint')) + '<span class="om-hint-send-arrow" aria-hidden="true">&rarr;</span></button>' +
+			'<p class="om-hint-fine">' + hintEsc(t('hintFine', 'We only use their email to send this hint.')) + '</p>' +
+			'</form>' +
+			'<div class="om-hint-done" hidden tabindex="-1"><span class="om-hint-done-ic" aria-hidden="true"></span><h3 class="om-hint-done-title"></h3><p class="om-hint-done-sub"></p>' +
+			'<div class="om-hint-done-btns"><a class="om-hint-preview" target="_blank" rel="noopener">' + hintEsc(t('hintPreview', 'See what they will see')) + '</a><button type="button" class="om-hint-finish">' + hintEsc(t('hintDoneBtn', 'Done')) + '</button></div>' +
+			'<button type="button" class="om-hint-again">' + hintEsc(t('hintAnother', 'Send another')) + '</button></div>' +
+			'</div></dialog>').appendTo(document.body);
+		var dlg = hintDialog[0];
+		hintDialog.on('click', function (e) { if (e.target === dlg) { dlg.close(); } });
+		hintDialog.on('click', '.om-hint-close, .om-hint-finish', function () { dlg.close(); });
+		dlg.addEventListener('close', function () {
+			if (!$('dialog[open]').length) { $('html').removeClass('om-lb-open'); }
+			if (hintOpener && document.contains(hintOpener) && hintOpener.focus) { hintOpener.focus({ preventScroll: true }); }
+		});
+		hintDialog.on('input', '[name=note]', function () { hintDialog.find('.om-hint-count').text(this.value.length + ' / ' + max); });
+		hintDialog.on('input change', 'input, textarea', function () { if (this.getAttribute('aria-invalid') === 'true') { this.removeAttribute('aria-invalid'); } });
+		hintDialog.on('click', '[data-om-hint-chip]', function () {
+			var note = hintDialog.find('[name=note]')[0];
+			var add = $(this).text();
+			note.value = (note.value && !/\s$/.test(note.value) ? note.value + ' ' : note.value) + add;
+			note.value = note.value.slice(0, max);
+			$(note).trigger('input').trigger('focus');
+		});
+		hintDialog.on('click', '.om-hint-again', function () {
+			var keep = hintDialog.find('[name=from_name]').val();
+			var keepEmail = hintDialog.find('[name=from_email]').val();
+			hintDialog.find('form')[0].reset();
+			hintDialog.find('[name=from_name]').val(keep);
+			hintDialog.find('[name=from_email]').val(keepEmail);
+			hintDialog.find('.om-hint-count').text('0 / ' + max);
+			hintShowForm();
+			hintFreshStamp();
+			hintDialog.find('[name=to_name]').trigger('focus');
+		});
+		hintDialog.on('submit', 'form', hintSubmit);
+	}
+
+	function hintShowForm() {
+		hintDialog.find('.om-hint-form, .om-hint-items, .om-hint-head').prop('hidden', false);
+		hintDialog.find('.om-hint-done').prop('hidden', true);
+		hintDialog.find('.om-hint-status').prop('hidden', true).text('');
+	}
+
+	function hintFreshStamp() {
+		hintStamp = '';
+		if (!cfg.ajaxUrl) { return $.Deferred().reject().promise(); }
+		return $.post(cfg.ajaxUrl, { action: 'om_hint_stamp' }).done(function (r) { if (r && r.success) { hintStamp = r.data.t; } });
+	}
+
+	function hintOpen(opts, opener) {
+		if (!cfg.hint) { return; }
+		opts = opts || {};
+		var seen = {};
+		hintItems = (opts.items || []).filter(function (x) {
+			var k = x && x.l && x.s ? x.l + '|' + String(x.s).toLowerCase() : '';
+			if (!k || seen[k]) { return false; }
+			seen[k] = true;
+			return true;
+		}).slice(0, 6);
+		if (!hintItems.length) { return; }
+		hintFrom = opts.from || 'page';
+		hintOpener = opener || document.activeElement;
+		if (!hintDialog) { hintBuild(); }
+		var many = hintItems.length > 1;
+		hintDialog.find('.om-hint-sub').text(many ? t('hintSubMany', 'We will email them these designs with your note, and a private page to see them in person.') : t('hintSub', 'We will email them this design with your note, and a private page to see it in person.'));
+		var $list = hintDialog.find('.om-hint-items').empty().toggleClass('is-many', many);
+		hintItems.slice(0, many ? 4 : 1).forEach(function (x) {
+			var words = [x.c ? t('hintGold', '%s gold').replace('%s', x.c) : '', x.m || ''].filter(Boolean).join(', ');
+			$list.append($('<li class="om-hint-item"></li>').append(
+				$('<span class="om-hint-thumb"></span>').append(x.i ? $('<img alt="" />').attr('src', x.i) : null),
+				many ? null : $('<span class="om-hint-item-text"></span>').append($('<b></b>').text(x.t || x.s), words ? $('<small></small>').text(words) : null)
+			));
+		});
+		if (hintItems.length > 4) { $list.append($('<li class="om-hint-item om-hint-item--more"></li>').text(t('hintMore', '+%d more').replace('%d', hintItems.length - 4))); }
+		hintShowForm();
+		var me = hintGet(HINT_ME) || {};
+		var $f = hintDialog.find('form');
+		if (me.n && !$f.find('[name=from_name]').val()) { $f.find('[name=from_name]').val(me.n); }
+		if (me.e && !$f.find('[name=from_email]').val()) { $f.find('[name=from_email]').val(me.e); }
+		$f.find('[name=size]').val(opts.size && /^\d/.test(opts.size) ? String(opts.size) : '');
+		hintFreshStamp();
+		var dlg = hintDialog[0];
+		if (dlg.showModal && !dlg.open) { dlg.showModal(); } else if (!dlg.open) { dlg.setAttribute('open', ''); }
+		$('html').addClass('om-lb-open');
+		var first = $f.find('[name=to_name]')[0];
+		if (first) { setTimeout(function () { first.focus(); }, 30); }
+		track('hint_open', { cta_location: hintFrom, designs: hintItems.length });
+	}
+
+	function hintSubmit(e) {
+		e.preventDefault();
+		var $f = $(this);
+		var $status = hintDialog.find('.om-hint-status');
+		var val = function (n) { return $.trim($f.find('[name=' + n + ']').val() || ''); };
+		var bad = function (name, msg) {
+			$status.text(msg).prop('hidden', false);
+			var el = $f.find('[name=' + name + ']').attr('aria-invalid', 'true')[0];
+			if (el) { el.focus(); }
+		};
+		$status.prop('hidden', true);
+		if (!val('to_name')) { return bad('to_name', t('hintNeedNames', 'Please add both names.')); }
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('to_email'))) { return bad('to_email', t('hintBadTo', 'Please check their email address.')); }
+		if (!val('from_name')) { return bad('from_name', t('hintNeedNames', 'Please add both names.')); }
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('from_email'))) { return bad('from_email', t('hintBadFrom', 'Please check your email address.')); }
+		if (HINT_LINK.test(val('note'))) { return bad('note', t('hintNoLinks', 'Please leave web links out of the note.')); }
+		var $btn = $f.find('.om-hint-send').prop('disabled', true).addClass('is-busy');
+		var send = function () {
+			var data = {
+				action: 'om_hint_send', t: hintStamp, from: hintFrom, page: window.location.href,
+				to_name: val('to_name'), to_email: val('to_email'), from_name: val('from_name'), from_email: val('from_email'),
+				note: $f.find('[name=note]').val() || '', size: $f.find('[name=size]').val() || '',
+				noprice: $f.find('[name=noprice]').is(':checked') ? 1 : '', copy: $f.find('[name=copy]').is(':checked') ? 1 : '',
+				website: $f.find('[name=website]').val() || '',
+				items: hintItems.map(function (x) { return { line: x.l, style: x.s, color: x.c || '', metal: x.m || '' }; })
+			};
+			$.post(cfg.ajaxUrl, data).done(function (r) {
+				if (!(r && r.success)) {
+					$status.text((r && r.data && r.data.message) || t('error', 'Something went wrong. Please try again.')).prop('hidden', false);
+					hintFreshStamp();
+					return;
+				}
+				hintPut(HINT_ME, { n: data.from_name, e: data.from_email });
+				if (r.data.token) { hintPut(HINT_SENT, [r.data.token].concat(hintGet(HINT_SENT) || []).slice(0, 30)); }
+				var $done = hintDialog.find('.om-hint-done');
+				$done.find('.om-hint-done-title').text(t('hintDone', 'Hint sent to %s.').replace('%s', data.to_name));
+				$done.find('.om-hint-done-sub').text(t('hintDoneSub', 'We have emailed %s, with a private page to see it and book a viewing.').replace('%s', data.to_name) + (data.copy ? ' ' + t('hintDoneCopy', 'A copy is on its way to you.') : ''));
+				$done.find('.om-hint-preview').attr('href', r.data.url || '#').prop('hidden', !r.data.url);
+				hintDialog.find('.om-hint-form, .om-hint-items, .om-hint-head').prop('hidden', true);
+				$done.prop('hidden', false).trigger('focus');
+				track('hint_sent', { cta_location: hintFrom, designs: hintItems.length, note: data.note ? 1 : 0, ring_size: data.size ? 1 : 0 });
+				track('generate_lead', { form_type: 'drop_a_hint', form_location: hintFrom, designs: hintItems.length }, ['track', 'Lead', { content_name: 'Drop a hint', content_category: 'drop_a_hint' }]);
+			}).fail(function (x) {
+				var msg = x && x.responseJSON && x.responseJSON.data && x.responseJSON.data.message;
+				$status.text(msg || t('error', 'Something went wrong. Please try again.')).prop('hidden', false);
+				hintFreshStamp();
+			}).always(function () { $btn.prop('disabled', false).removeClass('is-busy'); });
+		};
+		if (hintStamp) { send(); } else { hintFreshStamp().always(function () { if (hintStamp) { send(); } else { $btn.prop('disabled', false).removeClass('is-busy'); $status.text(t('error', 'Something went wrong. Please try again.')).prop('hidden', false); } }); }
+	}
+
+	// Product pages and the quick view: the design with the options chosen on the page.
+	$(document).on('click', '[data-om-hint]', function (e) {
+		e.preventDefault();
+		var data;
+		try { data = JSON.parse(this.getAttribute('data-om-hint')); } catch (err) { return; }
+		var $wrap = $(this).closest('.om-product-wrap');
+		var photo = $wrap.find('.om-main-image').attr('src');
+		var items = (data.items || []).map(function (x, i) {
+			return $.extend({}, x, $wrap.length ? { c: optVal($wrap, 'color'), m: optVal($wrap, 'metal'), i: (!i && photo) || x.i } : {});
+		});
+		var size = $wrap.length ? String($wrap.find('select[name="finger_size"]').val() || '') : '';
+		hintOpen({ items: items, size: size, from: $(this).closest('.om-quick-view').length ? 'quick_view' : ($wrap.length ? 'product_page' : (data.from || 'page')) }, this);
+	});
+
+	// The Saved panel: the whole list (up to six designs).
+	$(document).on('click', '.om-saved-hint', function () {
+		hintOpen({ items: readSaved().slice(0, 6).map(function (x) { return { l: x.l, s: x.s, t: x.t, i: x.i }; }), from: 'saved_list' }, this);
+	});
+
+	window.omHint = {
+		open: function (opts) { hintOpen(opts || {}, document.activeElement); },
+		enabled: function () { return !!cfg.hint; }
+	};
+
+	// The hint's own page: count the visit (not the sender's, not ours) and
+	// open the site's booking window for "Book a viewing" when there is one.
+	$(function () {
+		var page = document.querySelector('[data-om-hint-page]');
+		if (!page) { return; }
+		var token = page.getAttribute('data-om-hint-page');
+		var view = page.getAttribute('data-om-hint-view') || '';
+		var ctx = {};
+		try { ctx = JSON.parse(page.getAttribute('data-om-hint-ctx') || '{}'); } catch (err) { ctx = {}; }
+		var mine = (hintGet(HINT_SENT) || []).indexOf(token) !== -1;
+		var who = mine || view === 'sender' ? 'sender' : (view === 'shop' ? 'shop' : 'recipient');
+		track('hint_view', { viewer: who });
+		if (who === 'recipient' && cfg.ajaxUrl && !document.body.classList.contains('logged-in')) {
+			var counted = false;
+			var count = function () {
+				if (counted || document.visibilityState !== 'visible') { return; }
+				counted = true;
+				setTimeout(function () { $.post(cfg.ajaxUrl, { action: 'om_hint_seen', token: token }); }, 1500);
+			};
+			count();
+			document.addEventListener('visibilitychange', count);
+		}
+		$(page).on('click', '[data-om-hint-book]', function (e) {
+			track('hint_cta', { cta: 'book', viewer: who });
+			var kit = window.wkBook && window.wkConfig && window.wkConfig.panel;
+			if (!kit) { return; } // The inquiry form below, with "Book a viewing" chosen.
+			e.preventDefault();
+			e.stopPropagation();
+			window.wkBook({
+				topic: /engagement/i.test(ctx.line || ctx.piece || '') ? 'Engagement ring' : '',
+				piece: { name: ctx.piece || '', sub: ctx.sub || '', img: ctx.img || '' },
+				answers: (t('hintFrom', 'From a hint by %s').replace('%s', ctx.from || '')) + (ctx.size ? ', ring size ' + ctx.size : ''),
+				source: 'hint'
+			});
+		});
+		$(page).on('click', '[data-om-hint-ask]', function () { track('hint_cta', { cta: 'ask', viewer: who }); });
+	});
 
 	/* ---------- Ring builder ---------- */
 

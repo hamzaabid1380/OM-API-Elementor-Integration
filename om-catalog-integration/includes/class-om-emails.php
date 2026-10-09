@@ -124,6 +124,62 @@ class OM_Emails {
 					'button'  => __( 'Open the design', 'om-catalog' ),
 				),
 			),
+			'hint_partner'     => array(
+				'label'    => __( 'Drop a hint', 'om-catalog' ),
+				'when'     => __( 'To the person a visitor sends a hint to ("Drop a hint"): the designs, the note and ring size, and a button to their private page. Sent whenever someone drops a hint; switch the feature off under Look & feel.', 'om-catalog' ),
+				'audience' => 'partner',
+				'toggle'   => false,
+				'tokens'   => array( 'from_name', 'to_name', 'note', 'ring_size', 'count', 'piece', 'link', 'details' ),
+				'defaults' => array(
+					'enabled' => '1',
+					'subject' => __( '{from_name} has dropped you a hint', 'om-catalog' ),
+					'heading' => __( 'A little hint from {from_name}', 'om-catalog' ),
+					'body'    => '<p>' . __( 'Hi {to_name},', 'om-catalog' ) . '</p><p>' . __( '{from_name} has been admiring something at {site_name} and thought you should know.', 'om-catalog' ) . '</p><p>{details}</p><p>' . __( 'Come and see it in person, with no pressure. We will be happy to help.', 'om-catalog' ) . '</p>',
+					'button'  => __( 'See it and book a viewing', 'om-catalog' ),
+				),
+			),
+			'hint_copy'        => array(
+				'label'    => __( 'Drop a hint: their copy', 'om-catalog' ),
+				'when'     => __( 'To the visitor who sent a hint, when they tick "Send me a copy".', 'om-catalog' ),
+				'audience' => 'customer',
+				'toggle'   => false,
+				'tokens'   => array( 'from_name', 'to_name', 'note', 'ring_size', 'count', 'piece', 'link', 'details' ),
+				'defaults' => array(
+					'enabled' => '1',
+					'subject' => __( 'Your hint is on its way to {to_name}', 'om-catalog' ),
+					'heading' => __( 'Hint sent', 'om-catalog' ),
+					'body'    => '<p>' . __( 'We have sent {to_name} your hint. Here is what they will see.', 'om-catalog' ) . '</p><p>{details}</p>',
+					'button'  => __( 'See their page', 'om-catalog' ),
+				),
+			),
+			'hint_shop'        => array(
+				'label'    => __( 'Drop a hint: your copy', 'om-catalog' ),
+				'when'     => __( 'To you, when a visitor drops a hint (also saved under Inquiries). The person they sent it to is not added anywhere.', 'om-catalog' ),
+				'audience' => 'shop',
+				'toggle'   => true,
+				'tokens'   => array( 'from_name', 'to_name', 'customer_email', 'note', 'ring_size', 'count', 'piece', 'link', 'details' ),
+				'defaults' => array(
+					'enabled' => '1',
+					'subject' => __( 'Drop a hint: {from_name} to {to_name}', 'om-catalog' ),
+					'heading' => __( '{from_name} dropped a hint', 'om-catalog' ),
+					'body'    => '<p>' . __( '{from_name} ({customer_email}) sent a hint to {to_name}. Reply to this email to reach {from_name}.', 'om-catalog' ) . '</p><p>{details}</p>',
+					'button'  => __( 'Open the hint page', 'om-catalog' ),
+				),
+			),
+			'hint_opened'      => array(
+				'label'    => __( 'Drop a hint: opened', 'om-catalog' ),
+				'when'     => __( 'To you, the first time someone opens the page of a hint they were sent. A good moment to be ready for their call.', 'om-catalog' ),
+				'audience' => 'shop',
+				'toggle'   => true,
+				'tokens'   => array( 'from_name', 'to_name', 'note', 'ring_size', 'count', 'piece', 'link', 'details' ),
+				'defaults' => array(
+					'enabled' => '1',
+					'subject' => __( '{to_name} opened the hint from {from_name}', 'om-catalog' ),
+					'heading' => __( 'A hint was just opened', 'om-catalog' ),
+					'body'    => '<p>' . __( '{to_name} has just looked at the hint {from_name} sent. They may be in touch soon.', 'om-catalog' ) . '</p><p>{details}</p>',
+					'button'  => __( 'Open the hint page', 'om-catalog' ),
+				),
+			),
 			'design_followup'  => array(
 				'label'    => __( 'Ring design — gentle follow-up', 'om-catalog' ),
 				'when'     => __( 'To a visitor who emailed themselves a ring design but has not sent a request since — once, a few days later. Off until you switch it on.', 'om-catalog' ),
@@ -161,6 +217,10 @@ class OM_Emails {
 			'count'           => __( 'How many designs', 'om-catalog' ),
 			'design'          => __( 'The ring design', 'om-catalog' ),
 			'details'         => __( 'The automatic block: piece, designs, their answers', 'om-catalog' ),
+			'from_name'       => __( 'Who sent the hint', 'om-catalog' ),
+			'to_name'         => __( 'Who the hint is for', 'om-catalog' ),
+			'note'            => __( 'Their note', 'om-catalog' ),
+			'ring_size'       => __( 'The ring size they gave', 'om-catalog' ),
 		);
 	}
 
@@ -459,6 +519,30 @@ class OM_Emails {
 			if ( 'inquiry_shop' === $id ) {
 				$details .= '<p style="font-family:Helvetica,Arial,sans-serif;color:#6e6e6e;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;margin:18px 0 6px;">' . esc_html__( 'Their message', 'om-catalog' ) . '</p><p style="font-family:Helvetica,Arial,sans-serif;font-size:14px;margin:0;">' . esc_html__( 'Could I see this in rose gold on Saturday?', 'om-catalog' ) . '</p>';
 			}
+		} elseif ( 0 === strpos( $id, 'hint' ) ) {
+			$vars    = array_merge(
+				$vars,
+				array(
+					'from_name' => 'Emma',
+					'to_name'   => 'James',
+					'note'      => __( 'I keep coming back to this one.', 'om-catalog' ),
+					'ring_size' => '6.5',
+					'count'     => '1',
+				)
+			);
+			$details = OM_Hint::email_block(
+				array(
+					'from'    => 'Emma',
+					'to'      => 'James',
+					'note'    => $vars['note'],
+					'size'    => '6.5',
+					'noprice' => false,
+					'items'   => array( array( 'l' => 'engagement-rings', 's' => '85121-2', 't' => 'Oval Hidden Halo Engagement Ring', 'i' => '', 'u' => home_url( '/' ), 'o' => __( 'Yellow gold, 14 KT', 'om-catalog' ), 'c' => 'Yellow', 'm' => '14 KT', 'p' => 'From $3,450' ) ),
+				),
+				'hint_partner' === $id ? 'partner' : ( 'hint_copy' === $id ? 'sender' : 'shop' ),
+				home_url( '/' ),
+				'james@example.com'
+			);
 		} elseif ( 0 === strpos( $id, 'saved' ) ) {
 			$details = $box( 'Oval Hidden Halo Engagement Ring', 'Style 85121-2', array() ) . '<div style="height:10px"></div>' . $box( 'Round Solitaire Engagement Ring', 'Style 80285-01', array() );
 		}

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.38.0
+ * Version: 1.39.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.38.0' );
+define( 'OM_CATALOG_VERSION', '1.39.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -26,6 +26,7 @@ require_once OM_CATALOG_DIR . 'includes/functions-elementor.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-search.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-engage.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-saved.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-hint.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-assistant.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-emails.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-crm.php';
@@ -52,6 +53,7 @@ function om_catalog_init() {
 	OM_Search::instance();
 	OM_Engage::instance();
 	OM_Saved::instance();
+	OM_Hint::instance();
 	OM_Assistant::instance();
 	OM_Emails::instance();
 	OM_CRM::instance();
@@ -217,6 +219,45 @@ function om_catalog_enqueue_assets() {
 				'aiYou'      => __( 'You', 'om-catalog' ),
 				/* translators: %s: style number. */
 				'styleN'     => __( 'Style %s', 'om-catalog' ),
+				// Drop a hint.
+				'hintEyebrow' => OM_Hint::label(),
+				'hintTitle'  => __( 'Hoping someone gets the hint?', 'om-catalog' ),
+				'hintSub'    => __( 'We will email them this design with your note, and a private page to see it in person.', 'om-catalog' ),
+				'hintSubMany' => __( 'We will email them these designs with your note, and a private page to see them in person.', 'om-catalog' ),
+				'hintFor'    => __( 'Who is it for?', 'om-catalog' ),
+				'hintFromYou' => __( 'From you', 'om-catalog' ),
+				'hintTheirName' => __( 'Their name', 'om-catalog' ),
+				'hintTheirEmail' => __( 'Their email', 'om-catalog' ),
+				'hintYourName' => __( 'Your name', 'om-catalog' ),
+				'hintYourEmail' => __( 'Your email', 'om-catalog' ),
+				'hintNote'   => __( 'A note', 'om-catalog' ),
+				'hintOptional' => __( '(optional)', 'om-catalog' ),
+				'hintNotePh' => __( 'I keep coming back to this one…', 'om-catalog' ),
+				'hintIdeas'  => __( 'Note ideas', 'om-catalog' ),
+				'hintSize'   => __( 'Your ring size', 'om-catalog' ),
+				'hintSizeNot' => __( 'Not sure', 'om-catalog' ),
+				'hintNoPrice' => __( 'Leave the prices out', 'om-catalog' ),
+				'hintCopy'   => __( 'Send me a copy', 'om-catalog' ),
+				'hintSend'   => __( 'Send the hint', 'om-catalog' ),
+				'hintFine'   => __( 'We only use their email to send this hint.', 'om-catalog' ),
+				'hintNeedNames' => __( 'Please add both names.', 'om-catalog' ),
+				'hintBadTo'  => __( 'Please check their email address.', 'om-catalog' ),
+				'hintBadFrom' => __( 'Please check your email address.', 'om-catalog' ),
+				'hintNoLinks' => __( 'Please leave web links out of the note.', 'om-catalog' ),
+				/* translators: %s: recipient's name. */
+				'hintDone'   => __( 'Hint sent to %s.', 'om-catalog' ),
+				/* translators: %s: recipient's name. */
+				'hintDoneSub' => __( 'We have emailed %s, with a private page to see it and book a viewing.', 'om-catalog' ),
+				'hintDoneCopy' => __( 'A copy is on its way to you.', 'om-catalog' ),
+				'hintPreview' => __( 'See what they will see', 'om-catalog' ),
+				'hintAnother' => __( 'Send another', 'om-catalog' ),
+				'hintDoneBtn' => __( 'Done', 'om-catalog' ),
+				/* translators: %d: number of designs. */
+				'hintMore'   => __( '+%d more', 'om-catalog' ),
+				/* translators: %s: gold colour, e.g. Yellow. */
+				'hintGold'   => __( '%s gold', 'om-catalog' ),
+				/* translators: %s: sender's name. */
+				'hintFrom'   => __( 'From a hint by %s', 'om-catalog' ),
 			),
 			'cardHover' => (string) get_option( 'om_card_hover', 'lift' ),
 			'refined'   => 'refined' === om_design(),
@@ -239,6 +280,12 @@ function om_catalog_enqueue_assets() {
 			'currency'        => (string) apply_filters( 'om_analytics_currency', 'USD' ),
 			// "Ask our jeweller" chat (false when switched off).
 			'assistant'       => OM_Assistant::front_config(),
+			// "Drop a hint" (false when switched off).
+			'hint'            => OM_Hint::enabled() ? array(
+				'sizes' => OM_Hint::sizes(),
+				'chips' => OM_Hint::chips(),
+				'max'   => OM_Hint::NOTE_MAX,
+			) : false,
 			'popular'   => om_popular_searches(),
 		)
 	);

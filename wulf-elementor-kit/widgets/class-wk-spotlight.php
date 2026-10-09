@@ -63,6 +63,7 @@ class WK_Spotlight_Widget extends WK_Widget {
 			'description' => __( 'Cards turn this into your favorites row: tap a ring to see it turn in the large frame.', 'wulf-kit' ),
 		) );
 		$this->add_control( 'save_on', array( 'label' => __( 'Heart to save the ring on screen', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Saves it to the visitor\'s tray for their visit.', 'wulf-kit' ) ) );
+		$this->add_control( 'hint_on', array( 'label' => __( '"Drop a hint" link', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'Visitors send the ring on screen to someone special by email (needs the OM Catalog plugin, version 1.39 or later). Shown for rings that link to the catalog.', 'wulf-kit' ) ) );
 		$this->add_control( 'show_price', array( 'label' => __( 'Show price', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
 		$this->add_control( 'link_text', array( 'label' => __( 'Link text under the ring', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'View this ring', 'wulf-kit' ) ) );
 		$this->button_fields( 'b1', __( 'Button', 'wulf-kit' ), __( 'Book to see it in person', 'wulf-kit' ), '#visit', 'Engagement ring' );
@@ -210,7 +211,7 @@ class WK_Spotlight_Widget extends WK_Widget {
 			}
 			echo '</div>';
 		}
-		$b = $this->button( $s, 'b1', 'btn btn-main ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true ) . $this->button( $s, 'more', 'link', true );
+		$b = $this->button( $s, 'b1', 'btn btn-main ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true ) . $this->button( $s, 'more', 'link', true ) . ( 'yes' === ( $s['hint_on'] ?? 'yes' ) ? $this->hint_link( 'spot-hint' ) : '' );
 		if ( $b ) {
 			echo '<div class="spot-cta">' . $b . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}

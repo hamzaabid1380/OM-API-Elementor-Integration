@@ -341,6 +341,8 @@ class OM_Inquiry {
 				'chat'        => '',
 				// A small line above the send button.
 				'note'        => '',
+				// From a "Drop a hint" page: its key, so the shop sees the story.
+				'hint'        => '',
 				// A reassuring line under the send button.
 				'reassure'    => '',
 				// Filled by the script at send time: the page URL with the
@@ -401,7 +403,7 @@ class OM_Inquiry {
 			<form class="om-inquiry-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" novalidate>
 				<input type="hidden" name="action" value="om_inquiry" />
 				<input type="hidden" name="om_t" value="<?php echo esc_attr( self::stamp() ); ?>" />
-				<?php foreach ( array( 'title', 'style', 'line', 'url', 'price', 'diamond', 'summary', 'guide', 'chat', 'link', 'color' ) as $field ) : ?>
+				<?php foreach ( array( 'title', 'style', 'line', 'url', 'price', 'diamond', 'summary', 'guide', 'chat', 'link', 'color', 'hint' ) as $field ) : ?>
 					<input type="hidden" name="om_ctx_<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $context[ $field ] ); ?>" />
 				<?php endforeach; ?>
 				<input type="hidden" name="om_config" value="" class="om-inquiry-config" />
@@ -598,6 +600,8 @@ class OM_Inquiry {
 			'chat'    => mb_substr( $f( 'om_ctx_chat', true ), 0, 4000 ),
 			'config'  => mb_substr( $f( 'om_config' ), 0, 300 ),
 		);
+		// From a "Drop a hint" page: who hinted, when, the ring size.
+		$data['hint'] = class_exists( 'OM_Hint' ) ? OM_Hint::inquiry_context( $f( 'om_ctx_hint' ) ) : '';
 		// phpcs:enable
 
 		// The piece as Overnight Mountings has it (cached lookup), rather
@@ -659,6 +663,7 @@ class OM_Inquiry {
 				__( 'Diamond', 'om-catalog' )        => $data['diamond'],
 				__( 'Ring builder', 'om-catalog' )   => $data['summary'],
 				__( 'Help me choose', 'om-catalog' ) => $data['guide'],
+				__( 'From a hint', 'om-catalog' )    => $data['hint'],
 				__( 'Assistant chat', 'om-catalog' ) => '' !== $data['chat'] ? "\n" . $data['chat'] : '',
 				__( 'Page', 'om-catalog' )          => $data['link'],
 				__( 'Together with', 'om-catalog' )  => $data['pair'] ? $data['pair']['title'] . ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $data['pair']['style'] ) . ') ' . $data['pair']['url'] : '',
@@ -721,6 +726,9 @@ class OM_Inquiry {
 				continue;
 			}
 			$crm_fields[ $pair[0] ] = $pair[1];
+		}
+		if ( '' !== $data['hint'] ) {
+			$crm_fields[ __( 'From a hint', 'om-catalog' ) ] = $data['hint'];
 		}
 		// The name: empty rather than the email/"Website visitor" fallback.
 		$crm_name = $data['name'] === $data['email'] || __( 'Website visitor', 'om-catalog' ) === $data['name'] ? '' : $data['name'];
@@ -811,6 +819,7 @@ class OM_Inquiry {
 				__( 'Ring builder', 'om-catalog' )   => $data['summary'] ?? '',
 				// For the shop only.
 				__( 'Help me choose', 'om-catalog' ) => $customer ? '' : ( $data['guide'] ?? '' ),
+				__( 'From a hint', 'om-catalog' )    => $customer ? '' : ( $data['hint'] ?? '' ),
 				__( 'Assistant chat', 'om-catalog' ) => $customer ? '' : ( $data['chat'] ?? '' ),
 			),
 			'strlen'

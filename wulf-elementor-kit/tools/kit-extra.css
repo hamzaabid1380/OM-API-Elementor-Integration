@@ -1270,3 +1270,18 @@ body.wk-modal-open .om-ai .om-ai-launch.om-ai-launch, body.wk-modal-open .om-ai 
 	.wk .qz-opt, .wk .qz-ph .qz-pic img, .wk .qz-prog span { transition: none; }
 	.wk .qz-opt:hover { transform: none; }
 }
+
+/* ================= "Drop a hint" (OM Catalog): a quiet link in the spotlight and the quiz results ================= */
+.wk .wk-hint[hidden] { display: none !important; }
+.wk button.wk-hint { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; margin: 0; padding: 0; border: 0; background: none; color: var(--ink); font: 700 15px/1.2 var(--sans); cursor: pointer; }
+.wk button.wk-hint span { text-decoration: underline; text-decoration-color: var(--gold-deep); text-underline-offset: 5px; }
+.wk button.wk-hint svg { width: 18px; height: 18px; flex: none; color: var(--gold-deep); }
+.wk button.wk-hint:hover span { text-decoration-thickness: 2px; }
+.wk button.wk-hint:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; border-radius: 4px; }
+.wk .dark .spot-cta button.wk-hint { color: #fff; }
+.wk .dark .spot-cta button.wk-hint svg { color: var(--gold); }
+.wk .qz-more { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; margin: 10px 0 0; }
+.wk .qz-more button.wk-hint { font-size: 13.5px; }
+.wk .qz-more button.wk-hint svg { width: 16px; height: 16px; }
+.wk .qz-fine + .qz-more { margin-top: 6px; }
+@media (max-width: 600px) { .wk .spot-cta button.wk-hint { align-self: center; } }

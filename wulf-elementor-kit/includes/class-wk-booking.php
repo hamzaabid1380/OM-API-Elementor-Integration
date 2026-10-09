@@ -74,7 +74,7 @@ class WK_Booking {
 			__( 'Talk about', 'wulf-kit' )       => implode( ', ', $d['topics'] ),
 			__( 'Looking at', 'wulf-kit' )       => $d['piece'],
 			__( 'Pieces on their tray', 'wulf-kit' ) => implode( '; ', $d['tray'] ),
-			__( 'Ring style quiz', 'wulf-kit' )  => $d['quiz'],
+			( 'hint' === $d['source'] ? __( 'From a hint', 'wulf-kit' ) : __( 'Ring style quiz', 'wulf-kit' ) ) => $d['quiz'],
 			__( 'Notes', 'wulf-kit' )            => $d['note'],
 			__( 'Page', 'wulf-kit' )             => $d['page'],
 			__( 'Booked from', 'wulf-kit' )      => $d['source'],

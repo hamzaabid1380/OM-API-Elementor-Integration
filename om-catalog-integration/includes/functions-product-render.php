@@ -27,6 +27,8 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			'show_meta'           => true,
 			// "Save" (heart) next to the title.
 			'show_save'           => true,
+			// "Drop a hint" under the buttons (Settings > Look & feel).
+			'show_hint'           => true,
 			'show_price'          => true,
 			'show_description'    => true,
 			'show_options'        => true,
@@ -167,6 +169,14 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 	$buttons_in_price  = $buttons && ! $has_price && 'buttons' === $args['price_fallback'];
 	$buttons_position  = $buttons_in_price ? 'price' : $args['buttons_position'];
 	$buttons_html      = $buttons ? om_render_action_buttons( $buttons, $has_price, $args['buttons_layout'] ) : '';
+	// "Drop a hint": right under the buttons, wherever they sit.
+	$hint_html = $args['show_hint'] && class_exists( 'OM_Hint' ) ? OM_Hint::button( $product_line, $style_number, (string) ( $product['title'] ?? $style_number ), ! empty( $product['images'][0] ) ? om_image_url( $product['images'][0] ) : '' ) : '';
+	if ( '' !== $hint_html ) {
+		if ( '' !== $buttons_html ) {
+			$buttons_html .= $hint_html;
+			$hint_html     = '';
+		}
+	}
 
 	// Ring builder button: only for the builder's product lines, when a
 	// builder page is set. Carries a diamond the customer already chose.
@@ -296,6 +306,8 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			if ( 'price' === $buttons_position ) {
 				echo $buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_render_action_buttons().
 			}
+			// No buttons on this page: the hint line follows the price.
+			echo $hint_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in OM_Hint::button().
 			?>
 
 			<?php
