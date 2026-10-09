@@ -53,8 +53,10 @@ class WK_Settings {
 			'max_width'     => '1240',
 			'tray'          => '1',
 			'actbar'        => '1',
+			'book_pill'     => '1',
+			'assistant_home' => '1',
 			'act_call'      => 'Call',
-			'act_book'      => 'Book a visit',
+			'act_book'      => 'Book a free consultation',
 			'act_dir'       => 'Directions',
 			'book_url'      => '#visit',
 			'book_panel'    => '1',
@@ -188,6 +190,22 @@ class WK_Settings {
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register' ) );
+		add_action( 'init', array( __CLASS__, 'upgrade' ), 5 );
+	}
+
+	/** One-time updates of saved settings when an old default wording was kept. */
+	public static function upgrade() {
+		$done = (string) get_option( 'wk_settings_rev', '' );
+		if ( version_compare( $done ? $done : '0', '1.9.0', '>=' ) ) {
+			return;
+		}
+		$saved = get_option( self::OPTION, array() );
+		if ( is_array( $saved ) && isset( $saved['act_book'] ) && 'Book a visit' === $saved['act_book'] ) {
+			$saved['act_book'] = 'Book a free consultation';
+			update_option( self::OPTION, $saved );
+			self::$cache = null;
+		}
+		update_option( 'wk_settings_rev', '1.9.0', false );
 	}
 
 	public static function menu() {
@@ -224,7 +242,7 @@ class WK_Settings {
 				$out[ $k ] = sanitize_email( $val );
 			} elseif ( 'turn_speed' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( '0.5', '0.6', '0.75', '1' ), true ) ? (string) $val : $v;
-			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'to_om_leads', 'calm_all', 'book_panel', 'track' ), true ) ) {
+			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'book_pill', 'assistant_home', 'to_om_leads', 'calm_all', 'book_panel', 'track' ), true ) ) {
 				$out[ $k ] = empty( $val ) ? '' : '1';
 			} elseif ( 'book_style' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( 'popup', 'drawer' ), true ) ? (string) $val : $v;
@@ -349,10 +367,12 @@ class WK_Settings {
 					self::field( 'footer_tpl', __( 'Site footer', 'wulf-kit' ), 'template', __( 'Shown at the bottom of every page instead of the theme footer.', 'wulf-kit' ) );
 					self::field( 'tray', __( 'Saved pieces tray', 'wulf-kit' ), 'check', __( 'Visitors can save pieces with the heart and bring them to their visit.', 'wulf-kit' ) );
 					self::field( 'actbar', __( 'Phone action bar', 'wulf-kit' ), 'check', __( 'Call / Book / Directions bar at the bottom of the screen on phones.', 'wulf-kit' ) );
+					self::field( 'book_pill', __( 'Booking button on computers', 'wulf-kit' ), 'check', __( 'After the first screen, a slim bar at the bottom with today\'s hours, "Book a free consultation" and your phone number. It steps aside near the booking form and the footer, and visitors can close it.', 'wulf-kit' ) );
+					self::field( 'assistant_home', __( 'Jeweller assistant on the homepage', 'wulf-kit' ), 'check', __( 'Shows the "Ask our jeweller" chat from the OM Catalog plugin on your homepage (and on homepage versions from the page library), with its starter question. The chat itself is switched on and set up in Settings › OM Catalog › AI assistant.', 'wulf-kit' ) );
 					self::field( 'act_call', __( 'Action bar: call label', 'wulf-kit' ) );
 					self::field( 'act_book', __( 'Action bar: book label', 'wulf-kit' ) );
 					self::field( 'act_dir', __( 'Action bar: directions label', 'wulf-kit' ) );
-					self::field( 'book_url', __( 'Book a visit link', 'wulf-kit' ), 'text', __( 'Where "Book a visit" buttons go. Leave it as #visit: buttons then jump to the visit form on the same page, or open the Free Consultation page\'s form when the page has none. Or paste any full link.', 'wulf-kit' ) );
+					self::field( 'book_url', __( 'Booking link', 'wulf-kit' ), 'text', __( 'Where "Book a free consultation" buttons go. Leave it as #visit: buttons then jump to the visit form on the same page, or open the Free Consultation page\'s form when the page has none. Or paste any full link.', 'wulf-kit' ) );
 					?>
 				</table>
 

@@ -1,7 +1,7 @@
 <?php
 /**
  * Site header: logo, menu with dropdown panels (built from a WordPress menu), phone, tray,
- * "Book a visit" button and a full-screen phone menu. Dark over the hero, white once scrolled.
+ * "Book a free consultation" button and a full-screen phone menu. Dark over the hero, white once scrolled.
  *
  * WordPress menu → header:
  *  - a top item with sub-items opens a panel;
@@ -85,7 +85,7 @@ class WK_Header_Widget extends WK_Widget {
 		$this->add_control( 'show_search', array( 'label' => __( 'Search button', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
 		$this->add_control( 'search_url', array( 'label' => __( 'Search goes to', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'placeholder' => home_url( '/?s=' ), 'condition' => array( 'show_search' => 'yes' ), 'description' => __( 'The search words are added to the end.', 'wulf-kit' ) ) );
 		$this->add_control( 'show_tray', array( 'label' => __( 'Saved pieces (tray) button', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
-		$this->button_fields( 'cta', __( 'Button', 'wulf-kit' ), __( 'Book a visit', 'wulf-kit' ), '#visit' );
+		$this->button_fields( 'cta', __( 'Button', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit' );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'c_behave', array( 'label' => __( 'Behavior', 'wulf-kit' ) ) );

@@ -148,7 +148,9 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_ai_greeting', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_chips', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_about', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
-		register_setting( 'om_catalog_settings', 'om_ai_show', array( 'sanitize_callback' => static function ( $v ) { return 'all' === $v ? 'all' : 'catalog'; } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_show', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, array( 'all', 'home' ), true ) ? $v : 'catalog'; } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_starter', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'om_catalog_settings', 'om_ai_starter_delay', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_side', array( 'sanitize_callback' => static function ( $v ) { return 'left' === $v ? 'left' : 'right'; } ) );
 		register_setting( 'om_catalog_settings', 'om_ai_offset_x', array( 'sanitize_callback' => 'absint' ) );
 		register_setting( 'om_catalog_settings', 'om_ai_offset_y', array( 'sanitize_callback' => 'absint' ) );
@@ -982,7 +984,7 @@ class OM_Settings {
 							<p class="description">The button that opens the chat.</p>
 							<textarea name="om_ai_greeting" rows="3" class="large-text" aria-label="Greeting" style="margin-top:8px" placeholder="<?php echo esc_attr( OM_Assistant::front_config() ? OM_Assistant::front_config()['greeting'] : 'Hi! I’m here to help you find the perfect piece…' ); ?>"><?php echo esc_textarea( get_option( 'om_ai_greeting', '' ) ); ?></textarea>
 							<p class="description">The first message. Empty = the text shown.</p>
-							<textarea name="om_ai_chips" rows="4" class="large-text" aria-label="Suggested questions" style="margin-top:8px" placeholder="Help me find an engagement ring&#10;Halo or hidden halo — what’s the difference?&#10;Lab-grown or natural diamond?&#10;How do I find her ring size?"><?php echo esc_textarea( get_option( 'om_ai_chips', '' ) ); ?></textarea>
+							<textarea name="om_ai_chips" rows="4" class="large-text" aria-label="Suggested questions" style="margin-top:8px" placeholder="Help me find an engagement ring&#10;Halo or hidden halo: what’s the difference?&#10;Lab-grown or natural diamond?&#10;How do I find her ring size?"><?php echo esc_textarea( get_option( 'om_ai_chips', '' ) ); ?></textarea>
 							<p class="description">Suggested questions to tap, one per line (up to 6).</p>
 						</td>
 					</tr>
@@ -990,8 +992,17 @@ class OM_Settings {
 						<th><label for="om_ai_show">Show on</label></th>
 						<td><select id="om_ai_show" name="om_ai_show">
 							<option value="catalog" <?php selected( get_option( 'om_ai_show', 'catalog' ), 'catalog' ); ?>>Catalog, product, diamond and ring builder pages</option>
+							<option value="home" <?php selected( get_option( 'om_ai_show', 'catalog' ), 'home' ); ?>>Catalog pages and the homepage</option>
 							<option value="all" <?php selected( get_option( 'om_ai_show', 'catalog' ), 'all' ); ?>>Every page</option>
 						</select></td>
+					</tr>
+					<tr>
+						<th><label for="om_ai_starter">Starter question on the homepage</label></th>
+						<td>
+							<input type="text" id="om_ai_starter" name="om_ai_starter" value="<?php echo esc_attr( get_option( 'om_ai_starter', 'Looking for an engagement ring? I can suggest designs for your style and budget.' ) ); ?>" class="large-text" />
+							<p><label>Show it after <input type="number" min="3" max="60" name="om_ai_starter_delay" value="<?php echo esc_attr( get_option( 'om_ai_starter_delay', 8 ) ); ?>" class="small-text" /> seconds</label>, or sooner once the visitor scrolls a third of the page.</p>
+							<p class="description">A small speech bubble beside the button on the homepage, once per visit, with two of your suggested questions to tap. Leave it empty to turn it off.</p>
+						</td>
 					</tr>
 					<tr>
 						<th>Button position</th>

@@ -77,7 +77,7 @@ class WK_Craft_Widget extends WK_Widget {
 		$this->add_control( 'step_word', array( 'label' => __( 'Counter wording', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Step %1$s of %2$s', 'wulf-kit' ), 'description' => __( '%1$s is the step, %2$s the total.', 'wulf-kit' ) ) );
 		$this->add_control( 'sweep', array( 'label' => __( 'Light sweep on the last step', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
 		$this->button_fields( 'b1', __( 'Button 1', 'wulf-kit' ), __( 'Start designing yours', 'wulf-kit' ), '#studio' );
-		$this->button_fields( 'b2', __( 'Button 2', 'wulf-kit' ), __( 'Book a visit', 'wulf-kit' ), '#visit', 'Engagement ring' );
+		$this->button_fields( 'b2', __( 'Button 2', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit', 'Engagement ring' );
 		$this->end_controls_section();
 
 		$this->style_section();
@@ -135,7 +135,7 @@ class WK_Craft_Widget extends WK_Widget {
 					$art = ' data-art="stone" data-metal="' . esc_attr( $st['metal'] ) . '"';
 					break;
 				case 'video':
-					$in = ! empty( $st['video']['url'] ) ? '<video class="cr-photo" muted loop playsinline autoplay src="' . esc_url( $st['video']['url'] ) . '"></video>' : '';
+					$in = ! empty( $st['video']['url'] ) ? '<video class="cr-photo" muted loop playsinline preload="none" data-lazy data-src="' . esc_url( $st['video']['url'] ) . '"></video>' : '';
 					break;
 				default:
 					$in = ! empty( $st['image']['url'] ) ? '<img class="cr-photo" src="' . esc_url( $this->img_url( $st['image'] ) ) . '" alt="">' : '';

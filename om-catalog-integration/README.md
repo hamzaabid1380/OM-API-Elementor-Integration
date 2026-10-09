@@ -401,7 +401,16 @@ name.
   AI answers per day. Today's count and the last problem (if any) show in
   Settings; admins also see the reason in the chat when an answer fails.
 - **Position:** bottom right or left, distances in px; it moves up only while
-  a bar (compare tray, phone filter pill, product bar) sits under it.
+  a bar (compare tray, phone filter pill, product bar, or any element marked
+  `data-om-ai-lift`, like the Wulf Kit's phone bar and booking bar) sits
+  under it.
+- **Where it shows** (1.38): catalog pages, catalog pages and the homepage,
+  or every page. On the homepage an optional **starter question** appears as
+  a small bubble beside the button after a few seconds (or once the visitor
+  scrolls a third of the page), once per visit, with two suggested questions
+  to tap. Set its words and delay, or leave it empty to turn it off. Themes
+  and plugins can add pages with the `om_assistant_show_here` filter and say
+  which page counts as the homepage with `om_assistant_is_home`.
 - **Test** it from Settings with one click. The conversation follows the
   visitor across pages; any link to `#om-ai` opens it. Analytics:
   `assistant_open`, `assistant_message`, and `generate_lead` with
@@ -984,6 +993,19 @@ list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.38.0
+- "Ask our jeweller" can show on the homepage as well as the catalog
+  (Settings > AI assistant > Show on > "Catalog pages and the homepage").
+- Starter question on the homepage: a small bubble beside the button after
+  a few seconds (default 8) or a third of the way down the page, once per
+  visit, with two suggested questions that open the chat and ask. It stays
+  away while the chat or a booking window is open. Its words and delay are
+  in the same settings; empty turns it off.
+- The button moves up above any bar marked `data-om-ai-lift` (the Wulf Kit
+  phone bar and the booking bar on computers).
+- New filters for themes and plugins: `om_assistant_show_here` and
+  `om_assistant_is_home`.
 
 ### 1.37.0
 - Settings save without reloading the page: "Save Settings" (or Ctrl/⌘+S)

@@ -39,7 +39,7 @@ class WK_Split_Widget extends WK_Widget {
 			'default'     => array(),
 		) );
 		$this->add_control( 'icon', array( 'label' => __( 'List icon', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'check', 'options' => WK_Icons::options() ) );
-		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Book a visit', 'wulf-kit' ), '#visit', true );
+		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit', true );
 		$this->button_fields( 'b2', __( 'Second link', 'wulf-kit' ), '', '' );
 		$this->end_controls_section();
 

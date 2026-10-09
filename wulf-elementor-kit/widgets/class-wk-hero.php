@@ -30,7 +30,7 @@ class WK_Hero_Widget extends WK_Widget {
 		$this->add_control( 'title', array( 'label' => __( 'Headline', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'Diamonds, cut to *your* story.', 'wulf-kit' ), 'description' => __( 'Wrap words in *stars* for gold italics.', 'wulf-kit' ) ) );
 		$this->add_control( 'lead', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => __( 'Engagement rings, certified diamonds, custom design and repair, compared in person with a GIA-certified jeweler at your side. Independent diamond experts since 1971.', 'wulf-kit' ) ) );
 		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Design your ring', 'wulf-kit' ), '#studio' );
-		$this->button_fields( 'b2', __( 'Second button', 'wulf-kit' ), __( 'Book a visit', 'wulf-kit' ), '#visit' );
+		$this->button_fields( 'b2', __( 'Second button', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit' );
 		$this->add_control( 'm_first', array(
 			'label'       => __( 'On phones, show first', 'wulf-kit' ),
 			'type'        => Controls_Manager::SELECT,
@@ -38,6 +38,8 @@ class WK_Hero_Widget extends WK_Widget {
 			'options'     => array( 'media' => __( 'The showcase, then the words', 'wulf-kit' ), 'words' => __( 'The words and buttons, then the showcase', 'wulf-kit' ) ),
 			'description' => __( '"Words first" keeps the buttons on the first screen of a phone.', 'wulf-kit' ),
 		) );
+		$this->add_control( 'm_mini', array( 'label' => __( 'Phones: small turning ring beside the headline', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Keeps a phone\'s first screen short: the first piece turns in a small circle of light next to the headline, and the large showcase is left out on phones.', 'wulf-kit' ) ) );
+		$this->add_control( 'lead_m', array( 'label' => __( 'Shorter text for phones (optional)', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => '', 'description' => __( 'Shown instead of the text above on phones.', 'wulf-kit' ), 'condition' => array( 'm_mini' => 'yes' ) ) );
 		$this->add_control( 'b_note', array( 'label' => __( 'Reassurance under the buttons', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'label_block' => true, 'description' => __( 'Optional, e.g. "Free and no obligation". Separate several with |', 'wulf-kit' ) ) );
 		$this->add_control( 'call_line', array( 'label' => __( '"Or call…" line with open status', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ) );
 		$this->add_control( 'call_text', array( 'label' => __( 'Starts with', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Or call', 'wulf-kit' ), 'condition' => array( 'call_line' => 'yes' ) ) );
@@ -172,11 +174,23 @@ class WK_Hero_Widget extends WK_Widget {
 			'price'    => 'yes' === $s['show_price'],
 			'items'    => $items,
 		);
+		$mini   = 'yes' === ( $s['m_mini'] ?? '' ) && $items;
+		$lead_m = $mini ? trim( (string) ( $s['lead_m'] ?? '' ) ) : '';
 		$this->open( $s, '', $cfg );
-		echo '<section class="hero' . ( 'words' === ( $s['m_first'] ?? 'media' ) ? ' m-words' : '' ) . '"' . $this->anchor_attr( $s ) . '><div class="hero-grid"><div class="hero-copy">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<section class="hero' . ( 'words' === ( $s['m_first'] ?? 'media' ) ? ' m-words' : '' ) . ( $mini ? ' has-mini' : '' ) . '"' . $this->anchor_attr( $s ) . '><div class="hero-grid"><div class="hero-copy">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $mini ? '<div class="hero-top">' : '';
 		echo '<h1 class="h1">' . ( $s['kicker'] ? '<span class="kicker">' . esc_html( $s['kicker'] ) . '</span>' : '' ) . self::rich( $s['title'] ) . '</h1>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		if ( $mini ) {
+			// Phones: the first piece turns in a small circle of light beside the headline.
+			$f  = $items[0];
+			$fm = $f['media'][ $f['m'] ];
+			echo '<div class="hero-mini" aria-hidden="true"><span class="hm-orbit"></span><span class="hm-piece"><img src="' . esc_url( $fm['poster'] ? $fm['poster'] : $f['img'] ) . '" alt="" decoding="async">' . ( $fm['v'] ? '<video muted loop playsinline preload="none" data-src="' . esc_url( $fm['v'] ) . '"></video>' : '' ) . '</span></div></div>';
+		}
 		if ( $s['lead'] ) {
-			echo '<p class="lead">' . esc_html( $s['lead'] ) . '</p>';
+			echo '<p class="lead' . ( $lead_m ? ' lead-d' : '' ) . '">' . esc_html( $s['lead'] ) . '</p>';
+		}
+		if ( $lead_m ) {
+			echo '<p class="lead lead-m">' . esc_html( $lead_m ) . '</p>';
 		}
 		$b = $this->button( $s, 'b1', 'btn btn-gold', true ) . $this->button( $s, 'b2', 'btn btn-ghost' );
 		if ( $b ) {
@@ -215,7 +229,8 @@ class WK_Hero_Widget extends WK_Widget {
 				$m   = $p['media'][ $p['m'] ];
 				$alt = $p['n'];
 				if ( $m['v'] ) {
-					$src = 0 === $i ? ' src="' . esc_url( $m['v'] ) . '" autoplay preload="auto"' : ' data-src="' . esc_url( $m['v'] ) . '" preload="none"';
+					// With the small phone ring, the big film waits for the script, which only loads it where the showcase shows.
+					$src = 0 === $i && ! $mini ? ' src="' . esc_url( $m['v'] ) . '" autoplay preload="auto"' : ' data-src="' . esc_url( $m['v'] ) . '" preload="none"' . ( 0 === $i ? ' data-first' : '' );
 					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><video muted loop playsinline' . $src . ( $m['poster'] ? ' poster="' . esc_url( $m['poster'] ) . '"' : '' ) . ' aria-label="' . esc_attr( $alt ) . '"></video></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				} else {
 					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><img src="' . esc_url( $m['poster'] ? $m['poster'] : $p['img'] ) . '" alt="' . esc_attr( $alt ) . '"></figure>';
@@ -225,7 +240,8 @@ class WK_Hero_Widget extends WK_Widget {
 			$f = $items[0];
 			echo '<div class="sc-foot"><p class="sc-cap" aria-live="polite">' . self::caption( $f, 'yes' === $s['show_price'] ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			if ( count( $items ) > 1 ) {
-				echo '<div class="sc-thumbs" role="group" aria-label="' . esc_attr__( 'Featured pieces', 'wulf-kit' ) . '">';
+				// data-om-ai-lift: the "Ask our jeweller" button (OM Catalog) floats above these instead of covering one.
+				echo '<div class="sc-thumbs" role="group" aria-label="' . esc_attr__( 'Featured pieces', 'wulf-kit' ) . '" data-om-ai-lift>';
 				foreach ( $items as $i => $p ) {
 					$th = $p['media'][ $p['m'] ]['poster'] ? $p['media'][ $p['m'] ]['poster'] : $p['img'];
 					/* translators: %s: piece name */

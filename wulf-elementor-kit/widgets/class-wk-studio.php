@@ -102,6 +102,16 @@ class WK_Studio_Widget extends WK_Widget {
 			'default' => 'go',
 			'options' => array( 'go' => __( 'View the setting', 'wulf-kit' ), 'book' => __( 'Book (gold), with "View the setting" beside "Add to my tray"', 'wulf-kit' ) ),
 		) );
+		$this->add_control( 'phone_mode', array(
+			'label'       => __( 'On phones', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'full',
+			'separator'   => 'before',
+			'options'     => array( 'full' => __( 'Show the whole designer', 'wulf-kit' ), 'card' => __( 'A short card that opens the designer', 'wulf-kit' ) ),
+			'description' => __( 'The card keeps the page short on phones; the designer opens in place when tapped, or from any "Design your ring" link.', 'wulf-kit' ),
+		) );
+		$this->add_control( 'card_text', array( 'label' => __( 'Card text', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Pick a style, metal and diamond size, and see real settings turn in 360°.', 'wulf-kit' ), 'label_block' => true, 'condition' => array( 'phone_mode' => 'card' ) ) );
+		$this->add_control( 'card_btn', array( 'label' => __( 'Card button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Open the designer', 'wulf-kit' ), 'condition' => array( 'phone_mode' => 'card' ) ) );
 		$this->add_control( 'note', array( 'label' => __( 'Small note', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( '*Every ring includes free cleaning & inspection*, whenever you stop by.', 'wulf-kit' ), 'description' => __( '*Stars* make words bold.', 'wulf-kit' ) ) );
 		$this->end_controls_section();
 
@@ -170,8 +180,22 @@ class WK_Studio_Widget extends WK_Widget {
 			'save'   => $s['save_text'],
 		);
 		$names   = self::shape_names();
+		$card = 'card' === ( $s['phone_mode'] ?? 'full' );
 		$this->open( $s, '', $cfg );
-		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<section class="' . esc_attr( $this->sec_class( $s ) . ( $card ? ' st-phone-card' : '' ) ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		if ( $card ) {
+			// Phones: a short card; the designer opens in place.
+			$r0  = $rings[ $cfg['start'] ];
+			$img = '';
+			foreach ( array( $s['start_metal'], 'white', 'yellow', 'rose' ) as $mm ) {
+				if ( ! empty( $r0['media'][ $mm ]['poster'] ) ) {
+					$img = $r0['media'][ $mm ]['poster'];
+					break;
+				}
+			}
+			$img = $img ? $img : $r0['img'];
+			echo '<div class="st-tease"><span class="st-tease-img">' . ( $img ? '<img src="' . esc_url( $img ) . '" alt="" loading="lazy" decoding="async">' : '' ) . '</span><div class="st-tease-copy">' . ( $s['eyebrow'] ? '<p class="eyebrow">' . esc_html( $s['eyebrow'] ) . '</p>' : '' ) . ( $s['title'] ? '<h2 class="h3">' . self::rich( $s['title'] ) . '</h2>' : '' ) . ( $s['card_text'] ? '<p>' . esc_html( $s['card_text'] ) . '</p>' : '' ) . '<button class="btn btn-ink" type="button" data-studio-open aria-expanded="false">' . esc_html( $s['card_btn'] ) . ' ' . WK_Icons::svg( 'arr', 'arr' ) . '</button></div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
 		$this->head( $s );
 		echo '<div class="studio-card"><div class="preview"><div class="main slot swap" data-ring-main></div><div class="alts" data-alts aria-label="' . esc_attr__( 'Other matching designs', 'wulf-kit' ) . '"></div><p class="shown" data-shown></p></div><div class="controls">';
 

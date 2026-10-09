@@ -27,7 +27,7 @@ class WK_Cta_Widget extends WK_Widget {
 		$this->add_control( 'eyebrow', array( 'label' => __( 'Small label above', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Free consultation', 'wulf-kit' ), 'label_block' => true ) );
 		$this->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'Come and see it *in person*.', 'wulf-kit' ), 'description' => __( 'Wrap words in *stars* to show them in gold italics.', 'wulf-kit' ) ) );
 		$this->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => __( 'Walk-ins are always welcome. Book ahead and we\'ll have a private table ready.', 'wulf-kit' ) ) );
-		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Book a visit', 'wulf-kit' ), '#visit', true );
+		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit', true );
 		$this->button_fields( 'b2', __( 'Second button', 'wulf-kit' ), __( 'Get directions', 'wulf-kit' ), '' );
 		$this->add_control( 'b2_maps', array( 'label' => __( 'Second button opens Google Maps', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'Uses the directions link from Wulf Kit settings.', 'wulf-kit' ) ) );
 		$this->add_control( 'call_line', array( 'label' => __( 'Phone line with open status', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ) );

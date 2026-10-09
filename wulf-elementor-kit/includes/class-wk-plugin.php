@@ -40,6 +40,7 @@ class WK_Plugin {
 		'spotlight' => 'WK_Spotlight_Widget',
 		'paths'    => 'WK_Paths_Widget',
 		'bookbar'  => 'WK_Bookbar_Widget',
+		'quiz'     => 'WK_Quiz_Widget',
 	);
 
 	public static function instance() {
@@ -70,6 +71,9 @@ class WK_Plugin {
 		add_action( 'wp_footer', array( $this, 'site_footer' ), 5 );
 		add_filter( 'hello_elementor_header_footer', array( $this, 'hide_theme_parts' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
+		// "Ask our jeweller" (OM Catalog plugin) on the homepage and its library versions.
+		add_filter( 'om_assistant_is_home', array( $this, 'assistant_is_home' ) );
+		add_filter( 'om_assistant_show_here', array( $this, 'assistant_show_here' ) );
 	}
 
 	public function need_elementor() {
@@ -106,7 +110,7 @@ class WK_Plugin {
 		wp_add_inline_style( 'wulf-kit', self::brand_css() );
 		wp_register_script( 'wulf-kit', WK_URL . 'assets/js/wulf-kit.js', array(), WK_VERSION, true );
 		wp_localize_script( 'wulf-kit', 'wkConfig', self::js_config() );
-		if ( $s['header_tpl'] || $s['footer_tpl'] || $s['actbar'] ) {
+		if ( $s['header_tpl'] || $s['footer_tpl'] || $s['actbar'] || $s['book_pill'] ) {
 			// Site-wide pieces need the kit on every page.
 			wp_enqueue_style( 'wulf-kit' );
 			wp_enqueue_script( 'wulf-kit' );
@@ -177,6 +181,7 @@ class WK_Plugin {
 			'book'     => $s['book_url'] ? $s['book_url'] : '#visit',
 			'tray'     => (bool) $s['tray'],
 			'actbar'   => (bool) $s['actbar'],
+			'pill'     => (bool) $s['book_pill'],
 			'act'      => array( $s['act_call'], $s['act_book'], $s['act_dir'] ),
 			'panel'    => (bool) $s['book_panel'] && ( '' === (string) $s['book_url'] || '#' === substr( (string) $s['book_url'], 0, 1 ) ),
 			'track'    => (bool) $s['track'],
@@ -205,7 +210,7 @@ class WK_Plugin {
 				'trayTitle'  => __( 'Your tray', 'wulf-kit' ),
 				'traySub'    => __( 'Save pieces as you browse. We\'ll set them out on a tray for your visit, so you can see and try them in person.', 'wulf-kit' ),
 				'trayEmpty'  => __( 'Your tray is empty. Tap the heart on any piece to add it here.', 'wulf-kit' ),
-				'trayBook'   => __( 'Book a visit to see them', 'wulf-kit' ),
+				'trayBook'   => __( 'Book to see them in person', 'wulf-kit' ),
 				'trayKeep'   => __( 'Keep browsing', 'wulf-kit' ),
 				'trayNote'   => __( 'We\'ll bring them in for your visit, usually within a few business days.', 'wulf-kit' ),
 				'remove'     => __( 'Remove', 'wulf-kit' ),
@@ -248,6 +253,9 @@ class WK_Plugin {
 				'bkNeedDay'  => __( 'Please pick a day, or "I\'m flexible".', 'wulf-kit' ),
 				'bkLooking'  => __( 'You\'re asking about', 'wulf-kit' ),
 				'bkYour'     => __( 'Your visit', 'wulf-kit' ),
+				'hoursMore'  => __( 'See all hours', 'wulf-kit' ),
+				'hide'       => __( 'Hide', 'wulf-kit' ),
+				'hoursLess'  => __( 'Show today only', 'wulf-kit' ),
 				'bkChange'   => __( 'Change', 'wulf-kit' ),
 				'bkOrCall'   => __( 'Prefer to talk? Call %s', 'wulf-kit' ),
 				'bkThanks'   => __( 'Thank you, %s.', 'wulf-kit' ),
@@ -273,6 +281,14 @@ class WK_Plugin {
 
 	public function hide_theme_parts( $show ) {
 		return ( $this->template_on( 'header_tpl' ) || $this->template_on( 'footer_tpl' ) ) ? false : $show;
+	}
+
+	public function assistant_is_home( $is ) {
+		return $is || ( class_exists( 'WK_Pages' ) && WK_Pages::current_is_home() );
+	}
+
+	public function assistant_show_here( $show ) {
+		return $show || ( WK_Settings::get( 'assistant_home' ) && class_exists( 'WK_Pages' ) && WK_Pages::current_is_home() );
 	}
 
 	public function body_class( $classes ) {

@@ -2,17 +2,17 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.8.1
+Stable tag: 1.9.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
 
 == What you get ==
 
-26 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
+27 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
 
 * Announcement bar (live "Open now / Closed now" from your hours)
-* Header (logo, menu with drop-down panels, search, phone, tray, "Book a visit", phone menu)
+* Header (logo, menu with drop-down panels, search, phone, tray, "Book a free consultation", phone menu)
 * Hero (rotating real products with 360° video, or a photo / video)
 * "How can we help?" circles
 * Category tiles
@@ -25,7 +25,7 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * The 4Cs explained
 * Services (custom design, repair, appraisal, gold buying, financing)
 * Journal (latest blog posts or hand-picked)
-* Visit (photo, map, hours, contact and a "Book a visit" form)
+* Visit (photo, map, hours, contact and a booking form)
 * Footer (newsletter, links, hours, legal line)
 * Page banner (breadcrumb, headline, buttons, picture) for inner pages
 * Text & picture (with a tick list and buttons)
@@ -39,6 +39,9 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * What brings you in? (six choices with real product photos on white; each opens a page, the ring
   designer, or the booking panel with its topic chosen)
 * Booking bar (what it's about + preferred day, then the booking panel opens at name and number)
+* Ring style quiz (four picture questions: diamond shape, setting, metal and budget; then three
+  matching rings, the top one turning in the chosen gold, with "Book to try these on" and
+  "Email me my matches")
 
 29 page templates: one for every page on the live site, plus "Home (simpler)" and "Home (conversion)", with the
 wording from that page and the same web address:
@@ -94,8 +97,30 @@ Booking & conversions; untick "Booking panel" to go back to jumping to the visit
 
 Links can open it too: add ?book=1 (and &topic=Repair) to any page address, e.g. in an ad or email.
 
+On computers a slim booking bar stays at the bottom of the screen after the first screen (open now,
+"Book a free consultation", the phone number). It steps aside near the booking form and the footer,
+and a visitor can close it. Turn it off in Settings > "Booking button on computers".
+
+== Ring style quiz ==
+
+Four picture questions (diamond shape, setting, metal, budget), then three rings from the catalog
+that match, the top one turning in the chosen gold. Every answer has a "Not sure yet". Matching uses
+the shape, the setting and the metal; the budget is passed on with the booking or the email and never
+hides a ring (setting prices alone would mislead). When a ring is shown with a different diamond shape
+or metal than chosen, a short line says so.
+
+"Book to try these on" opens the booking popup with the three rings (they also go on the visitor's
+tray) and the answers in the request email. "Email me my matches" sends the visitor their three rings
+with photos, prices, catalog links and a booking button, sends you a copy, and passes the lead to the
+CRM when that is on. The email only ever contains the quiz as saved on the page, and one address gets
+it at most three times a day.
+
+Edit the questions, shapes, setting styles (photo, short line, drawing), budget choices and the rings
+to match in the widget. Rings earlier in the list win a tie, so put favorites first.
+
 "Measure clicks and bookings" sends cta_click, click_to_call, get_directions, booking_open,
-booking_step, booking_request and generate_lead to the Google Analytics, Tag Manager or Meta pixel
+booking_step, booking_request, generate_lead, quiz_start, quiz_step, quiz_complete and
+quiz_email_open to the Google Analytics, Tag Manager or Meta pixel
 already on the site (nothing is added). Mark generate_lead as a key event in GA4 to count bookings as
 conversions. Add ?wk_debug_events=1 to a page address to watch them in the browser console.
 
@@ -106,6 +131,30 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.9.0 =
+* Ring style quiz (new widget, on "Home (conversion)" after "What brings you in?"): four picture
+  questions (diamond shape, setting, metal, budget), a drawing of the ring that changes with each
+  answer, then three matching rings from the catalog with the top one turning in the chosen gold.
+  It ends with "Book to try these on" (the booking popup, with the rings and answers) or "Email me my
+  matches" (to the visitor, with a copy to you and the CRM). Answers stay while the visitor browses.
+* The same button words everywhere: "Book a free consultation" in the header, the phone bar, the
+  buttons and the page library. A phone bar still saying "Book a visit" is updated once, automatically.
+* Computers: a slim booking bar appears after the first screen and stays until the booking form or
+  footer comes into view. Settings > "Booking button on computers".
+* Phones, first screen: a shorter intro and a small turning ring beside the headline, so the title
+  and both buttons fit on the first screen.
+* Phones, shorter homepage (about a sixth shorter, quiz included): the 360° spotlight and the
+  favorites are now one section (tap a ring card to see it turn; the heart saves it), the ring
+  designer folds into a short card that opens in place, "How a visit works" drops its photos, and
+  the visit section shows today's hours with "See all hours".
+* Videos wait until their section comes near (spotlight, ring designer, "How your ring comes
+  together"), so a phone's first screen loads one small video instead of three.
+* "Ask our jeweller" (OM Catalog 1.38.0 or later) on the homepage, with a starter question after a
+  few seconds. Settings > "Jeweller assistant on the homepage". It steps aside while the booking popup
+  or the tray is open, and moves up above the phone bar and the booking bar.
+* Phone bar: round Call and Directions icons either side of the full "Book a free consultation".
+* Header: room for the longer button beside six menu items at every computer width.
 
 = 1.8.1 =
 * Page library: no photo appears twice on the same page. About uses a couple's hands for "We build

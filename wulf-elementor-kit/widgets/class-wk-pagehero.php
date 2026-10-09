@@ -35,7 +35,7 @@ class WK_Pagehero_Widget extends WK_Widget {
 		$this->add_control( 'title', array( 'label' => __( 'Headline', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'A page *title* goes here.', 'wulf-kit' ), 'description' => __( 'Wrap words in *stars* for gold italics.', 'wulf-kit' ) ) );
 		$this->add_control( 'title_tag', array( 'label' => __( 'Headline tag', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'h1', 'options' => array( 'h1' => 'H1', 'h2' => 'H2', 'div' => 'div' ) ) );
 		$this->add_control( 'lead', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => '' ) );
-		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Book a visit', 'wulf-kit' ), '#visit', true );
+		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit', true );
 		$this->button_fields( 'b2', __( 'Second button', 'wulf-kit' ), '', '' );
 		$this->add_control( 'call_line', array( 'label' => __( '"Or call…" line with open status', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ) );
 		$this->add_control( 'call_text', array( 'label' => __( 'Starts with', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Or call', 'wulf-kit' ), 'condition' => array( 'call_line' => 'yes' ) ) );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Visit: showroom photo, map, address and live opening hours, and the "Book a visit" form
+ * Visit: showroom photo, map, address and live opening hours, and the booking form
  * (emailed to the shop and passed to your CRM), plus "what happens after you book".
  *
  * @package WulfKit
@@ -47,7 +47,7 @@ class WK_Visit_Widget extends WK_Widget {
 		$this->start_controls_section( 'c_form', array( 'label' => __( 'Booking form', 'wulf-kit' ) ) );
 		$this->add_control( 'form_on', array( 'label' => __( 'Show the form', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
 		$this->add_control( 'f_short', array( 'label' => __( 'Short form', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Only name, mobile, topics, day and time. Hides email, "best way to reach you" and the notes box.', 'wulf-kit' ), 'condition' => array( 'form_on' => 'yes' ) ) );
-		$this->add_control( 'f_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Book a visit', 'wulf-kit' ) ) );
+		$this->add_control( 'f_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Book your free consultation', 'wulf-kit' ) ) );
 		$this->add_control( 'f_sub', array( 'label' => __( 'Under the title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Free, no obligation. We\'ll confirm by call or text.', 'wulf-kit' ), 'label_block' => true ) );
 		$r = new Repeater();
 		$r->add_control( 'topic', array( 'label' => __( 'Topic', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
@@ -173,7 +173,8 @@ class WK_Visit_Widget extends WK_Widget {
 		if ( 'yes' === $s['daybar'] ) {
 			echo '<div class="daybar" data-daybar aria-hidden="true"><div class="db-track"><span class="db-fill"></span><span class="db-now"></span></div><div class="db-lbl"><span data-db-open></span><span data-db-close></span></div></div>';
 		}
-		echo '<ul class="hours" data-hours></ul></div></div></div>';
+		// Phones show today's row; the button opens the whole week.
+		echo '<ul class="hours" data-hours id="' . esc_attr( 'wk-hours-' . $this->get_id() ) . '"></ul><button class="hours-more" type="button" aria-expanded="false" aria-controls="' . esc_attr( 'wk-hours-' . $this->get_id() ) . '" data-hours-more>' . esc_html__( 'See all hours', 'wulf-kit' ) . '</button></div></div></div>';
 
 		if ( 'yes' === $s['form_on'] ) {
 			$times = array_filter( array_map( 'trim', explode( ',', (string) $s['times'] ) ) );

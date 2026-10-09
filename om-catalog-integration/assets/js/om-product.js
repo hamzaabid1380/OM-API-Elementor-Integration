@@ -3953,7 +3953,7 @@
 		if (btn && btn.getClientRects().length) {
 			var r = btn.getBoundingClientRect();
 			var vh = window.innerHeight;
-			$('.om-compare-tray:not([hidden]), .om-sticky-bar:not([hidden]), .om-rb-bar, .om-sticky-tools.is-shown, .om-saved-float:not([hidden]), .om-toast.is-in').each(function () {
+			$('.om-compare-tray:not([hidden]), .om-sticky-bar:not([hidden]), .om-rb-bar, .om-sticky-tools.is-shown, .om-saved-float:not([hidden]), .om-toast.is-in, [data-om-ai-lift]').each(function () {
 				var b = this.getBoundingClientRect();
 				if (!b.width || !b.height || b.top >= vh || b.bottom < vh - 220) { return; }
 				if (b.right <= r.left || b.left >= r.right) { return; }
@@ -4153,12 +4153,50 @@
 		aiOpen();
 	});
 
+	/* Homepage: a friendly first question beside the button, once per visit.
+	   It appears after a few seconds or once the visitor scrolls a third of the
+	   page; tapping a suggestion opens the chat and asks it. */
+	var STARTER_KEY = 'om_ai_starter_seen';
+	function aiStarter() {
+		var S = AI.starter;
+		if (!S || !S.text || !ai) { return; }
+		try { if (window.sessionStorage.getItem(STARTER_KEY)) { return; } } catch (err) { /* show it */ }
+		if (aiRead().open || aiRead().msgs.length) { return; }
+		var $b = $('<div class="om-ai-starter" role="dialog" aria-live="polite" hidden><button type="button" class="om-ai-starter-x"><span aria-hidden="true">&times;</span></button><button type="button" class="om-ai-starter-t"></button><div class="om-ai-starter-chips"></div></div>');
+		$b.find('.om-ai-starter-t').text(S.text);
+		$b.attr('aria-label', AI.name);
+		$b.find('.om-ai-starter-x').attr('aria-label', t('aiClose', 'Close chat'));
+		(AI.chips || []).slice(0, 2).forEach(function (c) { $b.find('.om-ai-starter-chips').append($('<button type="button" class="om-ai-starter-chip"></button>').text(c)); });
+		ai.append($b);
+		var shown = false, timer = 0;
+		var seen = function () { try { window.sessionStorage.setItem(STARTER_KEY, '1'); } catch (err) { /* this page only */ } };
+		var close = function () { $b.prop('hidden', true).removeClass('is-in'); seen(); window.removeEventListener('scroll', onScroll); clearTimeout(timer); };
+		var show = function () {
+			if (shown || ai.hasClass('is-open') || $('.bk:not([hidden]), dialog[open]').length) { return; }
+			shown = true; seen();
+			$b.prop('hidden', false);
+			window.requestAnimationFrame(function () { $b.addClass('is-in'); });
+			track('assistant_starter_shown', {}, null);
+		};
+		var onScroll = function () {
+			var h = document.documentElement.scrollHeight - window.innerHeight;
+			if (h > 0 && (window.scrollY || 0) / h > 0.33) { show(); window.removeEventListener('scroll', onScroll); }
+		};
+		timer = setTimeout(show, (+S.delay || 8) * 1000);
+		window.addEventListener('scroll', onScroll, { passive: true });
+		$b.on('click', '.om-ai-starter-x', close);
+		$b.on('click', '.om-ai-starter-t', function () { close(); aiOpener = null; aiOpen(); });
+		$b.on('click', '.om-ai-starter-chip', function () { var q = $(this).text(); close(); aiOpener = null; aiOpen(false); aiSend(q); });
+		$(document).on('click', '.om-ai-launch', close);
+	}
+
 	$(function () {
 		if (!AI || !cfg.ajaxUrl || trackOff() || !document.body) { return; }
 		aiBuild();
 		aiDock();
 		aiMini();
 		if (aiRead().open || window.location.hash === '#om-ai') { aiOpen(false); }
+		aiStarter();
 	});
 
 	/* ---------- Where the visitor came from (for the CRM) ---------- */

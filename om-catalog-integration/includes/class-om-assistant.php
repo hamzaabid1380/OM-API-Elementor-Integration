@@ -129,7 +129,7 @@ class OM_Assistant {
 		if ( ! $chips ) {
 			$chips = array(
 				__( 'Help me find an engagement ring', 'om-catalog' ),
-				__( 'Halo or hidden halo — what’s the difference?', 'om-catalog' ),
+				__( 'Halo or hidden halo: what’s the difference?', 'om-catalog' ),
 				__( 'Lab-grown or natural diamond?', 'om-catalog' ),
 				__( 'How do I find her ring size?', 'om-catalog' ),
 			);
@@ -153,12 +153,23 @@ class OM_Assistant {
 			'color'    => (string) get_option( 'om_ai_color', '' ),
 			'accent'   => (string) get_option( 'om_ai_accent', '' ),
 			'sub'      => trim( (string) get_option( 'om_ai_subtitle', '' ) ),
+			// Homepage: a first question shown once beside the button.
+			'starter'  => self::starter(),
 		);
 	}
 
 	/* ---------------------------------------------------------------
 	 * Front end: the launcher and the "talk to our team" form
 	 * ------------------------------------------------------------- */
+
+	/**
+	 * The site's homepage. Themes and page builders can add their own homepage
+	 * versions (e.g. one being tried out before it goes live) with the
+	 * "om_assistant_is_home" filter.
+	 */
+	public static function is_home_page() {
+		return is_front_page() || (bool) apply_filters( 'om_assistant_is_home', false );
+	}
 
 	private static function show_here() {
 		if ( ! self::enabled() || is_admin() || ( function_exists( 'wp_is_json_request' ) && wp_is_json_request() ) ) {
@@ -167,15 +178,37 @@ class OM_Assistant {
 		if ( isset( $_GET['elementor-preview'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
 			return false;
 		}
-		return 'all' === get_option( 'om_ai_show', 'catalog' ) || wp_script_is( 'om-catalog-js', 'enqueued' ) || ( function_exists( 'om_catalog_page_needs_assets' ) && om_catalog_page_needs_assets() );
+		$where = get_option( 'om_ai_show', 'catalog' );
+		$show  = 'all' === $where || wp_script_is( 'om-catalog-js', 'enqueued' ) || ( function_exists( 'om_catalog_page_needs_assets' ) && om_catalog_page_needs_assets() );
+		if ( ! $show && 'home' === $where && self::is_home_page() ) {
+			$show = true;
+		}
+		// Other plugins can add the chat to more pages (true) or keep it off one (false).
+		return (bool) apply_filters( 'om_assistant_show_here', $show );
 	}
 
-	/** "Every page": the catalog's styles and script load everywhere. */
+	/** "Every page" or "and the homepage": the catalog's styles and script load there too. */
 	public function maybe_enqueue() {
-		if ( self::enabled() && 'all' === get_option( 'om_ai_show', 'catalog' ) && ! is_admin() ) {
+		if ( is_admin() || ! self::enabled() ) {
+			return;
+		}
+		if ( 'all' === get_option( 'om_ai_show', 'catalog' ) || self::show_here() ) {
 			wp_enqueue_style( 'om-catalog-css' );
 			wp_enqueue_script( 'om-catalog-js' );
 		}
+	}
+
+	/** A friendly first question beside the button on the homepage (empty text: off). */
+	private static function starter() {
+		$text = get_option( 'om_ai_starter', null );
+		$text = null === $text ? __( 'Looking for an engagement ring? I can suggest designs for your style and budget.', 'om-catalog' ) : trim( (string) $text );
+		if ( '' === $text || ! self::is_home_page() ) {
+			return false;
+		}
+		return array(
+			'text'  => $text,
+			'delay' => max( 3, min( 60, absint( get_option( 'om_ai_starter_delay', 8 ) ) ) ),
+		);
 	}
 
 	public function render() {

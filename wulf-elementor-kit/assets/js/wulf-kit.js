@@ -319,10 +319,13 @@
 		if (portal) return portal;
 		portal = document.createElement('div');
 		portal.className = 'wk wk-portal';
-		var a = CFG.act || ['Call', 'Book a visit', 'Directions'];
+		var a = CFG.act || ['Call', 'Book a free consultation', 'Directions'];
 		portal.innerHTML = '<div class="toast" role="status" hidden></div>' +
-			(CFG.tray ? '<aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="wk-drawer-h" hidden><div class="dr-panel"><div class="dr-head"><h2 class="h3" id="wk-drawer-h">' + esc(T.trayTitle || 'Your tray') + '<span class="dr-count"></span></h2><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div><p class="dr-sub">' + esc(T.traySub || '') + '</p><div class="dr-body"><ul class="dr-list"></ul><div class="dr-empty"><p>' + esc(T.trayEmpty || '') + '</p></div></div><div class="dr-foot" hidden><a class="btn btn-ink" href="' + esc(CFG.book || '#visit') + '" data-dr-book>' + esc(T.trayBook || 'Book a visit') + ' ' + icon('arr', 'arr') + '</a><button class="btn btn-line" type="button" data-dr-keep>' + esc(T.trayKeep || 'Keep browsing') + '</button><p class="fine">' + esc(T.trayNote || '') + '</p></div></div></aside>' : '') +
-			(CFG.actbar ? '<nav class="actbar" aria-label="Quick actions">' + (CFG.tel ? '<a href="' + esc(CFG.tel) + '">' + icon('phone') + esc(a[0]) + '</a>' : '') + '<a class="main" href="' + esc(CFG.book || '#visit') + '">' + esc(a[1]) + '<span class="count" data-count hidden>0</span></a>' + (CFG.maps ? '<a href="' + esc(CFG.maps) + '" target="_blank" rel="noopener">' + icon('dir') + esc(a[2]) + '</a>' : '') + '</nav>' : '');
+			(CFG.tray ? '<aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="wk-drawer-h" hidden><div class="dr-panel"><div class="dr-head"><h2 class="h3" id="wk-drawer-h">' + esc(T.trayTitle || 'Your tray') + '<span class="dr-count"></span></h2><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div><p class="dr-sub">' + esc(T.traySub || '') + '</p><div class="dr-body"><ul class="dr-list"></ul><div class="dr-empty"><p>' + esc(T.trayEmpty || '') + '</p></div></div><div class="dr-foot" hidden><a class="btn btn-ink" href="' + esc(CFG.book || '#visit') + '" data-dr-book>' + esc(T.trayBook || 'Book to see them in person') + ' ' + icon('arr', 'arr') + '</a><button class="btn btn-line" type="button" data-dr-keep>' + esc(T.trayKeep || 'Keep browsing') + '</button><p class="fine">' + esc(T.trayNote || '') + '</p></div></div></aside>' : '') +
+			// Call and Directions as round icons either side, so the booking button has room for its full words.
+			(CFG.actbar ? '<nav class="actbar" aria-label="Quick actions" data-om-ai-lift>' + (CFG.tel ? '<a class="ab-ic" href="' + esc(CFG.tel) + '" title="' + esc(a[0]) + '">' + icon('phone') + '<span class="sr">' + esc(a[0]) + '</span></a>' : '') + '<a class="main" href="' + esc(CFG.book || '#visit') + '">' + esc(a[1]) + '<span class="count" data-count hidden>0</span></a>' + (CFG.maps ? '<a class="ab-ic" href="' + esc(CFG.maps) + '" target="_blank" rel="noopener" title="' + esc(a[2]) + '">' + icon('dir') + '<span class="sr">' + esc(a[2]) + '</span></a>' : '') + '</nav>' : '') +
+			// Computers: a slim booking bar that stays on screen after the first screen.
+			(CFG.pill ? '<div class="bkpill" role="region" aria-label="' + esc(a[1]) + '" data-om-ai-lift><span class="bp-status" data-wk-status><i></i><span data-status-text></span></span><a class="btn btn-gold bp-book" href="' + esc(CFG.book || '#visit') + '">' + esc(a[1]) + ' ' + icon('arr', 'arr') + '</a>' + (CFG.tel && CFG.phone ? '<a class="bp-call" href="' + esc(CFG.tel) + '">' + icon('phone') + esc(CFG.phone) + '</a>' : '') + '<button class="bp-x" type="button" aria-label="' + esc(T.hide || 'Hide') + '">' + icon('close') + '</button></div>' : '');
 		document.body.appendChild(portal);
 		toastEl = $('.toast', portal);
 		drawer = $('.drawer', portal);
@@ -337,6 +340,26 @@
 				bar.classList.toggle('on', past && !vis);
 			};
 			addEventListener('scroll', onScroll, { passive: true }); onScroll();
+		}
+		var pill = $('.bkpill', portal);
+		if (pill) {
+			applyHours(pill);
+			var pillOff = false; try { pillOff = sessionStorage.getItem('wkPillOff') === '1'; } catch (e) {}
+			var pillTick = false, pillWide = window.matchMedia('(min-width: 861px)');
+			var pillPlace = function () {
+				pillTick = false;
+				var hero = $('.wk-hero .hero'), seen = [$('.wk-visit .book'), $('.wk-footer'), $('.bkbar')];
+				var past = hero ? hero.getBoundingClientRect().bottom < 0 : window.scrollY > innerHeight * 0.8;
+				var near = seen.some(function (n) { if (!n) return false; var r = n.getBoundingClientRect(); return r.top < innerHeight - 30 && r.bottom > 0; });
+				var on = !pillOff && pillWide.matches && past && !near && (!bk || bk.hidden) && (!drawer || drawer.hidden);
+				pill.classList.toggle('on', on);
+				document.body.classList.toggle('wk-pill-on', on);
+			};
+			var pillQueue = function () { if (!pillTick) { pillTick = true; requestAnimationFrame(pillPlace); } };
+			addEventListener('scroll', pillQueue, { passive: true }); addEventListener('resize', pillQueue);
+			document.addEventListener('wk:panel', pillQueue);
+			$('.bp-x', pill).addEventListener('click', function () { pillOff = true; try { sessionStorage.setItem('wkPillOff', '1'); } catch (e) {} pillPlace(); });
+			pillPlace();
 		}
 		renderTray();
 		return portal;
@@ -413,6 +436,7 @@
 		drawer.hidden = false;
 		requestAnimationFrame(function () { requestAnimationFrame(function () { drawer.classList.add('open'); }); });
 		document.body.style.overflow = 'hidden';
+		document.body.classList.add('wk-modal-open');
 		$$('[data-wk-tray]').forEach(function (b) { b.setAttribute('aria-expanded', 'true'); });
 		drawer.querySelector('[data-close]').focus();
 	}
@@ -421,6 +445,7 @@
 		drawer.classList.remove('open');
 		$$('[data-wk-tray]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
 		document.body.style.overflow = '';
+		document.body.classList.remove('wk-modal-open');
 		setTimeout(function () { drawer.hidden = true; }, reduce ? 0 : 360);
 		if (back && drawerFrom) drawerFrom.focus();
 	}
@@ -460,7 +485,7 @@
 		if (DEBUG && window.console) window.console.info('[Wulf event] ' + name + (sent.length ? ' → ' + sent.join(', ') : ' (no GA4 / GTM / Meta pixel on this page)'), params);
 	}
 	// Where a click came from, for reports: the section's widget ("hero", "spotlight", "header"…).
-	var where = function (n) { var w = n.closest('.wk[data-wk]'); return w ? w.dataset.wk : (n.closest('.actbar') ? 'phone_bar' : (n.closest('.drawer') ? 'tray' : 'page')); };
+	var where = function (n) { var w = n.closest('.wk[data-wk]'); return w ? w.dataset.wk : (n.closest('.actbar') ? 'phone_bar' : (n.closest('.bkpill') ? 'booking_bar_desktop' : (n.closest('.drawer') ? 'tray' : 'page'))); };
 	document.addEventListener('click', function (e) {
 		var a = e.target.closest('a[href]');
 		if (!a || !a.closest('.wk') || a.closest('.bk')) return;
@@ -469,6 +494,14 @@
 		else if (CFG.maps && href === CFG.maps) track('get_directions', { cta_location: where(a) }, ['trackCustom', 'GetDirections']);
 		else if (a.classList.contains('btn') || a.closest('.actbar') || a.closest('[data-wk="paths"]')) track('cta_click', { cta_text: txt, cta_location: where(a), link_url: href });
 	}, true);
+
+	// Phones: "See all hours" opens the week under today's row.
+	document.addEventListener('click', function (e) {
+		var b = e.target.closest('[data-hours-more]'); if (!b) return;
+		var box = b.parentNode, open = !box.classList.contains('hours-open');
+		box.classList.toggle('hours-open', open); b.setAttribute('aria-expanded', String(open));
+		b.textContent = open ? (T.hoursLess || 'Show today only') : (T.hoursMore || 'See all hours');
+	});
 
 	/* ================= Booking panel: three short steps from any "Book" button ================= */
 	var BK = CFG.bk || {}, bk = null, bkS = null, bkFrom = null, BRING = {};
@@ -563,7 +596,7 @@
 		fd.append('action', 'wk_book'); fd.append('nonce', CFG.nonce || '');
 		['name', 'phone', 'email', 'website'].forEach(function (k) { if (f.elements[k]) fd.append(k, f.elements[k].value); });
 		fd.append('pref', pref); fd.append('day', dayTxt); fd.append('time', timeTxt); fd.append('page', location.href);
-		fd.append('piece', bkPiece()); fd.append('source', bkS.source || '');
+		fd.append('piece', bkPiece()); fd.append('source', bkS.source || ''); fd.append('answers', bkS.answers || '');
 		topics.forEach(function (t) { fd.append('topics[]', t); });
 		tray.forEach(function (t) { fd.append('tray[]', t.name + (t.sub ? ' (' + t.sub + ')' : '')); });
 		fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (res) {
@@ -668,12 +701,12 @@
 			else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 		});
 	}
-	// opts: { topic, piece: { name, sub, img }, source }
+	// opts: { topic, piece: { name, sub, img }, answers (e.g. the ring style quiz), source }
 	function bookOpen(opts) {
 		opts = opts || {};
 		if (!bk) bkBuild();
 		bkFrom = document.activeElement;
-		bkS = { step: 1, day: null, time: null, piece: opts.piece || null, source: opts.source || '' };
+		bkS = { step: 1, day: null, time: null, piece: opts.piece || null, answers: opts.answers || '', source: opts.source || '' };
 		var known = opts.topic && BRING.hasOwnProperty(opts.topic);
 		$$('[data-bk-topic]', bk).forEach(function (b) { b.setAttribute('aria-pressed', String(!!known && b.dataset.bkTopic === opts.topic)); });
 		var items = [];
@@ -694,6 +727,8 @@
 		if (toastEl) { toastEl.hidden = true; clearTimeout(toastT); }
 		bk.hidden = false;
 		document.body.style.overflow = 'hidden';
+		document.body.classList.add('wk-modal-open');
+		document.dispatchEvent(new CustomEvent('wk:panel'));
 		track('booking_open', { cta_location: bkS.source || 'page', topic: known ? opts.topic : '' }, ['trackCustom', 'BookingOpen']);
 		bkGo(known ? (bkS.day ? 3 : 2) : 1);
 		requestAnimationFrame(function () { requestAnimationFrame(function () {
@@ -705,14 +740,15 @@
 		if (!bk || bk.hidden) return;
 		bk.classList.remove('open');
 		document.body.style.overflow = '';
-		setTimeout(function () { bk.hidden = true; }, reduce ? 0 : 380);
+		document.body.classList.remove('wk-modal-open');
+		setTimeout(function () { bk.hidden = true; document.dispatchEvent(new CustomEvent('wk:panel')); }, reduce ? 0 : 380);
 		if (bkFrom && bkFrom.focus && document.contains(bkFrom)) bkFrom.focus({ preventScroll: true });
 	}
 	window.wkBook = bookOpen;
 
 	/* ================= 360° videos turn at a relaxed pace (Wulf Kit › Settings) ================= */
 	var TURN = +CFG.turn || 0.6;
-	var slow = function (e) { var v = e.target; if (v && v.tagName === 'VIDEO' && v.closest && v.closest('.sc-item.pr, .slot.pv, .spot-ring, .preview .main') && Math.abs(v.playbackRate - TURN) > 0.01) { v.defaultPlaybackRate = TURN; v.playbackRate = TURN; } };
+	var slow = function (e) { var v = e.target; if (v && v.tagName === 'VIDEO' && v.closest && v.closest('.sc-item.pr, .slot.pv, .spot-ring, .preview .main, .qz-art') && Math.abs(v.playbackRate - TURN) > 0.01) { v.defaultPlaybackRate = TURN; v.playbackRate = TURN; } };
 	document.addEventListener('loadedmetadata', slow, true);
 	document.addEventListener('play', slow, true);
 
@@ -733,7 +769,7 @@
 		if (CFG.panel) {
 			e.preventDefault();
 			var w = v.closest('.wk[data-wk]'), ctx = w && w.wkContext ? w.wkContext() : null;
-			bookOpen({ topic: v.dataset.topic || v.dataset.wkBook || (ctx && ctx.topic) || '', piece: ctx && ctx.piece, source: where(v) });
+			bookOpen({ topic: v.dataset.topic || v.dataset.wkBook || (ctx && ctx.topic) || '', piece: ctx && ctx.piece, answers: ctx && ctx.answers, source: where(v) });
 			return;
 		}
 		var here = document.getElementById('visit');
@@ -821,6 +857,12 @@
 
 	INIT.hero = function (el, c) {
 		var items = c.items || [], media = $('.hero-media', el), stage = $('.sc-stage', el), sweep = $('.sweep', el), cap = $('.sc-cap', el);
+		var shown = function (n) { return !!(n && n.getClientRects().length); };
+		// Phones with the small ring: only the film that is actually on screen loads.
+		var mini = $('.hero-mini', el), mv = mini && mini.querySelector('video');
+		if (mv && shown(mini) && !reduce) { mv.src = mv.dataset.src; var mp = mv.play(); if (mp && mp.then) mp.then(function () { mini.classList.add('playing'); }, function () {}); }
+		var first = $('video[data-first]', el);
+		if (first && shown(media)) { first.src = first.dataset.src; if (!reduce) { var fp = first.play(); if (fp && fp.catch) fp.catch(function () {}); } }
 		if (!stage || items.length < 2) { if (c.sweep) setTimeout(function () { sweepRun(sweep); }, 650); return; }
 		var figs = $$('.sc-item', stage), btns = $$('.sc-thumbs button', el), vids = figs.map(function (f) { return f.querySelector('video'); });
 		if (reduce && vids[0]) { vids[0].removeAttribute('autoplay'); vids[0].pause(); }
@@ -842,7 +884,7 @@
 			cur = i;
 			if (c.sweep) sweepRun(sweep);
 		}
-		var tick = function () { clearTimeout(timer); if (!el.isConnected) return; if (!reduce && !paused && !document.hidden && c.interval > 0) timer = setTimeout(function () { show((cur + 1) % items.length); tick(); }, c.interval * 1000); };
+		var tick = function () { clearTimeout(timer); if (!el.isConnected || !shown(media)) return; if (!reduce && !paused && !document.hidden && c.interval > 0) timer = setTimeout(function () { show((cur + 1) % items.length); tick(); }, c.interval * 1000); };
 		btns.forEach(function (b, i) { b.addEventListener('click', function () { show(i); tick(); }); });
 		media.addEventListener('pointerenter', function () { paused = true; clearTimeout(timer); });
 		media.addEventListener('pointerleave', function () { paused = false; tick(); });
@@ -979,12 +1021,31 @@
 			var b = e.target.closest('[data-i]'); if (!b || +b.dataset.i === cur) return;
 			cur = +b.dataset.i; var it = items[cur]; if (!it.media[metal]) metal = it.m;
 			$$('[data-i]', pick).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
-			caption(); show(); flash(ring);
+			caption(); show(); flash(ring); syncSave();
+			// On a phone the large frame may be above the cards: bring it back into view.
+			var rr = ring.getBoundingClientRect(); if (rr.bottom < 80 || rr.top > innerHeight - 80) ring.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
 		});
+		// Heart: save the ring on screen, in the metal shown, to the tray.
+		var saveBtn = $('[data-spot-save]', el);
+		var sKey = function () { var it = items[cur]; return 'sp-' + (it.id || it.n) + '-' + metal; };
+		var sItem = function () { var it = items[cur], x = it.media[metal] || {}; return { key: sKey(), name: it.n, sub: (names[metal] || '') + (it.id ? ' · style ' + it.id : '') + (it.p ? ' · from ' + it.p : ''), img: x.poster || it.img }; };
+		function syncSave() {
+			if (!saveBtn) return;
+			var on = inTray(sKey());
+			saveBtn.setAttribute('aria-pressed', String(on));
+			saveBtn.setAttribute('aria-label', (on ? (T.remove || 'Remove') + ' ' : (T.addTray || 'Add to my tray') + ': ') + items[cur].n);
+		}
+		if (saveBtn) {
+			saveBtn.addEventListener('click', function () { if (inTray(sKey())) return removeTray(sKey()); var m = $$('video, img', ring); addTray(sItem(), m[m.length - 1]); });
+			document.addEventListener('wk:tray', syncSave);
+			mBox.addEventListener('click', function () { setTimeout(syncSave, 0); });
+			mBox.addEventListener('keydown', function () { setTimeout(syncSave, 0); });
+			syncSave();
+		}
 		// "Book" from here carries the ring on screen into the booking panel.
 		el.wkContext = function () { var it = items[cur], x = it.media[metal] || it.media[Object.keys(it.media)[0]] || {}; return { piece: { name: it.n, sub: names[metal] || '', img: x.poster || it.img } }; };
-		// Play only while on screen.
-		new IntersectionObserver(function (es) { var v = ring.querySelector('video'); if (!v || reduce) return; if (es[0].isIntersecting) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } else v.pause(); }, { threshold: 0.2 }).observe(ring);
+		// The film loads once the section comes near, and plays only while on screen.
+		new IntersectionObserver(function (es) { var v = ring.querySelector('video'); if (!v) return; if (es[0].isIntersecting) { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (reduce) return; var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } else v.pause(); }, { rootMargin: '250px 0px' }).observe(ring);
 	};
 
 	INIT.studio = function (el, c) {
@@ -1007,7 +1068,23 @@
 			return r;
 		}
 		var media = function (r) { return r.media[st.metal] || r.media.white || r.media[Object.keys(r.media)[0]] || { v: '', poster: r.img }; };
-		var last = '';
+		var last = '', near = false;
+		// The turning film only loads once the designer itself comes near (not while it is folded into the phone card).
+		new IntersectionObserver(function (es, o) { if (!es[0].isIntersecting) return; o.disconnect(); near = true; last = ''; draw(); }, { rootMargin: '300px 0px' }).observe($('.studio-card', el) || el);
+		// Phones, "short card" mode: open the designer in place, from its button or any "Design your ring" link.
+		var sec = $('.st-phone-card', el), openBtn = $('[data-studio-open]', el);
+		var folded = function () { return sec && !sec.classList.contains('st-open') && openBtn && openBtn.getClientRects().length; };
+		var unfold = function () {
+			sec.classList.add('st-open'); openBtn.setAttribute('aria-expanded', 'true');
+			track('studio_open', { cta_location: 'studio' });
+			var card = $('.studio-card', el); if (card) card.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+			var first = $('[data-ctl] [aria-checked="true"], [data-ctl] .opt', el); if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, reduce ? 0 : 450);
+		};
+		if (openBtn) openBtn.addEventListener('click', unfold);
+		if (sec) document.addEventListener('click', function (e) {
+			var a = e.target.closest('a[href$="#studio"]'); if (!a || !folded()) return;
+			e.preventDefault(); unfold();
+		});
 		var syncSave = function () {
 			if (!saveBtn) return;
 			var on = inTray(key());
@@ -1020,7 +1097,7 @@
 			var pv = main.closest('.preview'); if (pv) pv.dataset.metal = st.metal;
 			if (st.pid + st.metal !== last) {
 				last = st.pid + st.metal;
-				swapEl(main, md.v ? '<video muted loop playsinline' + (reduce ? '' : ' autoplay') + ' preload="auto"' + (md.poster ? ' poster="' + esc(md.poster) + '"' : '') + ' src="' + esc(md.v) + '" aria-label="' + esc(r.n) + '"></video>' : '<img src="' + esc(md.poster || r.img) + '" alt="' + esc(r.n) + '">');
+				swapEl(main, md.v && near ? '<video muted loop playsinline' + (reduce ? '' : ' autoplay') + ' preload="auto"' + (md.poster ? ' poster="' + esc(md.poster) + '"' : '') + ' src="' + esc(md.v) + '" aria-label="' + esc(r.n) + '"></video>' : '<img src="' + esc(md.poster || r.img) + '" alt="' + esc(r.n) + '">');
 				var others = rings.filter(function (x) { return x.style === st.setting && x !== r; }).concat(rings.filter(function (x) { return x.style !== st.setting && x.shape === st.shape; })).slice(0, 4);
 				alts.innerHTML = others.map(function (x) { var m = x.media[st.metal] || x.media.white || {}; return '<button type="button" data-alt="' + rings.indexOf(x) + '" aria-label="' + esc(x.n) + '"><img src="' + esc(m.poster || x.img) + '" alt="" loading="lazy"></button>'; }).join('');
 			}
@@ -1288,6 +1365,239 @@
 		});
 	};
 
+	/* Ring style quiz: four picture questions, then three matching rings. The drawing on the left
+	   follows the answers; the top match then turns there in the chosen gold. */
+	INIT.quiz = function (el, c) {
+		var rings = c.rings || [], styles = c.styles || [], budgets = c.budgets || [], t = c.t || {}, names = c.names || {}, shapeN = c.shapes || {};
+		var card = $('[data-qz-card]', el);
+		if (!rings.length || !card) return;
+		var art = $('[data-qz-art]', el), picksEl = $('[data-qz-picks]', el), res = $('[data-qz-res]', el), wait = $('[data-qz-wait]', el);
+		var steps = $$('.qz-step', el), count = $('[data-qz-count]', el), bar = $('.qz-prog span', el), back = $('[data-qz-back]', el), top = $('.qz-top', el);
+		var ORDER = ['shape', 'style', 'metal', 'budget'], A = {}, step = 1, started = false, matches = [], cur = 0, timer = 0;
+		var SKEY = 'wkQuiz-' + (c.uid || ''), editor = document.body.classList.contains('elementor-editor-active');
+		// Shapes that read alike, for when nothing in the list has the exact one.
+		var NEAR = { round: ['cushion', 'oval'], oval: ['pear', 'cushion'], cushion: ['round', 'oval'], emerald: ['radiant', 'princess'], princess: ['radiant', 'emerald', 'cushion'], pear: ['oval', 'marquise'], marquise: ['oval', 'pear'], radiant: ['emerald', 'cushion'] };
+		var an = function (w) { return (/^[aeiou]/i.test(w) ? 'an ' : 'a ') + w; };
+		var styleN = function () { return A.style !== null && A.style !== '' && styles[+A.style] ? styles[+A.style].n : ''; };
+		var same = function (a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); };
+		// Photographed or filmed in that gold (the product photos are white gold).
+		var real = function (r, m) { var x = r.media[m]; return !!(x && (m === 'white' || (x.poster && x.poster !== r.img))); };
+		var metalOf = function (r) { return A.metal && r.media[A.metal] ? A.metal : (r.media[r.m] ? r.m : (Object.keys(r.media)[0] || 'white')); };
+		var mediaOf = function (r) { return r.media[metalOf(r)] || { v: '', poster: r.img }; };
+		function clean(a) {
+			a = a || {};
+			A = { shape: null, style: null, metal: null, budget: null };
+			if (a.shape === '' || shapeN[a.shape]) A.shape = a.shape;
+			if (a.style === '' || (a.style != null && styles[+a.style])) A.style = a.style;
+			if (a.metal === '' || names[a.metal]) A.metal = a.metal;
+			if (a.budget === '' || (a.budget != null && budgets[+a.budget] !== undefined)) A.budget = a.budget;
+		}
+		function label(k) {
+			var v = A[k], i = ORDER.indexOf(k);
+			if (v === null || v === '') return (t.any || [])[i] || '';
+			if (k === 'shape') return shapeN[v] || v;
+			if (k === 'style') return styleN();
+			if (k === 'metal') return names[v] || v;
+			return budgets[+v] || '';
+		}
+		var summary = function () { return ORDER.map(label).filter(Boolean).join(' · '); };
+		function score(r) {
+			var s = 0, sn = styleN();
+			if (A.shape) s += r.shape === A.shape ? 6 : ((NEAR[A.shape] || []).indexOf(r.shape) >= 0 ? 2 : 0);
+			if (sn && same(r.style, sn)) s += 8;
+			if (A.metal && real(r, A.metal)) s += 1;
+			return s;
+		}
+		// Best first; with no setting chosen, three different styles to compare.
+		function rank() {
+			var list = rings.map(function (r, i) { return { r: r, i: i, s: score(r) }; }).sort(function (a, b) { return b.s - a.s || a.i - b.i; });
+			var out = list.slice(0, 1), mix = !styleN();
+			while (out.length < Math.min(3, list.length)) {
+				var left = list.filter(function (x) { return out.indexOf(x) < 0; });
+				out.push(left.filter(function (x) { return !mix || !out.some(function (o) { return same(o.r.style, x.r.style); }); })[0] || left[0]);
+			}
+			return out;
+		}
+		function drawArt() {
+			card.dataset.metal = A.metal || 'white';
+			if (step > 4) return;
+			var st = styleN() ? styles[+A.style].art : 'solitaire';
+			swapEl(art, ringSVG({ setting: st, metal: A.metal || 'white', shape: A.shape || 'round', carat: 1.25, label: '' }));
+			art.classList.remove('is-media');
+		}
+		function picksDraw() {
+			picksEl.innerHTML = ORDER.map(function (k, i) {
+				return A[k] === null ? '' : '<li><button type="button" data-qz-go="' + (i + 1) + '">' + esc(label(k)) + '<span class="sr">, ' + esc(fmt(t.change || 'Change your %s answer', (t.q || [])[i] || k)) + '</span></button></li>';
+			}).join('');
+		}
+		function save(done) { if (!editor) try { sessionStorage.setItem(SKEY, JSON.stringify({ a: A, d: !!done })); } catch (e) {} }
+		function keepInView() {
+			var r = card.getBoundingClientRect();
+			if (r.top < 80) window.scrollTo({ top: window.scrollY + r.top - 90, behavior: reduce ? 'auto' : 'smooth' });
+		}
+		// The metal question shows one ring in each gold: the best match so far that we have in all three.
+		function metalPics() {
+			var imgs = $$('[data-qz-mimg]', el), best = null;
+			rings.forEach(function (r, i) {
+				var p = ['yellow', 'white', 'rose'].map(function (m) { var x = (r.media[m] || {}).poster || ''; return x === r.img ? '' : x; });
+				if (!p[0] || !p[1] || !p[2] || p[0] === p[1] || p[1] === p[2] || p[0] === p[2]) return;
+				var s = score(r); if (!best || s > best.s) best = { r: r, s: s };
+			});
+			if (best) imgs.forEach(function (im) { var u = best.r.media[im.dataset.qzMimg].poster; if (im.getAttribute('src') !== u) im.src = u; });
+		}
+		function gems() { var s = A.shape || 'round'; $$('[data-qz-gem]', el).forEach(function (g) { if (g.dataset.s !== s) { g.dataset.s = s; g.innerHTML = shapeIcon(s); } }); }
+		function go(n, focus) {
+			step = n; clearTimeout(timer);
+			var done = n > 4;
+			steps.forEach(function (f) { f.hidden = +f.dataset.step !== n; });
+			res.hidden = !done; top.hidden = done; if (wait) wait.hidden = true;
+			card.classList.toggle('qz-done', done); card.classList.remove('qz-busy');
+			if (!done) {
+				count.textContent = fmt(t.count || 'Question %1$d of %2$d', n, 4);
+				bar.style.width = n * 25 + '%';
+				back.hidden = n === 1;
+				var f = steps[n - 1];
+				$$('[data-a]', f).forEach(function (b) { b.setAttribute('aria-pressed', String(A[b.dataset.a] !== null && String(A[b.dataset.a]) === b.dataset.v)); });
+				if (n === 3) metalPics();
+				if (n === 4) gems();
+				if (art.classList.contains('is-media')) drawArt();
+				if (focus) { var lg = $('legend', f); if (lg) lg.focus({ preventScroll: true }); }
+			}
+			if (focus) keepInView();
+		}
+		function answer(k, v, btn) {
+			var i = ORDER.indexOf(k);
+			A[k] = v;
+			$$('[data-a="' + k + '"]', el).forEach(function (x) { x.setAttribute('aria-pressed', String(x === btn)); });
+			if (!started) { started = true; track('quiz_start', { cta_location: 'quiz' }); }
+			track('quiz_step', { step: i + 1, question: k, answer: v === '' ? 'not_sure' : label(k) });
+			drawArt(); picksDraw(); save(false);
+			var next = 0;
+			for (var j = i + 1; j < 4 && !next; j++) if (A[ORDER[j]] === null) next = j + 1;
+			for (j = 0; j < i && !next; j++) if (A[ORDER[j]] === null) next = j + 1;
+			clearTimeout(timer);
+			timer = setTimeout(function () { if (next) go(next, true); else finish(); }, reduce ? 0 : 280);
+		}
+		function finish() {
+			steps.forEach(function (f) { f.hidden = true; }); top.hidden = true;
+			if (reduce || !wait) return results(false);
+			wait.hidden = false; card.classList.add('qz-busy');
+			timer = setTimeout(function () { results(false); }, 700);
+		}
+		function results(quiet) {
+			matches = rank();
+			go(5, false);
+			$('[data-qz-alts]', el).innerHTML = matches.map(function (x, j) {
+				var md = mediaOf(x.r), u = md.poster || x.r.img;
+				return '<button type="button" aria-pressed="' + (j === 0) + '" data-qz-i="' + j + '"><span class="qz-alt-img"><img' + (u !== x.r.img ? ' class="v0"' : '') + ' src="' + esc(u) + '" alt="" loading="lazy" decoding="async"></span><span class="qz-alt-n">' + esc(x.r.n) + '</span>' + (x.r.p ? '<span class="qz-alt-p">' + esc(fmt(t.from || 'Setting from %s', x.r.p)) + '</span>' : '') + '</button>';
+			}).join('');
+			var bl = $('[data-qz-budget]', el), bv = A.budget !== null && A.budget !== '' ? budgets[+A.budget] || '' : '';
+			bl.hidden = !bv;
+			bl.innerHTML = bv ? fmt(esc(t.budgetIs || 'Your budget: %s.'), '<b>' + esc(bv) + '</b>') + ' ' + esc(t.budget || '') : '';
+			show(0);
+			save(true);
+			if (quiet) return;
+			track('quiz_complete', { cta_location: 'quiz', shape: A.shape || 'not_sure', style: styleN() || 'mix', metal: A.metal || 'not_sure', budget: bv || 'not_sure', top_match: matches[0].r.id || matches[0].r.n });
+			var nm = $('[data-qz-name]', el); if (nm) nm.focus({ preventScroll: true });
+			keepInView();
+		}
+		function show(j, user) {
+			cur = j;
+			var r = matches[j].r, m = metalOf(r), md = mediaOf(r), sn = styleN(), notes = [];
+			$('[data-qz-lbl]', el).textContent = j === 0 ? (t.top || 'Your top match') : (t.also || 'Also a match for you');
+			$('[data-qz-name]', el).textContent = r.n;
+			$('[data-qz-meta]', el).innerHTML = [r.p ? esc(fmt(t.from || 'Setting from %s', r.p)) : '', r.id ? esc(fmt(t.style || 'Style %s', r.id)) : ''].filter(Boolean).join(' · ') +
+				(r.u && t.see ? ' <a href="' + esc(r.u) + '"' + (r.ext ? ' target="_blank" rel="noopener"' : '') + '>' + esc(t.see) + ' ' + icon('arr') + '</a>' : '');
+			$('[data-qz-why]', el).innerHTML = [
+				[fmt(t.diamond || '%s diamond', shapeN[r.shape] || r.shape), !!A.shape && r.shape === A.shape],
+				[r.style, !!sn && same(r.style, sn)],
+				[names[m] || m, !!A.metal && m === A.metal]
+			].filter(function (w) { return w[0]; }).map(function (w) { return '<li' + (w[1] ? ' class="on"' : '') + '>' + (w[1] ? icon('check') : '') + esc(w[0]) + '</li>'; }).join('');
+			// Honest notes when the photo isn't exactly what they chose.
+			if (A.shape && r.shape !== A.shape) notes.push(fmt(t.shapeNote || 'Shown with %1$s diamond. Ask us about this style with %2$s diamond.', an((shapeN[r.shape] || r.shape).toLowerCase()), an((shapeN[A.shape] || A.shape).toLowerCase())));
+			if (A.metal && m !== A.metal) notes.push(fmt(t.metalNote || 'Shown in %1$s. Ask us about %2$s.', (names[m] || m).toLowerCase(), (names[A.metal] || A.metal).toLowerCase()));
+			var nt = $('[data-qz-note]', el); nt.hidden = !notes.length; nt.textContent = notes.join(' ');
+			$$('[data-qz-i]', el).forEach(function (b) { b.setAttribute('aria-pressed', String(+b.dataset.qzI === j)); });
+			card.dataset.metal = m;
+			swapEl(art, md.v && !reduce ? '<video muted loop playsinline autoplay preload="auto"' + (md.poster ? ' poster="' + esc(md.poster) + '"' : '') + ' src="' + esc(md.v) + '"></video>' : '<img src="' + esc(md.poster || r.img) + '" alt="">');
+			art.classList.add('is-media');
+			art.classList.toggle('is-photo', !md.v && (md.poster || r.img) === r.img);
+			var v = art.lastElementChild; if (v && v.play) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); }
+			if (user) { flash(art); var rr = art.getBoundingClientRect(); if (rr.bottom < 80) art.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }); }
+		}
+		function trayItem(r) { var m = metalOf(r), md = mediaOf(r); return { key: 'sp-' + (r.id || r.n) + '-' + m, name: r.n, sub: (names[m] || '') + (r.id ? ' · style ' + r.id : '') + (r.p ? ' · from ' + r.p : ''), img: md.poster || r.img }; }
+		// "Book to try these on": the three rings go on the visitor's tray, so they're out for the visit.
+		var bookBtn = $('[data-qz-book]', el);
+		if (bookBtn) bookBtn.addEventListener('click', function () {
+			if (!CFG.tray || !matches.length) return;
+			var add = matches.map(function (x) { return trayItem(x.r); }).filter(function (it) { return !inTray(it.key); });
+			if (add.length) { tray.push.apply(tray, add); saveTray(); renderTray(); }
+		});
+		el.wkContext = function () {
+			if (!matches.length || step < 5) return { topic: 'Engagement ring' };
+			var r = matches[cur].r, it = trayItem(r);
+			return { topic: 'Engagement ring', piece: { key: it.key, name: r.n + (r.id ? ' · Style ' + r.id : ''), sub: names[metalOf(r)] || '', img: it.img }, answers: summary() };
+		};
+		// "Email me my matches"
+		var mf = $('[data-qz-mail]', el), mOpen = $('[data-qz-mail-open]', el), sent = $('[data-qz-sent]', el);
+		function mailReset() {
+			if (!mf) return;
+			mf.hidden = true; if (sent) sent.hidden = true;
+			if (mOpen) { mOpen.hidden = false; mOpen.setAttribute('aria-expanded', 'false'); }
+			$('[data-qz-err]', mf).hidden = true;
+		}
+		if (mf) mf.addEventListener('submit', function (e) {
+			e.preventDefault();
+			var i = mf.elements.email, err = $('[data-qz-err]', mf), btn = mf.querySelector('[type=submit]'), lbl = btn.innerHTML, em = i.value.trim();
+			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { err.textContent = T.badEmail || 'Please enter a valid email address.'; err.hidden = false; i.setAttribute('aria-invalid', 'true'); i.focus(); return; }
+			i.removeAttribute('aria-invalid'); err.hidden = true;
+			btn.disabled = true; btn.textContent = T.sending || 'Sending…';
+			var doc = el.closest('[data-elementor-id]'), fd = new FormData();
+			fd.append('action', 'wk_quiz'); fd.append('nonce', CFG.nonce || ''); fd.append('email', em); fd.append('website', mf.elements.website ? mf.elements.website.value : '');
+			fd.append('doc', doc ? doc.getAttribute('data-elementor-id') : ''); fd.append('wid', c.uid || ''); fd.append('page', location.href);
+			ORDER.forEach(function (k) { fd.append(k, A[k] === null ? '' : A[k]); });
+			matches.forEach(function (x) { fd.append('picks[]', x.i); });
+			fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (rs) {
+				if (!rs || !rs.success) throw new Error((rs && rs.data && rs.data.msg) || '');
+				track('generate_lead', { form_type: 'quiz_email', cta_location: 'quiz' }, ['track', 'Lead']);
+				mf.hidden = true; if (mOpen) mOpen.hidden = true;
+				if (sent) { sent.innerHTML = icon('check') + '<span>' + esc(fmt(t.sent || 'Sent to %s.', em)) + '</span>'; sent.hidden = false; }
+				btn.disabled = false; btn.innerHTML = lbl;
+			}).catch(function (er) {
+				btn.disabled = false; btn.innerHTML = lbl;
+				err.textContent = (er && er.message) || T.error || 'Sorry, that didn\'t send. Please call us instead.'; err.hidden = false;
+			});
+		});
+		function restart() {
+			clean({}); matches = []; started = false; mailReset();
+			try { sessionStorage.removeItem(SKEY); } catch (e) {}
+			step = 1; drawArt(); picksDraw(); go(1, true);
+		}
+		el.addEventListener('click', function (e) {
+			var b = e.target.closest('[data-a]');
+			if (b) return answer(b.dataset.a, b.dataset.v, b);
+			var g = e.target.closest('[data-qz-go]');
+			if (g) return go(+g.dataset.qzGo, true);
+			if (e.target.closest('[data-qz-back]')) return go(Math.max(1, step - 1), true);
+			if (e.target.closest('[data-qz-again]')) return restart();
+			var x = e.target.closest('[data-qz-i]');
+			if (x) return +x.dataset.qzI === cur ? null : show(+x.dataset.qzI, true);
+			if (e.target.closest('[data-qz-mail-open]') && mf) {
+				var open = mf.hidden;
+				mf.hidden = !open; mOpen.setAttribute('aria-expanded', String(open));
+				if (open) { mf.elements.email.focus(); track('quiz_email_open', { cta_location: 'quiz' }); }
+			}
+		});
+		// Back in the same visit (e.g. after looking at a ring in the catalog): the answers are still here.
+		var saved = null;
+		if (!editor) try { saved = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); } catch (e) {}
+		clean(saved && saved.a);
+		started = ORDER.some(function (k) { return A[k] !== null; });
+		drawArt(); picksDraw();
+		if (saved && saved.d && ORDER.every(function (k) { return A[k] !== null; })) results(true);
+		else { var first = 1; ORDER.some(function (k, i) { if (A[k] === null) { first = i + 1; return true; } }); go(first, false); }
+	};
+
 	INIT.footer = function (el) {
 		var f = $('[data-news]', el);
 		if (!f) return;
@@ -1317,6 +1627,7 @@
 			contrast(el);
 			applyHours(el);
 			$$('.pv[data-autoplay]', el).forEach(function (box) { new IntersectionObserver(function (es) { playIn(box, es[0].isIntersecting); }, { threshold: 0.35 }).observe(box); });
+			$$('video[data-lazy]', el).forEach(function (v) { new IntersectionObserver(function (es) { if (es[0].isIntersecting) { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (!reduce) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } } else v.pause(); }, { rootMargin: '250px 0px' }).observe(v); });
 			var fn = INIT[el.dataset.wk];
 			if (fn) { try { fn(el, cfgOf(el)); } catch (e) { if (window.console) console.error('[wulf-kit]', el.dataset.wk, e); } }
 		});
@@ -1364,7 +1675,7 @@
 			if (dark && b !== 'photo' && !b.own && s.dataset.tone !== 'dark') s.style.backgroundColor = 'transparent';
 		});
 		// Light cards inside a dark section (white product boxes, white panels) keep dark text; see-through ones don't.
-		$$('.tile, .studio-card, .box, .rev, .cr-frame, .split-media, .pgh-media, .pgh-cap, .slot, .svc, .vals > li, .card, .post, .faq-item, .cta-box, .path, .faq-help, .bkbar', el).forEach(function (n) {
+		$$('.tile, .studio-card, .box, .rev, .cr-frame, .split-media, .pgh-media, .pgh-cap, .slot, .svc, .vals > li, .card, .post, .faq-item, .cta-box, .path, .faq-help, .bkbar, .qz-card', el).forEach(function (n) {
 			var c = n.closest('.dark') ? rgb(getComputedStyle(n).backgroundColor) : null;
 			n.classList.toggle('wk-isl', !!(c && c.a > 0.5 && lum(c) > 0.4));
 		});

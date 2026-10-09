@@ -56,6 +56,7 @@ class WK_Steps_Widget extends WK_Widget {
 			),
 		) );
 		$this->button_fields( 'b1', __( 'Button under the steps', 'wulf-kit' ), '', '#visit', true );
+		$this->add_control( 'img_phone', array( 'label' => __( 'Step photos on phones', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'show', 'options' => array( 'show' => __( 'Show', 'wulf-kit' ), 'hide' => __( 'Hide (numbers only, shorter page)', 'wulf-kit' ) ), 'condition' => array( 'look' => 'timeline' ) ) );
 		$this->add_control( 'call_line', array( 'label' => __( 'Phone line with open status under the button', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes' ) );
 		$this->end_controls_section();
 
@@ -101,7 +102,7 @@ class WK_Steps_Widget extends WK_Widget {
 				return $this->img_url( $it['image'] ?? array() );
 			}, $items );
 			$has  = (bool) array_filter( $imgs );
-			echo '<ol class="steps tl' . ( $has ? ' has-img' : '' ) . '" style="--n:' . (int) max( 1, min( 5, count( $items ) ) ) . '">';
+			echo '<ol class="steps tl' . ( $has ? ' has-img' : '' ) . ( $has && 'hide' === ( $s['img_phone'] ?? 'show' ) ? ' no-img-m' : '' ) . '" style="--n:' . (int) max( 1, min( 5, count( $items ) ) ) . '">';
 			foreach ( array_values( $items ) as $i => $it ) {
 				$num = sprintf( '%02d', $i + 1 );
 				echo '<li><span class="tl-dot" aria-hidden="true"></span>';

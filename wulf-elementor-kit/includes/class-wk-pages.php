@@ -34,7 +34,7 @@ class WK_Pages {
 	public static function catalog() {
 		return array(
 			'home'                        => array( __( 'Home', 'wulf-kit' ), 'home', 'main', __( 'The full homepage: showcase, categories, ring studio, story, 4Cs, services, visit.', 'wulf-kit' ) ),
-			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, a booking bar right under it, "What brings you in?" choices that each lead somewhere, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, common questions, and booking. Each section is a showcase with one clear next step, and every "Book" button opens the booking popup.', 'wulf-kit' ) ),
+			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, a booking bar right under it, "What brings you in?" choices that each lead somewhere, a ring style quiz that ends in three matching rings, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, common questions, and booking. Each section is a showcase with one clear next step, and every "Book" button opens the booking popup.', 'wulf-kit' ) ),
 			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer homepage with a few big moments: the 360° spotlight, the ring that builds itself, the ring designer and the 4Cs. Fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
 			'about-us'                    => array( __( 'About', 'wulf-kit' ), 'about-us', 'main', __( 'Your story since 1971, Cullen, concierge service, values, reviews, visit.', 'wulf-kit' ) ),
 			'contact-us'                  => array( __( 'Free Consultation', 'wulf-kit' ), 'contact-us', 'main', __( 'Contact and booking form, map, hours, common questions.', 'wulf-kit' ) ),
@@ -68,6 +68,14 @@ class WK_Pages {
 	/** Homepage variants: "Go live" makes them the site's front page. */
 	public static function is_home( $key ) {
 		return in_array( $key, array( 'home', 'home-simple', 'home-conversion' ), true );
+	}
+
+	/** The page being shown is the front page, or a homepage version from the library (e.g. still being tried). */
+	public static function current_is_home() {
+		if ( is_front_page() ) {
+			return true;
+		}
+		return is_page() && self::is_home( (string) get_post_meta( (int) get_queried_object_id(), self::META, true ) );
 	}
 
 	/** Extra page meta a template sets (e.g. the calmer look). */
@@ -219,7 +227,7 @@ class WK_Pages {
 				'tone'      => 'white',
 				'media'     => 'none',
 				'call_line' => '',
-				'b1_text'   => __( 'Book a visit to try them on', 'wulf-kit' ),
+				'b1_text'   => __( 'Book to try them on', 'wulf-kit' ),
 				'b1_topic'  => '',
 				'b2_text'   => __( 'Custom design', 'wulf-kit' ),
 				'b2_link'   => self::link( 'custom-jewelry' ),
@@ -275,9 +283,10 @@ class WK_Pages {
 				);
 
 			case 'home-conversion':
-				if ( ! class_exists( 'WK_Paths_Widget' ) && class_exists( '\Elementor\Widget_Base' ) ) {
+				if ( class_exists( '\Elementor\Widget_Base' ) ) {
 					require_once WK_DIR . 'includes/class-wk-widget.php';
 					require_once WK_DIR . 'widgets/class-wk-paths.php';
+					require_once WK_DIR . 'widgets/class-wk-spotlight.php';
 				}
 				return array(
 					array( 'hero', array(
@@ -287,18 +296,31 @@ class WK_Pages {
 						'b2_link' => array( 'url' => '#studio' ),
 						'b_note'  => __( 'Free, no obligation | We confirm by call or text', 'wulf-kit' ),
 						'm_first' => 'words',
+						'm_mini'  => 'yes',
+						'lead_m'  => __( 'Engagement rings, certified diamonds and custom design, with a GIA-certified jeweler.', 'wulf-kit' ),
 					) ),
 					array( 'bookbar', array() ),
 					array( 'paths', class_exists( 'WK_Paths_Widget' ) ? array( 'items' => WK_Paths_Widget::default_items( '#studio' ), 'look' => 'showcase', 'head_align' => 'left' ) : array() ),
-					array( 'spotlight', array( 'b1_text' => __( 'Book to see it in person', 'wulf-kit' ) ) ),
-					array( 'products', array( 'more_text' => __( 'See all engagement rings', 'wulf-kit' ) ) ),
+					// Ring style quiz: four picture questions, three matching rings, then book or email.
+					array( 'quiz', array() ),
+					// Spotlight and favorites in one: tap a ring card, it turns in the large frame.
+					array( 'spotlight', class_exists( 'WK_Spotlight_Widget' ) ? array(
+						'eyebrow'   => __( 'In 360°', 'wulf-kit' ),
+						'title'     => __( 'Engagement ring *favorites*.', 'wulf-kit' ),
+						'lead'      => __( 'Tap a ring to see it turn, try it in another metal, then come and hold it.', 'wulf-kit' ),
+						'items'     => WK_Spotlight_Widget::favorites(),
+						'picks'     => 'cards',
+						'save_on'   => 'yes',
+						'b1_text'   => __( 'Book to see it in person', 'wulf-kit' ),
+						'more_text' => __( 'See all engagement rings', 'wulf-kit' ),
+					) : array() ),
 					array( 'values', array( 'head_align' => 'left', 'rule' => '', 'rating_on' => 'yes' ) ),
 					self::steps( __( 'How a visit works', 'wulf-kit' ), __( 'Three easy steps, no pressure.', 'wulf-kit' ), array(
 						array( __( 'Book a time', 'wulf-kit' ), __( 'Choose what you\'d like to talk about and a day that suits you. We confirm by call or text.', 'wulf-kit' ), 'calendar', 'sign.webp' ),
 						array( __( 'Visit and compare', 'wulf-kit' ), __( 'A relaxed, free consultation: diamonds side by side under the loupe, grading reports in hand.', 'wulf-kit' ), 'gem', 'diamond-tweezers.webp' ),
 						array( __( 'Decide in your own time', 'wulf-kit' ), __( 'We set your stone, or design one from scratch with you, when you\'re ready.', 'wulf-kit' ), 'spark', 'ring-box.webp' ),
-					), array( 'tone' => 'ivory', 'b1_text' => __( 'Book a free consultation', 'wulf-kit' ), 'b1_link' => array( 'url' => '#visit' ), 'call_line' => 'yes' ) ),
-					array( 'studio', array( 'main_btn' => 'book', 'book_text' => __( 'Book to see it in person', 'wulf-kit' ), 'tone' => 'white' ) ),
+					), array( 'tone' => 'ivory', 'b1_text' => __( 'Book a free consultation', 'wulf-kit' ), 'b1_link' => array( 'url' => '#visit' ), 'call_line' => 'yes', 'img_phone' => 'hide' ) ),
+					array( 'studio', array( 'main_btn' => 'book', 'book_text' => __( 'Book to see it in person', 'wulf-kit' ), 'tone' => 'white', 'phone_mode' => 'card' ) ),
 					self::faq( __( 'Before you visit.', 'wulf-kit' ), self::visit_questions(), array( 'tone' => 'ivory' ) ),
 					array( 'visit', array( 'f_short' => 'yes', 'after' => array(), 'f_title' => __( 'Book your free consultation', 'wulf-kit' ), 'tone' => 'white' ) ),
 				);
@@ -372,7 +394,7 @@ class WK_Pages {
 
 			case 'catalogue':
 				return array(
-					self::banner( __( 'The full catalog', 'wulf-kit' ), __( 'The Wulf *catalogue*.', 'wulf-kit' ), __( 'Every style we can order or make for you, from engagement rings to earrings. Search by style number, or browse by line.', 'wulf-kit' ), array( 'tone' => 'white', 'media' => 'none', 'call_line' => '', 'b1_text' => __( 'Design your ring', 'wulf-kit' ), 'b1_link' => self::link( 'ring-builder' ), 'b2_text' => __( 'Book a visit', 'wulf-kit' ), 'b2_link' => array( 'url' => '#visit' ) ) ),
+					self::banner( __( 'The full catalog', 'wulf-kit' ), __( 'The Wulf *catalogue*.', 'wulf-kit' ), __( 'Every style we can order or make for you, from engagement rings to earrings. Search by style number, or browse by line.', 'wulf-kit' ), array( 'tone' => 'white', 'media' => 'none', 'call_line' => '', 'b1_text' => __( 'Design your ring', 'wulf-kit' ), 'b1_link' => self::link( 'ring-builder' ), 'b2_text' => __( 'Book a free consultation', 'wulf-kit' ), 'b2_link' => array( 'url' => '#visit' ) ) ),
 					self::om( 'om_catalog_widget', array( 'product_line' => 'earrings', 'extra_lines' => array( 'engagement-rings', 'wedding-bands', 'bracelets', 'fashion-rings', 'necklaces', 'pendants' ) ), __( 'Product catalog', 'wulf-kit' ) ),
 				);
 

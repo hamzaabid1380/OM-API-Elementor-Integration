@@ -23,6 +23,20 @@ class WK_Spotlight_Widget extends WK_Widget {
 		return 'eicon-video-camera';
 	}
 
+	/** Eight favorites for the "row of ring cards" look (the page library's homepage uses them). */
+	public static function favorites() {
+		return array(
+			self::demo_product( '83364', '3-Stone Single Row Engagement Ring', '$4,540', 'engagement-rings/83364-25/', 'rose', array( 'white', 'yellow', 'rose' ) ),
+			self::demo_product( '51156-E', 'Emerald Cut Hidden Halo Engagement Ring', '$1,645', 'engagement-rings/51156-E-7.5X5.5/', 'yellow', array( 'white', 'yellow', 'rose' ) ),
+			self::demo_product( '85275', 'Nature Inspired Engagement Ring', '$1,510', 'engagement-rings/85275-1/', 'white', array( 'white', 'yellow', 'rose' ) ),
+			self::demo_product( '51157-E', 'Oval Hidden Halo Engagement Ring', '$1,350', 'engagement-rings/51157-E-6X4/', 'white', array( 'white', 'yellow' ) ),
+			self::demo_product( '84842', 'Single Row Diamond Engagement Ring', '$2,650', 'engagement-rings/84842-2/', 'white', array( 'white' ) ),
+			self::demo_product( '85158', 'Accented Round Engagement Ring', '$2,317', 'engagement-rings/85158-2/', 'white', array( 'white' ) ),
+			self::demo_product( '85121', 'Round 4-Prong Solitaire Engagement Ring', '$1,561', 'engagement-rings/85121-2/', 'white', array( 'white' ) ),
+			self::demo_product( '85264', 'Tulip Solitaire Engagement Ring', '$1,144', 'engagement-rings/85264-1/', 'white', array( 'white' ) ),
+		);
+	}
+
 	protected function register_controls() {
 		$this->section_controls( array( 'anchor' => 'spotlight', 'tone' => 'ivory' ) );
 		$this->head_controls( array( 'eyebrow' => __( 'In the spotlight', 'wulf-kit' ), 'title' => __( 'Brilliance you have to see *in person*.', 'wulf-kit' ), 'lead' => __( 'Watch it turn, try it in another metal, then come and hold it. Every ring here is one we can make for you.', 'wulf-kit' ), 'align' => 'center' ) );
@@ -31,7 +45,7 @@ class WK_Spotlight_Widget extends WK_Widget {
 		$r = new Repeater();
 		$this->product_fields( $r );
 		$this->add_control( 'items', array(
-			'label'       => __( 'Rings (first one shows first; up to 4)', 'wulf-kit' ),
+			'label'       => __( 'Rings (first one shows first; up to 8)', 'wulf-kit' ),
 			'type'        => Controls_Manager::REPEATER,
 			'fields'      => $r->get_controls(),
 			'title_field' => '{{{ name }}}',
@@ -41,9 +55,18 @@ class WK_Spotlight_Widget extends WK_Widget {
 				self::demo_product( '85275', 'Nature Inspired Engagement Ring', '$1,510', 'engagement-rings/85275-1/', 'white', array( 'white', 'yellow', 'rose' ) ),
 			),
 		) );
+		$this->add_control( 'picks', array(
+			'label'       => __( 'Ring choices look', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'circles',
+			'options'     => array( 'circles' => __( 'Small round photos', 'wulf-kit' ), 'cards' => __( 'A row of ring cards with names and prices (favorites)', 'wulf-kit' ) ),
+			'description' => __( 'Cards turn this into your favorites row: tap a ring to see it turn in the large frame.', 'wulf-kit' ),
+		) );
+		$this->add_control( 'save_on', array( 'label' => __( 'Heart to save the ring on screen', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Saves it to the visitor\'s tray for their visit.', 'wulf-kit' ) ) );
 		$this->add_control( 'show_price', array( 'label' => __( 'Show price', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
 		$this->add_control( 'link_text', array( 'label' => __( 'Link text under the ring', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'View this ring', 'wulf-kit' ) ) );
-		$this->button_fields( 'b1', __( 'Button', 'wulf-kit' ), __( 'Book a visit to see it', 'wulf-kit' ), '#visit', 'Engagement ring' );
+		$this->button_fields( 'b1', __( 'Button', 'wulf-kit' ), __( 'Book to see it in person', 'wulf-kit' ), '#visit', 'Engagement ring' );
+		$this->button_fields( 'more', __( '"See all" link beside the button', 'wulf-kit' ), '', WK_Pages::url( 'engagement-rings' ) );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'c_layout', array( 'label' => __( 'Layout & video background', 'wulf-kit' ) ) );
@@ -130,7 +153,7 @@ class WK_Spotlight_Widget extends WK_Widget {
 	protected function render() {
 		$s     = $this->get_settings_for_display();
 		$items = array();
-		foreach ( array_slice( (array) $s['items'], 0, 4 ) as $it ) {
+		foreach ( array_slice( (array) $s['items'], 0, 8 ) as $it ) {
 			$d = $this->product_data( $it );
 			if ( $d['media'] ) {
 				$items[] = $d;
@@ -151,9 +174,15 @@ class WK_Spotlight_Widget extends WK_Widget {
 		$this->head( $s );
 		echo '</div>';
 		$med = $f['media'][ $m ];
+		$cards = 'cards' === ( $s['picks'] ?? 'circles' );
 		echo '<div class="spot-media"><div class="spot-ring swap pv" data-spot-ring>';
+		if ( 'yes' === ( $s['save_on'] ?? '' ) && WK_Settings::get( 'tray' ) ) {
+			// Inside the frame, before the film: changing ring or metal swaps only the film.
+			/* translators: %s: ring name */
+			echo '<button class="spot-save" type="button" aria-pressed="false" data-spot-save aria-label="' . esc_attr( sprintf( __( 'Save %s to my tray', 'wulf-kit' ), $f['n'] ) ) . '">' . WK_Icons::svg( 'heart' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
 		if ( $med['v'] ) {
-			echo '<video muted loop playsinline autoplay preload="metadata" poster="' . esc_url( $med['poster'] ) . '" src="' . esc_url( $med['v'] ) . '" aria-label="' . esc_attr( $f['n'] ) . '"></video>';
+			echo '<video muted loop playsinline preload="none" poster="' . esc_url( $med['poster'] ) . '" data-src="' . esc_url( $med['v'] ) . '" aria-label="' . esc_attr( $f['n'] ) . '"></video>';
 		} else {
 			echo '<img src="' . esc_url( $med['poster'] ) . '" alt="' . esc_attr( $f['n'] ) . '">';
 		}
@@ -167,14 +196,21 @@ class WK_Spotlight_Widget extends WK_Widget {
 		$price = 'yes' === $s['show_price'] && $f['p'] ? ' · ' . esc_html__( 'From', 'wulf-kit' ) . ' ' . esc_html( $f['p'] ) : '';
 		$link  = $s['link_text'] && $f['u'] ? ' <a href="' . esc_url( $f['u'] ) . '"' . ( $f['ext'] ? ' target="_blank" rel="noopener"' : '' ) . '>' . esc_html( $s['link_text'] ) . ' ' . WK_Icons::svg( 'arr' ) . '</a>' : '';
 		echo '<p class="spot-cap" data-spot-cap><b>' . esc_html( $f['n'] ) . '</b>' . $price . $link . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		if ( count( $items ) > 1 ) {
+		if ( count( $items ) > 1 && $cards ) {
+			// Favorites row: each card loads its ring into the large frame.
+			echo '<div class="spot-cards" data-spot-pick role="group" aria-label="' . esc_attr( wp_strip_all_tags( (string) ( $s['title'] ?? '' ) ) ) . '">';
+			foreach ( $items as $i => $it ) {
+				echo '<button type="button" aria-pressed="' . ( 0 === $i ? 'true' : 'false' ) . '" data-i="' . (int) $i . '"><span class="spc-img"><img src="' . esc_url( $it['img'] ) . '" alt="" loading="lazy" decoding="async"></span><span class="spc-n">' . esc_html( $it['n'] ) . '</span>' . ( 'yes' === $s['show_price'] && $it['p'] ? '<span class="spc-p">' . esc_html__( 'From', 'wulf-kit' ) . ' ' . esc_html( $it['p'] ) . '</span>' : '' ) . '</button>';
+			}
+			echo '</div>';
+		} elseif ( count( $items ) > 1 ) {
 			echo '<div class="spot-pick" data-spot-pick>';
 			foreach ( $items as $i => $it ) {
 				echo '<button type="button" aria-pressed="' . ( 0 === $i ? 'true' : 'false' ) . '" data-i="' . (int) $i . '" aria-label="' . esc_attr( $it['n'] ) . '"><img src="' . esc_url( $it['img'] ) . '" alt="" loading="lazy"></button>';
 			}
 			echo '</div>';
 		}
-		$b = $this->button( $s, 'b1', 'btn btn-main ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true );
+		$b = $this->button( $s, 'b1', 'btn btn-main ' . ( 'dark' === ( $s['tone'] ?? '' ) ? 'btn-gold' : 'btn-ink' ), true ) . $this->button( $s, 'more', 'link', true );
 		if ( $b ) {
 			echo '<div class="spot-cta">' . $b . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
