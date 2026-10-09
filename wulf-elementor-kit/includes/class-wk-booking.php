@@ -57,6 +57,8 @@ class WK_Booking {
 			'topics' => array_filter( array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['topics'] ?? array() ) ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'tray'   => array_filter( array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['tray'] ?? array() ) ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'page'   => esc_url_raw( self::post( 'page' ) ),
+			'piece'  => self::post( 'piece' ),
+			'source' => self::post( 'source' ),
 		);
 		if ( strlen( $d['name'] ) < 2 || strlen( preg_replace( '/\D/', '', $d['phone'] ) ) < 10 ) {
 			wp_send_json_error( array( 'msg' => __( 'Please add your name and a 10-digit phone number.', 'wulf-kit' ) ), 400 );
@@ -69,9 +71,11 @@ class WK_Booking {
 			__( 'Best way to reach', 'wulf-kit' ) => $d['pref'],
 			__( 'Preferred day', 'wulf-kit' )    => trim( $d['day'] . ( $d['time'] ? ' (' . $d['time'] . ')' : '' ) ),
 			__( 'Talk about', 'wulf-kit' )       => implode( ', ', $d['topics'] ),
+			__( 'Looking at', 'wulf-kit' )       => $d['piece'],
 			__( 'Pieces on their tray', 'wulf-kit' ) => implode( '; ', $d['tray'] ),
 			__( 'Notes', 'wulf-kit' )            => $d['note'],
 			__( 'Page', 'wulf-kit' )             => $d['page'],
+			__( 'Booked from', 'wulf-kit' )      => $d['source'],
 		);
 		/* translators: %s: visitor name */
 		$subject = sprintf( __( 'Visit request from %s', 'wulf-kit' ), $d['name'] );
@@ -90,7 +94,7 @@ class WK_Booking {
 			'phone'   => $d['phone'],
 			'subject' => __( 'Visit request', 'wulf-kit' ),
 			'message' => trim( $message ),
-			'piece'   => implode( '; ', $d['tray'] ),
+			'piece'   => implode( '; ', array_filter( array_merge( array( $d['piece'] ), $d['tray'] ) ) ),
 			'page'    => $d['page'],
 		) );
 		do_action( 'wk_booking', $d );

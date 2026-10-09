@@ -96,6 +96,12 @@ class WK_Studio_Widget extends WK_Widget {
 		) );
 		$this->add_control( 'save_text', array( 'label' => __( 'Save button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Add to my tray', 'wulf-kit' ) ) );
 		$this->add_control( 'book_text', array( 'label' => __( 'Book button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'See it in person', 'wulf-kit' ) ) );
+		$this->add_control( 'main_btn', array(
+			'label'   => __( 'Biggest button', 'wulf-kit' ),
+			'type'    => Controls_Manager::SELECT,
+			'default' => 'go',
+			'options' => array( 'go' => __( 'View the setting', 'wulf-kit' ), 'book' => __( 'Book (gold), with "View the setting" beside "Add to my tray"', 'wulf-kit' ) ),
+		) );
 		$this->add_control( 'note', array( 'label' => __( 'Small note', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( '*Every ring includes free cleaning & inspection*, whenever you stop by.', 'wulf-kit' ), 'description' => __( '*Stars* make words bold.', 'wulf-kit' ) ) );
 		$this->end_controls_section();
 
@@ -195,18 +201,12 @@ class WK_Studio_Widget extends WK_Widget {
 		}
 		echo '</div><div class="size-line"><svg class="size-svg" width="90" height="90" viewBox="0 0 90 90" aria-hidden="true"><circle cx="45" cy="45" r="44" fill="#f7f5f1"/><polygon fill="#fff" stroke="#0f1217" stroke-width="1.3" stroke-linejoin="round" points="45,45" data-size-poly/></svg><p data-size-txt></p></div></fieldset>';
 
-		echo '<div class="studio-go">';
-		if ( $s['go_text'] ) {
-			echo '<a class="btn btn-ink" href="#" data-go>' . esc_html( $s['go_text'] ) . ' ' . WK_Icons::svg( 'arr', 'arr' ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		}
-		echo '<div class="row2">';
-		if ( $s['save_text'] && WK_Settings::get( 'tray' ) ) {
-			echo '<button class="btn btn-line studio-save" type="button" data-save aria-pressed="false">' . esc_html( $s['save_text'] ) . '</button>';
-		}
-		if ( $s['book_text'] ) {
-			echo '<a class="btn btn-line"' . self::link_attrs( array( 'url' => '#visit' ) ) . ' data-book data-topic="Engagement ring">' . esc_html( $s['book_text'] ) . '</a>';
-		}
-		echo '</div>';
+		$main_book = 'book' === ( $s['main_btn'] ?? 'go' );
+		$arr       = ' ' . WK_Icons::svg( 'arr', 'arr' );
+		$go        = $s['go_text'] ? '<a class="btn ' . ( $main_book ? 'btn-line' : 'btn-ink' ) . '" href="#" data-go>' . esc_html( $s['go_text'] ) . ( $main_book ? '' : $arr ) . '</a>' : '';
+		$book      = $s['book_text'] ? '<a class="btn ' . ( $main_book ? 'btn-gold' : 'btn-line' ) . '"' . self::link_attrs( array( 'url' => '#visit' ) ) . ' data-book data-topic="Engagement ring">' . esc_html( $s['book_text'] ) . ( $main_book ? $arr : '' ) . '</a>' : '';
+		$save      = $s['save_text'] && WK_Settings::get( 'tray' ) ? '<button class="btn btn-line studio-save" type="button" data-save aria-pressed="false">' . esc_html( $s['save_text'] ) . '</button>' : '';
+		echo '<div class="studio-go">' . ( $main_book ? $book : $go ) . '<div class="row2">' . $save . ( $main_book ? $go : $book ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		if ( $s['note'] ) {
 			echo '<p>' . preg_replace( '/\*([^*]+)\*/', '<b>$1</b>', esc_html( $s['note'] ) ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}

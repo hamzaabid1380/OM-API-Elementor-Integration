@@ -2,14 +2,14 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
 
 == What you get ==
 
-24 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
+25 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
 
 * Announcement bar (live "Open now / Closed now" from your hours)
 * Header (logo, menu with drop-down panels, search, phone, tray, "Book a visit", phone menu)
@@ -36,11 +36,13 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Text (long text: headings, lists, quotes)
 * Spotlight (one ring, large, in 360°, with live metal buttons and a choice of rings; four layouts,
   three frames and a video background you can change)
+* What brings you in? (six photo choices near the top; each opens a page, the ring designer, or the
+  booking panel with its topic chosen)
 
-28 page templates: one for every page on the live site, plus "Home (simpler)", with the wording from that page and the
-same web address:
+29 page templates: one for every page on the live site, plus "Home (simpler)" and "Home (conversion)", with the
+wording from that page and the same web address:
 
-* Main: Home, Home (simpler), About, Free Consultation, Blog, Thank You, Page not found
+* Main: Home, Home (simpler), Home (conversion), About, Free Consultation, Blog, Thank You, Page not found
 * Shop (with the OM Catalog plugin): Engagement Rings, Ring Builder, Wedding Bands, Fashion Rings,
   Earrings, Necklaces, Pendants, Bracelets, Catalogue, Single Product layout
 * Diamonds & gems: Diamond Jewelry, Where to Buy Engagement Rings, Gems
@@ -79,6 +81,23 @@ In the Hero, Product row and Ring studio widgets each product can be:
   come straight from Overnight Mountings.
 * "My own": upload your own picture and video.
 
+== Booking panel and conversions ==
+
+Every "Book" button on the site (header, hero, phone bar, tray, Spotlight, ring designer, any button
+linked to #visit) opens one short booking panel instead of jumping to a form: what it's about, a day
+and time of day, then name and mobile. It shows the piece the visitor was looking at (the Spotlight
+ring in its metal, the ring designer's design, the pieces on their tray), and the request email says
+which piece and which button it came from. The thank-you screen offers "Add to my calendar" and
+directions. Set the title, topics (with what to bring) and thank-you message in Wulf Kit > Settings >
+Booking & conversions; untick "Booking panel" to go back to jumping to the visit form.
+
+Links can open it too: add ?book=1 (and &topic=Repair) to any page address, e.g. in an ad or email.
+
+"Measure clicks and bookings" sends cta_click, click_to_call, get_directions, booking_open,
+booking_step, booking_request and generate_lead to the Google Analytics, Tag Manager or Meta pixel
+already on the site (nothing is added). Mark generate_lead as a key event in GA4 to count bookings as
+conversions. Add ?wk_debug_events=1 to a page address to watch them in the browser console.
+
 == Visit requests and newsletter ==
 
 The "Book a visit" form and the footer sign-up email you (Wulf Kit > Settings > "Visit requests
@@ -86,6 +105,22 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.6.0 =
+* New "Home (conversion)" template, built to turn visitors into booked visits: one clear promise with
+  "Book a free consultation" and "Design your ring", a reassurance line, "What brings you in?" choices,
+  the 360° Spotlight and favorites, why Wulf with the Google rating, "How a visit works" in three steps,
+  the ring designer with a gold "Book to see it in person", and booking. On phones the words and
+  buttons come first, so the main button is on the first screen.
+* Booking panel: every "Book" button opens a three-step panel (what for, when, how to reach you) with a
+  progress line, the piece the visitor was looking at, and a thank-you screen with "Add to my calendar"
+  and directions. Works on every page; requests go to the same email and CRM hand-off as before.
+* New widget "What brings you in?": six photo choices (engagement rings, wedding bands, custom design,
+  repairs, appraisals, selling), each leading to its own next step, plus "Not sure yet? Talk to a jeweler".
+* Measuring: button clicks, calls, directions, booking steps and booking requests are sent to the
+  Google Analytics, Tag Manager or Meta pixel already on the site.
+* Hero: optional reassurance line under the buttons, and "words first on phones".
+* Ring designer: the booking button can be the main (gold) button.
 
 = 1.5.0 =
 * Text stays readable on any section background. Pick any color or gradient in Style › Section and the

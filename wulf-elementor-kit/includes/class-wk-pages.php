@@ -34,6 +34,7 @@ class WK_Pages {
 	public static function catalog() {
 		return array(
 			'home'                        => array( __( 'Home', 'wulf-kit' ), 'home', 'main', __( 'The full homepage: showcase, categories, ring studio, story, 4Cs, services, visit.', 'wulf-kit' ) ),
+			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, "What brings you in?" choices that each lead somewhere, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, and booking. Every "Book" button opens a three-step booking panel.', 'wulf-kit' ) ),
 			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer homepage with a few big moments: the 360° spotlight, the ring that builds itself, the ring designer and the 4Cs. Fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
 			'about-us'                    => array( __( 'About', 'wulf-kit' ), 'about-us', 'main', __( 'Your story since 1971, Cullen, concierge service, values, reviews, visit.', 'wulf-kit' ) ),
 			'contact-us'                  => array( __( 'Free Consultation', 'wulf-kit' ), 'contact-us', 'main', __( 'Contact and booking form, map, hours, common questions.', 'wulf-kit' ) ),
@@ -66,12 +67,12 @@ class WK_Pages {
 
 	/** Homepage variants: "Go live" makes them the site's front page. */
 	public static function is_home( $key ) {
-		return in_array( $key, array( 'home', 'home-simple' ), true );
+		return in_array( $key, array( 'home', 'home-simple', 'home-conversion' ), true );
 	}
 
 	/** Extra page meta a template sets (e.g. the calmer look). */
 	public static function meta( $key ) {
-		return 'home-simple' === $key ? array( '_wk_style' => 'calm' ) : array();
+		return in_array( $key, array( 'home-simple', 'home-conversion' ), true ) ? array( '_wk_style' => 'calm' ) : array();
 	}
 
 	/** Which library pages already exist on this site: key => post ID. */
@@ -261,6 +262,33 @@ class WK_Pages {
 						),
 					) ),
 					array( 'visit', array( 'f_short' => 'yes', 'after' => array() ) ),
+				);
+
+			case 'home-conversion':
+				if ( ! class_exists( 'WK_Paths_Widget' ) && class_exists( '\Elementor\Widget_Base' ) ) {
+					require_once WK_DIR . 'includes/class-wk-widget.php';
+					require_once WK_DIR . 'widgets/class-wk-paths.php';
+				}
+				return array(
+					array( 'hero', array(
+						'b1_text' => __( 'Book a free consultation', 'wulf-kit' ),
+						'b1_link' => array( 'url' => '#visit' ),
+						'b2_text' => __( 'Design your ring', 'wulf-kit' ),
+						'b2_link' => array( 'url' => '#studio' ),
+						'b_note'  => __( 'Free, no obligation | We confirm by call or text', 'wulf-kit' ),
+						'm_first' => 'words',
+					) ),
+					array( 'paths', class_exists( 'WK_Paths_Widget' ) ? array( 'items' => WK_Paths_Widget::default_items( '#studio' ) ) : array() ),
+					array( 'spotlight', array( 'b1_text' => __( 'Book to see it in person', 'wulf-kit' ) ) ),
+					array( 'products', array() ),
+					array( 'values', array( 'head_align' => 'left', 'rule' => '', 'rating_on' => 'yes' ) ),
+					self::steps( __( 'How a visit works', 'wulf-kit' ), __( 'Three easy steps, no pressure.', 'wulf-kit' ), array(
+						array( __( 'Book a time', 'wulf-kit' ), __( 'Choose what you\'d like to talk about and a day that suits you. We confirm by call or text.', 'wulf-kit' ), 'calendar' ),
+						array( __( 'Visit and compare', 'wulf-kit' ), __( 'A relaxed, free consultation: diamonds side by side under the loupe, grading reports in hand.', 'wulf-kit' ), 'gem' ),
+						array( __( 'Decide in your own time', 'wulf-kit' ), __( 'We set your stone, or design one from scratch with you, when you\'re ready.', 'wulf-kit' ), 'spark' ),
+					), array( 'tone' => 'ivory', 'b1_text' => __( 'Book a free consultation', 'wulf-kit' ), 'b1_link' => array( 'url' => '#visit' ) ) ),
+					array( 'studio', array( 'main_btn' => 'book', 'book_text' => __( 'Book to see it in person', 'wulf-kit' ), 'tone' => 'white' ) ),
+					array( 'visit', array( 'f_short' => 'yes', 'after' => array(), 'f_title' => __( 'Book your free consultation', 'wulf-kit' ) ) ),
 				);
 
 			case 'about-us':

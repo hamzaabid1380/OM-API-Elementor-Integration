@@ -31,6 +31,14 @@ class WK_Hero_Widget extends WK_Widget {
 		$this->add_control( 'lead', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => __( 'Engagement rings, certified diamonds, custom design and repair, compared in person with a GIA-certified jeweler at your side. Independent diamond experts since 1971.', 'wulf-kit' ) ) );
 		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Design your ring', 'wulf-kit' ), '#studio' );
 		$this->button_fields( 'b2', __( 'Second button', 'wulf-kit' ), __( 'Book a visit', 'wulf-kit' ), '#visit' );
+		$this->add_control( 'm_first', array(
+			'label'       => __( 'On phones, show first', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'media',
+			'options'     => array( 'media' => __( 'The showcase, then the words', 'wulf-kit' ), 'words' => __( 'The words and buttons, then the showcase', 'wulf-kit' ) ),
+			'description' => __( '"Words first" keeps the buttons on the first screen of a phone.', 'wulf-kit' ),
+		) );
+		$this->add_control( 'b_note', array( 'label' => __( 'Reassurance under the buttons', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'label_block' => true, 'description' => __( 'Optional, e.g. "Free and no obligation". Separate several with |', 'wulf-kit' ) ) );
 		$this->add_control( 'call_line', array( 'label' => __( '"Or call…" line with open status', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ) );
 		$this->add_control( 'call_text', array( 'label' => __( 'Starts with', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Or call', 'wulf-kit' ), 'condition' => array( 'call_line' => 'yes' ) ) );
 		$r = new Repeater();
@@ -164,7 +172,7 @@ class WK_Hero_Widget extends WK_Widget {
 			'items'    => $items,
 		);
 		$this->open( $s, '', $cfg );
-		echo '<section class="hero"' . $this->anchor_attr( $s ) . '><div class="hero-grid"><div class="hero-copy">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<section class="hero' . ( 'words' === ( $s['m_first'] ?? 'media' ) ? ' m-words' : '' ) . '"' . $this->anchor_attr( $s ) . '><div class="hero-grid"><div class="hero-copy">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<h1 class="h1">' . ( $s['kicker'] ? '<span class="kicker">' . esc_html( $s['kicker'] ) . '</span>' : '' ) . self::rich( $s['title'] ) . '</h1>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		if ( $s['lead'] ) {
 			echo '<p class="lead">' . esc_html( $s['lead'] ) . '</p>';
@@ -172,6 +180,14 @@ class WK_Hero_Widget extends WK_Widget {
 		$b = $this->button( $s, 'b1', 'btn btn-gold', true ) . $this->button( $s, 'b2', 'btn btn-ghost' );
 		if ( $b ) {
 			echo '<div class="hero-cta">' . $b . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		$notes = array_filter( array_map( 'trim', explode( '|', (string) ( $s['b_note'] ?? '' ) ) ) );
+		if ( $notes ) {
+			echo '<ul class="hero-note">';
+			foreach ( $notes as $n ) {
+				echo '<li>' . WK_Icons::svg( 'check' ) . esc_html( $n ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			echo '</ul>';
 		}
 		if ( 'yes' === $s['call_line'] && $phone ) {
 			echo '<p class="hero-call">' . esc_html( $s['call_text'] ) . ' <a href="' . esc_attr( WK_Settings::tel() ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>';

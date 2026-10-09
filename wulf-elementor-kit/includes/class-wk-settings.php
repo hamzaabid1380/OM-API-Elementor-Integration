@@ -57,6 +57,12 @@ class WK_Settings {
 			'act_book'      => 'Book a visit',
 			'act_dir'       => 'Directions',
 			'book_url'      => '#visit',
+			'book_panel'    => '1',
+			'book_title'    => 'Book your free consultation',
+			'book_sub'      => 'Free, no obligation. We\'ll confirm by call or text.',
+			'book_topics'   => "Engagement ring | Any inspiration photos you love\nWedding bands | Your engagement ring, so we can match it\nCustom design | Sketches, photos or a family stone\nRepair | The piece that needs work\nAppraisal | The piece and any grading reports\nSelling | The pieces you want to sell and a photo ID\nFinancing | A photo ID",
+			'book_done'     => 'We\'ll confirm your visit on {day} ({time}) by {pref} within one business day.',
+			'track'         => '1',
 			'to_om_leads'   => '1',
 			'header_tpl'    => '',
 			'footer_tpl'    => '',
@@ -89,6 +95,18 @@ class WK_Settings {
 			}
 		}
 		return $def;
+	}
+
+	/** Booking topics from the settings textarea: [ [ topic, what to bring ], ... ]. */
+	public static function book_topics() {
+		$out = array();
+		foreach ( preg_split( '/\r\n|\r|\n/', (string) self::get( 'book_topics' ) ) as $line ) {
+			$p = array_map( 'trim', explode( '|', $line, 2 ) );
+			if ( '' !== $p[0] ) {
+				$out[] = array( $p[0], $p[1] ?? '' );
+			}
+		}
+		return $out;
 	}
 
 	/** "(219) 247-7082" -> "tel:+12192477082". */
@@ -203,8 +221,10 @@ class WK_Settings {
 				$out[ $k ] = sanitize_email( $val );
 			} elseif ( 'turn_speed' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( '0.5', '0.6', '0.75', '1' ), true ) ? (string) $val : $v;
-			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'to_om_leads', 'calm_all' ), true ) ) {
+			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'to_om_leads', 'calm_all', 'book_panel', 'track' ), true ) ) {
 				$out[ $k ] = empty( $val ) ? '' : '1';
+			} elseif ( 'book_topics' === $k ) {
+				$out[ $k ] = sanitize_textarea_field( $val );
 			} else {
 				$out[ $k ] = sanitize_text_field( $val );
 			}
@@ -229,6 +249,8 @@ class WK_Settings {
 				echo '<option value="' . esc_attr( $ov ) . '"' . selected( $ov, (string) self::all()[ $key ], false ) . '>' . esc_html( $ol ) . '</option>';
 			}
 			echo '</select>';
+		} elseif ( 'textarea' === $type ) {
+			echo '<textarea class="large-text" rows="7" id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '">' . esc_textarea( self::all()[ $key ] ) . '</textarea>';
 		} elseif ( 'template' === $type ) {
 			$posts = get_posts( array( 'post_type' => 'elementor_library', 'numberposts' => 100, 'post_status' => 'publish' ) );
 			echo '<select id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '"><option value="">' . esc_html__( '— Use the theme\'s own —', 'wulf-kit' ) . '</option>';
@@ -320,6 +342,19 @@ class WK_Settings {
 					self::field( 'act_book', __( 'Action bar: book label', 'wulf-kit' ) );
 					self::field( 'act_dir', __( 'Action bar: directions label', 'wulf-kit' ) );
 					self::field( 'book_url', __( 'Book a visit link', 'wulf-kit' ), 'text', __( 'Where "Book a visit" buttons go. Leave it as #visit: buttons then jump to the visit form on the same page, or open the Free Consultation page\'s form when the page has none. Or paste any full link.', 'wulf-kit' ) );
+					?>
+				</table>
+
+				<h2><?php esc_html_e( 'Booking & conversions', 'wulf-kit' ); ?></h2>
+				<p><?php esc_html_e( 'Every "Book" button on the site can open one short booking panel: what it\'s about, a day and time, then name and phone. Requests arrive by email (and in your CRM when that is on), with the piece the visitor was looking at.', 'wulf-kit' ); ?></p>
+				<table class="form-table" role="presentation">
+					<?php
+					self::field( 'book_panel', __( 'Booking panel', 'wulf-kit' ), 'check', __( '"Book" buttons open the booking panel on the same page (recommended). Untick to jump to the visit form instead.', 'wulf-kit' ) );
+					self::field( 'book_title', __( 'Panel title', 'wulf-kit' ) );
+					self::field( 'book_sub', __( 'Under the title', 'wulf-kit' ) );
+					self::field( 'book_topics', __( 'Topics', 'wulf-kit' ), 'textarea', __( 'One per line. After a | you can add what to bring, shown on the thank-you screen. For example: <code>Repair | The piece that needs work</code>', 'wulf-kit' ) );
+					self::field( 'book_done', __( 'Thank-you message', 'wulf-kit' ), 'text', __( '{name}, {day}, {time} and {pref} are filled in.', 'wulf-kit' ) );
+					self::field( 'track', __( 'Measure clicks and bookings', 'wulf-kit' ), 'check', __( 'Send button clicks, booking steps and booking requests to the Google Analytics, Google Tag Manager or Meta pixel already on your site. Nothing is sent when none is installed. Add <code>?wk_debug_events=1</code> to any page address to see them in the browser console.', 'wulf-kit' ) );
 					?>
 				</table>
 
