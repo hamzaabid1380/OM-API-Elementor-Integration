@@ -308,7 +308,7 @@ class WK_Pages {
 					self::banner( __( 'About us · Crown Point jeweler', 'wulf-kit' ), __( 'Your *hometown* diamond jewelers.', 'wulf-kit' ), __( 'Independent since 1971: from a suitcase of fine gems to a newly built showroom on Broadway in Crown Point.', 'wulf-kit' ), array( 'image' => self::img( 'cullen.webp' ), 'fit' => 'cover', 'cap' => __( 'Cullen Wulf, owner · GIA-certified', 'wulf-kit' ), 'b2_text' => __( 'Our services', 'wulf-kit' ), 'b2_link' => self::link( 'jewelry-services-and-repairs' ) ) ),
 					array( 'story', array() ),
 					self::split( __( 'Concierge service', 'wulf-kit' ), __( 'We come to *you*.', 'wulf-kit' ), '<p>' . __( 'Our concierge service lets our jewelers come out to see you in person and make the most of your valuable time.', 'wulf-kit' ) . '</p><p>' . __( 'Whether you\'re celebrating an engagement, anniversary or birthday, or you just want the convenience of browsing quality jewelry from home, let us take care of you.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'cullen-desk.webp' ), 'tone' => 'ivory', 'b1_text' => __( 'Ask about concierge service', 'wulf-kit' ), 'b1_link' => array( 'url' => '#visit' ) ) ),
-					array( 'values', array( 'image' => self::img( 'showroom.webp' ) ) ),
+					array( 'values', array( 'image' => self::img( 'wear-ring.webp' ) ) ),
 					self::split( __( 'Indiana gold & diamond buyer', 'wulf-kit' ), __( 'Fair, honest offers for what you no longer wear.', 'wulf-kit' ), '<p>' . __( 'Over time we have become a premium buyer of gold, silver, diamonds and more for Indiana and beyond. We give fair and honest appraisals to help you get the best deal possible on your pieces.', 'wulf-kit' ) . '</p><p>' . __( 'Whether you\'re looking to sell a diamond engagement ring or unwanted gold and silver, Wulf Diamond is Northwest Indiana\'s trusted gold and diamond buyer.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'rings-tray.webp' ), 'side' => 'left', 'rule' => 'yes', 'b1_text' => __( 'Sell gold & silver', 'wulf-kit' ), 'b1_link' => self::link( 'gold-silver-platinum' ), 'b2_text' => __( 'Sell a diamond', 'wulf-kit' ), 'b2_link' => self::link( 'diamond-buyers' ) ) ),
 					self::split( __( 'Custom jewelry', 'wulf-kit' ), __( 'Inspired by *your* design.', 'wulf-kit' ), '<p>' . __( 'In addition to a robust selection of diamond engagement rings and wedding bands, we create custom jewelry inspired by your design. See our custom jewelry process, or ask about our diamond concierge service.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'custom-cad.webp' ), 'rule' => 'yes', 'b1_text' => __( 'See the custom process', 'wulf-kit' ), 'b1_link' => self::link( 'custom-jewelry' ) ) ),
 					self::reviews(),
@@ -317,7 +317,7 @@ class WK_Pages {
 
 			case 'contact-us':
 				return array(
-					self::banner( __( 'Contact us', 'wulf-kit' ), __( 'Free *consultation*.', 'wulf-kit' ), __( 'Speak to a Wulf Diamond representative, or schedule your own appointment below. Walk-ins are always welcome.', 'wulf-kit' ), array( 'tone' => 'ivory', 'media' => 'image', 'image' => self::img( 'showroom.webp' ), 'fit' => 'cover', 'b1_text' => __( 'Schedule my appointment', 'wulf-kit' ), 'b2_text' => __( 'Get directions', 'wulf-kit' ), 'b2_link' => self::maps() ) ),
+					self::banner( __( 'Contact us', 'wulf-kit' ), __( 'Free *consultation*.', 'wulf-kit' ), __( 'Speak to a Wulf Diamond representative, or schedule your own appointment below. Walk-ins are always welcome.', 'wulf-kit' ), array( 'tone' => 'ivory', 'media' => 'image', 'image' => self::img( 'cullen.webp' ), 'fit' => 'cover', 'b1_text' => __( 'Schedule my appointment', 'wulf-kit' ), 'b2_text' => __( 'Get directions', 'wulf-kit' ), 'b2_link' => self::maps() ) ),
 					array( 'visit', array( 'tone' => 'white' ) ),
 					self::faq( __( 'Before you visit.', 'wulf-kit' ), self::visit_questions() ),
 				);
@@ -447,7 +447,7 @@ class WK_Pages {
 
 			case 'custom-jewelry':
 				return array(
-					self::banner( __( 'Custom jewelry · Crown Point, Indiana', 'wulf-kit' ), __( 'Custom designed jewelry in *Crown Point*.', 'wulf-kit' ), __( 'Ever wanted a one-of-a-kind piece? Come in and our experienced designers will help you create whatever your heart desires.', 'wulf-kit' ), array( 'image' => self::img( 'custom-cad.webp' ), 'fit' => 'cover', 'cap' => __( 'Every piece starts as a 3D design you approve', 'wulf-kit' ), 'b1_topic' => 'Custom design' ) ),
+					self::banner( __( 'Custom jewelry · Crown Point, Indiana', 'wulf-kit' ), __( 'Custom designed jewelry in *Crown Point*.', 'wulf-kit' ), __( 'Ever wanted a one-of-a-kind piece? Come in and our experienced designers will help you create whatever your heart desires.', 'wulf-kit' ), array( 'image' => self::img( 'ring-cushion-dark.webp' ), 'fit' => 'cover', 'cap' => __( 'Every piece starts as a 3D design you approve', 'wulf-kit' ), 'b1_topic' => 'Custom design' ) ),
 					self::split( __( 'Made for you', 'wulf-kit' ), __( 'Every accessory becomes a *statement piece*.', 'wulf-kit' ), '<p>' . __( 'We believe everyone deserves to feel and look their best. Whether you need something special for your collection or want to create a family heirloom, you can trust our craftsmen.', 'wulf-kit' ) . '</p><p>' . __( 'For over five decades we\'ve helped customers with their unique jewelry needs, from engagement rings to statement necklaces.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'custom-finished.webp' ) ) ),
 					self::custom_steps(),
 					self::reviews( array( 'tone' => 'white' ) ),
@@ -576,7 +576,7 @@ class WK_Pages {
 				array( 'icon' => 'bulb', 'image' => self::img( 'rings-tray.webp' ), 'title' => __( 'Come in with inspiration', 'wulf-kit' ), 'text' => __( 'A piece from our showroom, a photo, or a feeling you\'d like to evoke. Use your own diamonds and gemstones, or we can provide everything.', 'wulf-kit' ) ),
 				array( 'icon' => 'pencil', 'image' => self::img( 'custom-cad.webp' ), 'title' => __( 'We design it in 3D', 'wulf-kit' ), 'text' => __( 'Our CAD designers bring your ideas to life with ArtCam or Counter Sketch. Changes are easy until it\'s exactly right.', 'wulf-kit' ) ),
 				array( 'icon' => 'gem', 'image' => self::img( 'custom-wax.webp' ), 'title' => __( 'A wax mold is made', 'wulf-kit' ), 'text' => __( 'A wax or resin model of your piece shows every feature, detail and the overall size.', 'wulf-kit' ) ),
-				array( 'icon' => 'spark', 'image' => self::img( 'custom-finished.webp' ), 'title' => __( 'We cast and complete it', 'wulf-kit' ), 'text' => __( 'Cast in the metal of your choice, with every diamond and gemstone set and polished to perfection.', 'wulf-kit' ) ),
+				array( 'icon' => 'spark', 'image' => self::img( 'jeweler-work.webp' ), 'title' => __( 'We cast and complete it', 'wulf-kit' ), 'text' => __( 'Cast in the metal of your choice, with every diamond and gemstone set and polished to perfection.', 'wulf-kit' ) ),
 			),
 			'b1_text' => __( 'Start a custom design', 'wulf-kit' ),
 			'b1_link' => array( 'url' => '#visit' ),

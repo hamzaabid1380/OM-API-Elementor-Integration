@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -106,6 +106,11 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.8.1 =
+* Page library: no photo appears twice on the same page. About uses a couple's hands for "We build
+  relationships", the Custom design banner shows a finished ring and its last step a jeweler at work,
+  and the Free Consultation banner shows Cullen in the showroom.
 
 = 1.8.0 =
 * Booking popup: "Book" buttons now open a popup in the middle of the screen instead of a panel
