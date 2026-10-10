@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.9.1
+Stable tag: 1.9.2
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -142,6 +142,21 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.9.2 =
+* Ring photos and 360° videos sit on plain white everywhere: no metal-coloured glow behind the ring
+  in the ring designer and the quiz results, a white circle behind the ring in the call-to-action
+  showcase and the phone hero, and white "What brings you in?" cards (no tint on hover).
+* "What brings you in?": the Wedding bands card shows a real diamond band photo. A card set to an OM
+  product line uses a built-in photo for engagement rings, wedding bands, earrings, necklaces and
+  pendants, and reads the catalog's photos correctly for the other lines.
+* The large card's 360° video, the call-to-action ring and the phone hero ring now turn at the same
+  relaxed pace as the others (Settings > "360° videos turn").
+* Booking bar: sits just under the section above it, with one normal gap before the next section
+  (it had double spacing on calm pages).
+* The OM Catalog plugin (product pages, its pop-ups and the "Drop a hint" page) uses this kit's ink
+  and fonts when the site's Elementor kit still has Elementor's starting blue and Roboto (needs OM
+  Catalog 1.39.1 or later).
 
 = 1.9.1 =
 * "Drop a hint" link on the Spotlight and on the ring style quiz results (needs OM Catalog 1.39.0 or

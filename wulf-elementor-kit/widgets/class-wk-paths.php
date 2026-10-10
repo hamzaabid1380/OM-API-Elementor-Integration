@@ -39,7 +39,7 @@ class WK_Paths_Widget extends WK_Widget {
 				'topic'  => '',
 			),
 			array(
-				'image'  => array( 'url' => '', 'id' => '' ),
+				'image'  => array( 'url' => $m . '50910-W.webp', 'id' => '' ),
 				'om_line' => 'wedding-bands',
 				'icon'   => 'bands',
 				'title'  => __( 'Wedding bands', 'wulf-kit' ),
@@ -108,7 +108,7 @@ class WK_Paths_Widget extends WK_Widget {
 			'default' => 'showcase',
 			'options' => array( 'showcase' => __( 'Showcase: one large choice, the rest around it', 'wulf-kit' ), 'product' => __( 'Product photos on white', 'wulf-kit' ), 'photo' => __( 'Photos that fill the card', 'wulf-kit' ), 'icon' => __( 'Icon cards (no photos)', 'wulf-kit' ), 'list' => __( 'Compact rows', 'wulf-kit' ) ),
 		) );
-		$this->add_control( 'look_note', array( 'type' => Controls_Manager::RAW_HTML, 'raw' => __( 'Showcase: the first choice is shown large (with its 360° video if it has one), each choice gets its own button, and a soft light follows the mouse over the photos. With the title on the left, the line under the choices moves up beside the title.', 'wulf-kit' ), 'content_classes' => 'elementor-descriptor', 'condition' => array( 'look' => 'showcase' ) ) );
+		$this->add_control( 'look_note', array( 'type' => Controls_Manager::RAW_HTML, 'raw' => __( 'Showcase: the first choice is shown large (with its 360° video if it has one), each choice gets its own button, and the photos sit on white. With the title on the left, the line under the choices moves up beside the title.', 'wulf-kit' ), 'content_classes' => 'elementor-descriptor', 'condition' => array( 'look' => 'showcase' ) ) );
 		$r = new Repeater();
 		$r->add_control( 'image', array( 'label' => __( 'Photo', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA ) );
 		$r->add_control( 'video', array( 'label' => __( '360° video (large first choice only)', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'media_types' => array( 'video' ), 'description' => __( 'A video on a white background. It plays when the section comes into view, in the Showcase look.', 'wulf-kit' ) ) );
@@ -118,7 +118,7 @@ class WK_Paths_Widget extends WK_Widget {
 			'type'        => Controls_Manager::SELECT,
 			'default'     => '',
 			'options'     => array( '' => __( 'None', 'wulf-kit' ), 'engagement-rings' => __( 'Engagement rings', 'wulf-kit' ), 'wedding-bands' => __( 'Wedding bands', 'wulf-kit' ), 'fashion-rings' => __( 'Fashion rings', 'wulf-kit' ), 'earrings' => __( 'Earrings', 'wulf-kit' ), 'necklaces' => __( 'Necklaces', 'wulf-kit' ), 'pendants' => __( 'Pendants', 'wulf-kit' ), 'bracelets' => __( 'Bracelets', 'wulf-kit' ) ),
-			'description' => __( 'Used when no photo or style number is set: the first design of that line, live from the OM Catalog plugin.', 'wulf-kit' ),
+			'description' => __( 'Used when no photo or style number is set: a photo of a design from that line (built in for engagement rings, wedding bands, earrings, necklaces and pendants; otherwise live from the OM Catalog plugin).', 'wulf-kit' ),
 		) );
 		$r->add_control( 'icon', array( 'label' => __( 'Icon (for icon cards and rows)', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'ring', 'options' => WK_Icons::options() ) );
 		$r->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
@@ -165,7 +165,6 @@ class WK_Paths_Widget extends WK_Widget {
 			'selectors' => array( '{{WRAPPER}} .wk .path-media' => 'aspect-ratio: {{VALUE}};' ),
 			'condition' => array( 'look!' => 'showcase' ),
 		) );
-		$this->color( 'glow', __( 'Light that follows the mouse (Showcase)', 'wulf-kit' ), '.sc .path', '--glow' );
 		$this->color( 'num', __( 'Numbers (Showcase)', 'wulf-kit' ), '.path-n' );
 		$this->color( 'ic', __( 'Icon', 'wulf-kit' ), '.path-ic' );
 		$this->color( 'ic_bg', __( 'Icon background', 'wulf-kit' ), '.path-ic', 'background-color' );
@@ -187,7 +186,24 @@ class WK_Paths_Widget extends WK_Widget {
 			return trailingslashit( WK_Settings::get( 'om_media' ) ) . rawurlencode( $style ) . '.jpg';
 		}
 		$img = $this->img_url( $it['image'] ?? array() );
-		return $img ? $img : self::om_line_image( (string) ( $it['om_line'] ?? '' ) );
+		if ( $img ) {
+			return $img;
+		}
+		$line = (string) ( $it['om_line'] ?? '' );
+		$own  = self::line_photo( $line );
+		return $own ? $own : self::om_line_image( $line );
+	}
+
+	/** A built-in photo on white for the common OM lines: no wait for the catalog, and never empty. */
+	private static function line_photo( $line ) {
+		$map = array(
+			'engagement-rings' => '51162-E.webp',
+			'wedding-bands'    => '50910-W.webp',
+			'earrings'         => '40927.webp',
+			'necklaces'        => '60023.webp',
+			'pendants'         => '32623.webp',
+		);
+		return isset( $map[ $line ] ) ? WK_URL . 'assets/media/' . $map[ $line ] : '';
 	}
 
 	/** First photo of an OM product line, through the OM Catalog plugin (kept for 12 hours). */
@@ -200,12 +216,16 @@ class WK_Paths_Widget extends WK_Widget {
 		if ( false !== $hit ) {
 			return (string) $hit;
 		}
+		if ( ! function_exists( 'om_card_images' ) && defined( 'OM_CATALOG_DIR' ) && is_readable( OM_CATALOG_DIR . 'includes/functions-product-render.php' ) ) {
+			require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
+		}
 		$url = '';
 		$res = OM_API_Client::get_products( $line, array( 'limit' => 6 ) );
 		if ( ! is_wp_error( $res ) && ! empty( $res['products'] ) ) {
 			foreach ( (array) $res['products'] as $p ) {
-				if ( ! empty( $p['images'][0] ) ) {
-					$url = (string) om_image_url( $p['images'][0] );
+				// Photos may come grouped by metal colour; read them the way the catalog does.
+				$url = function_exists( 'om_card_images' ) ? (string) om_card_images( (array) $p )[0] : ( ! empty( $p['images'][0] ) ? (string) om_image_url( $p['images'][0] ) : '' );
+				if ( '' !== $url ) {
 					break;
 				}
 			}

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.39.0
+ * Version: 1.39.1
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.39.0' );
+define( 'OM_CATALOG_VERSION', '1.39.1' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -85,9 +85,12 @@ add_action( 'plugins_loaded', 'om_catalog_init' );
 function om_catalog_enqueue_assets() {
 	wp_register_style( 'om-catalog-css', OM_CATALOG_URL . 'assets/css/om-catalog.build.css', array(), OM_CATALOG_VERSION );
 	$tokens = om_catalog_style_tokens();
-	if ( 'kit' === $tokens['source'] ) {
-		// The kit's fonts load through Elementor (Google or self-hosted, as
-		// the kit is configured); this handle only exists for dependencies.
+	// Our own Arapey / Inter load unless the fonts come from elsewhere: the
+	// Elementor kit (Google or self-hosted, as the kit is configured) or a
+	// theme plugin's om_catalog_style_tokens filter. Then this handle only
+	// exists for dependencies.
+	$own_fonts = 'kit' !== $tokens['source'] || 0 === stripos( ltrim( (string) $tokens['heading_font'], '"' ), 'Arapey' ) || 0 === stripos( ltrim( (string) $tokens['body_font'], '"' ), 'Inter' );
+	if ( ! $own_fonts ) {
 		wp_register_style( 'om-catalog-fonts', false, array(), OM_CATALOG_VERSION );
 	} else {
 		wp_register_style(
@@ -328,10 +331,13 @@ add_action( 'wp_enqueue_scripts', 'om_catalog_enqueue_assets' );
  * Brand colours and fonts for the catalog.
  *
  * "kit" (the default when Elementor is active) follows the site's Elementor
- * kit — Site Settings > Global Colors / Global Fonts — so the catalog
+ * kit (Site Settings > Global Colors / Global Fonts), so the catalog
  * changes with the rest of the site: Primary, Accent and Text colours and
  * the Primary (headings) and Text (body) fonts. Anything the kit doesn't
- * set falls back to the plugin's own values.
+ * set, or still has at Elementor's starting values (the blue #6EC1E4 and
+ * Roboto of a kit nobody has styled), falls back to the plugin's own
+ * values. 'elementor' says which values came from the kit, so a theme
+ * plugin can fill in the rest through the om_catalog_style_tokens filter.
  *
  * @return array
  */
@@ -358,15 +364,18 @@ function om_catalog_style_tokens() {
 		'heading_font' => $clean_font( get_option( 'om_font_heading', 'Arapey, Georgia, serif' ) ),
 		'body_font'    => $clean_font( get_option( 'om_font_body', 'Inter, Helvetica, Arial, sans-serif' ) ),
 		'kit_fonts'    => array(),
+		'elementor'    => array(),
 	);
 
 	$source = get_option( 'om_style_source', 'kit' );
-	if ( 'kit' !== $source || ! did_action( 'elementor/loaded' ) || ! class_exists( '\\Elementor\\Plugin' ) ) {
-		return $tokens;
+	if ( 'kit' === $source ) {
+		$tokens['source'] = 'kit';
 	}
-	$kits = \Elementor\Plugin::$instance->kits_manager ?? null;
+	$kits = 'kit' === $source && did_action( 'elementor/loaded' ) && class_exists( '\\Elementor\\Plugin' ) ? ( \Elementor\Plugin::$instance->kits_manager ?? null ) : null;
 	$kit  = $kits ? $kits->get_active_kit_for_frontend() : null;
 	if ( ! $kit ) {
+		/** Brand colours and fonts for the catalog (see om_catalog_style_tokens()). */
+		$tokens = (array) apply_filters( 'om_catalog_style_tokens', $tokens );
 		return $tokens;
 	}
 
@@ -384,20 +393,40 @@ function om_catalog_style_tokens() {
 		}
 	}
 
-	$tokens['source']  = 'kit';
-	$tokens['primary'] = $hex( $colors['primary'] ?? '', $tokens['primary'] );
-	$tokens['accent']  = $hex( $colors['accent'] ?? '', $tokens['accent'] );
-	$tokens['text']    = $hex( $colors['text'] ?? '', $tokens['text'] );
+	// Elementor's starting values are not a brand choice: keep ours for those.
+	$factory = array( 'primary' => '#6EC1E4', 'secondary' => '#54595F', 'text' => '#7A7A7A', 'accent' => '#61CE70' );
+	foreach ( $factory as $id => $value ) {
+		if ( isset( $colors[ $id ] ) && 0 === strcasecmp( trim( (string) $colors[ $id ] ), $value ) ) {
+			unset( $colors[ $id ] );
+		}
+	}
+	foreach ( array( 'primary' => 'Roboto', 'text' => 'Roboto' ) as $id => $value ) {
+		if ( isset( $fonts[ $id ] ) && 0 === strcasecmp( trim( (string) $fonts[ $id ] ), $value ) ) {
+			unset( $fonts[ $id ] );
+		}
+	}
+
+	foreach ( array( 'primary', 'accent', 'text' ) as $id ) {
+		$color = $hex( $colors[ $id ] ?? '', '' );
+		if ( '' !== $color ) {
+			$tokens[ $id ]                = $color;
+			$tokens['elementor'][ $id ] = true;
+		}
+	}
 	if ( ! empty( $fonts['primary'] ) ) {
-		$tokens['heading_font'] = '"' . $clean_font( $fonts['primary'] ) . '", ' . $tokens['heading_font'];
-		$tokens['kit_fonts'][]  = $fonts['primary'];
+		$tokens['heading_font']              = '"' . $clean_font( $fonts['primary'] ) . '", ' . $tokens['heading_font'];
+		$tokens['kit_fonts'][]               = $fonts['primary'];
+		$tokens['elementor']['heading_font'] = true;
 	}
 	if ( ! empty( $fonts['text'] ) ) {
-		$tokens['body_font']   = '"' . $clean_font( $fonts['text'] ) . '", ' . $tokens['body_font'];
-		$tokens['kit_fonts'][] = $fonts['text'];
+		$tokens['body_font']              = '"' . $clean_font( $fonts['text'] ) . '", ' . $tokens['body_font'];
+		$tokens['kit_fonts'][]            = $fonts['text'];
+		$tokens['elementor']['body_font'] = true;
 	}
 	$tokens['kit_fonts'] = array_unique( $tokens['kit_fonts'] );
 
+	/** Brand colours and fonts for the catalog (see om_catalog_style_tokens()). */
+	$tokens = (array) apply_filters( 'om_catalog_style_tokens', $tokens );
 	return $tokens;
 }
 

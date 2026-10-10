@@ -74,6 +74,9 @@ class WK_Plugin {
 		// "Ask our jeweller" (OM Catalog plugin) on the homepage and its library versions.
 		add_filter( 'om_assistant_is_home', array( $this, 'assistant_is_home' ) );
 		add_filter( 'om_assistant_show_here', array( $this, 'assistant_show_here' ) );
+		// The OM Catalog plugin (its pages, pop-ups and hint page) wears the kit's ink and fonts.
+		add_filter( 'om_catalog_style_tokens', array( $this, 'om_brand' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'om_fonts' ), 30 );
 	}
 
 	public function need_elementor() {
@@ -289,6 +292,43 @@ class WK_Plugin {
 
 	public function assistant_show_here( $show ) {
 		return $show || ( WK_Settings::get( 'assistant_home' ) && class_exists( 'WK_Pages' ) && WK_Pages::current_is_home() );
+	}
+
+	/**
+	 * The OM Catalog plugin follows the Elementor kit's global colours and fonts. Whatever that kit
+	 * doesn't set (or still has at Elementor's starting blue and Roboto) comes from this kit instead,
+	 * so product pages, the catalog's pop-ups and the "Drop a hint" page match the rest of the site.
+	 * When Settings > OM Catalog uses its own colours, those stay.
+	 */
+	public function om_brand( $t ) {
+		if ( ! is_array( $t ) || 'kit' !== ( $t['source'] ?? '' ) ) {
+			return $t;
+		}
+		$s     = WK_Settings::all();
+		$from  = (array) ( $t['elementor'] ?? array() );
+		$clean = static function ( $font ) {
+			return str_replace( array( '"', ';', '{', '}', '<', '>' ), '', (string) $font );
+		};
+		foreach ( array( 'primary' => 'c_ink', 'text' => 'c_text' ) as $key => $opt ) {
+			$color = sanitize_hex_color( (string) ( $s[ $opt ] ?? '' ) );
+			if ( empty( $from[ $key ] ) && $color ) {
+				$t[ $key ] = $color;
+			}
+		}
+		if ( empty( $from['heading_font'] ) && '' !== $clean( $s['font_serif'] ?? '' ) ) {
+			$t['heading_font'] = '"' . $clean( $s['font_serif'] ) . '", Georgia, "Times New Roman", serif';
+		}
+		if ( empty( $from['body_font'] ) && '' !== $clean( $s['font_sans'] ?? '' ) ) {
+			$t['body_font'] = '"' . $clean( $s['font_sans'] ) . '", system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+		}
+		return $t;
+	}
+
+	/** Catalog pages without any kit section still load the kit's fonts. */
+	public function om_fonts() {
+		if ( wp_style_is( 'om-catalog-css', 'enqueued' ) && wp_style_is( 'wulf-kit-fonts', 'registered' ) ) {
+			wp_enqueue_style( 'wulf-kit-fonts' );
+		}
 	}
 
 	public function body_class( $classes ) {

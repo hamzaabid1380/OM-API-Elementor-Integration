@@ -758,7 +758,7 @@
 
 	/* ================= 360° videos turn at a relaxed pace (Wulf Kit › Settings) ================= */
 	var TURN = +CFG.turn || 0.6;
-	var slow = function (e) { var v = e.target; if (v && v.tagName === 'VIDEO' && v.closest && v.closest('.sc-item.pr, .slot.pv, .spot-ring, .preview .main, .qz-art') && Math.abs(v.playbackRate - TURN) > 0.01) { v.defaultPlaybackRate = TURN; v.playbackRate = TURN; } };
+	var slow = function (e) { var v = e.target; if (v && v.tagName === 'VIDEO' && v.closest && v.closest('.sc-item.pr, .slot.pv, .spot-ring, .preview .main, .qz-art, .sc-media, .cta-piece, .hm-piece') && Math.abs(v.playbackRate - TURN) > 0.01) { v.defaultPlaybackRate = TURN; v.playbackRate = TURN; } };
 	document.addEventListener('loadedmetadata', slow, true);
 	document.addEventListener('play', slow, true);
 
@@ -1357,16 +1357,6 @@
 	};
 
 	// Booking bar: topic + day here, name and number in the panel.
-	// "What brings you in?" Showcase: a soft light follows the mouse over each card.
-	INIT.paths = function (el) {
-		if (!fine.matches || reduce) return;
-		$$('.sc .path', el).forEach(function (a) {
-			a.addEventListener('pointermove', function (e) {
-				var r = a.getBoundingClientRect();
-				a.style.setProperty('--mx', Math.round(e.clientX - r.left) + 'px'); a.style.setProperty('--my', Math.round(e.clientY - r.top) + 'px');
-			});
-		});
-	};
 	INIT.bookbar = function (el, c) {
 		var f = $('[data-bkbar]', el), sel = $('[data-bkbar-days]', el);
 		if (!f || !sel) return;

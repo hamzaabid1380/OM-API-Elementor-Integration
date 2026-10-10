@@ -623,7 +623,7 @@ class OM_Settings {
 								<option value="kit" <?php selected( $source, 'kit' ); ?>>Follow the Elementor kit (Site Settings &gt; Global Colors &amp; Fonts)</option>
 								<option value="custom" <?php selected( $source, 'custom' ); ?>>Use the values below</option>
 							</select>
-							<p class="description">With the kit, the catalog uses its Primary, Accent and Text colours and its Primary (headings) and Text (body) fonts, and changes whenever the site's kit does. Anything the kit doesn't set uses the values below.</p>
+							<p class="description">With the kit, the catalog uses its Primary, Accent and Text colours and its Primary (headings) and Text (body) fonts, and changes whenever the site's kit does. Anything the kit doesn't set, or still has at Elementor's starting values (blue #6EC1E4 and Roboto), uses the values below, or the Wulf Elementor Kit's colours and fonts when that plugin is active.</p>
 						</td>
 					</tr>
 				</table>

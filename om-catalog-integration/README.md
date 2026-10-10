@@ -43,6 +43,13 @@ the live wulfdiamondjewelers.com design (Arapey headings, Inter body,
 near-black `#00111C` primary, flat square styling) — only change them if the
 site's branding changes.
 
+**Style source** "Follow the Elementor kit" (the default) uses the colours and
+fonts set in Elementor's Site Settings. Elementor's starting values (the blue
+`#6EC1E4` and Roboto of a kit nobody has styled) are skipped: the catalog then
+uses these settings, or the Wulf Elementor Kit's ink and fonts when that plugin
+is active, so product pages and pop-ups always match the site. Developers can
+adjust the result with the `om_catalog_style_tokens` filter.
+
 ## Adding pages
 
 **Listing/catalog pages** (e.g. Engagement Rings, Wedding Bands):
@@ -1057,6 +1064,17 @@ emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.39.1
+- Brand colours and fonts: when the catalog follows the Elementor kit, the
+  kit's starting values (blue #6EC1E4, green #61CE70, grey #7A7A7A and
+  Roboto) no longer count as your brand. The catalog's own colours and fonts
+  are used instead, or the Wulf Elementor Kit's. This fixes the light blue
+  and Roboto in the "Drop a hint" pop-up (and anywhere else they showed) on
+  sites whose Elementor global colours were never set.
+- New `om_catalog_style_tokens` filter for themes and plugins to supply the
+  catalog's colours and fonts.
+- The catalog's own Arapey and Inter fonts load whenever they are in use.
 
 ### 1.39.0
 - **Drop a hint**: a link on product pages, the quick view and the Saved
