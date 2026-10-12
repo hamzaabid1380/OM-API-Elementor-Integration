@@ -1298,6 +1298,9 @@ class OM_Shortcodes {
 		// A search that found nothing: worth knowing (Catalog insights).
 		if ( $searching && class_exists( 'OM_Stats' ) && ! wp_doing_cron() && ( wp_doing_ajax() || ! is_admin() ) ) {
 			OM_Stats::add( 'search_zero', mb_strtolower( trim( preg_replace( '/\s+/', ' ', (string) $state['q'] ) ) ) );
+			if ( class_exists( 'OM_Insights' ) ) {
+				OM_Insights::server_event( 'search_zero', array( 'label' => mb_strtolower( trim( preg_replace( '/\s+/', ' ', (string) $state['q'] ) ) ), 'page' => $url ) );
+			}
 		}
 		echo '<div class="om-empty-state om-empty" role="status">';
 		echo '<span class="om-empty-icon" aria-hidden="true"></span>';

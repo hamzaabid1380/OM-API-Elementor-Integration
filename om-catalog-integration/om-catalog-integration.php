@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.39.1
+ * Version: 1.40.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.39.1' );
+define( 'OM_CATALOG_VERSION', '1.40.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -37,6 +37,7 @@ require_once OM_CATALOG_DIR . 'includes/class-om-ring-builder.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-related.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-reels.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-stats.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-insights.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-warmer.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-elementor-widgets.php';
 
@@ -71,6 +72,11 @@ function om_catalog_init() {
 	OM_Related::instance();
 	OM_Reels::instance();
 	OM_Stats::instance();
+	OM_Insights::instance();
+	if ( is_admin() ) {
+		require_once OM_CATALOG_DIR . 'includes/class-om-insights-admin.php';
+		OM_Insights_Admin::instance();
+	}
 	OM_Warmer::instance();
 	OM_Elementor_Widgets::instance();
 }
@@ -576,11 +582,14 @@ function om_catalog_activate() {
 	require_once OM_CATALOG_DIR . 'includes/class-om-rewrites.php';
 	OM_Rewrites::instance()->register_rules();
 	flush_rewrite_rules();
+	require_once OM_CATALOG_DIR . 'includes/class-om-insights.php';
+	OM_Insights::install();
 }
 register_activation_hook( __FILE__, 'om_catalog_activate' );
 
 function om_catalog_deactivate() {
 	OM_Warmer::unschedule();
+	OM_Insights::unschedule();
 	flush_rewrite_rules();
 }
 register_deactivation_hook( __FILE__, 'om_catalog_deactivate' );

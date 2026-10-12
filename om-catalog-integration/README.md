@@ -394,6 +394,91 @@ For developers: `window.omHint.open({ items: [{ l: line, s: style, c:
 `om_hint_sent` action runs after a hint is sent, and a theme can replace
 the page with `om-catalog/hint.php`.
 
+## Insights (1.40)
+
+Your own visitor analytics, built into the site and kept in your own
+database. **Insights** (in the WordPress menu, under Dashboard) shows what
+visitors do for any period (today, yesterday, the last 7, 30 or 90 days,
+this month, last month, the last 12 months or your own dates), with the
+change against the period before. Every chart has a tooltip on hover and
+a "Show as table" link; long lists show the top rows with **Show all**,
+can be sorted by any column and have a **Find** box.
+
+- **Overview**: visitors, visits, pages viewed, time per visit, designs
+  viewed, saved (hearts), leads and the share of visits that became leads;
+  visits per day; where visitors come from; phones and computers; the most
+  viewed pages and designs; the latest leads.
+- **Visitors & sources**: search engines, Google Maps & Business Profile,
+  direct, social media, paid ads, email, AI assistants (ChatGPT and
+  others) and other websites, each with its lead rate; the websites and
+  campaigns (utm links) that sent people; the first page of each visit and
+  how many left straight away; devices, browsers and systems; new and
+  returning visitors; where visitors are; and the busiest days and hours.
+- **Pages**: every page with views, time on the page, how far people
+  scroll, and how often visits start or end there.
+- **Designs**: every design looked at, with views, time, saves, compares,
+  shares, hints and leads; product lines; popular designs nobody has asked
+  about yet; the metals, gold colours, ring sizes and diamond qualities
+  people pick; designs compared side by side; story reels.
+- **Searches**: what people search for (and how often it ends in a lead),
+  searches that found nothing (with a "Try it" link), and the catalog
+  filters used.
+- **Actions**: everything people do, from the heart to the ring builder,
+  the quiz, the assistant and the booking window, calls (which number and
+  where they tapped), directions and links to other sites, and which
+  buttons get clicked and where.
+- **Funnels**: from visit to lead, the booking window, the ring builder,
+  the ring style quiz and Drop a hint, step by step.
+- **Visitor journeys**: every visit, newest first, with quick filters
+  (became leads, saved something, returning, over 3 minutes, from ads, on
+  phones). Open one to see everything that person did, in order, and every
+  visit from the same visitor.
+- **Leads**: every lead with the visit behind it: where they came from,
+  how many visits it took and how many days from their first visit.
+- **Live**: who is on the site right now (the last 5 minutes), updating by
+  itself. The count also shows at the top of every Insights page.
+
+A small "Insights: last 7 days" box shows on the WordPress Dashboard.
+
+**The visit behind each lead.** Each inquiry in wp-admin gets a **Their
+visit** box (where they came from, visits so far, pages, designs looked at
+and saved, options chosen, searches, and the whole visit step by step) and
+the inquiries list gets a **Came from** column. The emails you get for
+inquiries, hints, saved lists and ring designs, and with the Wulf Elementor
+Kit 1.9.3 its visit requests, quiz matches and newsletter sign-ups, end
+with the same **Their visit** summary. Customers never see it.
+
+**Privacy.** Insights uses two first-party cookies with random IDs: om_sid
+for the visit (30 minutes) and om_vid to recognise a returning visitor (up
+to 400 days, can be switched off). No IP address is stored and nothing is
+sent to other companies. A name or email is kept only when someone sends a
+form, with that lead. Logged-in staff, bots and (by default) browsers set
+to Do Not Track or Global Privacy Control are left out. Data is kept for 13
+months (3 to 37 under Settings) and older visits are deleted every night.
+You can download visits and actions as CSV, or delete everything. The
+Settings tab suggests a line for your privacy policy.
+
+**Settings** (Insights > Settings): collect on or off, leave out logged-in
+staff, recognise returning visitors, respect Do Not Track, show the visit
+behind each inquiry, and how long to keep data.
+
+**Tips**
+
+- Where visitors are: if the site uses Cloudflare, switch on "Add visitor
+  location headers" (Rules > Managed Transforms) to see countries, states
+  and cities. Without it, Insights shows time zones.
+- Google Maps & Business Profile: tag the website link on your Business
+  Profile, for example `https://yoursite.com/?utm_source=gbp&utm_medium=organic`,
+  so those visits count as Maps rather than Google search.
+- To see your own visit, open the site in a private window (logged-in
+  staff are left out).
+
+For developers: the `om_insights_rate_limit` filter (reports per minute
+from one connection, default 120), the `om_email_details` filter (the
+automatic block of every real email) and the Wulf Kit's
+`wk_mail_after_rows` filter. Visits and actions live in two tables,
+`{prefix}om_ins_sessions` and `{prefix}om_ins_events`.
+
 ## Analytics
 
 What visitors do is sent to the tracking already on your site — Google
@@ -958,10 +1043,13 @@ max_length="15" sound="" auto_next="yes"]`
   width, shadow. Shortcode: `sticky_tools="yes|no" sticky_on="all|mobile|desktop"
   sticky_parts="filters,search,count,chips,sort,top"`.
 
-## Catalog insights (1.20)
+## Earlier catalog counts (1.20)
 
-**Dashboard > Catalog insights** shows what visitors do, for the last 7,
-30 or 90 days, with the change against the period before:
+Replaced by **Insights** in 1.40. The simple daily counts below are still
+kept for 120 days and open from Insights > Settings > "Earlier catalog
+counts", so the history from before Insights can still be read. They show
+what visitors did for the last 7, 30 or 90 days, with the change against
+the period before:
 
 - Headline numbers: product views, searches, searches with no results,
   inquiries, reel views and reel taps to the product.
@@ -973,8 +1061,7 @@ max_length="15" sound="" auto_next="yes"]`
 - **Top searches**, **designs that get inquiries** (and the subjects
   chosen), **most compared pairs**, and **story reels** (views, taps, tap
   rate).
-- **Download CSV**, **Pause counting** and **Reset data**. A small "last 7
-  days" box also appears on the WordPress Dashboard.
+- **Download CSV**, **Pause counting** and **Reset data**.
 
 Only anonymous counts are kept (no visitor, IP or personal data), in daily
 buckets for 120 days.
@@ -1064,6 +1151,37 @@ emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.40.0
+- **Insights**: the site's own visitor analytics, in the WordPress menu.
+  Overview, visitors and sources, pages, designs, searches, actions,
+  funnels, visitor journeys (every visit, step by step), leads and a live
+  view, for any period, with the change against the period before. Charts
+  with tooltips and tables, sortable lists with Find and Show all, CSV
+  downloads.
+- What it records: page views with time on the page and how far people
+  scroll, designs viewed (with price), saved, compared and shared, options
+  picked, searches and filters, the ring builder, diamond tools, ring
+  designer, assistant, quiz, booking window, Drop a hint, story reels,
+  button clicks, calls (which number), directions and links to other
+  sites, and every lead from this plugin and the Wulf Elementor Kit.
+- Where visits come from: search, Google Maps & Business Profile, direct,
+  social media, paid ads (click IDs and paid campaign tags), email, AI
+  assistants and other websites, plus campaigns (utm links).
+- The visit behind each lead: a **Their visit** box on each inquiry, a
+  **Came from** column in the inquiries list, and a **Their visit** summary
+  at the end of the shop's inquiry, hint, saved list and ring design emails
+  (and the Wulf Kit 1.9.3's visit request, quiz and newsletter emails).
+- Privacy: two first-party cookies with random IDs, no IP addresses, nothing
+  sent elsewhere; staff, bots and Do Not Track / Global Privacy Control left
+  out; kept 13 months by default (3 to 37), CSV download and delete all.
+- Insights replaces Dashboard > Catalog insights. Its daily counts stay
+  available under Insights > Settings > "Earlier catalog counts", and the
+  old address opens Insights. The WordPress Dashboard box now shows the
+  last 7 days from Insights.
+- The visit script sends what it has collected when a form is sent, so the
+  emails tell the whole visit.
+- New filters: `om_email_details` and `om_insights_rate_limit`.
 
 ### 1.39.1
 - Brand colours and fonts: when the catalog follows the Elementor kit, the

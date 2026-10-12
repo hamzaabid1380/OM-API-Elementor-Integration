@@ -23,11 +23,12 @@
 	 * @param {string} name   GA4 event name (recommended names where one fits).
 	 * @param {Object} params GA4 parameters; "items" makes it an ecommerce event.
 	 * @param {Array}  meta   [ 'track' | 'trackCustom', name, data ] for the Meta pixel.
+	 * @param {Object} ctx    Extra detail for listeners on this site only (Insights), never sent on.
 	 */
-	function track(name, params, meta) {
+	function track(name, params, meta, ctx) {
 		if (trackOff()) { return; }
 		params = params || {};
-		try { document.dispatchEvent(new CustomEvent('om:track', { detail: { name: name, params: params } })); } catch (err) { /* old browser */ }
+		try { document.dispatchEvent(new CustomEvent('om:track', { detail: { name: name, params: params, ctx: ctx || null } })); } catch (err) { /* old browser */ }
 		if (!cfg.track) { return; }
 		var sent = [];
 		try {
@@ -2462,7 +2463,7 @@
 			compareDialog[0].addEventListener('close', function () { $('html').removeClass('om-lb-open'); });
 		}
 		var list = readCompare();
-		track('compare_designs', { designs: list.length, item_ids: list.map(function (x) { return x.s; }).join(',') }, ['trackCustom', 'CompareDesigns', { content_ids: list.map(function (x) { return String(x.s); }) }]);
+		track('compare_designs', { designs: list.length, item_ids: list.map(function (x) { return x.s; }).join(',') }, ['trackCustom', 'CompareDesigns', { content_ids: list.map(function (x) { return String(x.s); }) }], { items: list.map(function (x) { return x.l + '|' + String(x.s).toUpperCase(); }) });
 		compareDialog.find('.om-compare-title').text(list.length === 1 ? t('compareOne', '1 design') : t('compareMany', '%d designs side by side').replace('%d', list.length));
 		compareDialog.find('.om-compare-diff').prop('hidden', list.length < 2);
 		var $body = compareDialog.find('.om-compare-body').html('<div class="om-qv-loading"><span class="om-qv-skel om-qv-skel--img"></span><span class="om-qv-skel"></span></div>');

@@ -289,6 +289,15 @@ class WK_Booking {
 			$html .= '<tr><td style="color:#5a5f67;vertical-align:top"><b>' . esc_html( $k ) . '</b></td><td>' . nl2br( esc_html( $v ) ) . '</td></tr>';
 		}
 		$html   .= '</table>';
+		/**
+		 * HTML after the details of an email to the shop (visit request, quiz, newsletter).
+		 * The OM Catalog plugin's Insights adds "Their visit" here.
+		 *
+		 * @param string $html    Extra HTML, empty by default.
+		 * @param string $subject The email's subject.
+		 * @param array  $rows    The details: label => value.
+		 */
+		$html   .= (string) apply_filters( 'wk_mail_after_rows', '', $subject, $rows );
 		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 		if ( is_email( $reply_email ) ) {
 			$headers[] = 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $reply_name ) . ' <' . $reply_email . '>';

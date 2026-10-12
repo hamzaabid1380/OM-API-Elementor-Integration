@@ -1,0 +1,1092 @@
+/*
+ * Insights (wp-admin > Insights). One quiet language for every chart:
+ * a single blue for amounts, a five-step blue ramp for the busy-hours grid,
+ * thin marks with a rounded end, hairline grids, text in ink colours.
+ */
+
+.om-ins {
+	--ins-ink: #1d2327;
+	--ins-ink-2: #50575e;
+	--ins-muted: #646970;
+	--ins-line: #dcdcde;
+	--ins-hair: #f0f0f1;
+	--ins-card: #fff;
+	--ins-soft: #f6f7f7;
+	--ins-series: #2a78d6;
+	--ins-series-hover: #1c5cab;
+	--ins-tint: #e8f1fc;
+	--ins-tint-ink: #104281;
+	--ins-up: #006300;
+	--ins-down: #d03b3b;
+	--ins-live: #00a32a;
+	--ins-r: 8px;
+	color: var(--ins-ink);
+	max-width: 1400px;
+}
+
+.om-ins *,
+.om-ins *::before,
+.om-ins *::after {
+	box-sizing: border-box;
+}
+
+/* ---------- Head, tabs, period ---------- */
+
+.om-ins-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin: 8px 0 14px;
+}
+
+.om-ins-head h1 {
+	margin: 0 0 4px;
+	padding: 0;
+	font-size: 23px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.om-ins-head p {
+	margin: 0;
+	max-width: 72ch;
+	color: var(--ins-ink-2);
+}
+
+.om-ins-livechip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 12px;
+	border: 1px solid var(--ins-line);
+	border-radius: 999px;
+	background: var(--ins-card);
+	color: var(--ins-ink);
+	font-size: 13px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.om-ins-livechip:hover,
+.om-ins-livechip:focus {
+	border-color: var(--ins-ink-2);
+	color: var(--ins-ink);
+}
+
+.om-ins-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #a7aaad;
+	flex: none;
+}
+
+.om-ins-dot.on {
+	background: var(--ins-live);
+	box-shadow: 0 0 0 0 rgba(0, 163, 42, 0.45);
+	animation: om-ins-pulse 2s ease-out infinite;
+}
+
+@keyframes om-ins-pulse {
+	0% { box-shadow: 0 0 0 0 rgba(0, 163, 42, 0.45); }
+	70% { box-shadow: 0 0 0 7px rgba(0, 163, 42, 0); }
+	100% { box-shadow: 0 0 0 0 rgba(0, 163, 42, 0); }
+}
+
+.om-ins-tabs {
+	display: flex;
+	gap: 2px;
+	margin: 0 0 16px;
+	border-bottom: 1px solid var(--ins-line);
+	overflow-x: auto;
+	scrollbar-width: thin;
+}
+
+.om-ins-tabs a {
+	flex: none;
+	padding: 10px 12px 9px;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	color: var(--ins-ink-2);
+	font-size: 13px;
+	font-weight: 500;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.om-ins-tabs a:hover {
+	color: var(--ins-ink);
+}
+
+.om-ins-tabs a[aria-current="page"] {
+	border-bottom-color: var(--ins-ink);
+	color: var(--ins-ink);
+	font-weight: 600;
+}
+
+.om-ins-tabs a:focus {
+	box-shadow: none;
+	outline: 2px solid var(--ins-series);
+	outline-offset: -2px;
+}
+
+.om-ins-range {
+	display: flex;
+	align-items: center;
+	gap: 10px 16px;
+	flex-wrap: wrap;
+	margin: 0 0 16px;
+}
+
+.om-ins-presets {
+	display: inline-flex;
+	flex-wrap: wrap;
+	border: 1px solid var(--ins-line);
+	border-radius: 6px;
+	background: var(--ins-card);
+	overflow: hidden;
+}
+
+.om-ins-presets a {
+	padding: 6px 11px;
+	border-right: 1px solid var(--ins-hair);
+	color: var(--ins-ink-2);
+	font-size: 13px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.om-ins-presets a:last-child {
+	border-right: 0;
+}
+
+.om-ins-presets a:hover {
+	background: var(--ins-soft);
+	color: var(--ins-ink);
+}
+
+.om-ins-presets a[aria-current="true"] {
+	background: var(--ins-ink);
+	color: #fff;
+}
+
+.om-ins-presets a:focus {
+	box-shadow: none;
+	outline: 2px solid var(--ins-series);
+	outline-offset: -2px;
+}
+
+.om-ins-custom {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	color: var(--ins-ink-2);
+	font-size: 13px;
+}
+
+.om-ins-custom input[type="date"] {
+	min-height: 30px;
+	font-size: 13px;
+}
+
+.om-ins-period {
+	margin: 0 0 0 auto;
+	color: var(--ins-ink-2);
+	font-size: 13px;
+}
+
+.om-ins-main {
+	display: block;
+}
+
+/* ---------- Cards and grids ---------- */
+
+.om-ins-card {
+	min-width: 0;
+	margin: 0 0 16px;
+	padding: 18px 20px 20px;
+	border: 1px solid var(--ins-line);
+	border-radius: var(--ins-r);
+	background: var(--ins-card);
+}
+
+.om-ins-card h2,
+.om-ins-figure h2 {
+	margin: 0 0 4px;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.4;
+	color: var(--ins-ink);
+}
+
+.om-ins-card h3 {
+	margin: 18px 0 6px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ins-ink);
+}
+
+.om-ins-card h3:first-of-type {
+	margin-top: 8px;
+}
+
+.om-ins-desc,
+.om-ins-figure figcaption p {
+	margin: 0 0 14px;
+	max-width: 90ch;
+	color: var(--ins-ink-2);
+}
+
+.om-ins-cardhead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px 16px;
+	flex-wrap: wrap;
+	margin: 0 0 4px;
+}
+
+.om-ins-cardhead h2 {
+	margin: 0;
+}
+
+.om-ins-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+	gap: 16px;
+	margin: 0 0 16px;
+}
+
+.om-ins-grid-3 {
+	grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+}
+
+.om-ins-grid > .om-ins-card {
+	margin: 0;
+}
+
+.om-ins-welcome {
+	padding: 28px;
+}
+
+.om-ins-welcome p {
+	max-width: 70ch;
+	margin: 6px 0 0;
+	color: var(--ins-ink-2);
+}
+
+.om-ins-empty {
+	margin: 4px 0;
+	padding: 12px 0;
+	color: var(--ins-muted);
+}
+
+.om-ins-more {
+	margin: 14px 0 0;
+}
+
+.om-ins-more a {
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.om-ins-foot-note {
+	margin: 14px 0 0;
+	color: var(--ins-muted);
+	font-size: 12px;
+}
+
+/* ---------- Headline tiles ---------- */
+
+.om-ins-tiles {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 12px;
+	margin: 0 0 16px;
+}
+
+.om-ins-tile {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 14px 16px;
+	border: 1px solid var(--ins-line);
+	border-radius: var(--ins-r);
+	background: var(--ins-card);
+}
+
+.om-ins-tile-l {
+	color: var(--ins-ink-2);
+	font-size: 13px;
+}
+
+.om-ins-tile b {
+	font-size: 26px;
+	font-weight: 600;
+	line-height: 1.15;
+	font-variant-numeric: tabular-nums;
+	color: var(--ins-ink);
+}
+
+.om-ins-delta {
+	color: var(--ins-muted);
+	font-size: 12px;
+}
+
+.om-ins-delta.up,
+.om-ins-delta.down {
+	font-weight: 600;
+}
+
+.om-ins-delta span {
+	color: var(--ins-muted);
+	font-weight: 400;
+}
+
+.om-ins-delta.up {
+	color: var(--ins-up);
+}
+
+.om-ins-delta.down {
+	color: var(--ins-down);
+}
+
+/* ---------- Columns over time (SVG) ---------- */
+
+.om-ins-figure {
+	margin: 0;
+}
+
+.om-ins-chart {
+	position: relative;
+	overflow-x: auto;
+}
+
+.om-ins-chart svg {
+	display: block;
+	width: 100%;
+	min-width: 620px;
+	height: auto;
+	overflow: visible;
+}
+
+.om-ins-chart .grid {
+	stroke: var(--ins-hair);
+	stroke-width: 1;
+}
+
+.om-ins-chart .axis {
+	stroke: #c3c4c7;
+	stroke-width: 1;
+}
+
+.om-ins-chart .tick {
+	fill: var(--ins-muted);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+}
+
+.om-ins-chart .bar {
+	fill: var(--ins-series);
+}
+
+.om-ins-chart .hit {
+	fill: transparent;
+}
+
+.om-ins-chart .col {
+	cursor: default;
+	outline: none;
+}
+
+.om-ins-chart .col:hover .hit,
+.om-ins-chart .col:focus .hit {
+	fill: rgba(29, 35, 39, 0.05);
+}
+
+.om-ins-chart .col:hover .bar,
+.om-ins-chart .col:focus .bar {
+	fill: var(--ins-series-hover);
+}
+
+.om-ins-chart .col:focus-visible .hit {
+	stroke: var(--ins-series);
+	stroke-width: 1.5;
+}
+
+/* ---------- Ranked bars (HTML) ---------- */
+
+.om-ins-hbars,
+.om-ins-funnel ol {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.om-ins-hbars li,
+.om-ins-funnel li {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-areas:
+		"name val"
+		"bar bar";
+	align-items: center;
+	gap: 5px 14px;
+	margin: 0;
+	padding: 7px 0 8px;
+	border-bottom: 1px solid var(--ins-hair);
+}
+
+.om-ins-hbars li:last-child,
+.om-ins-funnel li:last-child {
+	border-bottom: 0;
+}
+
+.om-ins-hbars li[data-tip]:focus,
+.om-ins-funnel li:focus {
+	outline: 2px solid var(--ins-series);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+.om-ins-hname,
+.om-ins-fname {
+	grid-area: name;
+	min-width: 0;
+	overflow-wrap: anywhere;
+	line-height: 1.35;
+}
+
+.om-ins-htrack {
+	display: contents;
+}
+
+.om-ins-hbar {
+	grid-area: bar;
+	display: block;
+	height: 8px;
+	min-width: 2px;
+	max-width: 100%;
+	border-radius: 0 4px 4px 0;
+	background: var(--ins-series);
+}
+
+.om-ins-hbars li:hover .om-ins-hbar,
+.om-ins-funnel li:hover .om-ins-hbar {
+	background: var(--ins-series-hover);
+}
+
+.om-ins-hval {
+	grid-area: val;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+	white-space: nowrap;
+}
+
+.om-ins-hval small {
+	margin-left: 4px;
+	color: var(--ins-ink-2);
+	font-size: 12px;
+	font-weight: 400;
+}
+
+.om-ins-share {
+	margin-left: 2px;
+	color: var(--ins-muted);
+	font-weight: 400;
+}
+
+.om-ins-funnel li small {
+	grid-column: 1 / -1;
+	color: var(--ins-muted);
+	font-size: 12px;
+}
+
+.om-ins-funnel figcaption p {
+	margin-bottom: 8px;
+}
+
+/* ---------- Tables ---------- */
+
+.om-ins-scroll {
+	overflow-x: auto;
+	max-width: 100%;
+}
+
+.om-ins-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+}
+
+.om-ins-table th,
+.om-ins-table td {
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--ins-hair);
+	text-align: left;
+	vertical-align: middle;
+}
+
+.om-ins-table th:first-child,
+.om-ins-table td:first-child {
+	padding-left: 0;
+}
+
+.om-ins-table th:last-child,
+.om-ins-table td:last-child {
+	padding-right: 0;
+}
+
+.om-ins-table thead th {
+	border-bottom-color: var(--ins-line);
+	color: var(--ins-ink-2);
+	font-size: 12px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.om-ins-table tbody th {
+	font-weight: 500;
+}
+
+.om-ins-table .num {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.om-ins-table td small {
+	display: block;
+	margin-top: 2px;
+	color: var(--ins-muted);
+	font-size: 12px;
+}
+
+.om-ins-table tbody tr:hover td,
+.om-ins-table tbody tr:hover th {
+	background: #fafafa;
+}
+
+.om-ins-sort {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+	text-align: inherit;
+	white-space: nowrap;
+}
+
+.om-ins-sort:hover {
+	color: var(--ins-ink);
+}
+
+.om-ins-sort:focus {
+	outline: 2px solid var(--ins-series);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+/* The arrow sits on the outer side, so headings stay lined up with their numbers. */
+th[aria-sort] .om-ins-sort::after,
+th.num[aria-sort] .om-ins-sort::before {
+	display: inline-block;
+	color: var(--ins-ink);
+	font-size: 9px;
+	vertical-align: 1px;
+}
+
+th[aria-sort="ascending"]:not(.num) .om-ins-sort::after,
+th.num[aria-sort="ascending"] .om-ins-sort::before {
+	content: "\25B2";
+}
+
+th[aria-sort="descending"]:not(.num) .om-ins-sort::after,
+th.num[aria-sort="descending"] .om-ins-sort::before {
+	content: "\25BC";
+}
+
+th:not(.num) .om-ins-sort::after {
+	margin-left: 4px;
+}
+
+th.num .om-ins-sort::before {
+	margin-right: 4px;
+}
+
+.om-ins-filter {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--ins-ink-2);
+	font-size: 13px;
+}
+
+.om-ins-filter input {
+	min-width: min(240px, 60vw);
+}
+
+.om-ins-showall {
+	margin: 14px 0 0;
+	text-align: center;
+}
+
+.om-ins-showall[hidden] {
+	display: none;
+}
+
+.om-ins-data {
+	margin-top: 8px;
+}
+
+.om-ins-data summary {
+	display: inline-block;
+	padding: 2px 0;
+	color: var(--ins-ink-2);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.om-ins-data summary:hover {
+	color: var(--ins-ink);
+}
+
+.om-ins-data[open] summary {
+	margin-bottom: 8px;
+}
+
+/* A design: photo (on white, as on the site) and name. */
+.om-ins-design {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	color: var(--ins-ink);
+	text-decoration: none;
+}
+
+.om-ins-design:hover span {
+	text-decoration: underline;
+}
+
+.om-ins-design img,
+.om-ins-noimg {
+	flex: none;
+	width: 40px;
+	height: 40px;
+	border: 1px solid var(--ins-line);
+	border-radius: 4px;
+	background: #fff;
+	object-fit: contain;
+}
+
+.om-ins-noimg {
+	display: inline-block;
+	background: var(--ins-soft);
+}
+
+.om-ins-design span {
+	min-width: 0;
+}
+
+.om-ins-design small {
+	display: block;
+	color: var(--ins-muted);
+	font-size: 12px;
+	font-weight: 400;
+}
+
+.om-ins-hbars .om-ins-design img,
+.om-ins-hbars .om-ins-noimg {
+	width: 34px;
+	height: 34px;
+}
+
+.om-ins-path {
+	display: block;
+	color: var(--ins-muted);
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+
+/* Links in lists keep a light underline (not told apart by colour alone). */
+.om-ins-hname > a,
+.om-ins-table td > a,
+.om-ins-facts a {
+	text-decoration: underline;
+	text-decoration-color: rgba(56, 88, 233, 0.35);
+	text-underline-offset: 2px;
+}
+
+.om-ins-hname > a:hover,
+.om-ins-table td > a:hover,
+.om-ins-facts a:hover {
+	text-decoration-color: currentColor;
+}
+
+/* ---------- Busy hours ---------- */
+
+.om-ins-heat {
+	overflow-x: auto;
+}
+
+.om-ins-heat-grid {
+	display: grid;
+	grid-template-columns: 38px repeat(24, minmax(14px, 1fr));
+	gap: 3px;
+	min-width: 520px;
+}
+
+.om-ins-heat-h {
+	color: var(--ins-muted);
+	font-size: 11px;
+	white-space: nowrap;
+	overflow: visible;
+}
+
+.om-ins-heat-d {
+	align-self: center;
+	color: var(--ins-ink-2);
+	font-size: 12px;
+}
+
+.om-ins-cell {
+	display: block;
+	min-height: 18px;
+	border-radius: 2px;
+	background: var(--ins-hair);
+}
+
+.om-ins-heat-grid .om-ins-cell {
+	aspect-ratio: 1.6 / 1;
+}
+
+.om-ins-cell:focus {
+	outline: 2px solid var(--ins-ink);
+	outline-offset: 1px;
+}
+
+.om-ins-cell.s0 { background: var(--ins-hair); }
+.om-ins-cell.s1 { background: #86b6ef; }
+.om-ins-cell.s2 { background: #5598e7; }
+.om-ins-cell.s3 { background: #2a78d6; }
+.om-ins-cell.s4 { background: #1c5cab; }
+.om-ins-cell.s5 { background: #104281; }
+
+.om-ins-scale {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	margin-top: 12px;
+	color: var(--ins-muted);
+	font-size: 12px;
+}
+
+.om-ins-scale span:first-child {
+	margin-right: 6px;
+}
+
+.om-ins-scale span:last-child {
+	margin-left: 6px;
+}
+
+.om-ins-scale .om-ins-cell {
+	width: 16px;
+	min-height: 12px;
+	height: 12px;
+}
+
+/* ---------- Journeys ---------- */
+
+.om-ins-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.om-ins-chips a {
+	padding: 4px 11px;
+	border: 1px solid var(--ins-line);
+	border-radius: 999px;
+	color: var(--ins-ink-2);
+	font-size: 12px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.om-ins-chips a:hover {
+	border-color: var(--ins-ink-2);
+	color: var(--ins-ink);
+}
+
+.om-ins-chips a[aria-current="true"] {
+	border-color: var(--ins-ink);
+	background: var(--ins-ink);
+	color: #fff;
+}
+
+.om-ins-badge {
+	display: inline-block;
+	padding: 2px 9px;
+	border-radius: 999px;
+	background: var(--ins-hair);
+	color: var(--ins-ink-2);
+	font-size: 12px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.om-ins-badge.lead {
+	background: var(--ins-tint);
+	color: var(--ins-tint-ink);
+}
+
+.om-ins-visits td {
+	vertical-align: top;
+}
+
+.om-ins-pager {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin: 16px 0 0;
+	color: var(--ins-ink-2);
+}
+
+.om-ins-facts {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+	gap: 14px 24px;
+	margin: 14px 0 0;
+}
+
+.om-ins-facts div {
+	min-width: 0;
+}
+
+.om-ins-facts dt {
+	color: var(--ins-muted);
+	font-size: 12px;
+}
+
+.om-ins-facts dd {
+	margin: 2px 0 0;
+	overflow-wrap: anywhere;
+}
+
+.om-ins-timeline {
+	position: relative;
+	margin: 10px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.om-ins-timeline li {
+	position: relative;
+	display: grid;
+	grid-template-columns: 92px minmax(0, 1fr);
+	gap: 14px;
+	margin: 0;
+	padding: 9px 0 9px 22px;
+	border-left: 2px solid var(--ins-hair);
+	margin-left: 4px;
+}
+
+.om-ins-timeline li::before {
+	content: "";
+	position: absolute;
+	top: 15px;
+	left: -6px;
+	width: 10px;
+	height: 10px;
+	border: 2px solid #fff;
+	border-radius: 50%;
+	background: #a7aaad;
+}
+
+.om-ins-timeline li.pv::before {
+	background: var(--ins-ink-2);
+}
+
+.om-ins-timeline li.lead::before {
+	background: var(--ins-series);
+}
+
+.om-ins-timeline time {
+	padding-top: 1px;
+	color: var(--ins-muted);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.om-ins-timeline li.pv strong {
+	font-weight: 600;
+}
+
+.om-ins-timeline .om-ins-path {
+	font-weight: 400;
+}
+
+.om-ins-timeline li.pv small,
+.om-ins-timeline li.act small,
+.om-ins-timeline li.lead small {
+	display: block;
+	margin-top: 2px;
+	color: var(--ins-muted);
+	font-size: 12px;
+}
+
+.om-ins-timeline li.act {
+	color: var(--ins-ink-2);
+}
+
+.om-ins-timeline li.act .om-ins-design img,
+.om-ins-timeline li.act .om-ins-noimg {
+	width: 30px;
+	height: 30px;
+}
+
+.om-ins-timeline li.lead > span {
+	padding: 8px 12px;
+	border-radius: 6px;
+	background: var(--ins-tint);
+	color: var(--ins-tint-ink);
+}
+
+.om-ins-timeline li.lead small {
+	color: var(--ins-tint-ink);
+}
+
+.om-ins-timeline li.lead a {
+	color: var(--ins-tint-ink);
+	font-weight: 600;
+}
+
+/* ---------- The visit box on an inquiry ---------- */
+
+.om-ins-box {
+	max-width: none;
+}
+
+.om-ins-box .om-ins-facts {
+	margin-top: 4px;
+}
+
+.om-ins-steps {
+	margin-top: 16px;
+}
+
+.om-ins-steps summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.om-ins-steps .om-ins-timeline {
+	max-height: 520px;
+	overflow-y: auto;
+	padding-right: 8px;
+}
+
+/* ---------- Live, settings ---------- */
+
+.om-ins .button.om-ins-delete {
+	border-color: #b32d2e;
+	color: #b32d2e;
+}
+
+.om-ins .button.om-ins-delete:hover,
+.om-ins .button.om-ins-delete:focus {
+	border-color: #8a2424;
+	background: #fcf0f1;
+	color: #8a2424;
+}
+
+.om-ins-updated {
+	color: var(--ins-muted);
+	font-size: 12px;
+}
+
+.om-ins-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.om-ins-quote {
+	margin: 12px 0 0;
+	padding: 10px 14px;
+	border-left: 3px solid var(--ins-line);
+	background: var(--ins-soft);
+	color: var(--ins-ink-2);
+	max-width: 90ch;
+}
+
+/* ---------- Tooltip ---------- */
+
+.om-ins-tip {
+	position: fixed;
+	z-index: 100000;
+	max-width: 300px;
+	padding: 7px 10px;
+	border-radius: 5px;
+	background: var(--ins-ink, #1d2327);
+	color: #fff;
+	font-size: 12px;
+	line-height: 1.45;
+	white-space: pre-line;
+	pointer-events: none;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.om-ins-tip[hidden] {
+	display: none;
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 1100px) {
+	.om-ins-tiles {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 782px) {
+	.om-ins-period {
+		margin-left: 0;
+		width: 100%;
+	}
+
+	.om-ins-card {
+		padding: 16px;
+	}
+
+	.om-ins-tile b {
+		font-size: 22px;
+	}
+
+	.om-ins-timeline li {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-ins-dot.on {
+		animation: none;
+	}
+}
+
+@media (forced-colors: active) {
+	.om-ins-hbar,
+	.om-ins-chart .bar,
+	.om-ins-cell {
+		forced-color-adjust: none;
+	}
+}

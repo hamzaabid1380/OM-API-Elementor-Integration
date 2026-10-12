@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.9.2
+Stable tag: 1.9.3
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -142,6 +142,12 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.9.3 =
+* Emails to the shop (visit requests, quiz matches and newsletter sign-ups) end with the visitor's
+  journey when the OM Catalog plugin's Insights is on (OM 1.40 or later): where they came from, the
+  pages and designs they looked at and saved, and a link to the whole visit.
+* New `wk_mail_after_rows` filter: HTML added after the details of those emails.
 
 = 1.9.2 =
 * Ring photos and 360° videos sit on plain white everywhere: no metal-coloured glow behind the ring

@@ -4,10 +4,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Catalog insights: anonymous daily counts of what visitors do (product
+ * Catalog counts: anonymous daily counts of what visitors do (product
  * views, searches, searches that found nothing, inquiries, compares, story
- * reels watched and tapped), and the Dashboard > Catalog insights page that
- * reads them.
+ * reels watched and tapped), and the "Earlier catalog counts" page that
+ * reads them (Insights, see OM_Insights, is the full dashboard since 1.40).
  *
  * Only counts are kept — no visitor, IP or personal data — in one option of
  * daily buckets (the last 120 days, each type capped to its top entries).
@@ -51,7 +51,6 @@ class OM_Stats {
 		add_action( 'wp_ajax_om_track_reel', array( $this, 'handle_track_reel' ) );
 		add_action( 'wp_ajax_nopriv_om_track_reel', array( $this, 'handle_track_reel' ) );
 		add_action( 'admin_menu', array( $this, 'menu' ) );
-		add_action( 'wp_dashboard_setup', array( $this, 'dashboard_widget' ) );
 		add_action( 'admin_post_om_insights_csv', array( $this, 'export_csv' ) );
 		add_action( 'admin_post_om_insights_reset', array( $this, 'reset' ) );
 		add_action( 'admin_post_om_insights_toggle', array( $this, 'toggle' ) );
@@ -123,6 +122,9 @@ class OM_Stats {
 		if ( $n < 200 ) {
 			set_transient( $rate, $n + 1, HOUR_IN_SECONDS );
 			self::add( $kind, $line . '|' . $style );
+			if ( class_exists( 'OM_Insights' ) ) {
+				OM_Insights::server_event( 'reel', array( 'item' => $line . '|' . $style, 'label' => 'reel_tap' === $kind ? 'tap' : 'view' ) );
+			}
 		}
 		wp_send_json_success();
 	}
@@ -156,36 +158,29 @@ class OM_Stats {
 
 	/* ---------- Admin ---------- */
 
+	/** Admin page with these counts (the address used by links below). */
+	const PAGE = 'om-catalog-counts';
+
+	/**
+	 * Since 1.40 the Insights menu (OM_Insights_Admin) is the dashboard. These
+	 * daily counts stay on a page of their own, linked from Insights > Settings,
+	 * so the history from before Insights can still be read.
+	 */
 	public function menu() {
-		add_dashboard_page(
-			__( 'Catalog insights', 'om-catalog' ),
-			__( 'Catalog insights', 'om-catalog' ),
+		add_submenu_page(
+			'options.php',
+			__( 'Earlier catalog counts', 'om-catalog' ),
+			__( 'Earlier catalog counts', 'om-catalog' ),
 			'manage_options',
-			'om-insights',
+			self::PAGE,
 			array( $this, 'page' )
 		);
 	}
 
-	public function dashboard_widget() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-		wp_add_dashboard_widget(
-			'om_insights_widget',
-			__( 'Catalog — last 7 days', 'om-catalog' ),
-			function () {
-				$now = self::totals( 7 );
-				echo '<ul style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0;">';
-				foreach ( array( 'view', 'inquiry', 'search_zero' ) as $type ) {
-					printf(
-						'<li style="margin:0;padding:10px;border:1px solid #dcdcde;border-radius:6px;"><span style="display:block;font-size:22px;font-weight:600;color:#1d2327;">%s</span><span style="color:#50575e;">%s</span></li>',
-						esc_html( number_format_i18n( array_sum( $now['types'][ $type ] ?? array() ) ) ),
-						esc_html( self::types()[ $type ] )
-					);
-				}
-				echo '</ul><p><a href="' . esc_url( admin_url( 'index.php?page=om-insights' ) ) . '">' . esc_html__( 'Open catalog insights →', 'om-catalog' ) . '</a></p>';
-			}
-		);
+	/** True when there are counts from before Insights to show. */
+	public static function has_history() {
+		$data = get_option( self::OPTION, array() );
+		return is_array( $data ) && ! empty( $data );
 	}
 
 	/** Name, photo and link of a design ("line|style"), from the search index or the API. */
@@ -232,7 +227,7 @@ class OM_Stats {
 		$sum  = static function ( $set, $type ) {
 			return array_sum( $set['types'][ $type ] ?? array() );
 		};
-		$base = admin_url( 'index.php?page=om-insights' );
+		$base = admin_url( 'admin.php?page=' . self::PAGE );
 		$results_page = (int) get_option( 'om_search_results_page', 0 );
 		$results_url  = $results_page ? get_permalink( $results_page ) : '';
 		?>
@@ -276,15 +271,16 @@ class OM_Stats {
 				details.om-ins-data summary { cursor: pointer; color: var(--ink-2); margin-top: 8px; }
 			</style>
 
+			<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=om-insights' ) ); ?>">&larr; <?php esc_html_e( 'Insights', 'om-catalog' ); ?></a></p>
 			<h1>
-				<?php esc_html_e( 'Catalog insights', 'om-catalog' ); ?>
+				<?php esc_html_e( 'Earlier catalog counts', 'om-catalog' ); ?>
 				<span class="om-ins-range" role="navigation" aria-label="<?php esc_attr_e( 'Period', 'om-catalog' ); ?>">
 					<?php foreach ( array( 7, 30, 90 ) as $d ) : ?>
 						<a href="<?php echo esc_url( add_query_arg( 'days', $d, $base ) ); ?>"<?php echo $d === $days ? ' aria-current="page"' : ''; ?>><?php echo esc_html( sprintf( /* translators: %d: number of days. */ __( '%d days', 'om-catalog' ), $d ) ); ?></a>
 					<?php endforeach; ?>
 				</span>
 			</h1>
-			<p class="om-ins-note"><?php esc_html_e( 'What visitors do in your catalog: counts only, no personal data. Use it to see which designs to promote, what people search for and don\'t find, and what turns into inquiries.', 'om-catalog' ); ?></p>
+			<p class="om-ins-note"><?php esc_html_e( 'The simple daily counts the catalog kept before Insights (the last 120 days). Insights has everything from now on, in much more detail.', 'om-catalog' ); ?></p>
 			<?php if ( ! self::enabled() ) : ?>
 				<div class="notice notice-warning inline"><p><?php esc_html_e( 'Counting is paused. Turn it back on below.', 'om-catalog' ); ?></p></div>
 			<?php endif; ?>
@@ -593,7 +589,7 @@ class OM_Stats {
 			wp_die( esc_html__( 'Not allowed.', 'om-catalog' ) );
 		}
 		delete_option( self::OPTION );
-		wp_safe_redirect( admin_url( 'index.php?page=om-insights' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=' . self::PAGE ) );
 		exit;
 	}
 
@@ -602,7 +598,7 @@ class OM_Stats {
 			wp_die( esc_html__( 'Not allowed.', 'om-catalog' ) );
 		}
 		update_option( 'om_track_stats', self::enabled() ? '0' : '1' );
-		wp_safe_redirect( admin_url( 'index.php?page=om-insights' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=' . self::PAGE ) );
 		exit;
 	}
 }

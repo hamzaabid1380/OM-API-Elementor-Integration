@@ -450,6 +450,16 @@ class OM_Emails {
 		if ( '' === trim( (string) $to ) ) {
 			return false;
 		}
+		if ( null === $settings ) {
+			/**
+			 * Filters the automatic block of a real email (not a test or preview),
+			 * e.g. Insights adds "Their visit" under the shop's copies.
+			 *
+			 * @param string $details HTML.
+			 * @param string $id      Email: inquiry_shop, hint_shop, saved_shop...
+			 */
+			$details = (string) apply_filters( 'om_email_details', $details, $id );
+		}
 		$mail = self::render( $id, $vars, $details, $link, $settings, $design );
 		$headers = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), (array) $headers );
 		if ( null === $settings ) {

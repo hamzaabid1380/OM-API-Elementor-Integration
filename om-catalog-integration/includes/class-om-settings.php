@@ -343,7 +343,7 @@ class OM_Settings {
 					</div>
 				</div>
 				<div class="om-admin-head-links">
-					<a class="om-admin-btn" href="<?php echo esc_url( admin_url( 'index.php?page=om-insights' ) ); ?>"><?php esc_html_e( 'Insights', 'om-catalog' ); ?></a>
+					<a class="om-admin-btn" href="<?php echo esc_url( admin_url( 'admin.php?page=om-insights' ) ); ?>"><?php esc_html_e( 'Insights', 'om-catalog' ); ?></a>
 					<a class="om-admin-btn" href="<?php echo esc_url( admin_url( 'edit.php?post_type=om_inquiry' ) ); ?>"><?php esc_html_e( 'Inquiries', 'om-catalog' ); ?></a>
 				</div>
 			</header>
