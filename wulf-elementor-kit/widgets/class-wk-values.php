@@ -61,8 +61,8 @@ class WK_Values_Widget extends WK_Widget {
 
 		$this->start_controls_section( 'c_rating', array( 'label' => __( 'Google rating line', 'wulf-kit' ) ) );
 		$this->add_control( 'rating_on', array( 'label' => __( 'Show a rating line next to the title', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes' ) );
-		$this->add_control( 'rating', array( 'label' => __( 'Rating', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '[4.9]', 'description' => __( 'Your real Google rating. Used when no Google API key is set in Wulf Kit › Settings; with a key, the live rating is shown.', 'wulf-kit' ), 'condition' => array( 'rating_on' => 'yes' ) ) );
-		$this->add_control( 'rating_label', array( 'label' => __( 'Text after the rating', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'on Google · [N] reviews', 'wulf-kit' ), 'description' => __( '{count} becomes the live review count when a Google key is set.', 'wulf-kit' ), 'condition' => array( 'rating_on' => 'yes' ) ) );
+		$this->add_control( 'rating', array( 'label' => __( 'Rating', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '[4.9]', 'description' => __( 'Your real Google rating. Used until Google reviews are set up in Wulf Kit › Settings; then the live rating is shown.', 'wulf-kit' ), 'condition' => array( 'rating_on' => 'yes' ) ) );
+		$this->add_control( 'rating_label', array( 'label' => __( 'Text after the rating', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'on Google · [N] reviews', 'wulf-kit' ), 'description' => __( '{count} becomes the live review count once Google reviews are set up.', 'wulf-kit' ), 'condition' => array( 'rating_on' => 'yes' ) ) );
 		$this->add_control( 'rating_link', array( 'label' => __( 'Link', 'wulf-kit' ), 'type' => Controls_Manager::URL, 'default' => array( 'url' => 'https://share.google/ZIKvRTnr9JcbLdgex', 'is_external' => 'on' ), 'condition' => array( 'rating_on' => 'yes' ) ) );
 		$this->end_controls_section();
 
@@ -100,7 +100,7 @@ class WK_Values_Widget extends WK_Widget {
 		) );
 	}
 
-	/** "★★★★★ 4.9 on Google · 650 reviews →" (live from Google when a key is set). */
+	/** "★★★★★ 4.9 on Google · 650 reviews →" (live once Google reviews are set up). */
 	private function rating_line( $s ) {
 		if ( 'yes' !== ( $s['rating_on'] ?? '' ) ) {
 			return '';

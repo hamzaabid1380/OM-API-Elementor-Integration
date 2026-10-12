@@ -30,7 +30,7 @@ class WK_Reviews_Widget extends WK_Widget {
 			'type'        => Controls_Manager::SELECT,
 			'default'     => 'manual',
 			'options'     => array( 'manual' => __( 'Typed in below', 'wulf-kit' ), 'google' => __( 'Google, live', 'wulf-kit' ) ),
-			'description' => __( 'Google needs an API key and Place ID in Wulf Kit › Settings. If Google can\'t be reached, the typed-in reviews show instead.', 'wulf-kit' ),
+			'description' => __( 'Google needs a free Featurable widget ID (or your own Google key and Place ID) in Wulf Kit › Settings › Google reviews. If none has arrived yet, the typed-in reviews show instead.', 'wulf-kit' ),
 		) );
 		$this->add_control( 'eyebrow', array( 'label' => __( 'Small label', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Reviews', 'wulf-kit' ) ) );
 		$this->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'What our customers say.', 'wulf-kit' ) ) );
@@ -89,17 +89,26 @@ class WK_Reviews_Widget extends WK_Widget {
 		$items  = array();
 		$g      = 'google' === $s['source'] ? WK_Reviews::google() : null;
 		if ( $g ) {
-			$rating = number_format( $g['rating'], 1 );
+			$rating = number_format_i18n( $g['rating'], 1 );
 			/* translators: %s: number of reviews */
-			$count = sprintf( __( 'Google rating · %s reviews', 'wulf-kit' ), number_format_i18n( $g['count'] ) );
+			$count = $g['count'] ? sprintf( __( 'Google rating · %s reviews', 'wulf-kit' ), number_format_i18n( $g['count'] ) ) : __( 'Google rating', 'wulf-kit' );
 			if ( $g['url'] ) {
 				$link = array( 'url' => $g['url'], 'is_external' => 'on' );
 			}
+			// Reviews with a few sentences first; very long ones are shortened (the link opens them all).
+			$short = array();
 			foreach ( $g['reviews'] as $r ) {
-				if ( $r['rating'] >= (int) $s['min_stars'] ) {
-					$items[] = array( 'quote' => $r['text'], 'name' => $r['author'], 'what' => $r['when'], 'stars' => $r['rating'] );
+				if ( $r['rating'] < (int) $s['min_stars'] ) {
+					continue;
+				}
+				$item = array( 'quote' => wp_trim_words( $r['text'], 34, '…' ), 'name' => $r['author'], 'what' => WK_Reviews::when( $r ), 'stars' => $r['rating'] );
+				if ( strlen( $r['text'] ) >= 60 ) {
+					$items[] = $item;
+				} else {
+					$short[] = $item;
 				}
 			}
+			$items = array_merge( $items, $short );
 		}
 		if ( ! $items ) {
 			$items = (array) $s['items'];

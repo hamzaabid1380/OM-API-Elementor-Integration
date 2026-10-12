@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.9.3
+Stable tag: 1.10.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -20,7 +20,7 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * "How your ring comes together" (four steps that draw themselves)
 * Ring studio (style, metal, shape and carat; shows the matching real setting)
 * Why Wulf (values)
-* Reviews (typed in, or live from Google with an API key)
+* Reviews (typed in, or live from Google: free through Featurable, or with your own Google key)
 * Our story (timeline with photos and signature)
 * The 4Cs explained
 * Services (custom design, repair, appraisal, gold buying, financing)
@@ -135,6 +135,32 @@ this kit's booking popup with the ring filled in and "From a hint" in the reques
 Each widget has a "Drop a hint" link switch (Spotlight: Rings; quiz: Results). The link text, and
 turning the feature off everywhere, are in Settings > OM Catalog > Look & feel > Drop a hint.
 
+== Google reviews ==
+
+The Reviews widget shows reviews you type in, or your live Google rating and reviews: set its
+"Reviews come from" to "Google, live" and click Update. The live rating also shows in the hero's
+trust line and in "Why Wulf".
+
+Free, with Featurable (no Google key or card needed):
+
+1. Sign up free at featurable.com with the Google account that manages your Business Profile.
+2. Create a Google reviews widget for the shop.
+3. Click Embed, then API, and copy the widget ID.
+4. Paste it into Wulf Kit > Settings > Google reviews > "Featurable widget ID" and save. Pasting the
+   whole embed code works too. A line above the field says what the site shows now, or what's wrong.
+
+The site asks Featurable for your reviews twice a day ("Refresh every (hours)"), and Featurable
+checks Google about every two days. Visitors always get a saved copy, so pages stay fast, and if
+Featurable can't be reached the last reviews received keep showing (before the first ones arrive,
+the typed-in reviews show). The widget shows reviews with written text and at least the stars you
+choose (4 by default), the ones with a few sentences first; very long ones are shortened, and "Read
+all reviews on Google" opens them all. Reviews are shown in the reviewer's own words, not Google's
+translation. Featurable is a separate service: its free plan and limits are its own, so check
+featurable.com if anything changes there.
+
+Or with your own Google key: a Google Places API key and Place ID (needs a Google Cloud billing
+account; Google shares up to 5 reviews and picks them). When both are filled in, Featurable is used.
+
 == Visit requests and newsletter ==
 
 The "Book a visit" form and the footer sign-up email you (Wulf Kit > Settings > "Visit requests
@@ -142,6 +168,16 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.10.0 =
+* Google reviews for free: paste a Featurable widget ID in Wulf Kit > Settings > Google reviews and
+  the Reviews widget shows your live Google rating, review count and reviews in the site's own
+  design, with no Google key or billing account. The hero and "Why Wulf" show the live rating too.
+* Live reviews: the ones with a few sentences come first, very long ones are shortened, and the
+  reviewer's own words are shown rather than Google's translation.
+* If a check fails, the last reviews received keep showing. The settings page says what the site
+  shows now, or what's wrong, and saving the settings asks again straight away.
+* A Google Places API key and Place ID still work instead.
 
 = 1.9.3 =
 * Emails to the shop (visit requests, quiz matches and newsletter sign-ups) end with the visitor's

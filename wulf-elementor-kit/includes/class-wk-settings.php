@@ -71,6 +71,7 @@ class WK_Settings {
 			'to_om_leads'   => '1',
 			'header_tpl'    => '',
 			'footer_tpl'    => '',
+			'featurable_id' => '',
 			'google_key'    => '',
 			'google_place'  => '',
 			'reviews_hours' => '12',
@@ -248,10 +249,15 @@ class WK_Settings {
 				$out[ $k ] = in_array( (string) $val, array( 'popup', 'drawer' ), true ) ? (string) $val : $v;
 			} elseif ( in_array( $k, array( 'book_topics', 'book_points' ), true ) ) {
 				$out[ $k ] = sanitize_textarea_field( $val );
+			} elseif ( 'featurable_id' === $k ) {
+				$out[ $k ] = WK_Reviews::featurable_id( is_scalar( $val ) ? (string) $val : '' ); // Also from a pasted link or embed code.
 			} else {
 				$out[ $k ] = sanitize_text_field( $val );
 			}
 		}
+		// Saving fetches the reviews afresh on the next page view.
+		WK_Reviews::forget();
+		WK_Reviews::forget( $out );
 		self::$cache = null;
 		return $out;
 	}
@@ -392,13 +398,20 @@ class WK_Settings {
 					?>
 				</table>
 
-				<h2><?php esc_html_e( 'Google reviews', 'wulf-kit' ); ?></h2>
-				<p><?php esc_html_e( 'Optional. With these filled in, the Reviews widget can show your live Google rating and reviews (Google shares up to 5 reviews).', 'wulf-kit' ); ?></p>
+				<h2 id="wk-google-reviews"><?php esc_html_e( 'Google reviews', 'wulf-kit' ); ?></h2>
+				<p><?php esc_html_e( 'Optional. Shows your live Google rating and reviews in the Reviews widget (set its "Reviews come from" to "Google, live") and the rating in the hero and "Why Wulf". The easiest way is free: Featurable reads the reviews from your Google Business Profile and the site shows them in its own design.', 'wulf-kit' ); ?></p>
+				<?php
+				$wk_status = WK_Reviews::status();
+				if ( $wk_status ) {
+					echo '<div class="notice notice-' . ( 'ok' === $wk_status['state'] ? 'success' : 'warning' ) . ' inline"><p>' . esc_html( $wk_status['text'] ) . '</p></div>';
+				}
+				?>
 				<table class="form-table" role="presentation">
 					<?php
-					self::field( 'google_key', __( 'Google Places API key', 'wulf-kit' ), 'password' );
-					self::field( 'google_place', __( 'Google Place ID', 'wulf-kit' ), 'text', __( 'Find it with Google\'s Place ID Finder.', 'wulf-kit' ) );
-					self::field( 'reviews_hours', __( 'Refresh every (hours)', 'wulf-kit' ), 'number' );
+					self::field( 'featurable_id', __( 'Featurable widget ID (free)', 'wulf-kit' ), 'text', __( 'No Google key or card needed. 1. Sign up free at <a href="https://featurable.com" target="_blank" rel="noopener">featurable.com</a> with the Google account that manages your Business Profile. 2. Create a Google reviews widget for the shop. 3. Click Embed, then API, and copy the widget ID here (pasting the whole embed code works too). Featurable checks Google for new reviews about every two days.', 'wulf-kit' ) );
+					self::field( 'google_key', __( 'Or: Google Places API key', 'wulf-kit' ), 'password', __( 'Only if you don\'t use Featurable (Featurable is used when both are filled in). Needs a Google Cloud billing account; Google shares up to 5 reviews and picks them.', 'wulf-kit' ) );
+					self::field( 'google_place', __( 'Google Place ID', 'wulf-kit' ), 'text', __( 'With the API key: find it with Google\'s Place ID Finder.', 'wulf-kit' ) );
+					self::field( 'reviews_hours', __( 'Refresh every (hours)', 'wulf-kit' ), 'number', __( 'How often the site asks for new reviews. Visitors always get a saved copy, so this doesn\'t slow pages down. Saving these settings asks again straight away.', 'wulf-kit' ) );
 					?>
 				</table>
 
