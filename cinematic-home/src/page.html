@@ -162,6 +162,13 @@ main { position: relative; z-index: 1; }
 	.reviews { grid-template-columns: 1fr; }
 	.rail { display: none; }
 }
+/* Tall screens (tablets held upright): the ring sits above the words, like on phones. */
+@media (max-aspect-ratio: 20/21) {
+	.scrim, .scrim.r { background: linear-gradient(180deg, rgba(5, 7, 11, 0) 38%, rgba(5, 7, 11, .55) 62%, rgba(5, 7, 11, .9) 100%); }
+	.scrim.l { opacity: 1 !important; }
+	.scrim.r { display: none; }
+	.visit { align-items: flex-end; padding-top: 50svh; background: linear-gradient(180deg, rgba(5, 7, 11, 0) 30%, rgba(5, 7, 11, .75) 52%, rgba(5, 7, 11, .95)); }
+}
 @media (max-width: 760px) {
 	:root { --hd: 62px; }
 	.hd { gap: 12px; }
