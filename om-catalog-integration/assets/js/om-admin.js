@@ -242,6 +242,36 @@
 				.then(function () { crmBtn.disabled = false; });
 		});
 	}
+	// "Set up the fields now": makes (or finds) the contact fields in GoHighLevel.
+	var fieldsBtn = form.querySelector('[data-om-crm-fields]');
+	if (fieldsBtn && window.fetch) {
+		fieldsBtn.addEventListener('click', function () {
+			var out = form.querySelector('.om-crm-fields-result');
+			var status = form.querySelector('[data-om-live="crm-fields"]');
+			fieldsBtn.disabled = true;
+			out.className = 'om-crm-fields-result om-ai-test-result';
+			out.textContent = 'Setting up…';
+			fetch(window.ajaxurl, { method: 'POST', credentials: 'same-origin', body: new URLSearchParams({ action: 'om_crm_fields', nonce: fieldsBtn.getAttribute('data-nonce') }) })
+				.then(function (r) { return r.json(); })
+				.then(function (r) {
+					var ok = !!(r && r.success);
+					var msg = (r && r.data && r.data.message) || 'Something went wrong.';
+					var line = status && status.querySelector('.om-crm-fields-status');
+					if (line) {
+						// The status line says it (newest first); the note under the button goes.
+						line.textContent = (ok ? '✔ ' : '✘ ') + msg;
+						line.style.color = ok ? '#008a20' : '#d63638';
+						out.className = 'om-crm-fields-result';
+						out.textContent = '';
+					} else {
+						out.classList.add(ok ? 'is-ok' : 'is-error');
+						out.textContent = msg;
+					}
+				})
+				.catch(function () { out.classList.add('is-error'); out.textContent = 'The request failed. Please try again.'; })
+				.then(function () { fieldsBtn.disabled = false; });
+		});
+	}
 
 	/* ---- Emails: logo picker, placeholders, preview and test ---- */
 	document.querySelectorAll('[data-om-media]').forEach(function (btn) {

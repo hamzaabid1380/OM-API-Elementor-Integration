@@ -1191,34 +1191,89 @@ Regenerate Files & Data) so the widgets pick up the new styles.
 
 **Settings › OM Catalog › CRM** sends every lead to your CRM as it comes in:
 inquiries from any form (product pages, diamonds, ring builder, the AI
-chat's "talk to our team"), and visitors who email themselves their saved
-designs or ring design, and visitors who drop a hint (only the sender;
-the person they send it to is never added). Choose any of the three;
-emails and the Inquiries list carry on as before.
+chat's "talk to our team"), visitors who email themselves their saved
+designs or ring design, visitors who drop a hint (only the sender; the
+person they send it to is never added), and the Wulf Elementor Kit's visit
+requests, ring style quiz and newsletter sign-ups. Choose GoHighLevel, a
+webhook or both; emails and the Inquiries list carry on as before.
 
 - **GoHighLevel (direct):** paste a Private Integration token (Settings ›
-  Private Integrations; scopes contacts.write, contacts.readonly,
-  opportunities.write) and your Location ID. Each lead creates or updates
-  the contact (matched by email/phone — no duplicates), adds tags, and
-  attaches a note with every detail. With a pipeline and stage ID, every
-  inquiry also opens an opportunity valued at the price shown.
+  Private Integrations; scopes View Contacts and Edit Contacts
+  (contacts.readonly, contacts.write), View Custom Fields and Edit Custom
+  Fields (locations/customFields.readonly, locations/customFields.write),
+  and for opportunities Edit Opportunities (opportunities.write)) and your
+  Location ID. Each lead creates or updates the contact (matched by email
+  or phone, so no duplicates), fills in its **contact fields** (below),
+  adds tags, and attaches a note titled after the request ("Book a
+  viewing: Hidden Halo Oval Ring 1") with every detail and the visit
+  behind it. With a pipeline and stage ID, every inquiry and visit request
+  also opens an opportunity named after the design and the customer and
+  valued at the price shown (newsletter sign-ups don't).
+- **Contact fields (1.43):** so the design, price and page show right on
+  the contact, in lists and filters, and in workflows, emails and texts
+  (`{{contact.website_design}}`), each lead fills in 15 fields the plugin
+  makes in GoHighLevel the first time (or finds, if you made them with the
+  same names): Website request, Website design, Website style number,
+  Website product line, Website price shown, Website page, Website photo,
+  Website options chosen, Website diamond, Website ring builder, Website
+  message, Website details, Website came from, Website visits and Website
+  designs viewed. They always hold the latest lead's details (the design
+  ones only change when a lead is about a design, so a later newsletter
+  sign-up doesn't wipe them); every lead keeps its own note. The settings
+  show whether the fields are ready, with a **Set up the fields now**
+  button, and say exactly which permission to tick if the token can't
+  make them. Switch it off to keep the details in the note only.
 - **Webhook:** any URL (a GHL *Inbound Webhook* workflow trigger, Zapier,
   Make…) receives the lead as JSON; optionally signed (`X-OM-Signature`).
+  Besides the full lead it carries the same details as simple keys named
+  like the contact fields (`website_design`, `website_price_shown`,
+  `website_page`, `website_came_from`…) and the visit line by line, so a
+  GHL workflow's *Create/Update Contact* step can map each one to a field.
 - **What a lead carries:** name (first/last), email, phone, subject,
-  message, the piece and style number, options chosen, price shown,
-  diamond, ring builder design, "Help me choose" answers, the AI chat, the
-  page, other form fields, and where the visitor first came from (UTM
-  tags, Google/Facebook/Microsoft ad click IDs, referring site, landing
-  page — kept 90 days in a first-party cookie, only while a CRM is on).
+  message, the piece and style number, product line, options chosen, price
+  shown, page and photo, diamond, ring builder design, "Help me choose"
+  answers, the AI chat, other form fields (for visit requests: the day,
+  time, best way to reach them and what they want to talk about), and the
+  visit behind it when Insights shows visits behind leads (where they came
+  from, visits so far, the pages and designs they looked at, saved,
+  compared and searched, and a link to the visit in Insights), plus where
+  the visitor first came from (UTM tags, Google/Facebook/Microsoft ad click
+  IDs, referring site, landing page; kept 90 days in a first-party cookie,
+  only while a CRM is on).
 - **Tags:** your own plus *website inquiry*, *saved designs*, *ring design
   saved*, *ring builder*, *diamond inquiry*, *ai assistant*, *book a
-  viewing*, *drop a hint* (for GHL workflows).
+  viewing*, *drop a hint*, *visit request*, *ring style quiz* and
+  *newsletter sign-up* (for GHL workflows).
 - **Reliable:** sent after the visitor's page answers (they never wait),
   retried after 5 min, 30 min, 2 h and 6 h if the CRM doesn't answer, and
   the last deliveries are listed with any error. "Send a test lead" checks
   the setup.
 
 ## Changelog
+
+### 1.43.0
+- **GoHighLevel contact fields**: each lead now fills in fields on the
+  contact (Website design, Website style number, Website price shown,
+  Website page, Website photo, Website options chosen, Website diamond,
+  Website message, Website came from, Website designs viewed and more, 15
+  in all), so the details show on the contact itself and can be used in
+  workflows, lists, emails and texts. The plugin makes the fields in
+  GoHighLevel the first time (or uses ones with the same names), and the
+  CRM settings show whether they're ready, with a **Set up the fields
+  now** button. Needs the token's View and Edit Custom Fields scopes.
+- The note on the contact has a title ("Book a viewing: Hidden Halo Oval
+  Ring 1"), the product line and photo, and the visit behind the lead
+  (where they came from, visits so far, what they looked at, saved and
+  searched, and a link to it in Insights), like the shop's emails.
+- Webhooks also get the details as simple keys named like the fields
+  (`website_design`, `website_price_shown`, `website_page`…), ready to map
+  in a GoHighLevel workflow, and the visit line by line.
+- Visit requests from the Wulf Elementor Kit 1.10.1 arrive with the day,
+  time and best way to reach them as their own details, and their note as
+  the message; newsletter sign-ups no longer open an opportunity; new tags
+  *visit request*, *ring style quiz* and *newsletter sign-up*.
+- If GoHighLevel refuses a field (deleted there, for example), the contact
+  is still saved and the fields are looked up again with the next lead.
 
 ### 1.42.0
 - **PDF report**: a **Report** button next to the period menu in Insights

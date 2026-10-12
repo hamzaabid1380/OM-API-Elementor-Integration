@@ -844,6 +844,48 @@ class OM_Insights {
 			. '<div style="' . $font . 'font-size:13px;margin:10px 0 0;"><a href="' . esc_url( $link ) . '" style="color:#222222;">' . esc_html__( 'See their visit step by step in Insights', 'om-catalog' ) . '</a></div>';
 	}
 
+	/**
+	 * The visit behind a lead for the CRM, as plain text: every line of
+	 * "Their visit", where they came from, their visits so far, the designs
+	 * they looked at and a link to the visit in Insights.
+	 *
+	 * @return array { lines: [ [ label, text ] ], came_from, visits, viewed: [ "Name (style)" ], url } or empty.
+	 */
+	public static function crm_visit( $sid ) {
+		$j = self::journey( $sid );
+		if ( ! $j ) {
+			return array();
+		}
+		$name  = static function ( $key ) {
+			$d = self::design( $key );
+			return $d['title'] . ( '' !== $d['style'] && $d['style'] !== $d['title'] ? ' (' . $d['style'] . ')' : '' );
+		};
+		$lines = array();
+		foreach ( self::journey_lines( $j ) as $line ) {
+			$text = (string) $line[1];
+			if ( $line[2] ) {
+				$names = array_map( $name, array_slice( $line[2], 0, 8 ) );
+				$more  = count( $line[2] ) - 8;
+				/* translators: %s: number of further designs. */
+				$text .= ( '' !== $text ? ': ' : '' ) . implode( ', ', $names ) . ( $more > 0 ? ' ' . sprintf( __( 'and %s more', 'om-catalog' ), number_format_i18n( $more ) ) : '' );
+			}
+			$lines[] = array( (string) $line[0], $text );
+		}
+		$viewed = array();
+		foreach ( $j['events'] as $e ) {
+			if ( 'view' === $e['type'] && '' !== (string) $e['item'] ) {
+				$viewed[ (string) $e['item'] ] = true;
+			}
+		}
+		return array(
+			'lines'     => $lines,
+			'came_from' => $lines[0][1] ?? '',
+			'visits'    => $lines[1][1] ?? '',
+			'viewed'    => array_map( $name, array_slice( array_keys( $viewed ), 0, 15 ) ),
+			'url'       => add_query_arg( array( 'page' => 'om-insights', 'visit' => $j['visit']['sid'] ), admin_url( 'admin.php' ) ),
+		);
+	}
+
 	/** OM_Emails: "Their visit" under the shop's copy of an inquiry, hint, saved list or ring design. */
 	public function email_details( $details, $id ) {
 		if ( ! in_array( $id, array( 'inquiry_shop', 'hint_shop', 'saved_shop', 'design_shop' ), true ) || ! self::journey_on() ) {

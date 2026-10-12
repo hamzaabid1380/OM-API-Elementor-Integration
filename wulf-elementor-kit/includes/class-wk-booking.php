@@ -83,10 +83,11 @@ class WK_Booking {
 		$subject = sprintf( __( 'Visit request from %s', 'wulf-kit' ), $d['name'] );
 		self::mail( $subject, $rows, $d['email'], $d['name'] );
 
-		$message = '';
+		// To the CRM: their own note as the message, the rest as fields (the piece and page have their own).
+		$fields = array();
 		foreach ( $rows as $k => $v ) {
-			if ( '' !== $v && __( 'Name', 'wulf-kit' ) !== $k && __( 'Phone', 'wulf-kit' ) !== $k && __( 'Email', 'wulf-kit' ) !== $k ) {
-				$message .= $k . ': ' . $v . "\n";
+			if ( '' !== $v && ! in_array( $k, array( __( 'Name', 'wulf-kit' ), __( 'Phone', 'wulf-kit' ), __( 'Email', 'wulf-kit' ), __( 'Notes', 'wulf-kit' ), __( 'Page', 'wulf-kit' ), __( 'Looking at', 'wulf-kit' ) ), true ) ) {
+				$fields[ $k ] = $v;
 			}
 		}
 		self::to_crm( array(
@@ -95,9 +96,11 @@ class WK_Booking {
 			'email'   => $d['email'],
 			'phone'   => $d['phone'],
 			'subject' => __( 'Visit request', 'wulf-kit' ),
-			'message' => trim( $message ),
+			'message' => $d['note'],
 			'piece'   => implode( '; ', array_filter( array_merge( array( $d['piece'] ), $d['tray'] ) ) ),
 			'page'    => $d['page'],
+			'fields'  => $fields,
+			'kind'    => 'booking',
 		) );
 		do_action( 'wk_booking', $d );
 		wp_send_json_success( array( 'ok' => 1 ) );
@@ -189,19 +192,16 @@ class WK_Booking {
 		$rows[ __( 'Page', 'wulf-kit' ) ]          = $page;
 		/* translators: %s: visitor email */
 		self::mail( sprintf( __( 'Ring style quiz: matches sent to %s', 'wulf-kit' ), $email ), $rows, $email, '' );
-		$message = '';
-		foreach ( $answers as $k => $v ) {
-			$message .= $k . ': ' . $v . "\n";
-		}
 		self::to_crm( array(
 			'event'   => 'inquiry',
 			'name'    => '',
 			'email'   => $email,
 			'phone'   => '',
 			'subject' => __( 'Ring style quiz', 'wulf-kit' ),
-			'message' => trim( $message . __( 'Their matches', 'wulf-kit' ) . ': ' . $list ),
 			'piece'   => $list,
 			'page'    => $page,
+			'fields'  => $answers,
+			'kind'    => 'quiz',
 		) );
 		do_action( 'wk_quiz', array( 'email' => $email, 'answers' => $answers, 'rings' => $rings, 'page' => $page ) );
 		if ( ! $sent ) {
@@ -275,7 +275,7 @@ class WK_Booking {
 			wp_send_json_error( array( 'msg' => __( 'Please enter a valid email address.', 'wulf-kit' ) ), 400 );
 		}
 		self::mail( __( 'New newsletter sign-up', 'wulf-kit' ), array( __( 'Email', 'wulf-kit' ) => $email, __( 'Page', 'wulf-kit' ) => esc_url_raw( self::post( 'page' ) ) ), $email, '' );
-		self::to_crm( array( 'event' => 'inquiry', 'name' => '', 'email' => $email, 'phone' => '', 'subject' => __( 'Newsletter sign-up', 'wulf-kit' ), 'message' => __( 'Signed up for the newsletter.', 'wulf-kit' ), 'page' => esc_url_raw( self::post( 'page' ) ) ) );
+		self::to_crm( array( 'event' => 'inquiry', 'name' => '', 'email' => $email, 'phone' => '', 'subject' => __( 'Newsletter sign-up', 'wulf-kit' ), 'message' => __( 'Signed up for the newsletter.', 'wulf-kit' ), 'page' => esc_url_raw( self::post( 'page' ) ), 'kind' => 'newsletter' ) );
 		do_action( 'wk_newsletter', $email );
 		wp_send_json_success( array( 'ok' => 1 ) );
 	}

@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.10.0
+Stable tag: 1.10.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -168,6 +168,13 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.10.1 =
+* Visit requests reach your CRM (through the OM Catalog plugin, 1.43 or later) with the day, time,
+  best way to reach them and what they want to talk about as their own details, and their own note
+  as the message. Ring style quiz answers arrive the same way.
+* Each lead says what it is (visit request, quiz or newsletter sign-up), so the CRM tags it and a
+  newsletter sign-up doesn't open a sales opportunity.
 
 = 1.10.0 =
 * Google reviews for free: paste a Featurable widget ID in Wulf Kit > Settings > Google reviews and

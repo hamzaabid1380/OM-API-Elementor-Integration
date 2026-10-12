@@ -130,6 +130,7 @@ class OM_Settings {
 		foreach ( array( 'inquiry', 'saved', 'design', 'hint' ) as $crm_ev ) {
 			register_setting( 'om_catalog_settings', 'om_crm_ev_' . $crm_ev, array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		}
+		register_setting( 'om_catalog_settings', 'om_crm_ghl_fields_on', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_menu_selector', array( 'sanitize_callback' => static function ( $v ) { return mb_substr( trim( wp_strip_all_tags( (string) $v ) ), 0, 300 ); } ) );
 		register_setting( 'om_catalog_settings', 'om_analytics', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		// Emails.
@@ -1040,7 +1041,7 @@ class OM_Settings {
 				</table>
 
 				<h2 class="om-sec" data-om-tab="crm">CRM</h2>
-				<p class="description">Send every lead to your CRM as it comes in — inquiries from any form (product pages, diamonds, ring builder, the AI chat's "talk to our team"), and visitors who email themselves their saved designs or ring design. Each lead carries their details, the piece, options, price shown, diamond, ring builder design, "Help me choose" answers, the chat, the page, and where the visitor came from (campaign tags, Google / Facebook ad clicks, referring site). Emails and the Inquiries list work as before.</p>
+				<p class="description">Send every lead to your CRM as it comes in: inquiries from any form (product pages, diamonds, ring builder, the AI chat's "talk to our team"), visitors who email themselves their saved designs or ring design, hints, and the Wulf Elementor Kit's visit requests, quiz and sign-ups. Each lead carries their details, the design, style number, options, price shown, page and photo, the diamond, ring builder design, "Help me choose" answers, their message, the chat, and the visit behind it (where they came from, visits so far, designs looked at). Emails and the Inquiries list work as before.</p>
 				<?php $crm_mode = class_exists( 'OM_CRM' ) ? OM_CRM::mode() : 'off'; $crm_token = (string) get_option( 'om_crm_ghl_token', '' ); ?>
 				<table class="form-table">
 					<tr>
@@ -1056,21 +1057,38 @@ class OM_Settings {
 					<tr data-om-crm="ghl">
 						<th><label for="om_crm_ghl_token">GoHighLevel</label></th>
 						<td>
-							<input type="password" id="om_crm_ghl_token" name="om_crm_ghl_token" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo '' !== $crm_token ? 'Saved — leave blank to keep it' : 'pit-…'; ?>" aria-label="Private integration token" />
+							<input type="password" id="om_crm_ghl_token" name="om_crm_ghl_token" value="" class="regular-text" autocomplete="new-password" placeholder="<?php echo '' !== $crm_token ? 'Saved (leave blank to keep it)' : 'pit-…'; ?>" aria-label="Private integration token" />
 							<div data-om-live="crm-token"><?php if ( '' !== $crm_token ) : ?><p class="om-cred-saved" style="margin:6px 0 0;color:#008a20">&#10004; Token saved (ending in …<?php echo esc_html( substr( $crm_token, -4 ) ); ?>)</p><?php endif; ?></div>
-							<p class="description"><strong>Private integration token</strong> — in GoHighLevel: Settings › Private Integrations › Create new, with the scopes <em>contacts.write</em>, <em>contacts.readonly</em> and (for opportunities) <em>opportunities.write</em>.</p>
+							<p class="description"><strong>Private integration token</strong>: in GoHighLevel, Settings › Private Integrations › Create new, with the scopes <em>View Contacts</em> and <em>Edit Contacts</em> (contacts.readonly, contacts.write), <em>View Custom Fields</em> and <em>Edit Custom Fields</em> (locations/customFields.readonly, locations/customFields.write) and, for opportunities, <em>Edit Opportunities</em> (opportunities.write). Already have a token? Edit that integration in GoHighLevel and tick the custom field scopes too.</p>
 							<input type="text" name="om_crm_ghl_location" value="<?php echo esc_attr( get_option( 'om_crm_ghl_location', '' ) ); ?>" class="regular-text" placeholder="Location ID" aria-label="Location ID" style="margin-top:8px" />
-							<p class="description"><strong>Location ID</strong> — Settings › Business Profile (or the long code in your GHL web address after /location/).</p>
+							<p class="description"><strong>Location ID</strong>: Settings › Business Profile (or the long code in your GHL web address after /location/).</p>
 							<p style="margin:10px 0 0"><input type="text" name="om_crm_ghl_pipeline" value="<?php echo esc_attr( get_option( 'om_crm_ghl_pipeline', '' ) ); ?>" class="regular-text" style="width:220px" placeholder="Pipeline ID (optional)" aria-label="Pipeline ID" />
 							<input type="text" name="om_crm_ghl_stage" value="<?php echo esc_attr( get_option( 'om_crm_ghl_stage', '' ) ); ?>" class="regular-text" style="width:220px" placeholder="Stage ID (optional)" aria-label="Stage ID" /></p>
 							<p class="description">With both set, every inquiry also opens an <strong>opportunity</strong> in that pipeline stage (named after the piece and the customer, valued at the price shown). Find the IDs in Opportunities › Pipelines (the pipeline's settings) or ask your GHL admin.</p>
-							<p class="description">Each lead creates or updates the <strong>contact</strong> (matched by email or phone, so nothing is duplicated), adds the <strong>tags</strong> below and attaches a <strong>note</strong> with every detail.</p>
+							<p class="description">Each lead creates or updates the <strong>contact</strong> (matched by email or phone, so nothing is duplicated), fills in its <strong>contact fields</strong> (below), adds the <strong>tags</strong> below and attaches a <strong>note</strong> with every detail and their visit.</p>
+						</td>
+					</tr>
+					<tr data-om-crm="ghl">
+						<th>Contact fields</th>
+						<td>
+							<input type="hidden" name="om_crm_ghl_fields_on" value="0" />
+							<label><input type="checkbox" name="om_crm_ghl_fields_on" value="1" <?php checked( get_option( 'om_crm_ghl_fields_on', '1' ), '1' ); ?> /> Put each lead's details in fields on the contact</label>
+							<p class="description">So the design, price and page show right on the contact in GoHighLevel, in lists and filters, and can go in your workflows, emails and texts (for example <code>{{contact.website_design}}</code>). The plugin makes these fields in GoHighLevel the first time: <?php echo esc_html( implode( ', ', class_exists( 'OM_CRM' ) ? wp_list_pluck( OM_CRM::field_defs(), 0 ) : array() ) ); ?>. Each new lead fills them in with its own details; every lead is also kept in its own note.</p>
+							<div data-om-live="crm-fields">
+								<?php
+								$crm_fields = class_exists( 'OM_CRM' ) ? OM_CRM::fields_status() : array( 'state' => 'off', 'text' => '' );
+								$crm_color  = array( 'ok' => '#008a20', 'error' => '#d63638' );
+								?>
+								<p class="om-crm-fields-status" style="margin:8px 0 0;color:<?php echo esc_attr( $crm_color[ $crm_fields['state'] ] ?? '#50575e' ); ?>"><?php echo esc_html( ( 'ok' === $crm_fields['state'] ? '✔ ' : ( 'error' === $crm_fields['state'] ? '✘ ' : '' ) ) . $crm_fields['text'] ); ?></p>
+							</div>
+							<p style="margin:8px 0 0"><button type="button" class="button" data-om-crm-fields data-nonce="<?php echo esc_attr( wp_create_nonce( 'om_crm_fields' ) ); ?>">Set up the fields now</button></p>
+							<div class="om-crm-fields-result" aria-live="polite"></div>
 						</td>
 					</tr>
 					<tr data-om-crm="webhook">
 						<th><label for="om_crm_webhook">Webhook</label></th>
 						<td><input type="url" id="om_crm_webhook" name="om_crm_webhook" value="<?php echo esc_attr( get_option( 'om_crm_webhook', '' ) ); ?>" class="large-text" placeholder="https://services.leadconnectorhq.com/hooks/…" />
-						<p class="description">Each lead is POSTed as JSON: <code>event</code>, <code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>phone</code>, <code>subject</code>, <code>message</code>, <code>piece</code>, <code>style</code>, <code>price</code>, <code>diamond</code>, <code>summary</code>, <code>guide</code>, <code>options</code>, <code>page</code>, <code>image</code>, <code>fields</code>, <code>tags</code>, <code>source</code> (utm_…, gclid, fbclid, ref, landing), <code>note</code> (everything as text). In GoHighLevel: Automation › Workflows › trigger <em>Inbound Webhook</em>, paste its URL here, click "Send a test lead", then map the fields.</p>
+						<p class="description">Each lead is POSTed as JSON: <code>event</code>, <code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>phone</code>, <code>subject</code>, <code>message</code>, <code>piece</code>, <code>style</code>, <code>price</code>, <code>diamond</code>, <code>summary</code>, <code>guide</code>, <code>options</code>, <code>page</code>, <code>image</code>, <code>fields</code>, <code>items</code>, <code>tags</code>, <code>source</code> (utm_…, gclid, fbclid, ref, landing), <code>visit</code> (their visit, line by line), <code>note</code> (everything as text), and the same details as simple keys ready to map: <code><?php echo implode( '</code>, <code>', array_map( static function ( $k ) { return esc_html( OM_CRM::field_key( $k ) ); }, array_keys( class_exists( 'OM_CRM' ) ? OM_CRM::field_defs() : array() ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- each key escaped. ?></code>. In GoHighLevel: Automation › Workflows › trigger <em>Inbound Webhook</em>, paste its URL here, click "Send a test lead", then in the workflow's <em>Create/Update Contact</em> step map each <code>website_…</code> key to a contact field.</p>
 						<input type="text" name="om_crm_webhook_secret" value="<?php echo esc_attr( get_option( 'om_crm_webhook_secret', '' ) ); ?>" class="regular-text" placeholder="Signing secret (optional)" aria-label="Signing secret" style="margin-top:6px" />
 						<p class="description">Optional: requests then carry <code>X-OM-Signature: sha256=…</code> (HMAC of the body) so your endpoint can check they're from your site.</p></td>
 					</tr>
@@ -1086,14 +1104,14 @@ class OM_Settings {
 					<tr>
 						<th><label for="om_crm_tags">Tags &amp; source</label></th>
 						<td><input type="text" id="om_crm_tags" name="om_crm_tags" value="<?php echo esc_attr( get_option( 'om_crm_tags', 'website lead' ) ); ?>" class="regular-text" placeholder="website lead" />
-						<p class="description">Added to every lead (comma-separated). The plugin adds its own too: <em>website inquiry</em>, <em>saved designs</em>, <em>ring design saved</em>, <em>ring builder</em>, <em>diamond inquiry</em>, <em>ai assistant</em>, <em>book a viewing</em> — handy for GHL workflows.</p>
+						<p class="description">Added to every lead (comma-separated). The plugin adds its own too: <em>website inquiry</em>, <em>saved designs</em>, <em>ring design saved</em>, <em>drop a hint</em>, <em>ring builder</em>, <em>diamond inquiry</em>, <em>ai assistant</em>, <em>book a viewing</em>. Handy for GHL workflows.</p>
 						<input type="text" name="om_crm_source" value="<?php echo esc_attr( get_option( 'om_crm_source', 'Website' ) ); ?>" class="regular-text" style="width:220px;margin-top:6px" placeholder="Website" aria-label="Contact source" />
 						<p class="description">The contact's "source" in GoHighLevel.</p></td>
 					</tr>
 					<tr>
 						<th>Test</th>
 						<td><button type="button" class="button" data-om-crm-test data-nonce="<?php echo esc_attr( wp_create_nonce( 'om_crm_test' ) ); ?>">Send a test lead</button>
-						<p class="description">Uses the <strong>saved</strong> settings (save first). Sends "Test Lead" with your admin email — delete it in the CRM afterwards.</p>
+						<p class="description">Uses the <strong>saved</strong> settings (save first). Sends "Test Lead" with your admin email and a sample design; delete it in the CRM afterwards.</p>
 						<div class="om-crm-test-result" aria-live="polite"></div></td>
 					</tr>
 					<tr>
