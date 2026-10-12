@@ -421,6 +421,9 @@
 		if ( closest( el, '[data-om-ins-picker]' ) ) {
 			return '[data-om-ins-picker-btn]';
 		}
+		if ( closest( el, '[data-om-ins-report]' ) ) {
+			return '[data-om-ins-report-btn]';
+		}
 		if ( closest( el, '.om-ins-livechip' ) ) {
 			return '.om-ins-livechip';
 		}
@@ -480,6 +483,14 @@
 		var navX = navIn ? navIn.scrollLeft : 0;
 		$( '[data-om-ins-navwrap]' ).innerHTML = d.nav;
 		$( '[data-om-ins-pickerwrap]' ).innerHTML = d.picker;
+		if ( 'string' === typeof d.report ) {
+			if ( reportBusy ) {
+				reportNext = d.report; // Swapped in once the download in progress is done.
+			} else {
+				$( '[data-om-ins-reportwrap]' ).innerHTML = d.report;
+				namesChoice();
+			}
+		}
 		$( '[data-om-ins-chips]' ).innerHTML = d.chips || '';
 		$( '[data-om-ins-controls]' ).hidden = ! d.scoped;
 		$( '[data-om-ins-comparewrap]' ).hidden = ! d.compare;
@@ -509,6 +520,7 @@
 			window.history.replaceState( { omIns: 1, y: window.pageYOffset }, '' );
 		}
 		closePicker();
+		closeReport();
 		hideTips();
 		setBusy( true );
 		return fetchView( href, opts.fresh ).then(
@@ -571,6 +583,7 @@
 		if ( ! p ) {
 			return;
 		}
+		closeReport();
 		p.pop.hidden = false;
 		p.btn.setAttribute( 'aria-expanded', 'true' );
 		var here = $( '.om-ins-presets [aria-current="true"]', p.pop ) || $( '.om-ins-presets a', p.pop );
@@ -601,6 +614,157 @@
 		var p = picker();
 		if ( p && ! p.pop.hidden && e.relatedTarget && ! p.wrap.contains( e.relatedTarget ) ) {
 			closePicker();
+		}
+	} );
+
+	/* ---------- The PDF report ---------- */
+
+	var reportBusy = false;
+	var reportNext = null;
+
+	function report() {
+		var wrap = $( '[data-om-ins-report]' );
+		return wrap
+			? {
+					wrap: wrap,
+					btn: $( '[data-om-ins-report-btn]', wrap ),
+					pop: $( '[data-om-ins-report-pop]', wrap ),
+					dl: $( '[data-om-ins-report-dl]', wrap ),
+					names: $( '[data-om-ins-report-names]', wrap ),
+			  }
+			: null;
+	}
+
+	// Whether names go in the report: remembered, and carried in the download address.
+	function namesChoice( changed ) {
+		var r = report();
+		if ( ! r || ! r.names || ! r.dl ) {
+			return;
+		}
+		if ( changed ) {
+			keep( 'local', 'omInsReportNames', r.names.checked ? '1' : '0' );
+		} else {
+			r.names.checked = '0' !== keep( 'local', 'omInsReportNames' );
+		}
+		var u = new URL( r.dl.href, window.location.href );
+		u.searchParams.set( 'names', r.names.checked ? '1' : '0' );
+		r.dl.href = u.href;
+	}
+
+	function openReport() {
+		var r = report();
+		if ( ! r ) {
+			return;
+		}
+		closePicker();
+		r.pop.hidden = false;
+		r.btn.setAttribute( 'aria-expanded', 'true' );
+		r.dl.focus();
+	}
+
+	function closeReport( refocus ) {
+		var r = report();
+		if ( ! r || r.pop.hidden ) {
+			return;
+		}
+		r.pop.hidden = true;
+		r.btn.setAttribute( 'aria-expanded', 'false' );
+		if ( refocus ) {
+			r.btn.focus();
+		}
+	}
+
+	/**
+	 * Fetch the PDF and hand it to the browser as a download, with a busy
+	 * state meanwhile and a message when it's done or didn't work. (Without
+	 * this script the button is an ordinary download link.)
+	 */
+	function downloadReport( r ) {
+		if ( reportBusy ) {
+			return;
+		}
+		var href = r.dl.href;
+		var label = $( 'span', r.dl );
+		var was = label ? label.textContent : '';
+		reportBusy = true;
+		r.dl.classList.add( 'is-busy' );
+		r.dl.setAttribute( 'aria-disabled', 'true' );
+		r.btn.classList.add( 'is-busy' );
+		if ( label ) {
+			label.textContent = i18n.making || was;
+		}
+		announce( i18n.making || '' );
+		function done( ok ) {
+			reportBusy = false;
+			r.dl.classList.remove( 'is-busy' );
+			r.dl.removeAttribute( 'aria-disabled' );
+			r.btn.classList.remove( 'is-busy' );
+			if ( label ) {
+				label.textContent = was;
+			}
+			if ( ok ) {
+				closeReport( true );
+			}
+			if ( null !== reportNext ) {
+				// The period changed meanwhile: now the button can follow it.
+				var had = r.wrap.contains( document.activeElement );
+				$( '[data-om-ins-reportwrap]' ).innerHTML = reportNext;
+				reportNext = null;
+				namesChoice();
+				var btn = had ? $( '[data-om-ins-report-btn]' ) : null;
+				if ( btn ) {
+					btn.focus();
+				}
+			}
+		}
+		fetch( href, { credentials: 'same-origin' } )
+			.then( function ( res ) {
+				var type = res.headers.get( 'Content-Type' ) || '';
+				if ( 403 === res.status ) {
+					var old = new Error( 'old' );
+					old.old = true;
+					throw old;
+				}
+				if ( ! res.ok || -1 === type.indexOf( 'application/pdf' ) ) {
+					throw new Error( 'report' );
+				}
+				var m = /filename="?([^";]+)"?/i.exec( res.headers.get( 'Content-Disposition' ) || '' );
+				return res.blob().then( function ( blob ) {
+					return { blob: blob, name: m ? m[ 1 ] : 'insights-report.pdf' };
+				} );
+			} )
+			.then( function ( file ) {
+				// Close the menu first (focus back on its button), then save the file.
+				done( true );
+				var url = URL.createObjectURL( file.blob );
+				var a = document.createElement( 'a' );
+				a.href = url;
+				a.download = file.name;
+				a.hidden = true;
+				document.body.appendChild( a );
+				a.click();
+				document.body.removeChild( a );
+				window.setTimeout( function () {
+					URL.revokeObjectURL( url );
+				}, 60000 );
+				toast( i18n.reportDone );
+			} )
+			.catch( function ( err ) {
+				done( false );
+				toast( err && err.old ? i18n.reportOld : i18n.reportFail, true );
+			} );
+	}
+
+	document.addEventListener( 'click', function ( e ) {
+		var r = report();
+		if ( r && ! r.pop.hidden && ! r.wrap.contains( e.target ) ) {
+			closeReport();
+		}
+	} );
+	app.addEventListener( 'focusout', function ( e ) {
+		var r = report();
+		if ( r && ! r.pop.hidden && e.relatedTarget && ! r.wrap.contains( e.relatedTarget ) ) {
+			closeReport();
 		}
 	} );
 
@@ -1816,6 +1980,20 @@
 			}
 			return;
 		}
+		if ( closest( t, '[data-om-ins-report-btn]' ) ) {
+			var rep = report();
+			if ( rep && rep.pop.hidden ) {
+				openReport();
+			} else {
+				closeReport();
+			}
+			return;
+		}
+		if ( plain && ( el = closest( t, 'a[data-om-ins-report-dl]' ) ) ) {
+			e.preventDefault();
+			downloadReport( report() );
+			return;
+		}
 		if ( ( el = closest( t, '[data-om-ins-metric]' ) ) ) {
 			pickMetric( el.getAttribute( 'data-om-ins-metric' ) );
 			return;
@@ -1849,6 +2027,10 @@
 			applyCompare();
 			sparks();
 			draw( false );
+			return;
+		}
+		if ( t.matches( '[data-om-ins-report-names]' ) ) {
+			namesChoice( true );
 			return;
 		}
 		if ( t.matches( '[data-om-ins-opt]' ) ) {
@@ -1912,6 +2094,11 @@
 				openPicker();
 				return;
 			}
+			if ( closest( e.target, '[data-om-ins-report-btn]' ) && 'ArrowDown' === e.key ) {
+				e.preventDefault();
+				openReport();
+				return;
+			}
 			var item = closest( e.target, '.om-ins-presets a' );
 			if ( item ) {
 				var links = $$( '.om-ins-presets a', closest( item, '[data-om-ins-pop]' ) );
@@ -1929,6 +2116,12 @@
 			if ( p && ! p.pop.hidden ) {
 				e.preventDefault();
 				closePicker( true );
+				return;
+			}
+			var rep = report();
+			if ( rep && ! rep.pop.hidden ) {
+				e.preventDefault();
+				closeReport( true );
 				return;
 			}
 			if ( drawer && ! drawer.hidden ) {
@@ -1997,6 +2190,7 @@
 		window.history.scrollRestoration = 'manual';
 	}
 	window.history.replaceState( { omIns: 1, y: window.pageYOffset }, '', clean( window.location.href ) );
+	namesChoice();
 	navIntoView();
 	initView();
 }() );

@@ -394,7 +394,7 @@ For developers: `window.omHint.open({ items: [{ l: line, s: style, c:
 `om_hint_sent` action runs after a hint is sent, and a theme can replace
 the page with `om-catalog/hint.php`.
 
-## Insights (1.40, redesigned in 1.41)
+## Insights (1.40, redesigned in 1.41, PDF report in 1.42)
 
 Your own visitor analytics, built into the site and kept in your own
 database. **Insights** (in the WordPress menu, under Dashboard) shows what
@@ -471,6 +471,36 @@ The sections:
 
 A small "Insights: last 7 days" box shows on the WordPress Dashboard.
 
+**PDF report (1.42).** **Report** (next to the period menu) downloads all
+of Insights for the period and filters you have chosen as one branded PDF,
+ready to print, keep or send:
+
+- a cover with the eight headline numbers (each with its change and a
+  small trend line), a few plain sentences on what stood out, and the
+  contents (click a line to jump to that page);
+- visits and leads over time, compared with the period before;
+- where visitors came from, the websites and campaigns that sent them and
+  the first page of their visit;
+- new and returning visitors, devices, browsers, systems and where
+  visitors are, and the busiest days and hours;
+- the most viewed pages and designs, product lines, popular designs nobody
+  asked about, the options people pick and designs compared side by side;
+- searches (and the ones that found nothing) and the catalog filters used;
+- what visitors did, calls and directions by where they were tapped, and
+  the buttons clicked;
+- the funnels, every lead (the newest 100, with where they came from and
+  how long it took), and the numbers for each day (or hour, week or month)
+  with the whole period at the bottom;
+- what each number means.
+
+It uses the brand colours set in the Wulf Elementor Kit, the Fraunces and
+Manrope fonts and the gem logo, and opens with bookmarks for each part. It
+takes a few seconds and is made on the site itself, so nothing is sent
+anywhere. Untick **Include the names of people who got in touch** for a
+copy you can share outside the business. The file is named after the site
+and the dates, for example
+`wulf-diamond-jewelers-insights-2026-09-13-to-2026-10-12.pdf`.
+
 **The visit behind each lead.** Each inquiry in wp-admin gets a **Their
 visit** box (where they came from, visits so far, pages, designs looked at
 and saved, options chosen, searches, and the whole visit step by step) and
@@ -510,7 +540,12 @@ For developers: the `om_insights_rate_limit` filter (reports per minute
 from one connection, default 120), the `om_email_details` filter (the
 automatic block of every real email) and the Wulf Kit's
 `wk_mail_after_rows` filter. Visits and actions live in two tables,
-`{prefix}om_ins_sessions` and `{prefix}om_ins_events`.
+`{prefix}om_ins_sessions` and `{prefix}om_ins_events`. The PDF report is
+`admin-post.php?action=om_ins_report` (same period and filter parameters
+as the page, plus `names=0|1`; `manage_options` and the `om_ins_report`
+nonce), drawn by `OM_Insights_Pdf` with tFPDF 1.34 (LGPL 2.1, in
+`lib/tfpdf`) and the fonts in `lib/fonts` (SIL Open Font License). It
+needs PHP's mbstring extension.
 
 ## Analytics
 
@@ -1184,6 +1219,23 @@ emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.42.0
+- **PDF report**: a **Report** button next to the period menu in Insights
+  downloads a branded PDF of every section for the period and filters
+  chosen: a cover with the headline numbers, what stood out and the
+  contents (each line links to its page), charts of visits and leads, every
+  list with its numbers, every lead and a day by day (or hour, week or
+  month) table, all compared with the period before. Bookmarks for each
+  part show in the PDF viewer.
+- The names of people who got in touch can be left out (the choice is
+  remembered).
+- Made on the site in a few seconds with the brand colours from the Wulf
+  Elementor Kit and its Fraunces and Manrope fonts; nothing is sent
+  anywhere. Bundles tFPDF 1.34 (LGPL 2.1) and the two fonts (SIL Open Font
+  License) in `lib/`.
+- Insights: blue buttons are a little deeper, so their white text is easier
+  to read.
 
 ### 1.41.0
 - **Insights redesign**: a cleaner, app-like dashboard. Sections, periods,

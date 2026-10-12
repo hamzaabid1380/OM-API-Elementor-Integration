@@ -12,7 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * visits and settings load in place through admin-ajax (om_ins_view,
  * om_ins_chart, om_ins_live, om_ins_save, om_ins_wipe), all behind the
  * om_ins nonce and the manage_options capability. OM_Insights_Report does
- * the reading and the HTML.
+ * the reading and the HTML; OM_Insights_Pdf makes the PDF report
+ * (admin-post om_ins_report, behind its own nonce).
  */
 class OM_Insights_Admin {
 
@@ -30,10 +31,11 @@ class OM_Insights_Admin {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
-		// Forms (used without JavaScript) and the CSV download.
+		// Forms (used without JavaScript) and the downloads.
 		add_action( 'admin_post_om_ins_settings', array( $this, 'save_settings' ) );
 		add_action( 'admin_post_om_ins_wipe', array( $this, 'wipe' ) );
 		add_action( 'admin_post_om_ins_csv', array( $this, 'csv' ) );
+		add_action( 'admin_post_om_ins_report', array( $this, 'report' ) );
 		// In-place updates.
 		add_action( 'wp_ajax_om_ins_view', array( $this, 'ajax_view' ) );
 		add_action( 'wp_ajax_om_ins_chart', array( $this, 'ajax_chart' ) );
@@ -101,6 +103,10 @@ class OM_Insights_Admin {
 					'dM'         => __( '%1$dm %2$02ds', 'om-catalog' ),
 					/* translators: 1: hours, 2: minutes. */
 					'dH'         => __( '%1$dh %2$02dm', 'om-catalog' ),
+					'making'     => __( 'Making your report…', 'om-catalog' ),
+					'reportDone' => __( 'Report downloaded', 'om-catalog' ),
+					'reportFail' => __( 'The report couldn\'t be made. Please try again.', 'om-catalog' ),
+					'reportOld'  => __( 'This page has been open a long time. Reload it, then download the report again.', 'om-catalog' ),
 				),
 			)
 		);
@@ -131,6 +137,7 @@ class OM_Insights_Admin {
 		echo '<div class="om-ins-controls" data-om-ins-controls' . ( $r->scoped() ? '' : ' hidden' ) . '>';
 		echo '<label class="om-ins-toggle" data-om-ins-comparewrap' . ( 'overview' === $tab && ! $r->visit && ! $r->visitor ? '' : ' hidden' ) . '><input type="checkbox" data-om-ins-compare checked /><span class="om-ins-toggle-ui" aria-hidden="true"></span><span>' . esc_html__( 'Compare', 'om-catalog' ) . '</span></label>';
 		echo '<div class="om-ins-pickerwrap" data-om-ins-pickerwrap>' . $r->picker() . '</div>';
+		echo '<div class="om-ins-reportwrap" data-om-ins-reportwrap>' . $r->report_button() . '</div>';
 		echo '<a class="om-ins-iconbtn" href="' . esc_url( $r->url( array( 'refresh' => 1 ) ) ) . '" data-om-ins-refresh title="' . esc_attr__( 'Refresh the numbers', 'om-catalog' ) . '"><span class="screen-reader-text">' . esc_html__( 'Refresh the numbers', 'om-catalog' ) . '</span>' . OM_Insights_Report::icon( 'refresh' ) . '</a>';
 		echo '</div></header>';
 		echo '<div data-om-ins-navwrap>' . $r->nav() . '</div>';
@@ -179,6 +186,7 @@ class OM_Insights_Admin {
 				'html'    => $r->render(),
 				'nav'     => $r->nav(),
 				'picker'  => $r->picker(),
+				'report'  => $r->report_button(),
 				'chips'   => $r->scoped() ? $r->chips() : '',
 				'scoped'  => $r->scoped(),
 				'tab'     => $tab,
@@ -270,6 +278,15 @@ class OM_Insights_Admin {
 		self::forget_cache();
 		wp_safe_redirect( add_query_arg( array( 'page' => self::SLUG, 'tab' => 'settings' ), admin_url( 'admin.php' ) ) );
 		exit;
+	}
+
+	/** The PDF report for a period and its filters (see OM_Insights_Report::report_url()). */
+	public function report() {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'om_ins_report' ) ) {
+			wp_die( esc_html__( 'Not allowed.', 'om-catalog' ) );
+		}
+		require_once OM_CATALOG_DIR . 'includes/class-om-insights-pdf.php';
+		OM_Insights_Pdf::send( $_GET ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- validated by the report.
 	}
 
 	/** Visits or actions for a period, as CSV (for a spreadsheet). */

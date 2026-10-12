@@ -644,6 +644,95 @@ class OM_Insights_Report {
 		);
 	}
 
+	/**
+	 * Everything the downloadable report shows for this period and these
+	 * filters, kept a few minutes like the sections ("Refresh" skips it).
+	 */
+	public function report_data() {
+		$span  = $this->span();
+		$unit  = $this->unit();
+		$table = 1 === $span ? 'hour' : ( $span <= 62 ? 'day' : ( $span <= 400 ? 'week' : 'month' ) );
+		$bars  = 1 === $span ? 'hour' : ( $span <= 35 ? 'day' : ( $span <= 250 ? 'week' : 'month' ) );
+		return $this->cached(
+			'report|' . $unit . '|' . $table . '|' . $bars,
+			function () use ( $unit, $table, $bars ) {
+				list( $pf, $pt ) = $this->previous();
+				$landing         = $this->by_visit( 'landing', 12 );
+				$e               = OM_Insights::events_table();
+				list( $es, $ea ) = $this->escope( $this->from, $this->to );
+				$charts          = array( $unit => $this->chart( $unit ) );
+				foreach ( array( $table, $bars ) as $u ) {
+					if ( ! isset( $charts[ $u ] ) ) {
+						$charts[ $u ] = $this->chart( $u );
+					}
+				}
+				return array(
+					'now'        => $this->kpis( $this->from, $this->to ),
+					'before'     => $this->kpis( $pf, $pt ),
+					'chart'      => $charts[ $unit ],
+					'table'      => $charts[ $table ],
+					'bars'       => $charts[ $bars ],
+					'channels'   => $this->by_visit( 'channel', 12 ),
+					'refs'       => $this->by_visit( 'ref_host', 10, "AND ref_host <> ''" ),
+					'camps'      => $this->campaigns(),
+					'landing'    => $landing,
+					'titles'     => $this->page_titles( wp_list_pluck( $landing, 'k' ) ),
+					'devices'    => $this->by_visit( 'device', 3 ),
+					'browsers'   => $this->by_visit( 'browser', 6 ),
+					'os'         => $this->by_visit( 'os', 6 ),
+					'loc'        => $this->locations( 10 ),
+					'heat'       => $this->heat(),
+					'pages'      => $this->pages( 20 ),
+					'products'   => $this->products( 400 ),
+					'lines'      => $this->lines(),
+					'options'    => $this->options(),
+					'pairs'      => $this->compare_groups(),
+					'search'     => $this->searches( 15 ),
+					'actions'    => $this->actions(),
+					'cta'        => $this->clicks( 'cta', 12 ),
+					'call'       => $this->clicks( 'call', 20 ),
+					'directions' => $this->clicks( 'directions', 10 ),
+					'outbound'   => $this->clicks( 'outbound', 10 ),
+					'funnels'    => $this->funnels(),
+					'leads'      => $this->leads( 100 ),
+					'lead_kinds' => self::rows( "SELECT label AS k, COUNT(*) AS n FROM {$e} WHERE type = 'lead' AND day BETWEEN %s AND %s{$es} GROUP BY label ORDER BY n DESC", array_merge( array( $this->from, $this->to ), $ea ) ),
+				);
+			}
+		);
+	}
+
+	/** The address of the PDF report for this period and these filters. */
+	public function report_url( $names = true ) {
+		$q = array( 'action' => 'om_ins_report', 'range' => $this->range );
+		if ( 'custom' === $this->range ) {
+			$q['from'] = $this->from;
+			$q['to']   = $this->to;
+		}
+		if ( $this->filters ) {
+			$q['f'] = $this->filters;
+		}
+		$q['names']    = $names ? 1 : 0;
+		$q['_wpnonce'] = wp_create_nonce( 'om_ins_report' );
+		return admin_url( 'admin-post.php' ) . '?' . http_build_query( $q, '', '&', PHP_QUERY_RFC3986 );
+	}
+
+	/** The "Report" button and its menu (in the bar at the top). */
+	public function report_button() {
+		$filters = array();
+		foreach ( $this->filters as $key => $value ) {
+			$filters[] = self::filter_names()[ $key ] . ': ' . $this->filter_text( $key, $value );
+		}
+		$out  = '<div class="om-ins-report" data-om-ins-report>';
+		$out .= '<button type="button" class="om-ins-btn om-ins-report-btn" aria-haspopup="true" aria-expanded="false" data-om-ins-report-btn>' . self::icon( 'download' ) . '<span>' . esc_html__( 'Report', 'om-catalog' ) . '</span></button>';
+		$out .= '<div class="om-ins-pop om-ins-report-pop" data-om-ins-report-pop hidden>';
+		$out .= '<p class="om-ins-pop-t">' . esc_html__( 'PDF report', 'om-catalog' ) . '</p>';
+		$out .= '<p class="om-ins-pop-sub">' . esc_html( $this->period_text() ) . ( $filters ? '<br />' . esc_html( implode( ' · ', $filters ) ) : '' ) . '</p>';
+		$out .= '<p class="om-ins-pop-note">' . esc_html__( 'Every section of Insights for this period with all its numbers, each compared with the period before, in your brand. It takes a few seconds.', 'om-catalog' ) . '</p>';
+		$out .= '<label class="om-ins-check"><input type="checkbox" checked data-om-ins-report-names /><span>' . esc_html__( 'Include the names of people who got in touch', 'om-catalog' ) . '</span></label>';
+		$out .= '<a class="om-ins-btn primary om-ins-report-dl" href="' . esc_url( $this->report_url( true ) ) . '" data-om-ins-report-dl>' . self::icon( 'download' ) . '<span>' . esc_html__( 'Download PDF', 'om-catalog' ) . '</span></a>';
+		return $out . '</div></div>';
+	}
+
 	/** A sentence for the site's privacy policy. */
 	public static function policy_text() {
 		$months = OM_Insights::months();
