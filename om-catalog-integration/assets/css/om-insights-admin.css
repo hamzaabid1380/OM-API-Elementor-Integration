@@ -715,18 +715,23 @@ th.num .om-ins-sort::before {
 }
 
 /* Links in lists keep a light underline (not told apart by colour alone). */
-.om-ins-hname > a,
-.om-ins-table td > a,
+.om-ins-hname > a:not(.om-ins-design),
+.om-ins-table td > a:not(.om-ins-design),
 .om-ins-facts a {
 	text-decoration: underline;
 	text-decoration-color: rgba(56, 88, 233, 0.35);
 	text-underline-offset: 2px;
 }
 
-.om-ins-hname > a:hover,
-.om-ins-table td > a:hover,
+.om-ins-hname > a:not(.om-ins-design):hover,
+.om-ins-table td > a:not(.om-ins-design):hover,
 .om-ins-facts a:hover {
 	text-decoration-color: currentColor;
+}
+
+/* A design is a link as a whole (photo, name, style): no underline until hovered. */
+.om-ins .om-ins-design {
+	text-decoration: none;
 }
 
 /* ---------- Busy hours ---------- */
