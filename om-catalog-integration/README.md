@@ -394,21 +394,50 @@ For developers: `window.omHint.open({ items: [{ l: line, s: style, c:
 `om_hint_sent` action runs after a hint is sent, and a theme can replace
 the page with `om-catalog/hint.php`.
 
-## Insights (1.40)
+## Insights (1.40, redesigned in 1.41)
 
 Your own visitor analytics, built into the site and kept in your own
 database. **Insights** (in the WordPress menu, under Dashboard) shows what
 visitors do for any period (today, yesterday, the last 7, 30 or 90 days,
 this month, last month, the last 12 months or your own dates), with the
-change against the period before. Every chart has a tooltip on hover and
-a "Show as table" link; long lists show the top rows with **Show all**,
-can be sorted by any column and have a **Find** box.
+change against the period before.
+
+It works like an app: sections, periods, filters and visits load in place
+without reloading the page, and Back, Forward and bookmarks work as usual.
+
+- **Click to filter.** Click any source, website, campaign, page, design,
+  search, place, device, browser or system to see only those visits in
+  every section (for example only visits from Google Maps, or only visits
+  that looked at one design). Filters show at the top; take one off with
+  its ×, or several at once with **Clear all**.
+- **Headline numbers.** Eight numbers at the top, each with its change
+  against the period before and a small trend line. Click one to show it
+  in the big chart.
+- **The chart.** Point at it (or tab to it and use the arrow keys) for the
+  exact numbers of each day, the same day in the period before and the
+  change. Switch between hours, days, weeks and months. **Compare** shows
+  or hides the period before (the grey line). Today is drawn dashed
+  because it isn't over yet. "Show as table" lists the same numbers.
+- **Periods.** The period menu at the top right, with your own dates at the
+  bottom, or one key: **T** today, **Y** yesterday, **W** last 7 days,
+  **M** last 30 days, **Q** last 90 days, **L** last 12 months.
+- **Visits open in a side panel**, so you keep your place. Close it with
+  ×, Esc or a click beside it.
+- **Refresh** (the round arrow) gets the newest numbers. Results are
+  otherwise kept for 3 minutes so the pages stay fast.
+- Long lists show the top rows with **Show all**, can be sorted by any
+  column and have a **Find** box.
+- Everything also works with JavaScript switched off (each link is an
+  ordinary page), by keyboard, with a screen reader and on phones.
+
+The sections:
 
 - **Overview**: visitors, visits, pages viewed, time per visit, designs
-  viewed, saved (hearts), leads and the share of visits that became leads;
-  visits per day; where visitors come from; phones and computers; the most
-  viewed pages and designs; the latest leads.
-- **Visitors & sources**: search engines, Google Maps & Business Profile,
+  viewed, saved (hearts), leads and the share of visits that became leads,
+  charted over time; where visitors come from; the most viewed pages and
+  designs; where visitors are; phones and computers; searches; the latest
+  leads.
+- **Sources**: search engines, Google Maps & Business Profile,
   direct, social media, paid ads, email, AI assistants (ChatGPT and
   others) and other websites, each with its lead rate; the websites and
   campaigns (utm links) that sent people; the first page of each visit and
@@ -429,14 +458,16 @@ can be sorted by any column and have a **Find** box.
   buttons get clicked and where.
 - **Funnels**: from visit to lead, the booking window, the ring builder,
   the ring style quiz and Drop a hint, step by step.
-- **Visitor journeys**: every visit, newest first, with quick filters
-  (became leads, saved something, returning, over 3 minutes, from ads, on
-  phones). Open one to see everything that person did, in order, and every
-  visit from the same visitor.
+- **Journeys**: every visit, newest first, with quick filters (became
+  leads, saved something, returning, over 3 minutes, from ads, on phones).
+  Open one to see everything that person did, in order, and every visit
+  from the same visitor. **Show more visits** adds the next 40 below.
 - **Leads**: every lead with the visit behind it: where they came from,
   how many visits it took and how many days from their first visit.
 - **Live**: who is on the site right now (the last 5 minutes), updating by
-  itself. The count also shows at the top of every Insights page.
+  itself every 10 seconds (it waits while you point at the list). The
+  count also shows at the top of every Insights page.
+- **Settings**: see below.
 
 A small "Insights: last 7 days" box shows on the WordPress Dashboard.
 
@@ -460,7 +491,9 @@ Settings tab suggests a line for your privacy policy.
 
 **Settings** (Insights > Settings): collect on or off, leave out logged-in
 staff, recognise returning visitors, respect Do Not Track, show the visit
-behind each inquiry, and how long to keep data.
+behind each inquiry, and how long to keep data. Each change is saved the
+moment you make it (a green tick and "Saved" show). **Delete everything**
+asks you to type DELETE first.
 
 **Tips**
 
@@ -1151,6 +1184,29 @@ emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.41.0
+- **Insights redesign**: a cleaner, app-like dashboard. Sections, periods,
+  filters and visits load in place (no page reloads); Back, Forward and
+  bookmarks keep working.
+- **Click to filter**: any source, website, campaign, page, design, search,
+  place, device, browser or system narrows every section to those visits.
+  Filters show at the top and come off with ×.
+- **Headline numbers** choose what the chart shows, each with a small trend
+  line. The chart compares with the period before (grey line, **Compare**
+  switch), gives exact numbers on hover or with the arrow keys, shows today
+  dashed while it is still going, and switches between hours, days, weeks
+  and months.
+- **Period menu** with your own dates and one-key shortcuts (T, Y, W, M, Q,
+  L).
+- **Visits open in a side panel**; Journeys adds more visits in place.
+- **Settings save instantly** (no Save button); deleting all data asks you
+  to type DELETE.
+- Live updates every 10 seconds, the count at the top every 30 seconds.
+- "Visitors & sources" is now **Sources** and "Visitor journeys" is
+  **Journeys**; old Insights links still open the right section.
+- Works without JavaScript, by keyboard and with screen readers, and fits
+  phones.
 
 ### 1.40.0
 - **Insights**: the site's own visitor analytics, in the WordPress menu.
