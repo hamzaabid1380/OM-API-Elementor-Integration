@@ -52,7 +52,7 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 
 ## Weight and speed
 
-- On WordPress the 3D code is about **235 KB compressed** (three.js, GSAP, the rest is small), loaded only on pages with the film, after the page has shown. Computers on the best quality also fetch an 80 KB add-on for contact shadows.
+- On WordPress the 3D code is about **240 KB compressed** (three.js, GSAP, the rest is small), loaded only on pages with the film, after the page has shown. Computers on the best quality also fetch an 80 KB add-on for contact shadows.
 - A still picture of the first frame shows straight away. The 3D takes over once it is ready (its shaders compile in the background), so the page never waits on it.
 - Three quality levels (picked from the device, then stepped down automatically if frames run slow). Drawing stops whenever the 3D is covered or the tab is hidden.
 - No 3D: when WebGL is missing or the visitor uses Data Saver, the still picture stays and the words still play.

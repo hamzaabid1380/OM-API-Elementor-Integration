@@ -203,7 +203,7 @@ copy" (the copy you have is kept, and "Home (conversion)" is not touched).
 
 Speed and devices:
 
-* The 3D only loads on pages that use the film: about 235 KB compressed, after the page has shown.
+* The 3D only loads on pages that use the film: about 240 KB compressed, after the page has shown.
   Computers that can run the best quality also fetch a small add-on (about 80 KB) for soft contact
   shadows.
 * A still picture of each part shows straight away and stays wherever 3D cannot run (very old phones,
