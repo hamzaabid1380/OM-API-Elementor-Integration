@@ -11,6 +11,7 @@
 defined( 'ABSPATH' ) || exit;
 
 use Elementor\Controls_Manager;
+use Elementor\Repeater;
 
 class WK_Film_Widget extends WK_Widget {
 
@@ -84,6 +85,24 @@ class WK_Film_Widget extends WK_Widget {
 		$this->button_fields( 'b1', __( 'Main button', 'wulf-kit' ), __( 'Book a free consultation', 'wulf-kit' ), '#visit', true );
 		$this->button_fields( 'b2', __( 'Second button', 'wulf-kit' ), __( 'Design your ring', 'wulf-kit' ), '#studio' );
 		$this->add_control( 'o_note', array( 'label' => __( 'Reassurance under the buttons', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Free, no obligation | We confirm by call or text', 'wulf-kit' ), 'label_block' => true, 'description' => __( 'Separate points with |', 'wulf-kit' ), 'separator' => 'before' ) );
+		// The same call line and trust points as the conversion page's hero.
+		$this->add_control( 'o_call', array( 'label' => __( '"Or call…" line with open status', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before', 'description' => __( 'Computers and tablets; phones already show the number and open status in the bar above.', 'wulf-kit' ) ) );
+		$this->add_control( 'o_call_text', array( 'label' => __( 'Starts with', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Or call', 'wulf-kit' ), 'condition' => array( 'o_call' => 'yes' ) ) );
+		$this->add_control( 'o_rating', array( 'label' => __( 'Live Google rating in the trust line', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'Shows "4.9 · 120 Google reviews" first, once Google reviews are set up in Wulf Kit › Settings. Nothing shows until then.', 'wulf-kit' ) ) );
+		$r = new Repeater();
+		$r->add_control( 'icon', array( 'label' => __( 'Icon', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'clock', 'options' => WK_Icons::options() ) );
+		$r->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
+		$this->add_control( 'o_trust', array(
+			'label'       => __( 'Trust points', 'wulf-kit' ),
+			'type'        => Controls_Manager::REPEATER,
+			'fields'      => $r->get_controls(),
+			'title_field' => '{{{ text }}}',
+			'default'     => array(
+				array( 'icon' => 'clock', 'text' => __( 'Since 1971', 'wulf-kit' ) ),
+				array( 'icon' => 'cert', 'text' => __( 'GIA-certified jewelers', 'wulf-kit' ) ),
+				array( 'icon' => 'cash', 'text' => __( '12 months same as cash*', 'wulf-kit' ) ),
+			),
+		) );
 		$this->add_control( 'o2_heading', array( 'label' => __( 'Second chapter: the setting', 'wulf-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ) );
 		$this->add_control( 'o2_eyebrow', array( 'label' => __( 'Small label above', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'The setting', 'wulf-kit' ) ) );
 		$this->add_control( 'o2_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'Built around the stone.', 'wulf-kit' ) ) );
@@ -192,7 +211,29 @@ class WK_Film_Widget extends WK_Widget {
 			} elseif ( '' !== $lead || '' !== $lead_m ) {
 				$leads = '<p>' . esc_html( '' !== $lead ? $lead : $lead_m ) . '</p>';
 			}
-			$this->chapter( 0, $s['o_eyebrow'], $s['o_title'], '', $leads . ( $btns ? '<div class="film-acts">' . $btns . '</div>' : '' ) . $note, 'h1' );
+			// The call line with the live open status, and the trust points (with the live Google rating), as on the conversion hero.
+			$more  = '';
+			$phone = WK_Settings::get( 'phone' );
+			if ( 'yes' === ( $s['o_call'] ?? '' ) && $phone ) {
+				$more .= '<p class="hero-call">' . esc_html( $s['o_call_text'] ?? '' ) . ' <a href="' . esc_attr( WK_Settings::tel() ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>';
+			}
+			$g     = 'yes' === ( $s['o_rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
+			$trust = '';
+			if ( $g && ! empty( $g['count'] ) ) {
+				/* translators: 1: rating like 4.9, 2: number of reviews */
+				$txt   = sprintf( _n( '%1$s · %2$s Google review', '%1$s · %2$s Google reviews', $g['count'], 'wulf-kit' ), number_format_i18n( $g['rating'], 1 ), number_format_i18n( $g['count'] ) );
+				$url   = $g['url'] ? $g['url'] : (string) WK_Settings::get( 'maps_url' );
+				$trust .= '<li class="t-rating">' . ( $url ? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' : '' ) . WK_Icons::svg( 'star' ) . esc_html( $txt ) . ( $url ? '</a>' : '' ) . '</li>';
+			}
+			foreach ( (array) ( $s['o_trust'] ?? array() ) as $t ) {
+				if ( '' !== trim( (string) ( $t['text'] ?? '' ) ) ) {
+					$trust .= '<li>' . WK_Icons::svg( $t['icon'] ?? 'check' ) . esc_html( $t['text'] ) . '</li>';
+				}
+			}
+			if ( '' !== $trust ) {
+				$more .= '<ul class="trust">' . $trust . '</ul>';
+			}
+			$this->chapter( 0, $s['o_eyebrow'], $s['o_title'], '', $leads . ( $btns ? '<div class="film-acts">' . $btns . '</div>' : '' ) . $note . $more, 'h1' );
 			$this->chapter( 1, $s['o2_eyebrow'], $s['o2_title'], $s['o2_text'] );
 			echo '<div class="film-cue" aria-hidden="true"><span>' . esc_html__( 'Scroll', 'wulf-kit' ) . '</span><i></i></div>';
 		} elseif ( 'shapes' === $act ) {

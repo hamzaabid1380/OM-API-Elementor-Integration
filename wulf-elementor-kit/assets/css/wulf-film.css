@@ -43,6 +43,13 @@ body.wk-calm .wk.wk-film .gold-em { font-style: italic; color: var(--gold); }
 .wk.wk-film .film-link:hover { border-bottom-color: var(--gold); }
 .wk.wk-film .film-link svg { width: 16px; height: 16px; }
 .wk.wk-film .film-chap .film-acts .btn { min-height: 48px; }
+/* The conversion hero's call line and trust points, a little tighter over the film. */
+.wk.wk-film .film-chap .film-note + .hero-call { margin-top: 10px; }
+.wk.wk-film .film-chap .trust { margin-top: 24px; padding-top: 18px; gap: 10px 24px; border-top-color: rgba(255, 255, 255, .14); }
+@media (max-height: 820px) and (min-width: 761px) {
+	.wk.wk-film h1.film-h { font-size: clamp(42px, 5.2vw, 76px); }
+	.wk.wk-film .film-chap .trust { margin-top: 18px; padding-top: 14px; }
+}
 
 /* Furniture */
 .wk.wk-film .film-cue { position: absolute; z-index: 2; left: 50%; bottom: calc(22px + var(--film-lift, 0px)); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 10px; color: rgba(255, 255, 255, .62); font: 600 11px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; }
@@ -63,6 +70,8 @@ body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapte
 body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > p:not(.film-eyebrow) { animation-delay: .28s; }
 body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > .film-acts { animation-delay: .4s; }
 body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > .film-note { animation-delay: .5s; }
+body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > .hero-call,
+body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > .trust { animation-delay: .6s; }
 .wk.wk-film .film-lead-m { display: none; }
 html.film-capture .wk.wk-film *, html.film-capture .wk.wk-film *::after { animation: none !important; transition: none !important; }
 
@@ -94,6 +103,15 @@ html.film-playing body .om-ai-starter { opacity: 0; visibility: hidden; pointer-
 	.wk.wk-film .film-chap > p:not(.film-eyebrow) { margin-top: 14px; font-size: 15.5px; }
 	.wk.wk-film .film-lead-d { display: none; }
 	.wk.wk-film .film-chap > .film-lead-m { display: block; }
+	/* Phones: the opening words sit low (nothing else is at the bottom yet); like the conversion hero,
+	   no call line (the bar above has it) and compact trust points. */
+	.wk.wk-film .film-chap[data-chapter="0"] { bottom: calc(22px + env(safe-area-inset-bottom, 0px) + var(--film-lift, 0px)); }
+	.wk.wk-film .film-chap .hero-call { display: none; }
+	.wk.wk-film .film-chap .trust { gap: 6px 14px; margin-top: 14px; padding-top: 12px; }
+	.wk.wk-film .film-chap .trust li { font-size: 12.5px; gap: 7px; }
+	.wk.wk-film .film-chap .trust svg { width: 17px; height: 17px; }
+	.wk.wk-film .film-chap .film-note { margin-top: 12px; }
+	.wk.wk-film .film-acts { gap: 10px; }
 	.wk.wk-film .film-acts { margin-top: 20px; }
 	.wk.wk-film .film-acts .btn { flex: 1 1 auto; }
 	.wk.wk-film .film-chips { margin-top: 16px; gap: 6px; }

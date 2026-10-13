@@ -182,8 +182,15 @@ The film comes in three parts, with the conversion sections in between:
 3. The details and your story, before "Why Wulf": the hidden halo and the pavé, then "Independent
    since 1971".
 
+It is a separate page, a variation of "Home (conversion)": building it never changes the conversion
+page, which keeps its own address and stays exactly as it is. The cinematic version has every
+conversion piece of the original: the same booking buttons, reassurance, "Or call" line with the live
+open status and trust points on the first screen, then the same booking bar, "What brings you in?",
+ring style quiz, favorites, why Wulf, how a visit works, ring designer, questions and booking form.
+
 To try it: in Wulf Kit > Pages & templates, build "Home (cinematic)", open it, compare it with your
-current homepage, and click "Go live" when you like it. Every word, button and link is editable in
+current homepage, and click "Go live" when you like it. "Go live" only chooses which version is the
+homepage; the other versions stay published at their own addresses, so you can switch back any time. Every word, button and link is editable in
 Elementor (choose a part of the film, then its words); camera moves and timing are built in. Each part
 can also be added to any page with the "Wulf · Cinematic film (3D)" widget, once per page, in order.
 
@@ -216,6 +223,9 @@ is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 * New widget "Cinematic film (3D)": a code-built ring and a ray-traced diamond (57 true facets,
   spectral fire, the catalog's studio light, the setting's prongs reflected inside the stone), with
   editable words, buttons, shape and metal choices, and a still picture for each part.
+* The film's first screen carries the conversion hero's pieces: both booking buttons, the reassurance
+  line, "Or call" with the live open status, and the trust points with the live Google rating.
+* "Home (conversion)" is unchanged; the cinematic page is a separate variation of it.
 * Over the film the site header turns the film's black, and on computers the booking button appears
   as soon as the opening words have scrolled away.
 
