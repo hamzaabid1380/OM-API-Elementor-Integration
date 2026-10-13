@@ -60,7 +60,7 @@ for (let i = 0; i < frames; i++) {
     if (Array.isArray(y)) y = y[0] + (y[1] - y[0]) * y[2];
     await page.evaluate(([y, tm, intro]) => { if (intro !== undefined) window.__film.introAt(intro); window.__film.frame(y, tm); }, [y, time, s.intro]);
   }
-  await write(await page.screenshot({ type: 'jpeg', quality: 93 }));
+  await write(await page.screenshot({ type: 'jpeg', quality: 93, timeout: 600000 }));
   if (i % 30 === 0) {
     const el = (Date.now() - t0) / 1000;
     console.log(`frame ${i}/${frames} · ${el.toFixed(0)}s elapsed · ~${((el / (i + 1)) * (frames - i - 1) / 60).toFixed(1)} min left`);

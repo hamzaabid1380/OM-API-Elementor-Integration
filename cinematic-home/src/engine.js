@@ -1,15 +1,17 @@
 import * as THREE from 'three';
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, NoiseEffect, ToneMappingEffect, ToneMappingMode, BlendFunction, Effect, DepthOfFieldEffect } from 'postprocessing';
-import { createStudio } from './studio.js';
+import { createStudio, stoneStudioUniforms } from './studio.js';
 import { createDiamond } from './diamond.js';
 import { createRing, HEAD_Y } from './ring.js';
 import { createGlints } from './glints.js';
 
 /** Quality tiers. The governor in film.js steps down when frames run slow. */
 export const TIERS = {
-	high: { name: 'high', dpr: 2, msaa: 4, bounces: 8, waves: 7, cube: 512, grain: true, dof: true },
-	medium: { name: 'medium', dpr: 1.5, msaa: 2, bounces: 6, waves: 7, cube: 512, grain: true, dof: false },
-	low: { name: 'low', dpr: 1, msaa: 0, bounces: 4, waves: 3, cube: 256, grain: false, dof: false },
+	// ss: rays per pixel inside the centre stone; exact: the studio evaluated light by light;
+	// ao: contact shadows; supersample: render above screen resolution on 1x screens.
+	high: { name: 'high', dpr: 2, supersample: 1.5, msaa: 4, bounces: 8, waves: 7, ss: 4, exact: true, cube: 512, metal: 512, grain: true, dof: true, ao: true },
+	medium: { name: 'medium', dpr: 1.5, supersample: 1, msaa: 2, bounces: 6, waves: 7, ss: 1, exact: true, cube: 512, metal: 256, grain: true, dof: false, ao: false },
+	low: { name: 'low', dpr: 1, supersample: 1, msaa: 0, bounces: 4, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
 };
 
 /** Backdrops: [centre, edge]. */
@@ -64,7 +66,11 @@ class GradeEffect extends Effect {
 	}
 }
 
-export function createEngine( canvas, { tier = TIERS.high, preserve = false } = {} ) {
+/**
+ * The film's renderer. `aoPass` is the contact-shadow pass class (N8AOPostPass); it can
+ * also arrive later through useAO(), so pages can load it only where the best tier runs.
+ */
+export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoPass = null } = {} ) {
 	const renderer = new THREE.WebGLRenderer( {
 		canvas,
 		antialias: false,
@@ -80,15 +86,17 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false } = 
 	const scene = new THREE.Scene();
 	const camera = new THREE.PerspectiveCamera( 24, 1, 0.05, 80 );
 
-	const studio = createStudio( renderer, { size: tier.cube } );
+	const studio = createStudio( renderer, { size: tier.cube, metal: tier.metal } );
 	scene.environment = studio.env;
+	const exact = tier.exact ? stoneStudioUniforms() : null;
 
-	const ring = createRing( { cube: studio.cube, rotation: studio.rotation } );
+	const ring = createRing( { cube: studio.cube, rotation: studio.rotation, studio: exact } );
 	scene.add( ring.group );
 	// Elongated shapes sit north-south on the finger.
 	ring.head.rotation.y = Math.PI / 2;
 
-	const diamond = createDiamond( studio.cube, { bounces: tier.bounces, waves: tier.waves } );
+	// The centre stone also sees the prongs and rails of its own setting.
+	const diamond = createDiamond( studio.cube, { bounces: tier.bounces, waves: tier.waves, ss: tier.ss, studio: exact, setting: studio.bright } );
 	diamond.material.uniforms.envRotation.value = studio.rotation;
 	ring.head.add( diamond.mesh );
 
@@ -118,12 +126,22 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false } = 
 	let noise = null;
 	let dof = null;
 	let dofPass = null;
+	let ao = null;
+	let AOPass = aoPass;
+	const size = { w: 1, h: 1 };
 	function buildPost( t ) {
 		if ( composer ) {
 			composer.dispose();
 		}
 		composer = new EffectComposer( renderer, { frameBufferType: THREE.HalfFloatType, multisampling: t.msaa } );
 		composer.addPass( new RenderPass( scene, camera ) );
+		// Contact shadows where metal meets stone and metal meets metal (best tier).
+		ao = null;
+		if ( t.ao && AOPass ) {
+			ao = new AOPass( scene, camera, size.w, size.h );
+			Object.assign( ao.configuration, { aoRadius: 0.09, distanceFalloff: 0.6, intensity: 2.2, aoSamples: 16, denoiseSamples: 8, denoiseRadius: 8, gammaCorrection: false, halfRes: false } );
+			composer.addPass( ao );
+		}
 		// Macro-lens depth of field for the close shots (best tier only, off when unused).
 		dof = null;
 		dofPass = null;
@@ -153,7 +171,6 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false } = 
 	// The white backdrop is pushed past 1 so it still reads pure white after tone mapping.
 	const palettes = PALETTES.map( ( p, i ) => [ new THREE.Color( p[ 0 ] ).multiplyScalar( i === 3 ? 2.2 : 1 ), new THREE.Color( p[ 1 ] ).multiplyScalar( i === 3 ? 2.2 : 1 ) ] );
 	const ends = [ new THREE.Vector3(), new THREE.Vector3() ];
-	const size = { w: 1, h: 1 };
 
 	function setBackdrop( bg ) {
 		const i = Math.max( 0, Math.min( palettes.length - 1, Math.floor( bg ) ) );
@@ -188,9 +205,35 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false } = 
 		},
 		setTier( t ) {
 			this.tier = t;
-			diamond.setBounces( t.bounces );
+			// Fewer bounces, rays and colours in the centre stone; the studio as a cube map on the lightest level.
+			diamond.setQuality( { bounces: t.bounces, ss: t.ss, waves: t.waves, exact: t.exact } );
 			buildPost( t );
 			composer.setSize( size.w, size.h );
+		},
+		/** Add the contact shadows once their code has arrived (they only run on the best tier). */
+		useAO( Pass ) {
+			AOPass = Pass;
+			if ( this.tier.ao ) {
+				buildPost( this.tier );
+				composer.setSize( size.w, size.h );
+			}
+		},
+		/**
+		 * Compile every material the way the film draws it (into the composer's
+		 * linear buffer) without freezing the page; resolves when the first frame
+		 * can be drawn without a stall. Where the browser cannot compile in the
+		 * background this still works, it just compiles in one go.
+		 */
+		warm() {
+			const prev = renderer.getRenderTarget();
+			renderer.setRenderTarget( composer.inputBuffer );
+			let ready;
+			try {
+				ready = renderer.compileAsync( scene, camera );
+			} finally {
+				renderer.setRenderTarget( prev );
+			}
+			return ready;
 		},
 		/** Draw one frame of state S at time (seconds). */
 		render( S, time ) {
@@ -222,6 +265,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false } = 
 			ring.group.rotation.y = S.spin + S.wobble * Math.sin( time * 0.32 ) * 0.28;
 			ring.update( S );
 			diamond.setMorph( S.morph );
+			diamond.setSetting( ring.setting, ring.metals[ 1 ].color );
 			diamond.material.uniforms.glow.value = S.glow;
 
 			const envA = S.env + S.shimmer * Math.sin( time * 0.19 + 1.3 ) * 0.42;

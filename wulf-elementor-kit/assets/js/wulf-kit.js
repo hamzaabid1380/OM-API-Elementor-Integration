@@ -16,6 +16,20 @@
 	var icon = function (n, cls) { var d = (CFG.icons || {})[n]; return d ? '<svg viewBox="' + d[0] + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-hidden="true" focusable="false">' + d[1] + '</svg>' : ''; };
 	var cfgOf = function (el) { try { return JSON.parse(el.getAttribute('data-wk-cfg') || '{}'); } catch (e) { return {}; } };
 	var MCOL = { white: '14K white gold', yellow: '14K yellow gold', rose: '14K rose gold' };
+	/* Past the first screen? The usual hero, or the cinematic film's opening (whose words leave after a short scroll).
+	   Returns null when the page has neither. */
+	var pastHero = function (edge) {
+		var hero = $('.wk-hero .hero');
+		if (hero) return hero.getBoundingClientRect().bottom < edge;
+		var film = $('.wk-film .film-hero');
+		if (!film) return null;
+		var r = film.getBoundingClientRect();
+		return document.documentElement.classList.contains('film-on') ? r.top < -innerHeight * 0.35 || r.bottom < edge : r.bottom < edge;
+	};
+	/* Is a part of the cinematic film under this line of the screen? */
+	var overFilm = function (y) {
+		return $$('.wk-film .film-act').some(function (a) { var r = a.getBoundingClientRect(); return r.top < y + 2 && r.bottom > y; });
+	};
 
 	/* ================= Shapes & drawings ================= */
 	var SH = {
@@ -333,8 +347,8 @@
 		if (CFG.actbar) {
 			var bar = $('.actbar', portal);
 			var onScroll = function () {
-				var hero = $('.wk-hero .hero'), book = $('.wk-visit .book');
-				var past = hero ? hero.getBoundingClientRect().bottom < 70 : window.scrollY > 500;
+				var book = $('.wk-visit .book'), past = pastHero(70);
+				if (past === null) past = window.scrollY > 500;
 				var vis = false;
 				if (book) { var r = book.getBoundingClientRect(); vis = r.top < innerHeight && r.bottom > 0; }
 				bar.classList.toggle('on', past && !vis);
@@ -348,8 +362,8 @@
 			var pillTick = false, pillWide = window.matchMedia('(min-width: 861px)');
 			var pillPlace = function () {
 				pillTick = false;
-				var hero = $('.wk-hero .hero'), seen = [$('.wk-visit .book'), $('.wk-footer'), $('.bkbar')];
-				var past = hero ? hero.getBoundingClientRect().bottom < 0 : window.scrollY > innerHeight * 0.8;
+				var seen = [$('.wk-visit .book'), $('.wk-footer'), $('.bkbar')], past = pastHero(0);
+				if (past === null) past = window.scrollY > innerHeight * 0.8;
 				var near = seen.some(function (n) { if (!n) return false; var r = n.getBoundingClientRect(); return r.top < innerHeight - 30 && r.bottom > 0; });
 				var on = !pillOff && pillWide.matches && past && !near && (!bk || bk.hidden) && (!drawer || drawer.hidden);
 				pill.classList.toggle('on', on);
@@ -814,9 +828,12 @@
 			if (!el.isConnected) return;
 			if (c.mode === 'light') { hd.classList.add('solid'); return; }
 			if (c.mode === 'dark') return;
-			var hero = $('.wk-hero .hero');
-			var past = hero ? hero.getBoundingClientRect().bottom < hd.offsetHeight : window.scrollY > 20;
-			hd.classList.toggle('solid', past);
+			// Over the cinematic film the header stays dark, in the film's own black.
+			var film = overFilm(hd.getBoundingClientRect().bottom);
+			var past = pastHero(hd.offsetHeight);
+			if (past === null) past = window.scrollY > 20;
+			hd.classList.toggle('solid', past && !film);
+			hd.classList.toggle('on-film', film);
 		};
 		addEventListener('scroll', onScroll, { passive: true }); onScroll();
 		$$('.has-mega', el).forEach(function (li) {

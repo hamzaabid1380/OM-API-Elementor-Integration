@@ -11,11 +11,11 @@ const page = await browser.newPage({ viewport: { width: w, height: h } });
 const errors = [];
 page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.text()); });
 page.on('pageerror', e => errors.push(String(e)));
-await page.goto('file://' + dir + `/lab.html?w=${w}&h=${h}`);
+await page.goto('file://' + dir + `/lab.html?w=${w}&h=${h}${process.env.LAB_QS || ''}`);
 await page.waitForFunction(() => window.__ready, null, { timeout: 120000 }).catch(() => {});
 for (const [name, state, time] of shots) {
   const ms = await page.evaluate(([s, t]) => window.__lab.render(s, t), [state, time || 0]);
-  const buf = await page.screenshot({ type: 'png' });
+  const buf = await page.screenshot({ type: 'png', timeout: 600000 });
   fs.writeFileSync(`${out}/${name}.png`, buf);
   console.log(name, Math.round(ms) + 'ms');
 }

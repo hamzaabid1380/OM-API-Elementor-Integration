@@ -1,14 +1,17 @@
 import * as THREE from 'three';
 
 /**
- * Two photo studios built from light alone, each rendered once into a cube
- * map, the way jewellery photographers light metal and stones differently:
+ * Two photo studios, the way jewellery photographers light stones and metal
+ * differently:
  *
- * - "stone": near black with a few softboxes and a scatter of small hard
- *   lights. The diamond reads it sharp, which gives the black-and-white
- *   facet pattern and the sparkle.
- * - "tent": a bright light tent with black cards. The metal reads a blurred
- *   copy (PMREM), so polished gold looks bright with crisp dark edges.
+ * - "stone": a product-photo studio (bright softboxes above and around, a
+ *   darker horizon and floor, black cards between the lights). The stones
+ *   evaluate it exactly, shape by shape, in their shader, so the edges of
+ *   the lights stay sharp at any zoom. (The lightest quality level reads a
+ *   baked cube map of the same studio instead.)
+ * - "tent": the metal's light tent, bright all round with a few darker
+ *   panels for crisp edges, baked once and prefiltered (PMREM) for the
+ *   polished metal.
  *
  * Turning the lights is a rotation of the lookups, so the light sweep costs
  * nothing per frame.
@@ -32,8 +35,37 @@ const domeFragment = /* glsl */`
 	}
 `;
 
-/** Small hard lights of the stone studio (for star glints), as directions. */
+/** Kept for the glints module (no hard point lights in the photo studio). */
 export const LIGHTS = [];
+
+const WARM = [ 1, 0.965, 0.92 ];
+const COOL = [ 0.94, 0.97, 1 ];
+const WHITE = [ 1, 1, 1 ];
+
+/**
+ * The stone studio, as data: the dome gradient and the cards (softboxes and
+ * flags), each facing the stone. Used both for the exact shader version and
+ * for the baked cube map.
+ */
+export const STONE_STUDIO = {
+	dome: { top: 0.6, horizon: 0.16, bottom: 0.04 },
+	cards: [
+		// w, h, position, intensity, colour, round
+		[ 20, 20, [ 0, 28, 0 ], 2.6, WHITE ],
+		[ 12, 26, [ - 22, 8, 14 ], 2.0, COOL ],
+		[ 12, 26, [ 22, 8, 14 ], 2.0, WARM ],
+		[ 28, 10, [ 0, 10, - 26 ], 1.6, WHITE ],
+		[ 4, 30, [ - 26, 2, - 8 ], 2.8, WHITE ],
+		[ 4, 30, [ 26, 2, - 8 ], 2.8, WHITE ],
+		[ 7, 44, [ Math.cos( 0.8 ) * 25, 0, Math.sin( 0.8 ) * 25 ], 0.02, WHITE ],
+		[ 7, 44, [ Math.cos( 2.35 ) * 25, 0, Math.sin( 2.35 ) * 25 ], 0.02, WHITE ],
+		[ 7, 44, [ Math.cos( 3.95 ) * 25, 0, Math.sin( 3.95 ) * 25 ], 0.02, WHITE ],
+		[ 7, 44, [ Math.cos( 5.5 ) * 25, 0, Math.sin( 5.5 ) * 25 ], 0.02, WHITE ],
+		[ 9, 18, [ - 25, 4, 6 ], 0.25, WHITE ],
+		[ 9, 18, [ 25, 4, - 2 ], 0.25, WHITE ],
+		[ 40, 5, [ 0, 2, 28 ], 0.3, WHITE ],
+	],
+};
 
 const lin = ( r, g, b ) => new THREE.Color().setRGB( r, g, b, THREE.LinearSRGBColorSpace );
 
@@ -50,8 +82,8 @@ function dome( scene, top, horizon, bottom ) {
 	) );
 }
 
-function card( scene, w, h, pos, intensity, color = [ 1, 1, 1 ], round = false ) {
-	const geo = round ? new THREE.CircleGeometry( w / 2, 48 ) : new THREE.PlaneGeometry( w, h );
+function card( scene, w, h, pos, intensity, color = WHITE, round = false ) {
+	const geo = round ? new THREE.CircleGeometry( w / 2, 64 ) : new THREE.PlaneGeometry( w, h );
 	const mat = new THREE.MeshBasicMaterial( { side: THREE.DoubleSide } );
 	mat.color.setRGB( color[ 0 ] * intensity, color[ 1 ] * intensity, color[ 2 ] * intensity, THREE.LinearSRGBColorSpace );
 	const m = new THREE.Mesh( geo, mat );
@@ -61,44 +93,68 @@ function card( scene, w, h, pos, intensity, color = [ 1, 1, 1 ], round = false )
 	return m;
 }
 
-const WARM = [ 1, 0.965, 0.92 ];
-const COOL = [ 0.94, 0.97, 1 ];
-
 function stoneStudio() {
-	// A product-photo studio: bright softboxes above and around, a darker
-	// horizon and floor, black cards between the lights. The camera itself is
-	// added in the stone's shader (it moves with the view).
 	const scene = new THREE.Scene();
-	dome( scene, lin( 0.6, 0.6, 0.6 ), lin( 0.16, 0.16, 0.165 ), lin( 0.04, 0.04, 0.042 ) );
-	card( scene, 20, 20, [ 0, 28, 0 ], 2.6 );
-	card( scene, 12, 26, [ - 22, 8, 14 ], 2.0, COOL );
-	card( scene, 12, 26, [ 22, 8, 14 ], 2.0, WARM );
-	card( scene, 28, 10, [ 0, 10, - 26 ], 1.6 );
-	card( scene, 4, 30, [ - 26, 2, - 8 ], 2.8 );
-	card( scene, 4, 30, [ 26, 2, - 8 ], 2.8 );
-	for ( const a of [ 0.8, 2.35, 3.95, 5.5 ] ) {
-		card( scene, 7, 44, [ Math.cos( a ) * 25, 0, Math.sin( a ) * 25 ], 0.02 );
+	const d = STONE_STUDIO.dome;
+	dome( scene, lin( d.top, d.top, d.top ), lin( d.horizon, d.horizon, d.horizon * 1.03 ), lin( d.bottom, d.bottom, d.bottom * 1.05 ) );
+	for ( const c of STONE_STUDIO.cards ) {
+		card( scene, ...c );
 	}
-	card( scene, 9, 18, [ - 25, 4, 6 ], 0.25 );
-	card( scene, 9, 18, [ 25, 4, - 2 ], 0.25 );
-	card( scene, 40, 5, [ 0, 2, 28 ], 0.3 );
 	LIGHTS.length = 0;
 	return scene;
 }
 
+/**
+ * The cards as shader uniforms: centre (w = round), unit axes divided by
+ * the half sizes (w = edge softness in those units), facing normal (w = the
+ * plane offset) and colour. Sorted far to near so nearer cards win.
+ */
+export function stoneStudioUniforms( feather = 0.22 ) {
+	const o = new THREE.Object3D();
+	const list = STONE_STUDIO.cards.map( ( [ w, h, pos, intensity, color, round ] ) => {
+		o.position.set( ...pos );
+		o.lookAt( 0, 0, 0 );
+		o.updateMatrixWorld( true );
+		const u = new THREE.Vector3().setFromMatrixColumn( o.matrixWorld, 0 ).normalize();
+		const v = new THREE.Vector3().setFromMatrixColumn( o.matrixWorld, 1 ).normalize();
+		const n = new THREE.Vector3().setFromMatrixColumn( o.matrixWorld, 2 ).normalize();
+		const c = new THREE.Vector3( ...pos );
+		return {
+			dist: c.length(),
+			c: new THREE.Vector4( c.x, c.y, c.z, round ? 1 : 0 ),
+			u: new THREE.Vector4( u.x / ( w / 2 ), u.y / ( w / 2 ), u.z / ( w / 2 ), feather / ( w / 2 ) ),
+			v: new THREE.Vector4( v.x / ( h / 2 ), v.y / ( h / 2 ), v.z / ( h / 2 ), feather / ( h / 2 ) ),
+			n: new THREE.Vector4( n.x, n.y, n.z, c.dot( n ) ),
+			col: new THREE.Vector3( color[ 0 ] * intensity, color[ 1 ] * intensity, color[ 2 ] * intensity ),
+		};
+	} ).sort( ( a, b ) => b.dist - a.dist );
+	const d = STONE_STUDIO.dome;
+	return {
+		count: list.length,
+		c: list.map( ( l ) => l.c ),
+		u: list.map( ( l ) => l.u ),
+		v: list.map( ( l ) => l.v ),
+		n: list.map( ( l ) => l.n ),
+		col: list.map( ( l ) => l.col ),
+		dome: new THREE.Vector3( d.top, d.horizon, d.bottom ),
+	};
+}
+
 function tentStudio() {
-	// The metal's light tent: bright all round (polished white gold looks white,
-	// not chrome-dark), with two thin grey cards for crisp edges.
+	// Bright all round (polished white gold reads white, not chrome-dark), with
+	// softboxes separated by slightly darker gaps and two grey flags, so the
+	// polish shows crisp bands of light the way it does in a close-up photo.
 	const scene = new THREE.Scene();
-	dome( scene, lin( 0.95, 0.95, 0.96 ), lin( 0.6, 0.6, 0.61 ), lin( 0.3, 0.3, 0.31 ) );
-	card( scene, 26, 18, [ 0, 26, 4 ], 3.0, WARM );
-	card( scene, 9, 32, [ - 24, 4, 6 ], 2.4, COOL );
-	card( scene, 9, 32, [ 24, 4, - 6 ], 2.4, WARM );
-	card( scene, 2, 30, [ - 16, 6, - 20 ], 4 );
-	card( scene, 2, 30, [ 16, 6, 20 ], 3.5, WARM );
-	card( scene, 4, 40, [ - 20, 0, - 14 ], 0.12 );
-	card( scene, 4, 40, [ 20, 0, 14 ], 0.12 );
-	card( scene, 60, 8, [ 0, - 8, 26 ], 0.18 );
+	dome( scene, lin( 0.85, 0.85, 0.86 ), lin( 0.5, 0.5, 0.51 ), lin( 0.26, 0.26, 0.27 ) );
+	card( scene, 26, 14, [ 0, 26, 4 ], 3.2, WARM );
+	card( scene, 7, 32, [ - 24, 4, 6 ], 2.8, COOL );
+	card( scene, 7, 32, [ 24, 4, - 6 ], 2.8, WARM );
+	card( scene, 2.2, 30, [ - 16, 6, - 20 ], 4.5 );
+	card( scene, 2.2, 30, [ 16, 6, 20 ], 4, WARM );
+	card( scene, 12, 8, [ 0, 14, - 24 ], 2.4 );
+	card( scene, 8, 40, [ - 20, 0, - 14 ], 0.14 );
+	card( scene, 8, 40, [ 20, 0, 14 ], 0.14 );
+	card( scene, 60, 8, [ 0, - 8, 26 ], 0.16 );
 	return scene;
 }
 
@@ -113,9 +169,9 @@ function bake( renderer, scene, size ) {
 	return rt;
 }
 
-export function createStudio( renderer, { size = 512 } = {} ) {
+export function createStudio( renderer, { size = 512, metal = 512 } = {} ) {
 	const stoneRT = bake( renderer, stoneStudio(), size );
-	const tentRT = bake( renderer, tentStudio(), Math.min( 256, size ) );
+	const tentRT = bake( renderer, tentStudio(), metal );
 	const pmrem = new THREE.PMREMGenerator( renderer );
 	const envRT = pmrem.fromCubemap( tentRT.texture );
 	pmrem.dispose();
@@ -139,16 +195,5 @@ export function createStudio( renderer, { size = 512 } = {} ) {
 			tentRT.dispose();
 			envRT.dispose();
 		},
-	};
-}
-
-function mulberry( seed ) {
-	let a = seed >>> 0;
-	return () => {
-		a |= 0;
-		a = ( a + 0x6d2b79f5 ) | 0;
-		let t = Math.imul( a ^ ( a >>> 15 ), 1 | a );
-		t = ( t + Math.imul( t ^ ( t >>> 7 ), 61 | t ) ) ^ t;
-		return ( ( t ^ ( t >>> 14 ) ) >>> 0 ) / 4294967296;
 	};
 }

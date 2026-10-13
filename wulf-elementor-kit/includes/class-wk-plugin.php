@@ -41,6 +41,7 @@ class WK_Plugin {
 		'paths'    => 'WK_Paths_Widget',
 		'bookbar'  => 'WK_Bookbar_Widget',
 		'quiz'     => 'WK_Quiz_Widget',
+		'film'     => 'WK_Film_Widget',
 	);
 
 	public static function instance() {
@@ -113,6 +114,11 @@ class WK_Plugin {
 		wp_add_inline_style( 'wulf-kit', self::brand_css() );
 		wp_register_script( 'wulf-kit', WK_URL . 'assets/js/wulf-kit.js', array(), WK_VERSION, true );
 		wp_localize_script( 'wulf-kit', 'wkConfig', self::js_config() );
+		// The cinematic film (3D): only loaded on pages that use its widget. Deferred, so it never holds up the page.
+		wp_register_style( 'wulf-kit-film', WK_URL . 'assets/css/wulf-film.css', array( 'wulf-kit' ), WK_VERSION );
+		wp_register_script( 'wulf-kit-film', WK_URL . 'assets/js/wulf-film.js', array(), WK_VERSION, array( 'in_footer' => true, 'strategy' => 'defer' ) );
+		// Contact shadows: a small add-on the film fetches itself, only on computers that run its best quality.
+		wp_add_inline_script( 'wulf-kit-film', 'window.wkFilm=' . wp_json_encode( array( 'ao' => add_query_arg( 'ver', WK_VERSION, WK_URL . 'assets/js/wulf-film-ao.js' ) ) ) . ';', 'before' );
 		if ( $s['header_tpl'] || $s['footer_tpl'] || $s['actbar'] || $s['book_pill'] ) {
 			// Site-wide pieces need the kit on every page.
 			wp_enqueue_style( 'wulf-kit' );

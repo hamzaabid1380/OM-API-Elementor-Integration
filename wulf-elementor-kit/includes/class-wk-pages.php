@@ -35,6 +35,7 @@ class WK_Pages {
 		return array(
 			'home'                        => array( __( 'Home', 'wulf-kit' ), 'home', 'main', __( 'The full homepage: showcase, categories, ring studio, story, 4Cs, services, visit.', 'wulf-kit' ) ),
 			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, a booking bar right under it, "What brings you in?" choices that each lead somewhere, a ring style quiz that ends in three matching rings, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, common questions, and booking. Each section is a showcase with one clear next step, and every "Book" button opens the booking popup.', 'wulf-kit' ) ),
+			'home-cinematic'              => array( __( 'Home (cinematic)', 'wulf-kit' ), 'home-cinematic', 'main', __( 'The conversion homepage told as a 3D film: a ring and a real-looking diamond, drawn live in the browser, build themselves as visitors scroll. The film comes in three parts between the conversion sections (the opening with the booking buttons, the shapes and metals, the hidden details and your story since 1971), with the booking bar, "What brings you in?", the ring style quiz, favorites, why Wulf, how a visit works, the ring designer, questions and booking in between. Phones get a lighter version, and a still picture shows wherever 3D cannot run.', 'wulf-kit' ) ),
 			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer homepage with a few big moments: the 360° spotlight, the ring that builds itself, the ring designer and the 4Cs. Fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
 			'about-us'                    => array( __( 'About', 'wulf-kit' ), 'about-us', 'main', __( 'Your story since 1971, Cullen, concierge service, values, reviews, visit.', 'wulf-kit' ) ),
 			'contact-us'                  => array( __( 'Free Consultation', 'wulf-kit' ), 'contact-us', 'main', __( 'Contact and booking form, map, hours, common questions.', 'wulf-kit' ) ),
@@ -67,7 +68,7 @@ class WK_Pages {
 
 	/** Homepage variants: "Go live" makes them the site's front page. */
 	public static function is_home( $key ) {
-		return in_array( $key, array( 'home', 'home-simple', 'home-conversion' ), true );
+		return in_array( $key, array( 'home', 'home-simple', 'home-conversion', 'home-cinematic' ), true );
 	}
 
 	/** The page being shown is the front page, or a homepage version from the library (e.g. still being tried). */
@@ -80,7 +81,7 @@ class WK_Pages {
 
 	/** Extra page meta a template sets (e.g. the calmer look). */
 	public static function meta( $key ) {
-		return in_array( $key, array( 'home-simple', 'home-conversion' ), true ) ? array( '_wk_style' => 'calm' ) : array();
+		return in_array( $key, array( 'home-simple', 'home-conversion', 'home-cinematic' ), true ) ? array( '_wk_style' => 'calm' ) : array();
 	}
 
 	/** Which library pages already exist on this site: key => post ID. */
@@ -324,6 +325,23 @@ class WK_Pages {
 					self::faq( __( 'Before you visit.', 'wulf-kit' ), self::visit_questions(), array( 'tone' => 'ivory' ) ),
 					array( 'visit', array( 'f_short' => 'yes', 'after' => array(), 'f_title' => __( 'Book your free consultation', 'wulf-kit' ), 'tone' => 'white' ) ),
 				);
+
+			case 'home-cinematic':
+				// The conversion page told as a film: the film's opening is the first screen, and its other
+				// two parts sit between the sections, each one handing over to a clear next step.
+				$b = array( array( 'film', array( 'act' => 'opening' ) ) );
+				foreach ( self::blocks( 'home-conversion' ) as $block ) {
+					if ( 'hero' === $block[0] ) {
+						continue;
+					}
+					if ( 'quiz' === $block[0] ) {
+						$b[] = array( 'film', array( 'act' => 'shapes' ) );
+					} elseif ( 'values' === $block[0] ) {
+						$b[] = array( 'film', array( 'act' => 'details' ) );
+					}
+					$b[] = $block;
+				}
+				return $b;
 
 			case 'about-us':
 				return array(

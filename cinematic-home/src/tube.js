@@ -89,7 +89,7 @@ export class Tube {
 	 * u in 0..1). up: a fixed up vector for flat loops, or null to carry the
 	 * frame along the path.
 	 */
-	sweep( points, radius, { up = null, capStart = false, capEnd = true, closed = false } = {} ) {
+	sweep( points, radius, { up = null, capStart = false, capEnd = true, closed = false, capSteps = 6 } = {} ) {
 		this.begin();
 		const n = this._n;
 		const b = this._b;
@@ -120,7 +120,7 @@ export class Tube {
 		}
 		const r = ( i ) => ( typeof radius === 'function' ? radius( i / ( count - 1 ) ) : radius );
 		if ( capStart && ! closed ) {
-			this.cap( points[ 0 ], n, b, t.clone().negate(), r( 0 ), 5, true );
+			this.cap( points[ 0 ], n, b, t.clone().negate(), r( 0 ), capSteps, true );
 		}
 		const prevT = new THREE.Vector3().copy( t );
 		const q = new THREE.Quaternion();
@@ -140,7 +140,7 @@ export class Tube {
 			this.ring( points[ i ], n, b, t, r( i ) );
 		}
 		if ( capEnd && ! closed ) {
-			this.cap( points[ count - 1 ], n, b, t, r( count - 1 ) );
+			this.cap( points[ count - 1 ], n, b, t, r( count - 1 ), capSteps );
 		}
 		this.end();
 	}

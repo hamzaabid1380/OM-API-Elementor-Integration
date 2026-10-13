@@ -2,14 +2,14 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.10.1
+Stable tag: 1.11.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
 
 == What you get ==
 
-27 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
+28 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
 
 * Announcement bar (live "Open now / Closed now" from your hours)
 * Header (logo, menu with drop-down panels, search, phone, tray, "Book a free consultation", phone menu)
@@ -42,11 +42,15 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Ring style quiz (four picture questions: diamond shape, setting, metal and budget; then three
   matching rings, the top one turning in the chosen gold, with "Book to try these on" and
   "Email me my matches")
+* Cinematic film (3D): a ring and a real-looking diamond, drawn live in the browser, that build
+  themselves as visitors scroll. Comes in three parts (the opening, shapes and metals, the details and
+  your story) to place between other sections
 
-29 page templates: one for every page on the live site, plus "Home (simpler)" and "Home (conversion)", with the
-wording from that page and the same web address:
+30 page templates: one for every page on the live site, plus "Home (simpler)", "Home (conversion)" and
+"Home (cinematic)", with the wording from that page and the same web address:
 
-* Main: Home, Home (simpler), Home (conversion), About, Free Consultation, Blog, Thank You, Page not found
+* Main: Home, Home (simpler), Home (conversion), Home (cinematic), About, Free Consultation, Blog, Thank You,
+  Page not found
 * Shop (with the OM Catalog plugin): Engagement Rings, Ring Builder, Wedding Bands, Fashion Rings,
   Earrings, Necklaces, Pendants, Bracelets, Catalogue, Single Product layout
 * Diamonds & gems: Diamond Jewelry, Where to Buy Engagement Rings, Gems
@@ -161,6 +165,42 @@ featurable.com if anything changes there.
 Or with your own Google key: a Google Places API key and Place ID (needs a Google Cloud billing
 account; Google shares up to 5 reviews and picks them). When both are filled in, Featurable is used.
 
+== Cinematic film (3D) ==
+
+"Home (cinematic)" is the conversion homepage told as a short film. As visitors scroll, a diamond
+lights up, a ring builds itself around it, the stone changes shape, the gold changes colour and the
+camera moves in on the hidden details. Nothing is a video or a 3D file: the ring, the diamond and the
+studio lights are drawn live in the browser, and the diamond follows the light through all 57 facets,
+which is where its sparkle and coloured fire come from.
+
+The film comes in three parts, with the conversion sections in between:
+
+1. The opening (the first screen): the headline, "Book a free consultation" and "Design your ring",
+   then the band and prongs build around the stone. The booking bar comes right after it.
+2. Shapes and metals, before the ring style quiz: round, oval, cushion and pear, then white, yellow
+   and rose gold. Visitors can tap a shape or a metal to jump to it.
+3. The details and your story, before "Why Wulf": the hidden halo and the pavé, then "Independent
+   since 1971".
+
+To try it: in Wulf Kit > Pages & templates, build "Home (cinematic)", open it, compare it with your
+current homepage, and click "Go live" when you like it. Every word, button and link is editable in
+Elementor (choose a part of the film, then its words); camera moves and timing are built in. Each part
+can also be added to any page with the "Wulf · Cinematic film (3D)" widget, once per page, in order.
+
+Speed and devices:
+
+* The 3D only loads on pages that use the film: about 235 KB compressed, after the page has shown.
+  Computers that can run the best quality also fetch a small add-on (about 80 KB) for soft contact
+  shadows.
+* A still picture of each part shows straight away and stays wherever 3D cannot run (very old phones,
+  Data Saver); the words and buttons work the same either way.
+* Phones and slower computers get a lighter version automatically, and the quality steps down by
+  itself if a device struggles. Nothing is drawn while the film is off screen.
+* Visitors who ask their device for less motion see each chapter as a still, composed frame.
+* Speed plugins: exclude assets/js/wulf-film.js from "Delay JavaScript" (WP Rocket, LiteSpeed Cache,
+  Perfmatters and similar) and turn off Cloudflare Rocket Loader for it, or the film waits for the
+  first tap before it starts.
+
 == Visit requests and newsletter ==
 
 The "Book a visit" form and the footer sign-up email you (Wulf Kit > Settings > "Visit requests
@@ -168,6 +208,16 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.11.0 =
+* New "Home (cinematic)" page template: the conversion homepage with a scroll-directed 3D film woven
+  through it (the opening, shapes and metals, the details and your story), each part leading into the
+  next booking step.
+* New widget "Cinematic film (3D)": a code-built ring and a ray-traced diamond (57 true facets,
+  spectral fire, the catalog's studio light, the setting's prongs reflected inside the stone), with
+  editable words, buttons, shape and metal choices, and a still picture for each part.
+* Over the film the site header turns the film's black, and on computers the booking button appears
+  as soon as the opening words have scrolled away.
 
 = 1.10.1 =
 * Visit requests reach your CRM (through the OM Catalog plugin, 1.43 or later) with the day, time,

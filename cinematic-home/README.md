@@ -1,4 +1,4 @@
-# Wulf cinematic homepage (prototype)
+# Wulf cinematic homepage
 
 A homepage that plays like a short film as you scroll. A diamond lights up on
 black, a ring draws itself around it, the stone changes shape, the metal
@@ -13,9 +13,15 @@ from. It is lit the way the catalog photos are (a bright product studio, with
 the dark camera in front of the stone), so it reads like the diamonds on the
 website rather than like computer graphics.
 
-**To look at it:** open `dist/wulf-cinematic-home.html` in Chrome, Safari,
-Edge or Firefox. It is one self-contained file. It only needs the internet
-for the brand fonts.
+It comes two ways from the same code:
+
+- **On the website:** the Wulf Elementor Kit's "Home (cinematic)" page (the
+  conversion homepage with the film woven through it, in three parts) and its
+  "Cinematic film (3D)" widget. `npm run build` writes the widget's script into
+  the kit (`wulf-elementor-kit/assets/js/wulf-film.js`). See "On WordPress" below.
+- **As a stand-alone page:** open `dist/wulf-cinematic-home.html` in Chrome,
+  Safari, Edge or Firefox. It is one self-contained file and only needs the
+  internet for the brand fonts.
 
 ## What is real and what is a placeholder
 
@@ -39,8 +45,8 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 
 ## Weight and speed
 
-- The 3D code is about **200 KB compressed** (three.js, GSAP, the rest is small). About the size of one or two product photos.
-- A still picture of the first frame shows straight away. The 3D takes over once it is ready, so the page never waits on it.
+- On WordPress the 3D code is about **235 KB compressed** (three.js, GSAP, the rest is small), loaded only on pages with the film, after the page has shown. Computers on the best quality also fetch an 80 KB add-on for contact shadows.
+- A still picture of the first frame shows straight away. The 3D takes over once it is ready (its shaders compile in the background), so the page never waits on it.
 - Three quality levels (picked from the device, then stepped down automatically if frames run slow). Drawing stops whenever the 3D is covered or the tab is hidden.
 - No 3D: when WebGL is missing or the visitor uses Data Saver, the still picture stays and the words still play.
 - Reduce Motion: chapters appear as composed still frames, no camera moves.
@@ -50,24 +56,29 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 | File | What it does |
 | --- | --- |
 | `src/cut.js` | A true 57-facet round brilliant (table 56%, crown 34.5°, pavilion 40.8°, depth 61.3%): every facet a flat plane, meeting a round, slightly scalloped girdle. Fancy shapes reuse the same facets on their own outline, so one shape morphs into the next facet by facet. |
-| `src/diamond.js` | The stones' shader: refraction in, total internal reflection inside (BVH ray tracing with three-mesh-bvh), Fresnel at every exit, and dispersion from diamond's measured refractive index at 7 wavelengths (3 on the lightest quality level), so the fire is the soft, pastel kind seen in photos. The camera and photographer are a dark patch in front of the stone, which draws the crisp grey and black facet pattern of real diamond photos. The same shader, instanced, draws every pavé and halo stone. |
-| `src/studio.js` | Two studios built from light and baked to cube maps once: a product-photo studio for the stones (bright softboxes, darker horizon, black cards) and a bright light tent for the metal. Turning the lights is a rotation, so light sweeps are free. |
+| `src/diamond.js` | The stones' shader: refraction in, total internal reflection inside (BVH ray tracing with three-mesh-bvh), Fresnel at every exit, and dispersion from diamond's measured refractive index at 7 wavelengths (3 on the lightest quality level), so the fire is the soft, pastel kind seen in photos. The camera and photographer are a dark patch in front of the stone, which draws the crisp grey and black facet pattern of real diamond photos. For sharp close-ups the studio lights are evaluated exactly for every ray (no blurry baked map), the best quality traces 4 rays per pixel, and rays inside the centre stone also see the setting's own prongs and rails. The same shader, instanced, draws every pavé and halo stone. |
+| `src/studio.js` | Two studios built from light: a product-photo studio for the stones (bright softboxes, darker horizon, black cards), evaluated light by light in the shader or baked to a cube map on the lightest level, and a bright light tent for the metal, baked once. Turning the lights is a rotation, so light sweeps are free. |
 | `src/ring.js`, `src/tube.js` | The band (a swept squircle that draws itself), six prongs that follow the stone's outline, the basket rail, the hidden halo, and pavé set the real way: stones across most of the band, nearly touching, held by shared beads. |
 | `src/glints.js` | The soft glow on the band's ends while it draws itself. (Star glints are available but off: real product photos do not have them.) |
-| `src/engine.js` | Renderer, lens shift (subject off-centre without bending perspective), quality tiers, post-processing: bloom, tone mapping, vignette, grain, macro depth of field. |
-| `src/film.js` | The director: one GSAP timeline holds camera, ring, light and words, and scrolling scrubs it (ScrollTrigger, SplitText, Lenis). |
+| `src/engine.js` | Renderer, lens shift (subject off-centre without bending perspective), quality tiers, post-processing: contact shadows (N8AO, best quality), bloom, tone mapping, vignette, grain, macro depth of field. Shaders compile in the background before the first frame. |
+| `src/story.js` | The story on one clock (0 to 18): what the camera, the ring and the light do in each chapter, when the words come and go, and how the quality level is picked. Shared by both versions. |
+| `src/film.js` | The stand-alone director: one GSAP timeline holds camera, ring, light and words, and scrolling scrubs it (ScrollTrigger, SplitText, Lenis). |
+| `src/wp.js` | The WordPress director: up to three acts between other sections, each scrubbing its part of the story. One canvas moves into the act on screen; nothing draws while none is. |
+| `src/ao.js`, `src/ao-lib.js` | The contact-shadow add-on for WordPress (`wulf-film-ao.js`), which borrows three.js and postprocessing from the main script instead of carrying its own. |
 | `src/page.html` | The page itself: real HTML text (readable by Google and screen readers), brand tokens from the kit. |
-| `build.mjs` | Bundles everything into `dist/wulf-cinematic-home.html`, with the poster and card pictures inline. |
+| `build.mjs` | Bundles everything into `dist/wulf-cinematic-home.html`, with the poster and card pictures inline, and builds the kit's `wulf-film.js` and `wulf-film-ao.js`. |
 
 Libraries: three 0.183.2, postprocessing 6.39.5, three-mesh-bvh 0.9.16,
-gsap 3.15.0 (all plugins free for commercial use), lenis 1.3.26.
+n8ao 2.0.1, gsap 3.15.0 (all plugins free for commercial use), lenis 1.3.26
+(stand-alone page only).
 
 ### Commands
 
 ```
 npm ci
-npm run build          # dist/wulf-cinematic-home.html
+npm run build          # dist/wulf-cinematic-home.html and the kit's wulf-film.js
 npm run pictures       # re-render the poster and the four card pictures, then build
+WP_URL=http://localhost:8089/home-cinematic/ node tools/wp-posters.mjs   # the kit's six act pictures
 node tools/page.mjs 1440 900 out/desktop '[0, 2.6, 6.3, 10.2, 13.3, 16.8, "#collection", "#visit"]' '&tier=high'
 node tools/live.mjs out/live normal      # real wheel scrolling (also: reduced, no3d)
 node tools/axe.mjs path/to/axe.min.js    # accessibility check
@@ -85,11 +96,22 @@ copy in `fontcache/` (see `tools/fonts.mjs`).
 - `?no3d` shows the still-picture version.
 - `?capture` turns off smooth scrolling and exposes `window.__film` for exact frames (stills, video).
 
-## Going live on WordPress (plan)
+## On WordPress
 
-- Becomes a **"Home (cinematic)"** page in the Wulf Elementor Kit, with the
-  script bundled in the plugin (no CDN) and loaded only on that page.
-- Words, links and buttons editable in Elementor. Camera moves and timing live in code.
+- **"Home (cinematic)"** in Wulf Kit > Pages & templates: the conversion
+  homepage with the film in three parts. The opening is the first screen
+  (headline, "Book a free consultation", "Design your ring"), then the booking
+  bar and "What brings you in?"; shapes and metals come before the ring style
+  quiz; the details and the 1971 story come before "Why Wulf".
+- **"Wulf · Cinematic film (3D)"** widget: pick the part, edit its words,
+  buttons and links. Camera moves and timing live in code. Each part shows a
+  still picture of its first frame (`assets/media/film-*.webp`, rendered with
+  `tools/wp-posters.mjs`) until the 3D is ready, and keeps it where 3D cannot run.
+- The script is bundled in the plugin (no CDN), deferred, and loaded only on
+  pages with the widget. In the Elementor editor the parts show as a still,
+  readable stack.
+- The site header turns the film's black over the film, and the desktop booking
+  button and phone action bar appear once the opening words have scrolled away.
 - Speed plugins: exclude the film script from "delay JavaScript" features
   (WP Rocket, LiteSpeed, Perfmatters) and from Cloudflare Rocket Loader, or the
   film waits for the first tap.

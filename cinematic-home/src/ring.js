@@ -53,8 +53,8 @@ const smooth = ( a, b, x ) => {
 /** The band: a swept squircle, built only over the part that has "grown". */
 class Band {
 	constructor( material ) {
-		this.NT = 300;
-		this.NC = 36;
+		this.NT = 360;
+		this.NC = 48;
 		const ringVerts = ( this.NT + 1 ) * ( this.NC + 1 );
 		const capVerts = 2 * ( this.NC + 2 );
 		this.pos = new Float32Array( ( ringVerts + capVerts ) * 3 );
@@ -193,19 +193,19 @@ function bandSurface( phi, z = 0 ) {
 	return { point: er.multiplyScalar( r ).setZ( z ), normal };
 }
 
-export function createRing( { cube, rotation, waves = 3 } ) {
+export function createRing( { cube, rotation, waves = 3, studio = null } ) {
 	const group = new THREE.Group();
 	group.name = 'ring';
 	const head = new THREE.Group();
 	head.position.y = HEAD_Y;
 	group.add( head );
 
-	const metal = () => new THREE.MeshStandardMaterial( { color: METALS.white.clone(), metalness: 1, roughness: 0.13, envMapIntensity: 1 } );
+	const metal = () => new THREE.MeshStandardMaterial( { color: METALS.white.clone(), metalness: 1, roughness: 0.07, envMapIntensity: 1 } );
 	const bandMat = metal();
 	bandMat.side = THREE.DoubleSide;
 	const headMat = metal();
 	const detailMat = metal();
-	detailMat.roughness = 0.18;
+	detailMat.roughness = 0.1;
 	const metals = [ bandMat, headMat, detailMat ];
 
 	const band = new Band( bandMat );
@@ -214,18 +214,18 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 	// Prongs and the basket rail.
 	const prongs = [];
 	for ( let k = 0; k < PRONGS; k ++ ) {
-		const t = new Tube( 40, 14, headMat );
+		const t = new Tube( 64, 24, headMat );
 		prongs.push( t );
 		head.add( t.mesh );
 	}
-	const rail = new Tube( 120, 10, headMat );
+	const rail = new Tube( 124, 18, headMat );
 	head.add( rail.mesh );
-	const collar = new Tube( 140, 10, detailMat );
+	const collar = new Tube( 144, 18, detailMat );
 	head.add( collar.mesh );
 
 	// Hidden halo stones and pave.
 	const stoneGeo = smallStoneGeometry();
-	const stoneMat = smallStoneMaterial( cube, { bounces: 4, waves } );
+	const stoneMat = smallStoneMaterial( cube, { bounces: 4, waves, studio } );
 	stoneMat.uniforms.envRotation.value = rotation;
 	const HALO = 26;
 	const halo = new THREE.InstancedMesh( stoneGeo, stoneMat, HALO );
@@ -251,9 +251,13 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 	const pave = new THREE.InstancedMesh( stoneGeo, stoneMat, paveCount );
 	pave.frustumCulled = false;
 	group.add( pave );
-	const beadGeo = new THREE.SphereGeometry( 1, 12, 8 );
+	const beadGeo = new THREE.SphereGeometry( 1, 32, 24 );
 	const beadCount = ( paveSpots.length + 1 ) * 2 * 2;
-	const beads = new THREE.InstancedMesh( beadGeo, detailMat, beadCount );
+	// Beads are tiny: a touch more roughness keeps their reflections soft, as on a real ring.
+	const beadMat = metal();
+	beadMat.roughness = 0.17;
+	metals.push( beadMat );
+	const beads = new THREE.InstancedMesh( beadGeo, beadMat, beadCount );
 	beads.frustumCulled = false;
 	group.add( beads );
 
@@ -274,14 +278,14 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 				const prev = i === 0 ? s.phi - ( s.size + 0.01 ) / rOut( s.phi ) : paveSpots[ i - 1 ].phi;
 				const gapPhi = ( ( s.phi + prev ) / 2 ) * side;
 				for ( const z of [ - 1, 1 ] ) {
-					const b = bandSurface( gapPhi, z * s.size * 0.42 );
-					beadData.push( { pos: b.point.clone().addScaledVector( b.normal, 0.004 ), size: 0.027, order: i, side } );
+					const b = bandSurface( gapPhi, z * s.size * 0.36 );
+					beadData.push( { pos: b.point.clone().addScaledVector( b.normal, 0.006 ), size: 0.03, order: i, side } );
 				}
 				if ( i === paveSpots.length - 1 ) {
 					const after = ( s.phi + ( s.size + 0.01 ) / 2 / rOut( s.phi ) ) * side;
 					for ( const z of [ - 1, 1 ] ) {
-						const b = bandSurface( after, z * s.size * 0.42 );
-						beadData.push( { pos: b.point.clone().addScaledVector( b.normal, 0.004 ), size: 0.025, order: i + 0.5, side } );
+						const b = bandSurface( after, z * s.size * 0.36 );
+						beadData.push( { pos: b.point.clone().addScaledVector( b.normal, 0.006 ), size: 0.028, order: i + 0.5, side } );
 					}
 				}
 			} );
@@ -298,13 +302,32 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 	const pavH = CUT.pavH;
 	const BASE_Y = 1.6 - HEAD_Y;
 
+	// The setting as capsules (stone space) so the centre stone can reflect it.
+	const caps = [];
+	const collarCaps = [];
+	function loopCaps( pts, radius, closed, out = caps ) {
+		const segs = 6;
+		const n = pts.length;
+		for ( let c = 0; c < segs; c ++ ) {
+			const i0 = Math.round( ( c / segs ) * ( closed ? n : n - 1 ) ) % n;
+			const i1 = Math.round( ( ( c + 1 ) / segs ) * ( closed ? n : n - 1 ) ) % n;
+			if ( i0 === i1 ) {
+				continue;
+			}
+			const a = pts[ i0 ];
+			const b = pts[ i1 ];
+			out.push( [ a.x, a.y, a.z, radius, b.x, b.y, b.z ] );
+		}
+	}
+
 	function prongAngle( k ) {
 		return ( k / PRONGS ) * Math.PI * 2;
 	}
 
 	function buildHead( morph, grow ) {
 		// Prongs: base on the bridge, up the pavilion, over the girdle, a claw tip on the crown.
-		const curve = new THREE.CatmullRomCurve3( [ new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3() ], false, 'centripetal' );
+		const curve = new THREE.CatmullRomCurve3( Array.from( { length: 6 }, () => new THREE.Vector3() ), false, 'centripetal' );
+		caps.length = 0;
 		const pts = curve.points;
 		const pg = smooth( 0, 1, grow );
 		for ( let k = 0; k < PRONGS; k ++ ) {
@@ -318,10 +341,12 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 			pts[ 1 ].set( q[ 0 ], yCul + 0.36 * pavH, q[ 1 ] );
 			q = lift( 0.72, 0.056 );
 			pts[ 2 ].set( q[ 0 ], yCul + 0.72 * pavH, q[ 1 ] );
-			q = lift( 1, 0.05 );
-			pts[ 3 ].set( q[ 0 ], 0, q[ 1 ] );
-			q = lift( 0.94, 0.012 );
-			pts[ 4 ].set( q[ 0 ], 0.07, q[ 1 ] );
+			q = lift( 1, 0.052 );
+			pts[ 3 ].set( q[ 0 ], - 0.01, q[ 1 ] );
+			q = lift( 1, 0.046 );
+			pts[ 4 ].set( q[ 0 ], 0.045, q[ 1 ] );
+			q = lift( 0.975, 0.03 );
+			pts[ 5 ].set( q[ 0 ], 0.072, q[ 1 ] );
 			const delay = ( k % 2 ) * 0.12;
 			const g = smooth( delay, delay + 0.88, pg );
 			const tube = prongs[ k ];
@@ -330,12 +355,19 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 				tube.end();
 				continue;
 			}
-			const n = 30;
+			const n = 48;
 			const path = [];
 			for ( let i = 0; i < n; i ++ ) {
 				path.push( curve.getPointAt( ( i / ( n - 1 ) ) * g ) );
 			}
-			tube.sweep( path, ( u ) => 0.052 - 0.011 * u * g, { capEnd: true } );
+			const radius = ( u ) => 0.052 - 0.011 * u * g;
+			tube.sweep( path, radius, { capEnd: true, capSteps: 10 } );
+			// The same prong, as four capsules, for its reflections inside the stone.
+			for ( let c = 0; c < 4; c ++ ) {
+				const a0 = path[ Math.round( ( c / 4 ) * ( n - 1 ) ) ];
+				const a1 = path[ Math.round( ( ( c + 1 ) / 4 ) * ( n - 1 ) ) ];
+				caps.push( [ a0.x, a0.y, a0.z, radius( ( c + 0.5 ) / 4 ), a1.x, a1.y, a1.z ] );
+			}
 		}
 		// Basket rail and the hidden-halo collar: loops that follow the outline.
 		const loop = ( tube, y, f, off, radius, g, count ) => {
@@ -354,6 +386,7 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 				pts2.push( new THREE.Vector3( p[ 0 ] * f + nrm[ 0 ] * off, y, p[ 1 ] * f + nrm[ 1 ] * off ) );
 			}
 			tube.sweep( pts2, radius, { up: new THREE.Vector3( 0, 1, 0 ), closed, capStart: ! closed, capEnd: ! closed } );
+			loopCaps( pts2, radius, closed );
 		};
 		const yr = - 0.27;
 		loop( rail, yr, ( yr - yCul ) / pavH, 0.036, 0.03, smooth( 0.35, 1, pg ), 100 );
@@ -366,6 +399,7 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 		const cg = smooth( 0, 0.55, h );
 		const pts = [];
 		const loopTube = collar;
+		collarCaps.length = 0;
 		if ( cg <= 0.001 ) {
 			loopTube.begin();
 			loopTube.end();
@@ -380,6 +414,7 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 				pts.push( new THREE.Vector3( p[ 0 ] * f + nrm[ 0 ] * 0.042, yh, p[ 1 ] * f + nrm[ 1 ] * 0.042 ) );
 			}
 			loopTube.sweep( pts, 0.03, { up: new THREE.Vector3( 0, 1, 0 ), closed, capStart: ! closed, capEnd: ! closed } );
+			loopCaps( pts, 0.03, closed, collarCaps );
 		}
 		// Stones on the outside of the collar, tilted up a little; none where a prong passes.
 		let used = 0;
@@ -459,6 +494,10 @@ export function createRing( { cube, rotation, waves = 3 } ) {
 		halo,
 		metals,
 		stoneMaterial: stoneMat,
+		/** Prongs, rail and collar as capsules in the stone's space. */
+		get setting() {
+			return caps.concat( collarCaps );
+		},
 		bandEnds: band.ends,
 		get bandGrow() {
 			return band.g;

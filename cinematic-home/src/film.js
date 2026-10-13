@@ -2,7 +2,9 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 import Lenis from 'lenis';
+import { N8AOPostPass } from 'n8ao';
 import { createEngine, defaults, TIERS } from './engine.js';
+import { CHAPTERS, LENGTH, filmState, addStory, pickTier as tierFor, canRender3D as can3D } from './story.js';
 
 /**
  * The director. One GSAP timeline holds the whole film: camera, ring,
@@ -18,86 +20,11 @@ const REDUCED = ! CAPTURE && matchMedia( '(prefers-reduced-motion: reduce)' ).ma
 const $ = ( s, el = document ) => el.querySelector( s );
 const $$ = ( s, el = document ) => [ ...el.querySelectorAll( s ) ];
 
-/* ---------- Chapters: when each one starts on the film's clock ---------- */
-const CHAPTERS = [ 0, 1.4, 4.6, 8.6, 11.8, 15 ];
-const LENGTH = 18;
-
-function pickTier() {
-	const forced = q.get( 'tier' );
-	if ( forced && TIERS[ forced ] ) {
-		return TIERS[ forced ];
-	}
-	const coarse = matchMedia( '(pointer: coarse)' ).matches;
-	const small = Math.min( screen.width, screen.height ) < 820;
-	const cores = navigator.hardwareConcurrency || 8;
-	// Only Chrome reports memory; elsewhere assume a normal device and let the governor judge.
-	const mem = navigator.deviceMemory || 8;
-	if ( coarse && small ) {
-		return mem <= 3 || cores <= 2 ? TIERS.low : TIERS.medium;
-	}
-	if ( cores <= 4 || mem <= 4 ) {
-		return TIERS.medium;
-	}
-	return TIERS.high;
-}
-
-function canRender3D() {
-	if ( q.has( 'no3d' ) ) {
-		return false;
-	}
-	if ( navigator.connection && navigator.connection.saveData ) {
-		return false;
-	}
-	try {
-		const c = document.createElement( 'canvas' );
-		return !! c.getContext( 'webgl2' );
-	} catch ( e ) {
-		return false;
-	}
-}
-
 /* ---------- The film's state, scrubbed by the timeline ---------- */
-const F = Object.assign( defaults(), {
-	tx: 0, ty: 2.2, tz: 0, dist: 3.4, az: 0.55, el: 0.3, fov: 24,
-	shift: 0.33, shiftY: 0.36, wobble: 1, shimmer: 1, bg: 0,
-} );
+const F = filmState();
 
 function buildTimeline() {
-	const tl = gsap.timeline( { paused: true, defaults: { ease: 'power2.inOut' } } );
-	const to = ( t, vars, duration, ease ) => tl.to( F, { ...vars, duration, ease }, t );
-
-	// 1 · First light: the stone alone; a slow push in while the light sweeps.
-	to( 0, { dist: 3.0, az: 0.95, env: 0.9 }, 1.4, 'none' );
-
-	// 2 · The setting: pull back while the band draws itself up to the stone.
-	to( 1.4, { tx: 0, ty: 0.85, dist: 11, el: 0.16, az: 0.42, shift: 0.3, shiftY: 0.24, wobble: 0.5 }, 2.0 );
-	to( 1.7, { band: 1 }, 1.8 );
-	to( 3.3, { prongs: 1 }, 1.0, 'power2.out' );
-	to( 3.4, { dist: 10.2, ty: 0.75, az: 0.3, env: 1.6 }, 1.2, 'power1.inOut' );
-
-	// 3 · The shape: straight down onto the table, then morph through the shapes.
-	to( 4.6, { ty: 2.2, dist: 4.4, el: 1.42, az: 0, shift: 0.3, shiftY: 0.27, wobble: 0, spin: 0, dof: 0.55 }, 1.0 );
-	to( 5.7, { morph: 1 }, 0.55 );
-	to( 6.6, { morph: 2 }, 0.55 );
-	to( 7.5, { morph: 3 }, 0.55 );
-	to( 8.35, { morph: 4 }, 0.45 );
-
-	// 4 · The metal: low three-quarter view; each change rides a sweep of light.
-	to( 8.6, { ty: 0.7, dist: 9.4, el: 0.06, az: 0.95, shift: - 0.3, shiftY: 0.24, wobble: 0.3, dof: 0 }, 1.1 );
-	to( 8.6, { spin: 0.7 }, 3.2, 'none' );
-	to( 9.6, { metal: 1, env: 2.9 }, 0.7 );
-	to( 10.6, { metal: 2, env: 4.3 }, 0.7 );
-
-	// 5 · The details: low and close under the stone, then along the shoulder.
-	to( 11.8, { tx: 0, ty: 2.06, dist: 2.7, el: - 0.04, az: 0.3, fov: 22, shift: - 0.28, shiftY: 0.24, wobble: 0.15, spin: 0, dof: 1 }, 1.0 );
-	to( 12.5, { halo: 1 }, 1.0, 'none' );
-	to( 13.5, { tx: 0.7, ty: 1.25, dist: 3.7, el: 0.36, az: 0.35, shift: - 0.42 }, 1.2 );
-	to( 13.7, { pave: 1 }, 1.0, 'none' );
-
-	// 6 · Since 1971: the ring steps back into warm light.
-	to( 15, { tx: 0, ty: 0.55, dist: 12.5, el: 0.2, az: 0.85, fov: 24, shift: 0.42, shiftY: 0.3, bg: 2, exposure: 0.92, wobble: 0.6, dof: 0 }, 1.4 );
-	to( 15, { spin: 1.2 }, 3.0, 'none' );
-	tl.set( {}, {}, LENGTH );
+	const tl = addStory( gsap.timeline( { paused: true, defaults: { ease: 'power2.inOut' } } ), F );
 
 	// Words.
 	const splits = new Map();
@@ -171,7 +98,7 @@ async function boot() {
 	const film = $( '#film' );
 	const visit = $( '#visit' );
 	const lights = $$( '[data-tone="light"]' );
-	const use3D = canRender3D();
+	const use3D = can3D( q.has( 'no3d' ) );
 	if ( ! use3D ) {
 		document.documentElement.classList.add( 'no-3d' );
 	}
@@ -200,10 +127,10 @@ async function boot() {
 	}
 
 	let engine = null;
-	let tier = pickTier();
+	let tier = tierFor( q.get( 'tier' ) );
 	if ( use3D ) {
 		try {
-			engine = createEngine( canvas, { tier, preserve: CAPTURE } );
+			engine = createEngine( canvas, { tier, preserve: CAPTURE, aoPass: N8AOPostPass } );
 		} catch ( e ) {
 			engine = null;
 			document.documentElement.classList.add( 'no-3d' );
@@ -228,7 +155,8 @@ async function boot() {
 		}
 		const w = canvas.clientWidth || innerWidth;
 		const h = canvas.clientHeight || innerHeight;
-		let dpr = Math.min( devicePixelRatio || 1, engine.tier.dpr ) * dprCap;
+		// The best tier renders above screen resolution on 1x screens (cleaner, sharper detail).
+		let dpr = Math.min( Math.max( devicePixelRatio || 1, engine.tier.supersample || 1 ), engine.tier.dpr ) * dprCap;
 		// Keep the pixel count sane on very large screens.
 		const budget = engine.tier.name === 'high' ? 4.2e6 : 2.6e6;
 		if ( w * h * dpr * dpr > budget ) {

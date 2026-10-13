@@ -31,7 +31,7 @@ for (const t of times) {
   } else {
     await page.waitForTimeout(80);
   }
-  fs.writeFileSync(`${outDir}/${name.replace(/[#.]/g, '')}.png`, await page.screenshot({ type: 'png' }));
+  fs.writeFileSync(`${outDir}/${name.replace(/[#.]/g, '')}.png`, await page.screenshot({ type: 'png', timeout: 600000 }));
   console.log(name);
 }
 console.log('tier', await page.evaluate(() => window.__film.tier()));

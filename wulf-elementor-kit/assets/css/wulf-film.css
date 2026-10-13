@@ -1,0 +1,119 @@
+/* Wulf kit · Cinematic film (3D). Loaded only on pages that use the widget. */
+
+.wk.wk-film .film-act { position: relative; height: calc(var(--film-len, 340) * 1svh); background: #05070b; color: #fff; }
+.wk.wk-film .film-stage { position: sticky; top: var(--film-top, 0px); height: calc(100svh - var(--film-top, 0px)); overflow: hidden; isolation: isolate; }
+.wk.wk-film .film-canvas,
+.wk.wk-film .film-poster,
+.wk.wk-film .film-poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.wk.wk-film .film-poster { z-index: 0; transition: opacity .8s ease; }
+.wk.wk-film .film-poster img { object-fit: cover; max-width: none; }
+.wk.wk-film .film-canvas { z-index: 0; }
+.wk.wk-film .film-act.is-live .film-poster { opacity: 0; }
+.wk.wk-film .film-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(5, 7, 11, .64) 0%, rgba(5, 7, 11, .3) 38%, rgba(5, 7, 11, 0) 62%); }
+.wk.wk-film .film-scrim.r { opacity: 0; background: linear-gradient(270deg, rgba(5, 7, 11, .64) 0%, rgba(5, 7, 11, .3) 38%, rgba(5, 7, 11, 0) 62%); }
+.wk.wk-film .film-bar { position: absolute; z-index: 3; left: 0; top: 0; height: 2px; width: 100%; transform-origin: 0 50%; transform: scaleX(0); background: linear-gradient(90deg, var(--gold-deep), var(--gold)); }
+
+/* Words */
+/* Later chapters sit clear of the booking button that appears once the opening words have gone. */
+.wk.wk-film .film-chap { position: absolute; z-index: 2; left: var(--gut); bottom: clamp(100px, 12vh, 140px); width: min(560px, calc(100% - 2 * var(--gut))); opacity: 0; visibility: hidden; }
+.wk.wk-film .film-chap.r { left: auto; right: var(--gut); }
+/* The opening words sit inside the first screen even when the stage starts lower down (announcement bar, a header that scrolls away). */
+.wk.wk-film .film-chap[data-chapter="0"] { opacity: 1; visibility: visible; width: min(660px, calc(100% - 2 * var(--gut))); bottom: calc(clamp(56px, 13vh, 150px) + var(--film-lift, 0px)); }
+.wk.wk-film .film-eyebrow { margin: 0 0 16px; color: var(--gold); font: 700 12px/1.4 var(--sans); letter-spacing: .2em; text-transform: uppercase; }
+.wk.wk-film .film-h { margin: 0; color: #fff; font: 300 clamp(40px, 4.9vw, 74px)/1.02 var(--serif); letter-spacing: -.022em; font-optical-sizing: auto; text-wrap: balance; }
+.wk.wk-film h1.film-h { font-size: clamp(46px, 6.1vw, 94px); }
+.wk.wk-film .gold-em,
+body.wk-calm .wk.wk-film .gold-em { font-style: italic; color: var(--gold); }
+.wk.wk-film .film-line { padding-bottom: .08em; }
+.wk.wk-film .film-chap > p:not(.film-eyebrow) { margin: 20px 0 0; max-width: 480px; color: var(--sub-night); font-size: clamp(16px, 1.2vw, 18.5px); line-height: 1.6; }
+.wk.wk-film .film-acts { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.wk.wk-film .film-note { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 16px 0 0; padding: 0; list-style: none; color: var(--sub-night); font-size: 14px; }
+.wk.wk-film .film-note li { display: inline-flex; align-items: center; gap: 7px; }
+.wk.wk-film .film-note svg { width: 15px; height: 15px; color: var(--gold); flex: none; }
+.wk.wk-film .film-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.wk.wk .film-chips button { display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 16px 0 12px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 999px; color: var(--sub-night); background: transparent; font: 600 14px/1 var(--sans); cursor: pointer; transition: color .3s, border-color .3s, background-color .3s; }
+.wk.wk .film-chips button:hover { color: #fff; border-color: rgba(255, 255, 255, .55); }
+.wk.wk .film-chips button[aria-pressed="true"] { color: #0f1217; background: #fff; border-color: #fff; }
+.wk.wk-film .film-chips svg { width: 14px; height: 14px; }
+.wk.wk-film .film-chips i { width: 14px; height: 14px; border-radius: 50%; }
+.wk.wk-film .film-chips [data-film-metal="0"] i { background: linear-gradient(135deg, #f4f4f2, #b9b9b6); }
+.wk.wk-film .film-chips [data-film-metal="1"] i { background: linear-gradient(135deg, #f6d68d, #c99a3e); }
+.wk.wk-film .film-chips [data-film-metal="2"] i { background: linear-gradient(135deg, #f7c9b4, #c98466); }
+.wk.wk-film .film-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 22px; padding-bottom: 2px; color: #fff; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, .4); }
+.wk.wk-film .film-link:hover { border-bottom-color: var(--gold); }
+.wk.wk-film .film-link svg { width: 16px; height: 16px; }
+.wk.wk-film .film-chap .film-acts .btn { min-height: 48px; }
+
+/* Furniture */
+.wk.wk-film .film-cue { position: absolute; z-index: 2; left: 50%; bottom: calc(22px + var(--film-lift, 0px)); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 10px; color: rgba(255, 255, 255, .62); font: 600 11px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; }
+.wk.wk-film .film-cue i { position: relative; width: 1px; height: 44px; overflow: hidden; background: rgba(255, 255, 255, .18); }
+.wk.wk-film .film-cue i::after { content: ""; position: absolute; inset: 0; background: #fff; animation: wk-film-cue 2.2s cubic-bezier(.6, 0, .2, 1) infinite; }
+@keyframes wk-film-cue { 0% { transform: translateY(-100%); } 60%, 100% { transform: translateY(100%); } }
+.wk.wk-film .film-skip { position: absolute; z-index: 2; right: var(--gut); top: 22px; display: inline-flex; align-items: center; gap: 8px; color: rgba(255, 255, 255, .72); font-size: 13px; font-weight: 600; text-decoration: none; }
+.wk.wk-film .film-skip:hover { color: #fff; }
+.wk.wk-film .film-skip svg { width: 15px; height: 15px; }
+.wk.wk-film .film-year { position: absolute; z-index: 1; left: calc(var(--gut) - .06em); top: 40%; translate: 0 -64%; color: transparent; font: 300 clamp(140px, 22vw, 360px)/.8 var(--serif); letter-spacing: -.05em; -webkit-text-stroke: 1px rgba(214, 185, 127, .5); opacity: 0; pointer-events: none; white-space: nowrap; }
+
+/* The first screen: the picture lights up and the words rise in as the page appears (no script needed). */
+@keyframes wk-film-light { from { filter: brightness(.38); } }
+@keyframes wk-film-rise { from { opacity: 0; transform: translateY(18px); } }
+body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-poster img { animation: wk-film-light 1.9s cubic-bezier(.3, .55, .3, 1) both; }
+body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > * { animation: wk-film-rise .9s cubic-bezier(.2, .7, .2, 1) both; }
+body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > :nth-child(2) { animation-delay: .12s; }
+body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > p:not(.film-eyebrow) { animation-delay: .28s; }
+body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > .film-acts { animation-delay: .4s; }
+body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > .film-note { animation-delay: .5s; }
+.wk.wk-film .film-lead-m { display: none; }
+html.film-capture .wk.wk-film *, html.film-capture .wk.wk-film *::after { animation: none !important; transition: none !important; }
+
+/* The site header turns the film's black while a film part is under it, so the two read as one. */
+/* "Ask our jeweller" (OM Catalog) keeps its first question until the film is off screen, so it never covers the film's words. */
+html.film-playing body .om-ai-starter { opacity: 0; visibility: hidden; pointer-events: none; }
+/* On phones its round button waits too: the film's words and buttons fill the bottom of the screen. */
+@media (max-width: 760px) {
+	html.film-playing body .om-ai-launch { opacity: 0; visibility: hidden; pointer-events: none; }
+}
+.wk.wk .hd.on-film:not(.mega-on):not(.searching) { background: #05070b; color: #fff; box-shadow: none; }
+
+/* Tall screens (phones, tablets held upright): the ring sits above the words. */
+@media (max-aspect-ratio: 20/21) {
+	.wk.wk-film .film-scrim,
+	.wk.wk-film .film-scrim.r { background: linear-gradient(180deg, rgba(5, 7, 11, 0) 36%, rgba(5, 7, 11, .55) 60%, rgba(5, 7, 11, .92) 100%); }
+	.wk.wk-film .film-scrim.l { opacity: 1 !important; }
+	.wk.wk-film .film-scrim.r { display: none; }
+	.wk.wk-film .film-chap,
+	.wk.wk-film .film-chap.r { left: var(--gut); right: var(--gut); width: auto; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+	.wk.wk-film .film-chap[data-chapter="0"] { left: var(--gut); right: var(--gut); width: auto; bottom: calc(5svh + 36px + var(--film-lift, 0px)); }
+}
+@media (max-width: 760px) {
+	.wk.wk-film .film-chap,
+	.wk.wk-film .film-chap.r,
+	.wk.wk-film .film-chap[data-chapter="0"] { left: 16px; right: 16px; }
+	.wk.wk-film h1.film-h { font-size: clamp(38px, 11vw, 52px); }
+	.wk.wk-film .film-h { font-size: clamp(32px, 9.2vw, 44px); }
+	.wk.wk-film .film-chap > p:not(.film-eyebrow) { margin-top: 14px; font-size: 15.5px; }
+	.wk.wk-film .film-lead-d { display: none; }
+	.wk.wk-film .film-chap > .film-lead-m { display: block; }
+	.wk.wk-film .film-acts { margin-top: 20px; }
+	.wk.wk-film .film-acts .btn { flex: 1 1 auto; }
+	.wk.wk-film .film-chips { margin-top: 16px; gap: 6px; }
+	.wk.wk .film-chips button { height: 36px; padding: 0 12px 0 10px; font-size: 13px; }
+	.wk.wk-film .film-cue,
+	.wk.wk-film .film-year { display: none; }
+	.wk.wk-film .film-skip { right: 16px; top: 14px; }
+}
+
+/* No script yet, the page builder, or the 3D turned off: a calm, readable stack. */
+html:not(.film-on) .wk.wk-film .film-act { height: auto; }
+html:not(.film-on) .wk.wk-film .film-stage { position: relative; top: 0; height: auto; min-height: 88vh; display: flex; flex-direction: column; justify-content: flex-end; gap: 56px; padding: 120px var(--gut) 72px; }
+html:not(.film-on) .wk.wk-film .film-chap { position: relative; left: auto; right: auto; bottom: auto; opacity: 1; visibility: visible; }
+html:not(.film-on) .wk.wk-film .film-chap.r { align-self: flex-end; }
+html:not(.film-on) .wk.wk-film .film-cue,
+html:not(.film-on) .wk.wk-film .film-bar { display: none; }
+html:not(.film-on) .wk.wk-film .film-year { opacity: .7; }
+@media (prefers-reduced-motion: reduce) {
+	.wk.wk-film .film-cue i::after,
+	body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-poster img,
+	body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-chap[data-chapter="0"] > * { animation: none; }
+	.wk.wk-film .film-poster { transition: none; }
+}
