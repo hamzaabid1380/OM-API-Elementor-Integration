@@ -327,17 +327,22 @@ class WK_Pages {
 				);
 
 			case 'home-cinematic':
-				// The conversion page told as a film: the film's opening is the first screen, and its other
-				// two parts sit between the sections, each one handing over to a clear next step.
+				// The conversion page told as a film, and shorter: the film's opening is the first screen,
+				// its other two parts sit between the sections, each handing over to a clear next step.
+				// The film's shapes and metals stand in for the ring style quiz, and the booking bar and
+				// the booking form already say how a visit works, so those two sections are left out.
 				$b = array( array( 'film', array( 'act' => 'opening' ) ) );
 				foreach ( self::blocks( 'home-conversion' ) as $block ) {
-					if ( 'hero' === $block[0] ) {
+					if ( in_array( $block[0], array( 'hero', 'quiz', 'steps' ), true ) ) {
 						continue;
 					}
-					if ( 'quiz' === $block[0] ) {
+					if ( 'spotlight' === $block[0] ) {
 						$b[] = array( 'film', array( 'act' => 'shapes' ) );
 					} elseif ( 'values' === $block[0] ) {
 						$b[] = array( 'film', array( 'act' => 'details' ) );
+						// Ivory, so the backgrounds alternate down the page (ivory, white, ivory, white)
+						// instead of two white sections stacking their spacing.
+						$block[1]['tone'] = 'ivory';
 					}
 					$b[] = $block;
 				}

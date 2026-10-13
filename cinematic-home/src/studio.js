@@ -65,6 +65,29 @@ export const STONE_STUDIO = {
 		[ 9, 18, [ 25, 4, - 2 ], 0.25, WHITE ],
 		[ 40, 5, [ 0, 2, 28 ], 0.3, WHITE ],
 	],
+	/**
+	 * The same lights as a jewellery case at night ("mood" 1): the softboxes
+	 * close down to small, bright spots in a dark room, so every facet that
+	 * catches one flashes, with its fire. Per card: w, h, intensity.
+	 */
+	spot: {
+		dome: { top: 0.4, horizon: 0.09, bottom: 0.02 },
+		cards: [
+			[ 9, 9, 4.6 ],
+			[ 4, 14, 4.2 ],
+			[ 4, 14, 4.2 ],
+			[ 12, 4, 3.2 ],
+			[ 1.6, 22, 7.5 ],
+			[ 1.6, 22, 7.5 ],
+			[ 7, 44, 0.02 ],
+			[ 7, 44, 0.02 ],
+			[ 7, 44, 0.02 ],
+			[ 7, 44, 0.02 ],
+			[ 9, 18, 0.08 ],
+			[ 9, 18, 0.08 ],
+			[ 18, 2.5, 0.8 ],
+		],
+	},
 };
 
 const lin = ( r, g, b ) => new THREE.Color().setRGB( r, g, b, THREE.LinearSRGBColorSpace );
@@ -100,7 +123,6 @@ function stoneStudio() {
 	for ( const c of STONE_STUDIO.cards ) {
 		card( scene, ...c );
 	}
-	LIGHTS.length = 0;
 	return scene;
 }
 
@@ -108,10 +130,13 @@ function stoneStudio() {
  * The cards as shader uniforms: centre (w = round), unit axes divided by
  * the half sizes (w = edge softness in those units), facing normal (w = the
  * plane offset) and colour. Sorted far to near so nearer cards win.
+ * mood( m ) moves the same lights between the photo studio (0) and the
+ * jewellery case (1): sizes, brightness and the room around them.
  */
 export function stoneStudioUniforms( feather = 0.22 ) {
 	const o = new THREE.Object3D();
-	const list = STONE_STUDIO.cards.map( ( [ w, h, pos, intensity, color, round ] ) => {
+	const spot = STONE_STUDIO.spot;
+	const list = STONE_STUDIO.cards.map( ( [ w, h, pos, intensity, color, round ], i ) => {
 		o.position.set( ...pos );
 		o.lookAt( 0, 0, 0 );
 		o.updateMatrixWorld( true );
@@ -119,25 +144,74 @@ export function stoneStudioUniforms( feather = 0.22 ) {
 		const v = new THREE.Vector3().setFromMatrixColumn( o.matrixWorld, 1 ).normalize();
 		const n = new THREE.Vector3().setFromMatrixColumn( o.matrixWorld, 2 ).normalize();
 		const c = new THREE.Vector3( ...pos );
+		const [ sw, sh, si ] = spot.cards[ i ];
 		return {
 			dist: c.length(),
+			au: u,
+			av: v,
+			color,
+			from: [ w, h, intensity ],
+			to: [ sw, sh, si ],
+			dir: c.clone().normalize(),
 			c: new THREE.Vector4( c.x, c.y, c.z, round ? 1 : 0 ),
-			u: new THREE.Vector4( u.x / ( w / 2 ), u.y / ( w / 2 ), u.z / ( w / 2 ), feather / ( w / 2 ) ),
-			v: new THREE.Vector4( v.x / ( h / 2 ), v.y / ( h / 2 ), v.z / ( h / 2 ), feather / ( h / 2 ) ),
+			u: new THREE.Vector4(),
+			v: new THREE.Vector4(),
 			n: new THREE.Vector4( n.x, n.y, n.z, c.dot( n ) ),
-			col: new THREE.Vector3( color[ 0 ] * intensity, color[ 1 ] * intensity, color[ 2 ] * intensity ),
+			col: new THREE.Vector3(),
 		};
 	} ).sort( ( a, b ) => b.dist - a.dist );
 	const d = STONE_STUDIO.dome;
-	return {
+	const dome = new THREE.Vector3();
+	const lerp = ( a, b, t ) => a + ( b - a ) * t;
+	let current = - 1;
+	const uniforms = {
 		count: list.length,
 		c: list.map( ( l ) => l.c ),
 		u: list.map( ( l ) => l.u ),
 		v: list.map( ( l ) => l.v ),
 		n: list.map( ( l ) => l.n ),
 		col: list.map( ( l ) => l.col ),
-		dome: new THREE.Vector3( d.top, d.horizon, d.bottom ),
+		dome,
+		mood( m ) {
+			m = Math.max( 0, Math.min( 1, m ) );
+			if ( Math.abs( m - current ) < 1e-4 ) {
+				return;
+			}
+			current = m;
+			// Sizes and brightness ease geometrically, so a light closing down reads as one light.
+			const g = ( a, b ) => a * Math.pow( b / a, m );
+			for ( const l of list ) {
+				const w = g( l.from[ 0 ], l.to[ 0 ] );
+				const h = g( l.from[ 1 ], l.to[ 1 ] );
+				const k = lerp( l.from[ 2 ], l.to[ 2 ], m );
+				const f = lerp( feather, 0.12, m );
+				l.u.set( l.au.x / ( w / 2 ), l.au.y / ( w / 2 ), l.au.z / ( w / 2 ), f / ( w / 2 ) );
+				l.v.set( l.av.x / ( h / 2 ), l.av.y / ( h / 2 ), l.av.z / ( h / 2 ), f / ( h / 2 ) );
+				l.col.set( l.color[ 0 ] * k, l.color[ 1 ] * k, l.color[ 2 ] * k );
+			}
+			dome.set( lerp( d.top, spot.dome.top, m ), lerp( d.horizon, spot.dome.horizon, m ), lerp( d.bottom, spot.dome.bottom, m ) );
+			moodLights( m );
+		},
 	};
+	uniforms.mood( 0 );
+	return uniforms;
+}
+
+/**
+ * The bright spots of the jewellery case, for the star glints (a facet that
+ * mirrors one of them flashes). Empty in the photo studio.
+ */
+export function moodLights( m ) {
+	LIGHTS.length = 0;
+	if ( m < 0.05 ) {
+		return;
+	}
+	const spot = STONE_STUDIO.spot.cards;
+	STONE_STUDIO.cards.forEach( ( c, i ) => {
+		if ( spot[ i ][ 2 ] >= 4 ) {
+			LIGHTS.push( { dir: new THREE.Vector3( ...c[ 2 ] ).normalize(), power: m * spot[ i ][ 2 ] / 7.5 } );
+		}
+	} );
 }
 
 function tentStudio() {

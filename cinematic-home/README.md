@@ -1,9 +1,10 @@
 # Wulf cinematic homepage
 
-A homepage that plays like a short film as you scroll. A diamond lights up on
-black, a ring draws itself around it, the stone changes shape, the metal
-changes colour, the camera dives in for the hidden details, and then the page
-hands over to the usual sections: shapes, reviews and the visit block.
+A homepage that plays like a short film as you scroll. A diamond turns under
+the spotlights of a jewelry case, the first scroll brings it close, a ring
+draws itself around it, the stone changes shape, the metal changes colour, the
+camera moves in on the hidden details, and then the page hands over to the
+usual sections: shapes, reviews and the visit block.
 
 Nothing in the 3D is a video or a downloaded 3D model. The ring, the diamond
 and the studio lights are all built in code when the page opens. The diamond
@@ -34,12 +35,18 @@ It comes two ways from the same code:
 
 ## The chapters
 
-1. **First light**: the stone alone. "Independent since 1971."
-2. **The setting**: the band draws itself up to the stone, the prongs close over it.
-3. **The shape**: straight down onto the table: round, oval, cushion, pear.
-4. **The metal**: white, yellow, rose, each change riding a sweep of light.
-5. **The details**: a macro dive under the stone (hidden halo), then along the pavé.
-6. **Since 1971**: the story, in warm light.
+1. **First light**: the stone face-up, turning slowly under a jewelry case's
+   spotlights: fire, star glints, fine motes drifting through a soft beam, a pool
+   of light behind it. "Independent since 1971." The first scroll brings it close,
+   face-up, through a sweep of light.
+2. **The setting**: one long pull-back: the band rises to the stone seen side-on,
+   the prongs close over it, and the ring turns to a three-quarter view.
+3. **The shape**: from above, the stone large: round, oval, cushion, pear (the
+   shank upright on computers, across the screen on phones; the pear points away
+   from the words).
+4. **The metal**: a low three-quarter view while the ring turns: white, yellow, rose.
+5. **The details**: close on the head (hidden halo), then along the pavé.
+6. **Since 1971**: the story, in warm light, the ring turning.
 
 Then: the shapes row, reviews, and the visit section with the ring on a slow turntable.
 
@@ -57,10 +64,11 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 | --- | --- |
 | `src/cut.js` | A true 57-facet round brilliant (table 56%, crown 34.5°, pavilion 40.8°, depth 61.3%): every facet a flat plane, meeting a round, slightly scalloped girdle. Fancy shapes reuse the same facets on their own outline, so one shape morphs into the next facet by facet. |
 | `src/diamond.js` | The stones' shader: refraction in, total internal reflection inside (BVH ray tracing with three-mesh-bvh), Fresnel at every exit, and dispersion from diamond's measured refractive index at 7 wavelengths (3 on the lightest quality level), so the fire is the soft, pastel kind seen in photos. The camera and photographer are a dark patch in front of the stone, which draws the crisp grey and black facet pattern of real diamond photos. For sharp close-ups the studio lights are evaluated exactly for every ray (no blurry baked map), the best quality traces 4 rays per pixel, and rays inside the centre stone also see the setting's own prongs and rails. The same shader, instanced, draws every pavé and halo stone. |
-| `src/studio.js` | Two studios built from light: a product-photo studio for the stones (bright softboxes, darker horizon, black cards), evaluated light by light in the shader or baked to a cube map on the lightest level, and a bright light tent for the metal, baked once. Turning the lights is a rotation, so light sweeps are free. |
+| `src/studio.js` | Two studios built from light: a product-photo studio for the stones (bright softboxes, darker horizon, black cards), evaluated light by light in the shader or baked to a cube map on the lightest level, and a bright light tent for the metal, baked once. The stone studio has a "mood" that blends it into a jewelry case (small, bright spotlights, a darker dome) for the opening. Turning the lights is a rotation, so light sweeps are free. |
+| `src/atmos.js` | The air in the case: a faint beam of light from above and fine motes drifting through it. Additive, a few hundred points, almost free. |
 | `src/ring.js`, `src/tube.js` | The band (a swept squircle that draws itself), six prongs that follow the stone's outline, the basket rail, the hidden halo, and pavé set the real way: stones across most of the band, nearly touching, held by shared beads. |
-| `src/glints.js` | The soft glow on the band's ends while it draws itself. (Star glints are available but off: real product photos do not have them.) |
-| `src/engine.js` | Renderer, lens shift (subject off-centre without bending perspective), quality tiers, post-processing: contact shadows (N8AO, best quality), bloom, tone mapping, vignette, grain, macro depth of field. Shaders compile in the background before the first frame. |
+| `src/glints.js` | Star glints where a facet really catches one of the case's spotlights (they flash in step with the turning stone), used in the opening and faded for the product-photo shots; and the soft glow on the band's ends while it draws itself. |
+| `src/engine.js` | Renderer, lens shift (subject off-centre without bending perspective), framing for every screen shape (tall screens widen the lens; squarer landscape screens such as 4:3 laptops pull back a little and move the subject further from the words), quality tiers, post-processing: contact shadows (N8AO, best quality), bloom, tone mapping, vignette, grain, macro depth of field. Shaders compile in the background before the first frame. |
 | `src/story.js` | The story on one clock (0 to 18): what the camera, the ring and the light do in each chapter, when the words come and go, and how the quality level is picked. Shared by both versions. |
 | `src/film.js` | The stand-alone director: one GSAP timeline holds camera, ring, light and words, and scrolling scrubs it (ScrollTrigger, SplitText, Lenis). |
 | `src/wp.js` | The WordPress director: up to three acts between other sections, each scrubbing its part of the story. One canvas moves into the act on screen; nothing draws while none is. |
@@ -99,10 +107,13 @@ copy in `fontcache/` (see `tools/fonts.mjs`).
 ## On WordPress
 
 - **"Home (cinematic)"** in Wulf Kit > Pages & templates: the conversion
-  homepage with the film in three parts. The opening is the first screen
-  (headline, "Book a free consultation", "Design your ring"), then the booking
-  bar and "What brings you in?"; shapes and metals come before the ring style
-  quiz; the details and the 1971 story come before "Why Wulf".
+  homepage with the film in three parts, and shorter. The opening is the first
+  screen (headline, "Book a free consultation", "Design your ring", the call line
+  and trust points), then the booking bar resting on its last frame and "What
+  brings you in?"; shapes and metals come before the favorites; the details and
+  the 1971 story come before "Why Wulf". The ring style quiz and "How a visit
+  works" are left out: the film's shapes and metals do the quiz's job, and the
+  booking bar and form already say how a visit works.
 - **"Wulf · Cinematic film (3D)"** widget: pick the part, edit its words,
   buttons and links. Camera moves and timing live in code. Each part shows a
   still picture of its first frame (`assets/media/film-*.webp`, rendered with

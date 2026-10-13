@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.11.0
+Stable tag: 1.12.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -167,17 +167,18 @@ account; Google shares up to 5 reviews and picks them). When both are filled in,
 
 == Cinematic film (3D) ==
 
-"Home (cinematic)" is the conversion homepage told as a short film. As visitors scroll, a diamond
-lights up, a ring builds itself around it, the stone changes shape, the gold changes colour and the
-camera moves in on the hidden details. Nothing is a video or a 3D file: the ring, the diamond and the
+"Home (cinematic)" is the conversion homepage told as a short film. It opens on a diamond turning
+under the spotlights of a jewelry case; as visitors scroll it comes close, a ring builds itself
+around it, the stone changes shape, the gold changes color and the camera moves in on the hidden
+details. Nothing is a video or a 3D file: the ring, the diamond and the
 studio lights are drawn live in the browser, and the diamond follows the light through all 57 facets,
 which is where its sparkle and coloured fire come from.
 
 The film comes in three parts, with the conversion sections in between:
 
 1. The opening (the first screen): the headline, "Book a free consultation" and "Design your ring",
-   then the band and prongs build around the stone. The booking bar comes right after it.
-2. Shapes and metals, before the ring style quiz: round, oval, cushion and pear, then white, yellow
+   then the band and prongs build around the stone. The booking bar rests on its last frame.
+2. Shapes and metals, before the favorites: round, oval, cushion and pear, then white, yellow
    and rose gold. Visitors can tap a shape or a metal to jump to it.
 3. The details and your story, before "Why Wulf": the hidden halo and the pavé, then "Independent
    since 1971".
@@ -186,13 +187,19 @@ It is a separate page, a variation of "Home (conversion)": building it never cha
 page, which keeps its own address and stays exactly as it is. The cinematic version has every
 conversion piece of the original: the same booking buttons, reassurance, "Or call" line with the live
 open status and trust points on the first screen, then the same booking bar, "What brings you in?",
-ring style quiz, favorites, why Wulf, how a visit works, ring designer, questions and booking form.
+favorites, why Wulf, ring designer, questions and booking form. It is shorter: the ring style quiz
+and "How a visit works" are left out, because the film's shapes and metals do the quiz's job and the
+booking bar and form already say how a visit works. Both stay on "Home (conversion)".
 
 To try it: in Wulf Kit > Pages & templates, build "Home (cinematic)", open it, compare it with your
 current homepage, and click "Go live" when you like it. "Go live" only chooses which version is the
 homepage; the other versions stay published at their own addresses, so you can switch back any time. Every word, button and link is editable in
 Elementor (choose a part of the film, then its words); camera moves and timing are built in. Each part
 can also be added to any page with the "Wulf · Cinematic film (3D)" widget, once per page, in order.
+
+Built "Home (cinematic)" with version 1.11? The film updates by itself, but the page's sections are
+saved in the page: to get the shorter 1.12 layout, build "Home (cinematic)" again with "Build a fresh
+copy" (the copy you have is kept, and "Home (conversion)" is not touched).
 
 Speed and devices:
 
@@ -215,6 +222,24 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.12.0 =
+* "Home (cinematic)" has a new opening: the diamond turns under the spotlights of a jewelry case,
+  with sparkle, a soft beam of light and a pool of light around it, and the first scroll brings it
+  close, face-up, before the band rises and the prongs close.
+* The film's scenes are re-directed: one long pull-back as the ring builds, the shapes seen from
+  above with the stone large (the pear points away from the words), the metals from a low
+  three-quarter view while the ring turns, and a warm, turning story shot.
+* The cinematic page is shorter: the ring style quiz and "How a visit works" are left out (the film
+  and the booking bar cover them). Both stay on "Home (conversion)", which is unchanged. Already
+  built it? Build it again with "Build a fresh copy" to get the new layout.
+* Spacing and alignment: the film's words line up with the logo and every section on both sides,
+  sit level with the ring on computers, and the booking bar rests on the film's last frame. "Why
+  Wulf" is ivory on this page so backgrounds alternate instead of two white sections stacking space.
+* Tablets and 4:3 screens: the 3D frames itself around the words, and the scroll cue no longer
+  crowds the trust points on tablets held upright.
+* Small fixes: opening hours never break "10 am" across two lines, the opening's intro stays on two
+  lines on large screens, and the Google rating's arrow stays with its label on phones.
 
 = 1.11.0 =
 * New "Home (cinematic)" page template: the conversion homepage with a scroll-directed 3D film woven

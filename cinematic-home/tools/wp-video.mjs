@@ -37,7 +37,7 @@ const P = await page.evaluate( () => {
 		acts[ a ] = { y: el.getBoundingClientRect().top + scrollY - top, run: el.offsetHeight - el.querySelector( '.film-stage' ).offsetHeight, t: ACTS[ a ] };
 	}
 	const sec = {};
-	for ( const s of [ '#book-now', '#start', '#quiz', '#spotlight', '#values', '#studio', '#visit' ] ) {
+	for ( const s of [ '#book-now', '#start', '#spotlight', '#values', '#studio', '#visit' ] ) {
 		const el = document.querySelector( s );
 		sec[ s ] = el ? Math.round( el.getBoundingClientRect().top + scrollY - top ) : null;
 	}
@@ -54,7 +54,7 @@ const shots = [];
 const hold = ( sec_, y ) => shots.push( [ sec_, () => y ] );
 const move = ( sec_, a, b ) => shots.push( [ sec_, ( t, d ) => a + ( b - a ) * ease( t / d ) ] );
 const play = ( sec_, act ) => shots.push( [ sec_, ( t, d ) => at( act, P.acts[ act ].t[ 0 ] + ( P.acts[ act ].t[ 1 ] - P.acts[ act ].t[ 0 ] ) * ( t / d ) ) ] );
-hold( 1.8, 0 );
+hold( 2.4, 0 );
 move( 0.8, 0, at( 'opening', 0 ) );
 play( 7.5, 'opening' );
 move( 2.0, at( 'opening', 4.6 ), sec( '#book-now' ) );
@@ -63,9 +63,7 @@ move( 1.2, sec( '#book-now' ), sec( '#start' ) );
 hold( 1.6, sec( '#start' ) );
 move( 1.4, sec( '#start' ), at( 'shapes', 4.6 ) );
 play( 12, 'shapes' );
-move( 1.4, at( 'shapes', 11.8 ), sec( '#quiz' ) );
-hold( 1.6, sec( '#quiz' ) );
-move( 1.4, sec( '#quiz' ), sec( '#spotlight' ) );
+move( 1.4, at( 'shapes', 11.8 ), sec( '#spotlight' ) );
 hold( 1.6, sec( '#spotlight' ) );
 move( 1.4, sec( '#spotlight' ), at( 'details', 11.8 ) );
 play( 9.5, 'details' );

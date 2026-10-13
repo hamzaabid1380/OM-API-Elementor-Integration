@@ -47,10 +47,12 @@ export const SHAPES = {
 		const r = Math.pow( Math.pow( Math.abs( c ), p ) + Math.pow( Math.abs( s ), p ), - 1 / p ) * 0.455;
 		return [ c * r, s * r ];
 	},
-	// Teardrop: point towards +x, round end behind the culet.
+	// Teardrop: point towards -x (away from the words in the film), round end behind the culet.
+	// Traced mirrored (parameter pi - a) so it runs the same way round as the other outlines.
 	pear: ( a ) => {
 		const k = 0.58;
-		return [ ( Math.cos( a ) + 0.3 ) * k, Math.sin( a ) * Math.sin( a / 2 ) * 0.84 * k ];
+		const b = ( ( ( Math.PI - a ) % ( Math.PI * 2 ) ) + Math.PI * 2 ) % ( Math.PI * 2 );
+		return [ - ( Math.cos( b ) + 0.3 ) * k, Math.sin( b ) * Math.sin( b / 2 ) * 0.84 * k ];
 	},
 };
 

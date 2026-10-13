@@ -110,7 +110,7 @@ class WK_Values_Widget extends WK_Widget {
 		$label  = (string) $s['rating_label'];
 		$label  = $g ? str_replace( array( '{count}', '[N]' ), number_format_i18n( $g['count'] ), $label ) : str_replace( '{count}', '[N]', $label );
 		$stars  = str_repeat( WK_Icons::svg( 'star' ), 5 );
-		return '<a class="v-rating"' . self::link_attrs( $s['rating_link'] ) . '><span class="stars" aria-hidden="true">' . $stars . '</span><b>' . esc_html( $rating ) . '</b> <span>' . esc_html( $label ) . '</span> ' . WK_Icons::svg( 'arr' ) . '</a>';
+		return '<a class="v-rating"' . self::link_attrs( $s['rating_link'] ) . '><span class="stars" aria-hidden="true">' . $stars . '</span><b>' . esc_html( $rating ) . '</b> <span class="v-lab">' . esc_html( $label ) . ' ' . WK_Icons::svg( 'arr' ) . '</span></a>';
 	}
 
 	protected function render() {

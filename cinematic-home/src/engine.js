@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, NoiseEffect, ToneMappingEffect, ToneMappingMode, BlendFunction, Effect, DepthOfFieldEffect } from 'postprocessing';
-import { createStudio, stoneStudioUniforms } from './studio.js';
+import { createStudio, stoneStudioUniforms, moodLights } from './studio.js';
+import { createAtmosphere } from './atmos.js';
 import { createDiamond } from './diamond.js';
 import { createRing, HEAD_Y } from './ring.js';
 import { createGlints } from './glints.js';
@@ -16,9 +17,9 @@ export const TIERS = {
 
 /** Backdrops: [centre, edge]. */
 const PALETTES = [
-	[ '#1b1712', '#030304' ], // 0 first light
-	[ '#1a2333', '#05070b' ], // 1 night studio
-	[ '#2c2217', '#090706' ], // 2 1971, warm
+	[ '#221b14', '#030304' ], // 0 first light
+	[ '#2e2318', '#080605' ], // 1 1971, warm
+	[ '#1a2333', '#05070b' ], // 2 night studio
 	[ '#ffffff', '#ffffff' ], // 3 white (catalogue cards, like the product photos)
 	[ '#1f2738', '#0b0e14' ], // 4 visit, brand night
 ];
@@ -28,6 +29,13 @@ export function defaults() {
 		tx: 0, ty: HEAD_Y, tz: 0, dist: 3.6, az: 0.55, el: 0.3, fov: 24, shift: 0, shiftY: 0,
 		spin: 0, wobble: 1, shimmer: 1, band: 0, prongs: 0, morph: 0, metal: 0, halo: 0, pave: 0,
 		env: 0, exposure: 1, bg: 0, glint: 0, endGlow: 1, glow: 0, dof: 0, focus: 0,
+		// mood: photo studio (0) to jewellery case (1); turn: the loose stone turning on its own (rad/s);
+		// motes, beam: the air in the case; pool: how tightly the backdrop's light gathers behind the subject.
+		mood: 0, turn: 0, motes: 0, beam: 0, pool: 0,
+		// bloom: how much the brightest flashes glow (1 = the usual soft glow).
+		bloom: 1,
+		// spinTall: an extra turn on tall screens only, where the words sit below the ring instead of beside it.
+		spinTall: 0,
 	};
 }
 
@@ -43,10 +51,11 @@ const backFragment = /* glsl */`
 	uniform vec3 outer;
 	uniform vec2 centre;
 	uniform float aspect;
+	uniform float spread;
 	varying vec2 vUv;
 	void main() {
 		vec2 d = ( vUv - centre ) * vec2( aspect, 1.0 );
-		float t = smoothstep( 0.0, 1.05, length( d ) );
+		float t = smoothstep( 0.0, spread, length( d ) );
 		vec3 c = mix( inner, outer, t );
 		// A touch of dither so the gradient never bands.
 		float n = fract( sin( dot( gl_FragCoord.xy, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
@@ -110,6 +119,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			outer: { value: new THREE.Color() },
 			centre: { value: new THREE.Vector2( 0.5, 0.55 ) },
 			aspect: { value: 1 },
+			spread: { value: 1.05 },
 		},
 	} );
 	const back = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), backMat );
@@ -118,6 +128,11 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 	scene.add( back );
 
 	const glints = createGlints( scene );
+	const atmos = createAtmosphere( scene );
+	const stoneAt = new THREE.Vector3( 0, HEAD_Y, 0 );
+	const buffer = new THREE.Vector2();
+	let stonePhase = 0;
+	let lastTime = null;
 
 	let composer;
 	let grade;
@@ -240,9 +255,17 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			const ce = Math.cos( S.el );
 			// Tall screens: widen the lens so the ring keeps roughly the same width in frame.
 			const aspect = size.w / size.h;
+			const w = size.w;
+			const h = size.h;
+			const portrait = h > w * 1.05;
+			// Squarer landscape screens (4:3 laptops, tablets on their side): the words keep their width
+			// while the picture narrows, so the lens pulls back a little and the subject moves further
+			// aside, clear of them.
+			const squeeze = portrait ? 0 : THREE.MathUtils.clamp( ( 1.75 - aspect ) / 0.5, 0, 1 );
+			let k = aspect < 1.25 ? Math.min( 2.4, Math.pow( 1.6 / aspect, 0.62 ) ) : 1;
+			k *= 1 + 0.25 * squeeze;
 			let fov = S.fov;
-			if ( aspect < 1.25 ) {
-				const k = Math.min( 2.4, Math.pow( 1.6 / aspect, 0.62 ) );
+			if ( k !== 1 ) {
 				fov = THREE.MathUtils.radToDeg( 2 * Math.atan( Math.tan( THREE.MathUtils.degToRad( fov / 2 ) ) * k ) );
 			}
 			camera.fov = fov;
@@ -250,10 +273,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			camera.up.set( 0, 1, 0 );
 			camera.lookAt( S.tx, S.ty, S.tz );
 			// Lens shift: move the subject off-centre without bending the perspective.
-			const w = size.w;
-			const h = size.h;
-			const portrait = h > w * 1.05;
-			const sx = portrait ? 0 : S.shift;
+			const sx = portrait ? 0 : S.shift * ( 1 + 0.45 * squeeze );
 			const sy = portrait ? S.shiftY : 0;
 			if ( sx || sy ) {
 				camera.setViewOffset( w, h, - sx * w * 0.5, sy * h * 0.5, w, h );
@@ -261,8 +281,28 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 				camera.clearViewOffset();
 			}
 			camera.updateProjectionMatrix();
+			// The backdrop's light gathers behind the subject, wherever the lens puts it.
+			backMat.uniforms.centre.value.set( 0.5 + sx * 0.5, 0.53 + sy * 0.5 );
+			backMat.uniforms.spread.value = 1.05 - 0.38 * S.pool;
 
-			ring.group.rotation.y = S.spin + S.wobble * Math.sin( time * 0.32 ) * 0.28;
+			// The loose stone turns on its own in the light; once the setting starts it eases back to
+			// rest (a whole turn, so its facets line up with the prongs again).
+			const dt = lastTime === null ? 0 : Math.min( 0.1, Math.max( 0, time - lastTime ) );
+			lastTime = time;
+			if ( ( S.turn || 0 ) > 0.0005 ) {
+				stonePhase += S.turn * dt;
+			} else {
+				const rest = Math.round( stonePhase / ( Math.PI * 2 ) ) * Math.PI * 2;
+				stonePhase = rest + ( stonePhase - rest ) * Math.exp( - dt * 2.5 );
+			}
+			diamond.mesh.rotation.y = stonePhase;
+			ring.group.rotation.y = S.spin + ( portrait ? S.spinTall : 0 ) + S.wobble * Math.sin( time * 0.32 ) * 0.28;
+			// The lights: photo studio or jewellery case (the glints follow the case's spots).
+			if ( exact ) {
+				exact.mood( S.mood );
+			} else {
+				moodLights( S.mood );
+			}
 			ring.update( S );
 			diamond.setMorph( S.morph );
 			diamond.setSetting( ring.setting, ring.metals[ 1 ].color );
@@ -276,7 +316,8 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			grade.uniforms.get( 'exposure' ).value = S.exposure;
 			const white = Math.max( 0, 1 - Math.abs( S.bg - 3 ) * 2 );
 			vignette.darkness = 0.55 * ( 1 - white );
-			bloom.intensity = 0.35 * ( 1 - white );
+			bloom.intensity = 0.35 * S.bloom * ( 1 - white );
+			bloom.luminanceMaterial.threshold = Math.max( 0.9, 1.6 - 0.45 * ( S.bloom - 1 ) );
 			if ( noise ) {
 				noise.blendMode.opacity.value = 0.045 * ( 1 - white );
 			}
@@ -291,6 +332,14 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			const growing = S.band > 0.001 && S.band < 0.999;
 			ends[ 0 ].copy( ring.bandEnds[ 0 ] ).applyMatrix4( ring.group.matrixWorld );
 			ends[ 1 ].copy( ring.bandEnds[ 1 ] ).applyMatrix4( ring.group.matrixWorld );
+			renderer.getDrawingBufferSize( buffer );
+			atmos.update( {
+				time,
+				centre: stoneAt,
+				motes: S.motes * ( 1 - white ),
+				beam: S.beam * ( 1 - white ),
+				pxScale: buffer.y / ( 2 * Math.tan( THREE.MathUtils.degToRad( camera.fov ) / 2 ) ),
+			} );
 			glints.update( camera, {
 				diamond: diamond.mesh,
 				pave: ring.pave,

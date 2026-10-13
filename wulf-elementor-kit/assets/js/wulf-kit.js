@@ -292,7 +292,7 @@
 	/* ================= Store hours ================= */
 	var HRS = CFG.hours || [null, [10, 18], [10, 18], [10, 18], [10, 18], [10, 18], [10, 17]];
 	var DAYS = T.days || ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-	var hfmt = function (h) { var hh = Math.floor(h), mm = Math.round((h - hh) * 60); return (hh % 12 || 12) + (mm ? ':' + (mm < 10 ? '0' : '') + mm : '') + (hh >= 12 ? ' pm' : ' am'); };
+	var hfmt = function (h) { var hh = Math.floor(h), mm = Math.round((h - hh) * 60); return (hh % 12 || 12) + (mm ? ':' + (mm < 10 ? '0' : '') + mm : '') + (hh >= 12 ? '\u00a0pm' : '\u00a0am'); };
 	var NOW;
 	try { NOW = new Date(new Date().toLocaleString('en-US', { timeZone: CFG.tz || 'America/Chicago' })); } catch (e) { NOW = new Date(); }
 	var D = NOW.getDay(), HR = NOW.getHours() + NOW.getMinutes() / 60, TODAY = HRS[D];

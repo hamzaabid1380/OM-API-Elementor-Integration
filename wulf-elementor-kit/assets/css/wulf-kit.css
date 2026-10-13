@@ -1027,8 +1027,10 @@ body.wk-calm .wk.wk .split .eyebrow { color: var(--sub); }
 .wk.wk .v-rating .stars { display: flex; gap: 2px; color: var(--gold-deep); }
 .wk.wk .v-rating .stars svg { width: 17px; height: 17px; }
 .wk.wk .v-rating b { font: 400 24px/1 var(--serif); color: var(--ink); }
-.wk.wk .v-rating > svg { width: 17px; height: 17px; transition: transform .2s; }
-.wk.wk .v-rating:hover > svg { transform: translateX(3px); }
+/* The label and its arrow wrap together, so the arrow never sits alone on a line. */
+.wk.wk .v-rating .v-lab { display: inline-flex; align-items: center; gap: 10px; }
+.wk.wk .v-rating > svg, .wk.wk .v-rating .v-lab > svg { flex: none; width: 17px; height: 17px; transition: transform .2s; }
+.wk.wk .v-rating:hover > svg, .wk.wk .v-rating:hover .v-lab > svg { transform: translateX(3px); }
 .wk.wk .dark .v-rating { color: var(--sub-night); }
 .wk.wk .dark .v-rating b { color: #fff; }
 

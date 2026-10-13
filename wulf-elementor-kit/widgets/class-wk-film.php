@@ -40,9 +40,9 @@ class WK_Film_Widget extends WK_Widget {
 	/** Defaults per act: scroll length in screens, poster file, skip link. */
 	private static function acts() {
 		return array(
-			'opening' => array( 'label' => __( 'Opening: first light, then the setting', 'wulf-kit' ), 'len' => 3.4, 'poster' => 'film-opening', 'skip' => '#book-now' ),
-			'shapes'  => array( 'label' => __( 'Shape and metal (tap a shape or metal to see it)', 'wulf-kit' ), 'len' => 4.4, 'poster' => 'film-shapes', 'skip' => '#quiz' ),
-			'details' => array( 'label' => __( 'Details and story', 'wulf-kit' ), 'len' => 3.4, 'poster' => 'film-details', 'skip' => '' ),
+			'opening' => array( 'label' => __( 'Opening: first light, then the setting', 'wulf-kit' ), 'len' => 2.8, 'poster' => 'film-opening', 'skip' => '#book-now' ),
+			'shapes'  => array( 'label' => __( 'Shape and metal (tap a shape or metal to see it)', 'wulf-kit' ), 'len' => 3.8, 'poster' => 'film-shapes', 'skip' => '#spotlight' ),
+			'details' => array( 'label' => __( 'Details and story', 'wulf-kit' ), 'len' => 3.2, 'poster' => 'film-details', 'skip' => '' ),
 		);
 	}
 
@@ -66,7 +66,7 @@ class WK_Film_Widget extends WK_Widget {
 			'max'         => 8,
 			'step'        => 0.1,
 			'default'     => '',
-			'placeholder' => '3.4',
+			'placeholder' => '2.8',
 			'description' => __( 'How far visitors scroll while this part plays. Empty uses the recommended length.', 'wulf-kit' ),
 		) );
 		$this->add_control( 'anchor', array( 'label' => __( 'Anchor (for menu links)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
@@ -114,7 +114,7 @@ class WK_Film_Widget extends WK_Widget {
 		$this->add_control( 's_eyebrow', array( 'label' => __( 'Small label above', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'The shape', 'wulf-kit' ) ) );
 		$this->add_control( 's_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'Find your shape.', 'wulf-kit' ) ) );
 		$this->add_control( 's_text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => __( 'Round, oval, cushion or pear. Each returns light in its own way, so we compare them side by side before you decide.', 'wulf-kit' ) ) );
-		$this->button_fields( 's_lk', __( 'Link under the shapes', 'wulf-kit' ), __( 'Not sure? Take the ring style quiz', 'wulf-kit' ), '#quiz' );
+		$this->button_fields( 's_lk', __( 'Link under the shapes', 'wulf-kit' ), __( 'Try each one in the ring designer', 'wulf-kit' ), '#studio' );
 		$this->add_control( 'm_heading', array( 'label' => __( 'Second chapter: the metal', 'wulf-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ) );
 		$this->add_control( 'm_eyebrow', array( 'label' => __( 'Small label above', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'The metal', 'wulf-kit' ) ) );
 		$this->add_control( 'm_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'White, yellow or *rose.*', 'wulf-kit' ) ) );
