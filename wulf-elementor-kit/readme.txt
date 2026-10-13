@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.12.3
+Stable tag: 1.12.4
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -209,8 +209,8 @@ Speed and devices:
 * A still picture of each part shows straight away and stays wherever 3D cannot run (very old phones,
   Data Saver); the words and buttons work the same either way.
 * Every computer gets the quality it can draw smoothly. While the first still picture shows, the
-  film draws its heaviest moment a few times and picks its level from how long that takes (the
-  graphics chip matters, not the processor). While it plays, it lowers the resolution, then the
+  film times a small copy of its heaviest moment, then the level it picks (the graphics chip
+  matters, not the processor). A weak chip is never handed a frame heavy enough to upset it. While it plays, it lowers the resolution, then the
   quality, within a second or two if frames slow down.
 * The film stays on screen while visitors scroll on any theme. A theme setting or custom CSS that
   hides overflow on a page wrapper (a common fix for sideways scrolling) quietly stops that; the film
@@ -235,6 +235,12 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.12.4 =
+* Safer first measurement: the film times a small copy of its heaviest frame and works out the
+  full-size cost from it, so a weak graphics chip is never handed a frame heavy enough for Windows to
+  reset its driver (after a few resets the browser switches 3D off for every site until it restarts).
+* ?filmcheck says plainly when the browser itself has 3D switched off.
 
 = 1.12.3 =
 * Nothing is prepared mid-film any more: the depth-of-field blur and the contact shadows (best

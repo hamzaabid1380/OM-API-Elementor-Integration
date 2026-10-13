@@ -52,11 +52,17 @@ export function remember( v ) {
 /**
  * Settle on a rung for this device, starting from `rung`. `apply( rung )` switches the film
  * to a rung and resolves once its shaders are ready; `bench()` resolves to the milliseconds
- * the heaviest frame takes there. Resolves to the rung to play at, or null when even the
- * lightest rung would stutter (show the still pictures instead).
+ * the heaviest frame takes there. `probe()`, when given, estimates that first measurement
+ * from a small copy of the frame instead, so a weak chip is never handed a full-size heavy
+ * frame; every later measurement is on a rung expected to fit. Resolves to the rung to play
+ * at, or null when even the lightest rung would stutter (show the still pictures instead).
  */
-export async function settle( rung, apply, bench, target = TARGET ) {
-	let ms = await bench();
+export async function settle( rung, apply, bench, target = TARGET, probe = null ) {
+	let ms = await ( probe || bench )();
+	// The small copy overstates the cost a little; where it already fits, a real frame is safe and exact.
+	if ( probe && ms <= target ) {
+		ms = await bench();
+	}
 	// A strong chip that started in the middle: try the best level.
 	if ( rung[ 0 ] === 'medium' && rung[ 1 ] === 1 && predict( ms, rung, LADDER[ 0 ] ) <= target * 0.8 ) {
 		await apply( LADDER[ 0 ] );

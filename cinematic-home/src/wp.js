@@ -90,7 +90,8 @@ async function boot() {
 	// Why the 3D is off, when it is (shown by ?filmcheck).
 	let why = '';
 	if ( ! use3D ) {
-		why = q.has( 'no3d' ) ? 'turned off in the address (?no3d)' : can3D ? 'software graphics (no graphics chip in use)' : 'this browser has no WebGL 2, or Data Saver is on';
+		const saver = !! ( navigator.connection && navigator.connection.saveData );
+		why = q.has( 'no3d' ) ? 'turned off in the address (?no3d)' : can3D ? 'software graphics (no graphics chip in use)' : saver ? 'Data Saver is on' : 'this browser has 3D graphics (WebGL 2) switched off or unavailable; get.webgl.org/webgl2 shows the same';
 	}
 	if ( ! use3D ) {
 		root.classList.add( 'film-no3d' );
@@ -396,12 +397,9 @@ async function boot() {
 	}
 
 	let dprCap = 1;
-	const resize = () => {
-		if ( ! engine ) {
-			return;
-		}
-		const w = canvas.clientWidth || innerWidth;
-		const h = canvas.clientHeight || innerHeight;
+	const stageSize = () => [ canvas.clientWidth || innerWidth, canvas.clientHeight || innerHeight ];
+	const pixelRatio = () => {
+		const [ w, h ] = stageSize();
 		// The best tier renders above screen resolution on 1x screens (cleaner, sharper detail).
 		let dpr = Math.min( Math.max( devicePixelRatio || 1, engine.tier.supersample || 1 ), engine.tier.dpr ) * dprCap;
 		// Keep the pixel count sane on very large screens.
@@ -409,7 +407,14 @@ async function boot() {
 		if ( w * h * dpr * dpr > budget ) {
 			dpr = Math.sqrt( budget / ( w * h ) );
 		}
-		engine.resize( w, h, Math.max( 0.5, dpr ) );
+		return Math.max( 0.5, dpr );
+	};
+	const resize = () => {
+		if ( ! engine ) {
+			return;
+		}
+		const [ w, h ] = stageSize();
+		engine.resize( w, h, pixelRatio() );
 	};
 
 	// The opening's still picture lights up as the page appears (CSS). If the 3D
@@ -650,13 +655,24 @@ async function boot() {
 		if ( engine && FIT && ! memo ) {
 			const S = Object.assign( defaults(), filmState(), HEAVY );
 			let ms = 0;
-			const chosen = await settle( rung, useRung, async () => ( ms = await engine.bench( S ) ), FIT_TARGET );
+			// First a small copy of the heaviest frame (an eighth of the pixels): a weak graphics chip is
+			// never handed a frame long enough for Windows to reset its driver (which makes the browser
+			// turn 3D off). The full-size cost is worked out from it.
+			const probe = async () => {
+				const [ w, h ] = stageSize();
+				const k = 0.35;
+				engine.resize( w, h, pixelRatio() * k );
+				const small = await engine.bench( S, 2 );
+				resize();
+				return ( ms = small / ( k * k ) );
+			};
+			const chosen = await settle( rung, useRung, async () => ( ms = await engine.bench( S ) ), FIT_TARGET, probe );
 			if ( ! engine ) {
 				return;
 			}
 			if ( ! chosen ) {
 				remember( 'off' );
-				fallBack( 'too slow on this computer (the heaviest frame took ' + Math.round( ms ) + ' ms)' );
+				fallBack( 'too slow on this computer (its heaviest frame would take about ' + Math.round( ms ) + ' ms)' );
 				return;
 			}
 			if ( chosen !== rung ) {
