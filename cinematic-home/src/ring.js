@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CUT, outlineAt, smallStoneGeometry } from './cut.js';
 import { Tube } from './tube.js';
-import { smallStoneMaterial } from './stones.js';
+import { smallStoneMaterial } from './diamond.js';
 
 /**
  * A cathedral solitaire built in code, in units where the centre stone is
@@ -13,7 +13,7 @@ import { smallStoneMaterial } from './stones.js';
 export const R_IN = 1.27;
 export const HEAD_Y = 2.18;
 const PRONGS = 6;
-const SUPER = 3.2;
+const SUPER = 4;
 
 // Band profile along u = angle from the top (0) to the bottom (PI).
 const thick = ( u ) => 0.19 + 0.17 * Math.exp( - Math.pow( u / 0.42, 2 ) );
@@ -193,7 +193,7 @@ function bandSurface( phi, z = 0 ) {
 	return { point: er.multiplyScalar( r ).setZ( z ), normal };
 }
 
-export function createRing( { cube, bright, rotation } ) {
+export function createRing( { cube, rotation, waves = 3 } ) {
 	const group = new THREE.Group();
 	group.name = 'ring';
 	const head = new THREE.Group();
@@ -225,7 +225,8 @@ export function createRing( { cube, bright, rotation } ) {
 
 	// Hidden halo stones and pave.
 	const stoneGeo = smallStoneGeometry();
-	const stoneMat = smallStoneMaterial( cube, rotation, bright );
+	const stoneMat = smallStoneMaterial( cube, { bounces: 4, waves } );
+	stoneMat.uniforms.envRotation.value = rotation;
 	const HALO = 26;
 	const halo = new THREE.InstancedMesh( stoneGeo, stoneMat, HALO );
 	halo.instanceMatrix.setUsage( THREE.DynamicDrawUsage );
@@ -239,10 +240,11 @@ export function createRing( { cube, bright, rotation } ) {
 		const end = 1.3;
 		while ( phi < end ) {
 			const f = ( phi - 0.3 ) / ( end - 0.3 );
-			const size = 0.132 - 0.024 * f;
+			// Real pave: stones across most of the band, nearly touching.
+			const size = 0.19 - 0.024 * f;
 			paveSpots.push( { phi, size } );
 			const r = rOut( phi );
-			phi += ( size + 0.014 ) / r;
+			phi += ( size + 0.01 ) / r;
 		}
 	}
 	const paveCount = paveSpots.length * 2;
@@ -265,22 +267,21 @@ export function createRing( { cube, bright, rotation } ) {
 				const phi = s.phi * side;
 				const { point, normal } = bandSurface( phi );
 				q.setFromUnitVectors( up, normal );
-				// Girdle sits just under the surface so the table is flush.
-				const pos = point.clone().addScaledVector( normal, - 0.018 * ( s.size / 0.13 ) );
+				// Girdle just under the metal, crown standing proud like set pave.
+				const pos = point.clone().addScaledVector( normal, - 0.006 );
 				paveData.push( { pos, q: q.clone(), size: s.size, order: i, side } );
-				// Beads in the gap before this stone, on both edges.
-				const prev = i === 0 ? s.phi - ( s.size + 0.014 ) / rOut( s.phi ) : paveSpots[ i - 1 ].phi;
+				// Shared beads between neighbours, on both edges, just over the girdles.
+				const prev = i === 0 ? s.phi - ( s.size + 0.01 ) / rOut( s.phi ) : paveSpots[ i - 1 ].phi;
 				const gapPhi = ( ( s.phi + prev ) / 2 ) * side;
 				for ( const z of [ - 1, 1 ] ) {
-					const bz = z * ( s.size / 2 + 0.012 );
-					const b = bandSurface( gapPhi, bz );
-					beadData.push( { pos: b.point.clone().addScaledVector( b.normal, 0.003 ), size: 0.019, order: i, side } );
+					const b = bandSurface( gapPhi, z * s.size * 0.42 );
+					beadData.push( { pos: b.point.clone().addScaledVector( b.normal, 0.004 ), size: 0.027, order: i, side } );
 				}
 				if ( i === paveSpots.length - 1 ) {
-					const after = ( s.phi + ( s.size + 0.014 ) / 2 / rOut( s.phi ) ) * side;
+					const after = ( s.phi + ( s.size + 0.01 ) / 2 / rOut( s.phi ) ) * side;
 					for ( const z of [ - 1, 1 ] ) {
-						const b = bandSurface( after, z * ( s.size / 2 + 0.006 ) );
-						beadData.push( { pos: b.point.clone().addScaledVector( b.normal, 0.003 ), size: 0.018, order: i + 0.5, side } );
+						const b = bandSurface( after, z * s.size * 0.42 );
+						beadData.push( { pos: b.point.clone().addScaledVector( b.normal, 0.004 ), size: 0.025, order: i + 0.5, side } );
 					}
 				}
 			} );

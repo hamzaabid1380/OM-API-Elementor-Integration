@@ -65,43 +65,40 @@ const WARM = [ 1, 0.965, 0.92 ];
 const COOL = [ 0.94, 0.97, 1 ];
 
 function stoneStudio() {
+	// A product-photo studio: bright softboxes above and around, a darker
+	// horizon and floor, black cards between the lights. The camera itself is
+	// added in the stone's shader (it moves with the view).
 	const scene = new THREE.Scene();
-	dome( scene, lin( 0.07, 0.07, 0.075 ), lin( 0.016, 0.016, 0.018 ), lin( 0.002, 0.002, 0.002 ) );
-	card( scene, 16, 11, [ 0, 26, 8 ], 3.2, WARM );
-	card( scene, 3, 30, [ - 24, 6, - 4 ], 8, COOL );
-	card( scene, 3, 30, [ 24, 6, 3 ], 8, WARM );
-	card( scene, 20, 2.4, [ 0, 18, - 22 ], 3.2, COOL );
-	card( scene, 1.2, 22, [ - 12, 2, - 24 ], 7 );
-	card( scene, 20, 6, [ 0, - 4, 26 ], 0.5, WARM );
-	card( scene, 9, 9, [ 18, 16, 18 ], 2.6, WARM, true );
-	LIGHTS.length = 0;
-	const rand = mulberry( 1971 );
-	for ( let i = 0; i < 34; i ++ ) {
-		const az = rand() * Math.PI * 2;
-		const el = 0.08 + rand() * 1.25;
-		const d = 34;
-		const pos = [ Math.cos( az ) * Math.cos( el ) * d, Math.sin( el ) * d, Math.sin( az ) * Math.cos( el ) * d ];
-		const s = 0.5 + rand() * 0.9;
-		const power = 26 + rand() * 40;
-		card( scene, s, s, pos, power, rand() > 0.5 ? WARM : COOL, true );
-		LIGHTS.push( { dir: new THREE.Vector3( ...pos ).normalize(), power: power / 66 } );
+	dome( scene, lin( 0.6, 0.6, 0.6 ), lin( 0.16, 0.16, 0.165 ), lin( 0.04, 0.04, 0.042 ) );
+	card( scene, 20, 20, [ 0, 28, 0 ], 2.6 );
+	card( scene, 12, 26, [ - 22, 8, 14 ], 2.0, COOL );
+	card( scene, 12, 26, [ 22, 8, 14 ], 2.0, WARM );
+	card( scene, 28, 10, [ 0, 10, - 26 ], 1.6 );
+	card( scene, 4, 30, [ - 26, 2, - 8 ], 2.8 );
+	card( scene, 4, 30, [ 26, 2, - 8 ], 2.8 );
+	for ( const a of [ 0.8, 2.35, 3.95, 5.5 ] ) {
+		card( scene, 7, 44, [ Math.cos( a ) * 25, 0, Math.sin( a ) * 25 ], 0.02 );
 	}
+	card( scene, 9, 18, [ - 25, 4, 6 ], 0.25 );
+	card( scene, 9, 18, [ 25, 4, - 2 ], 0.25 );
+	card( scene, 40, 5, [ 0, 2, 28 ], 0.3 );
+	LIGHTS.length = 0;
 	return scene;
 }
 
 function tentStudio() {
+	// The metal's light tent: bright all round (polished white gold looks white,
+	// not chrome-dark), with two thin grey cards for crisp edges.
 	const scene = new THREE.Scene();
-	dome( scene, lin( 0.62, 0.62, 0.63 ), lin( 0.3, 0.3, 0.31 ), lin( 0.035, 0.035, 0.037 ) );
-	card( scene, 26, 18, [ 0, 26, 4 ], 3.2, WARM );
-	card( scene, 9, 32, [ - 24, 4, 6 ], 2.6, COOL );
-	card( scene, 9, 32, [ 24, 4, - 6 ], 2.6, WARM );
-	card( scene, 2, 30, [ - 16, 6, - 20 ], 6 );
-	card( scene, 2, 30, [ 16, 6, 20 ], 5, WARM );
-	// Black cards give polished metal its crisp dark edges.
-	card( scene, 6, 40, [ - 20, 0, - 14 ], 0.01 );
-	card( scene, 6, 40, [ 20, 0, 14 ], 0.01 );
-	card( scene, 5, 40, [ 6, 0, - 24 ], 0.015 );
-	card( scene, 60, 10, [ 0, - 6, 26 ], 0.04 );
+	dome( scene, lin( 0.95, 0.95, 0.96 ), lin( 0.6, 0.6, 0.61 ), lin( 0.3, 0.3, 0.31 ) );
+	card( scene, 26, 18, [ 0, 26, 4 ], 3.0, WARM );
+	card( scene, 9, 32, [ - 24, 4, 6 ], 2.4, COOL );
+	card( scene, 9, 32, [ 24, 4, - 6 ], 2.4, WARM );
+	card( scene, 2, 30, [ - 16, 6, - 20 ], 4 );
+	card( scene, 2, 30, [ 16, 6, 20 ], 3.5, WARM );
+	card( scene, 4, 40, [ - 20, 0, - 14 ], 0.12 );
+	card( scene, 4, 40, [ 20, 0, 14 ], 0.12 );
+	card( scene, 60, 8, [ 0, - 8, 26 ], 0.18 );
 	return scene;
 }
 

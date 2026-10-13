@@ -425,7 +425,7 @@ async function boot() {
 			engine.resize( w, h, 1 );
 			const out = list.map( ( c ) => {
 				const S = Object.assign( defaults(), {
-					band: 1, prongs: 1, halo: 1, pave: 1, bg: 3, wobble: 0, shimmer: 0, glint: 0.55,
+					band: 1, prongs: 1, halo: 1, pave: 1, bg: 3, wobble: 0, shimmer: 0, glint: 0,
 					ty: 0.62, dist: 10.6, el: 0.2, az: 0.55, shift: 0, shiftY: 0,
 				}, c );
 				engine.render( S, 0 );

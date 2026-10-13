@@ -7,9 +7,9 @@ import { createGlints } from './glints.js';
 
 /** Quality tiers. The governor in film.js steps down when frames run slow. */
 export const TIERS = {
-	high: { name: 'high', dpr: 2, msaa: 4, bounces: 8, cube: 512, grain: true, dof: true },
-	medium: { name: 'medium', dpr: 1.5, msaa: 2, bounces: 6, cube: 512, grain: true, dof: false },
-	low: { name: 'low', dpr: 1, msaa: 0, bounces: 4, cube: 256, grain: false, dof: false },
+	high: { name: 'high', dpr: 2, msaa: 4, bounces: 8, waves: 7, cube: 512, grain: true, dof: true },
+	medium: { name: 'medium', dpr: 1.5, msaa: 2, bounces: 6, waves: 7, cube: 512, grain: true, dof: false },
+	low: { name: 'low', dpr: 1, msaa: 0, bounces: 4, waves: 3, cube: 256, grain: false, dof: false },
 };
 
 /** Backdrops: [centre, edge]. */
@@ -25,7 +25,7 @@ export function defaults() {
 	return {
 		tx: 0, ty: HEAD_Y, tz: 0, dist: 3.6, az: 0.55, el: 0.3, fov: 24, shift: 0, shiftY: 0,
 		spin: 0, wobble: 1, shimmer: 1, band: 0, prongs: 0, morph: 0, metal: 0, halo: 0, pave: 0,
-		env: 0, exposure: 1, bg: 0, glint: 1, endGlow: 1, glow: 0, dof: 0, focus: 0,
+		env: 0, exposure: 1, bg: 0, glint: 0, endGlow: 1, glow: 0, dof: 0, focus: 0,
 	};
 }
 
@@ -83,12 +83,12 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false } = 
 	const studio = createStudio( renderer, { size: tier.cube } );
 	scene.environment = studio.env;
 
-	const ring = createRing( { cube: studio.cube, bright: studio.bright, rotation: studio.rotation } );
+	const ring = createRing( { cube: studio.cube, rotation: studio.rotation } );
 	scene.add( ring.group );
 	// Elongated shapes sit north-south on the finger.
 	ring.head.rotation.y = Math.PI / 2;
 
-	const diamond = createDiamond( studio.cube, { bounces: tier.bounces, bright: studio.bright } );
+	const diamond = createDiamond( studio.cube, { bounces: tier.bounces, waves: tier.waves } );
 	diamond.material.uniforms.envRotation.value = studio.rotation;
 	ring.head.add( diamond.mesh );
 
@@ -133,7 +133,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false } = 
 			dofPass.enabled = false;
 			composer.addPass( dofPass );
 		}
-		bloom = new BloomEffect( { intensity: 0.7, luminanceThreshold: 1.25, luminanceSmoothing: 0.35, mipmapBlur: true, radius: 0.7, levels: 8 } );
+		bloom = new BloomEffect( { intensity: 0.35, luminanceThreshold: 1.6, luminanceSmoothing: 0.4, mipmapBlur: true, radius: 0.62, levels: 8 } );
 		grade = new GradeEffect();
 		const tone = new ToneMappingEffect( { mode: ToneMappingMode.NEUTRAL } );
 		vignette = new VignetteEffect( { offset: 0.3, darkness: 0.55 } );
@@ -232,8 +232,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false } = 
 			grade.uniforms.get( 'exposure' ).value = S.exposure;
 			const white = Math.max( 0, 1 - Math.abs( S.bg - 3 ) * 2 );
 			vignette.darkness = 0.55 * ( 1 - white );
-			bloom.intensity = 0.7 * ( 1 - white );
-			diamond.material.uniforms.brightMix.value = white * 0.55;
+			bloom.intensity = 0.35 * ( 1 - white );
 			if ( noise ) {
 				noise.blendMode.opacity.value = 0.045 * ( 1 - white );
 			}

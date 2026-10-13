@@ -9,7 +9,9 @@ Nothing in the 3D is a video or a downloaded 3D model. The ring, the diamond
 and the studio lights are all built in code when the page opens. The diamond
 is ray traced: every pixel follows the light through the real facets of a
 57-facet brilliant cut, which is where the sparkle and the coloured fire come
-from.
+from. It is lit the way the catalog photos are (a bright product studio, with
+the dark camera in front of the stone), so it reads like the diamonds on the
+website rather than like computer graphics.
 
 **To look at it:** open `dist/wulf-cinematic-home.html` in Chrome, Safari,
 Edge or Firefox. It is one self-contained file. It only needs the internet
@@ -47,11 +49,11 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 
 | File | What it does |
 | --- | --- |
-| `src/cut.js` | The brilliant cut from real proportions (table 56%, crown 34.5°, pavilion 40.8°). Fancy shapes reuse the same facets on their own outline, so one shape morphs into the next facet by facet. |
-| `src/diamond.js` | The stone's shader: refraction in, total internal reflection inside (BVH ray tracing with three-mesh-bvh), Fresnel at every exit, red/green/blue bending by different amounts (fire). |
-| `src/studio.js` | Two photo studios built from light and baked to cube maps once: a dark one with hard lights for the stone, a bright light tent with black cards for the metal. Turning the lights is a rotation, so light sweeps are free. |
-| `src/ring.js`, `src/tube.js`, `src/stones.js` | The band (a swept squircle that draws itself), six prongs that follow the stone's outline, the basket rail, the hidden halo and graduated pavé with beads. |
-| `src/glints.js` | Star glints only where a facet really mirrors one of the studio lights. |
+| `src/cut.js` | A true 57-facet round brilliant (table 56%, crown 34.5°, pavilion 40.8°, depth 61.3%): every facet a flat plane, meeting a round, slightly scalloped girdle. Fancy shapes reuse the same facets on their own outline, so one shape morphs into the next facet by facet. |
+| `src/diamond.js` | The stones' shader: refraction in, total internal reflection inside (BVH ray tracing with three-mesh-bvh), Fresnel at every exit, and dispersion from diamond's measured refractive index at 7 wavelengths (3 on the lightest quality level), so the fire is the soft, pastel kind seen in photos. The camera and photographer are a dark patch in front of the stone, which draws the crisp grey and black facet pattern of real diamond photos. The same shader, instanced, draws every pavé and halo stone. |
+| `src/studio.js` | Two studios built from light and baked to cube maps once: a product-photo studio for the stones (bright softboxes, darker horizon, black cards) and a bright light tent for the metal. Turning the lights is a rotation, so light sweeps are free. |
+| `src/ring.js`, `src/tube.js` | The band (a swept squircle that draws itself), six prongs that follow the stone's outline, the basket rail, the hidden halo, and pavé set the real way: stones across most of the band, nearly touching, held by shared beads. |
+| `src/glints.js` | The soft glow on the band's ends while it draws itself. (Star glints are available but off: real product photos do not have them.) |
 | `src/engine.js` | Renderer, lens shift (subject off-centre without bending perspective), quality tiers, post-processing: bloom, tone mapping, vignette, grain, macro depth of field. |
 | `src/film.js` | The director: one GSAP timeline holds camera, ring, light and words, and scrolling scrubs it (ScrollTrigger, SplitText, Lenis). |
 | `src/page.html` | The page itself: real HTML text (readable by Google and screen readers), brand tokens from the kit. |
