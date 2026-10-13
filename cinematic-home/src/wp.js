@@ -262,6 +262,139 @@ async function boot() {
 		fallBack( engine ? 'the graphics driver dropped the 3D' : '' );
 	} );
 
+	/* ---------- Keeping each stage on screen ---------- */
+	// The stage stays on screen with CSS (position: sticky). A wrapper that hides its overflow
+	// (themes and page settings often do, to stop sideways scrolling) quietly turns that off, and
+	// the film would scroll away after its first moment. Such wrappers get overflow: clip instead:
+	// the same look, and the stage stays on screen again. Where that isn't possible, or the stage
+	// still doesn't stay, the film pins its stages itself.
+	const stages = acts.map( ( a ) => $( '.film-stage', a ) );
+	let pinJS = '';
+	let unblocked = 0;
+	const hides = ( v ) => v !== 'visible' && v !== 'clip';
+	const blockers = ( el ) => {
+		const out = [];
+		const hs = getComputedStyle( root );
+		// The page's own overflow goes to the window, unless the root element has its own.
+		const bodyToWindow = ! hides( hs.overflowX ) && ! hides( hs.overflowY );
+		for ( let n = el.parentElement; n && n !== root; n = n.parentElement ) {
+			if ( n === document.body && bodyToWindow ) {
+				continue;
+			}
+			const cs = getComputedStyle( n );
+			if ( hides( cs.overflowX ) || hides( cs.overflowY ) ) {
+				out.push( n );
+			}
+		}
+		return out;
+	};
+	const clipOK = !! ( window.CSS && CSS.supports && CSS.supports( 'overflow', 'clip' ) );
+	// An ancestor with a transform (or filter, containment) makes "fixed" follow it, not the screen.
+	const holdsFixed = ( n ) => {
+		const cs = getComputedStyle( n );
+		return cs.transform !== 'none' || cs.perspective !== 'none' || cs.filter !== 'none' || ( !! cs.backdropFilter && cs.backdropFilter !== 'none' ) || /paint|layout|strict|content/.test( cs.contain || '' ) || /transform|perspective|filter/.test( cs.willChange || '' );
+	};
+	const frames = new Map();
+	const frameOf = ( st ) => {
+		if ( ! frames.has( st ) ) {
+			let c = null;
+			for ( let n = st.parentElement; n && n !== root && ! c; n = n.parentElement ) {
+				c = holdsFixed( n ) ? n : null;
+			}
+			frames.set( st, c );
+		}
+		return frames.get( st );
+	};
+	const usePinJS = ( reason ) => {
+		if ( pinJS ) {
+			return;
+		}
+		pinJS = reason;
+		root.classList.add( 'film-pinjs' );
+		frames.clear();
+		ScrollTrigger.refresh();
+	};
+	// (Marked important, so a theme rule that forces a position can't undo it.)
+	const place = ( st, pos, top, bottom, left, width ) => {
+		const s = st.style;
+		const set = ( k, v ) => {
+			if ( s.getPropertyValue( k ) !== v ) {
+				s.setProperty( k, v, 'important' );
+			}
+		};
+		set( 'position', pos );
+		set( 'top', top );
+		set( 'bottom', bottom );
+		set( 'left', left );
+		set( 'width', width );
+	};
+	const filmTop = () => parseFloat( root.style.getPropertyValue( '--film-top' ) ) || 0;
+	// Each frame, when pinning by hand: before its act, at the act's top; during, fixed under the
+	// header; after, at the act's bottom (exactly what sticky would do).
+	const pin = () => {
+		if ( ! pinJS ) {
+			return;
+		}
+		const top = filmTop();
+		acts.forEach( ( a, i ) => {
+			const st = stages[ i ];
+			const r = a.getBoundingClientRect();
+			const h = st.offsetHeight;
+			if ( r.top > top ) {
+				place( st, 'absolute', '0px', 'auto', '0px', '100%' );
+			} else if ( r.bottom < top + h ) {
+				place( st, 'absolute', 'auto', '0px', '0px', '100%' );
+			} else {
+				const f = frameOf( st );
+				const fr = f ? f.getBoundingClientRect() : { left: 0, top: 0 };
+				place( st, 'fixed', ( top - fr.top ) + 'px', 'auto', ( r.left - fr.left ) + 'px', r.width + 'px' );
+			}
+		} );
+	};
+	const unblock = () => {
+		for ( const st of stages ) {
+			for ( const n of blockers( st ) ) {
+				const cs = getComputedStyle( n );
+				// A real inner scroller (content longer than it, scrolled on purpose) is left alone.
+				const scrolls = ( cs.overflowY !== 'hidden' && n.scrollHeight > n.clientHeight + 1 ) || ( cs.overflowX !== 'hidden' && n.scrollWidth > n.clientWidth + 1 );
+				if ( ! clipOK || scrolls ) {
+					continue;
+				}
+				// Keep what overflow: hidden did besides clipping (contain floats, keep margins inside).
+				if ( cs.display === 'block' ) {
+					n.style.setProperty( 'display', 'flow-root' );
+				}
+				n.style.setProperty( 'overflow-x', cs.overflowX === 'hidden' ? 'clip' : 'visible', 'important' );
+				n.style.setProperty( 'overflow-y', cs.overflowY === 'hidden' ? 'clip' : 'visible', 'important' );
+				unblocked ++;
+			}
+		}
+		if ( stages.some( ( st ) => blockers( st ).length ) ) {
+			usePinJS( 'a page wrapper hides its overflow' );
+		}
+	};
+	// The safety net: in the middle of an act the stage must sit right under the header.
+	const checkPinned = () => {
+		if ( pinJS || ! active ) {
+			return;
+		}
+		const top = filmTop();
+		const r = active.getBoundingClientRect();
+		const st = $( '.film-stage', active );
+		const h = st.offsetHeight;
+		if ( r.top < top - 40 && r.bottom > top + h + 40 && Math.abs( st.getBoundingClientRect().top - top ) > 3 ) {
+			usePinJS( 'the page did not keep the film on screen' );
+		}
+	};
+	if ( ! CAPTURE ) {
+		unblock();
+		addEventListener( 'load', unblock );
+		// ?pinjs: pin by hand regardless (checks).
+		if ( q.has( 'pinjs' ) ) {
+			usePinJS( 'asked for in the address' );
+		}
+	}
+
 	let dprCap = 1;
 	const resize = () => {
 		if ( ! engine ) {
@@ -276,7 +409,7 @@ async function boot() {
 		if ( w * h * dpr * dpr > budget ) {
 			dpr = Math.sqrt( budget / ( w * h ) );
 		}
-		engine.resize( w, h, Math.max( 0.6, dpr ) );
+		engine.resize( w, h, Math.max( 0.5, dpr ) );
 	};
 
 	// The opening's still picture lights up as the page appears (CSS). If the 3D
@@ -529,7 +662,9 @@ async function boot() {
 	if ( ! CAPTURE ) {
 		let lastT = - 1;
 		gsap.ticker.add( ( time ) => {
+			pin();
 			where();
+			checkPinned();
 			if ( ! engine || ! ready || ! active ) {
 				gov.reset( 4 );
 				return;
@@ -572,8 +707,9 @@ async function boot() {
 		const show = () => {
 			const on = engine && ready;
 			box.textContent = [
-				'Film check',
+				'Film check (kit ' + ( ( window.wkFilm && window.wkFilm.v ) || 'unknown' ) + ')',
 				'Graphics: ' + ( gpuName() || 'not reported by this browser' ),
+				'Stays on screen: ' + ( pinJS ? 'pinned by the film, because ' + pinJS : unblocked ? 'yes (' + unblocked + ' page wrapper' + ( unblocked > 1 ? 's' : '' ) + ' adjusted)' : 'yes' ),
 				'3D: ' + ( on ? 'on, ' + rung[ 0 ] + ' quality at ' + Math.round( rung[ 1 ] * 100 ) + '% resolution' : why ? 'off, ' + why : 'starting' ),
 				on ? 'Frames a second: ' + fps : '',
 				REDUCED ? 'Reduce motion is on in this computer\'s settings, so the film shows calm still frames.' : '',

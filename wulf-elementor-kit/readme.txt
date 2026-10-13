@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.12.1
+Stable tag: 1.12.2
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -212,6 +212,9 @@ Speed and devices:
   film draws its heaviest moment a few times and picks its level from how long that takes (the
   graphics chip matters, not the processor). While it plays, it lowers the resolution, then the
   quality, within a second or two if frames slow down.
+* The film stays on screen while visitors scroll on any theme. A theme setting or custom CSS that
+  hides overflow on a page wrapper (a common fix for sideways scrolling) quietly stops that; the film
+  adjusts such wrappers (the same look) or pins itself.
 * A computer that can't keep up even on the lightest level, or whose browser or graphics driver
   fails, gets the still pictures instead, with the words still playing as visitors scroll. It never
   sits frozen, and it remembers this for the rest of the visit. Nothing is drawn while the film is
@@ -219,7 +222,8 @@ Speed and devices:
 * Visitors who ask their device for less motion (Windows "Animation effects" off, Mac "Reduce
   motion") see each chapter as a still, composed frame.
 * To see what the film decided on a computer, add ?filmcheck to the page address: a small box shows
-  the graphics chip, the quality level, frames a second, or why the 3D is off.
+  the kit version, the graphics chip, whether the film stays on screen by itself, the quality level,
+  frames a second, or why the 3D is off.
 * Speed plugins: exclude assets/js/wulf-film.js from "Delay JavaScript" (WP Rocket, LiteSpeed Cache,
   Perfmatters and similar) and turn off Cloudflare Rocket Loader for it, or the film waits for the
   first tap before it starts.
@@ -231,6 +235,14 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.12.2 =
+* The film stays on screen while you scroll, whatever the theme: page wrappers that hide their
+  overflow (a common theme setting or custom CSS, which quietly made the film scroll away after its
+  first moment) are adjusted, and where that isn't enough the film pins itself.
+* Two lighter levels keep the film moving on modest laptops instead of switching to the still
+  pictures.
+* ?filmcheck also shows the kit version and whether the film stays on screen by itself.
 
 = 1.12.1 =
 * The film fits itself to each computer: it measures its heaviest frame while the still picture

@@ -118,7 +118,7 @@ class WK_Plugin {
 		wp_register_style( 'wulf-kit-film', WK_URL . 'assets/css/wulf-film.css', array( 'wulf-kit' ), WK_VERSION );
 		wp_register_script( 'wulf-kit-film', WK_URL . 'assets/js/wulf-film.js', array(), WK_VERSION, array( 'in_footer' => true, 'strategy' => 'defer' ) );
 		// Contact shadows: a small add-on the film fetches itself, only on computers that run its best quality.
-		wp_add_inline_script( 'wulf-kit-film', 'window.wkFilm=' . wp_json_encode( array( 'ao' => add_query_arg( 'ver', WK_VERSION, WK_URL . 'assets/js/wulf-film-ao.js' ) ) ) . ';', 'before' );
+		wp_add_inline_script( 'wulf-kit-film', 'window.wkFilm=' . wp_json_encode( array( 'ao' => add_query_arg( 'ver', WK_VERSION, WK_URL . 'assets/js/wulf-film-ao.js' ), 'v' => WK_VERSION ) ) . ';', 'before' );
 		if ( $s['header_tpl'] || $s['footer_tpl'] || $s['actbar'] || $s['book_pill'] ) {
 			// Site-wide pieces need the kit on every page.
 			wp_enqueue_style( 'wulf-kit' );

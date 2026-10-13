@@ -164,7 +164,7 @@ async function boot() {
 		if ( w * h * dpr * dpr > budget ) {
 			dpr = Math.sqrt( budget / ( w * h ) );
 		}
-		engine.resize( w, h, Math.max( 0.6, dpr ) );
+		engine.resize( w, h, Math.max( 0.5, dpr ) );
 	};
 	resize();
 	let resizeTimer = 0;

@@ -13,10 +13,10 @@ import { TIERS } from './engine.js';
  */
 
 /** Rungs, best first: [quality level, resolution scale]. */
-export const LADDER = [ [ 'high', 1 ], [ 'medium', 1 ], [ 'medium', 0.8 ], [ 'low', 1 ], [ 'low', 0.8 ], [ 'low', 0.6 ] ];
+export const LADDER = [ [ 'high', 1 ], [ 'medium', 1 ], [ 'medium', 0.8 ], [ 'low', 1 ], [ 'low', 0.8 ], [ 'low', 0.65 ], [ 'lite', 0.65 ], [ 'lite', 0.5 ] ];
 
 /** Rough cost of a pixel on each level, relative to the best: a guess at how far down to go. */
-const COST = { high: 1, medium: 0.4, low: 0.22 };
+const COST = { high: 1, medium: 0.4, low: 0.22, lite: 0.13 };
 
 /** Milliseconds allowed for the heaviest frame: about 38 a second there, more everywhere else. */
 export const TARGET = 26;

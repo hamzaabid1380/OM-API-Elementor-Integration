@@ -13,6 +13,9 @@ export const TIERS = {
 	high: { name: 'high', dpr: 2, supersample: 1.5, msaa: 4, bounces: 8, waves: 7, ss: 4, exact: true, cube: 512, metal: 512, grain: true, dof: true, ao: true },
 	medium: { name: 'medium', dpr: 1.5, supersample: 1, msaa: 2, bounces: 6, waves: 7, ss: 1, exact: true, cube: 512, metal: 256, grain: true, dof: false, ao: false },
 	low: { name: 'low', dpr: 1, supersample: 1, msaa: 0, bounces: 4, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
+	// The lightest: half the light paths inside the stones (a uniform, so no shaders to rebuild
+	// from low). Only reached by measuring: for laptops that would otherwise get the pictures.
+	lite: { name: 'lite', dpr: 1, supersample: 1, msaa: 0, bounces: 2, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
 };
 
 /** Backdrops: [centre, edge]. */
@@ -222,6 +225,11 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			this.tier = t;
 			// Fewer bounces, rays and colours in the centre stone; the studio as a cube map on the lightest level.
 			diamond.setQuality( { bounces: t.bounces, ss: t.ss, waves: t.waves, exact: t.exact } );
+			// The small stones (halo, pave) follow on the lightest level.
+			const small = ring.pave && ring.pave.material.uniforms && ring.pave.material.uniforms.bounces;
+			if ( small ) {
+				small.value = Math.min( 4, t.bounces );
+			}
 			buildPost( t );
 			composer.setSize( size.w, size.h );
 		},
