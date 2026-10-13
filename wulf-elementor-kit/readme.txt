@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.12.4
+Stable tag: 1.12.5
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -210,7 +210,8 @@ Speed and devices:
   Data Saver); the words and buttons work the same either way.
 * Every computer gets the quality it can draw smoothly. While the first still picture shows, the
   film times a small copy of its heaviest moment, then the level it picks (the graphics chip
-  matters, not the processor). A weak chip is never handed a frame heavy enough to upset it. While it plays, it lowers the resolution, then the
+  matters, not the processor). A weak chip is never handed a frame heavy enough to upset it. That
+  level is set for the full-screen close-up; wherever the stone is smaller the film draws sharper. While it plays, it lowers the resolution, then the
   quality, within a second or two if frames slow down.
 * The film stays on screen while visitors scroll on any theme. A theme setting or custom CSS that
   hides overflow on a page wrapper (a common fix for sideways scrolling) quietly stops that; the film
@@ -235,6 +236,14 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.12.5 =
+* A much better diamond on laptops with built-in graphics (Intel UHD and similar): the lightest
+  level follows the light through three bounces and dims what's left, so the stone keeps its real
+  facet pattern instead of flat white patches.
+* Sharper wherever the stone is small on screen. The level is fitted to the full-screen close-up;
+  the first screen, the ring and the story scenes now draw at up to full sharpness on the same
+  laptop, and a step sharper still while the visitor pauses to read.
 
 = 1.12.4 =
 * Safer first measurement: the film times a small copy of its heaviest frame and works out the

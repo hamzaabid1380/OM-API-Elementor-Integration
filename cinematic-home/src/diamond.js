@@ -86,6 +86,10 @@ const fragmentShader = /* glsl */`
 	uniform float iors[ WAVES ];
 	uniform vec3 weights[ WAVES ];
 	uniform int bounces;
+	// How much of the light still inside after the last bounce comes out along its last direction.
+	// With few bounces that is a lot of light, and one direction makes flat white patches; the light
+	// levels turn it down (it would have bounced on and left mostly through the dark pavilion).
+	uniform float tail;
 	uniform vec3 obstruction; // cos inner, cos outer, how dark
 	uniform float frost;
 	uniform float opacity;
@@ -265,7 +269,7 @@ const fragmentShader = /* glsl */`
 			if ( left < 0.02 ) break;
 		}
 		// Whatever is still inside after the last bounce leaves the way it is heading.
-		vec3 last = env( normalize( vToWorld * rd ) );
+		vec3 last = env( normalize( vToWorld * rd ) ) * tail;
 		for ( int w = 0; w < WAVES; w ++ ) acc += weights[ w ] * through[ w ] * last;
 		return surface * fIn + acc * ( 1.0 - fIn );
 	}
@@ -336,6 +340,7 @@ export function stoneMaterial( envCube, { bounces = 7, waves = 7, ss = 1, bvhStr
 		iors: { value: iors },
 		weights: { value: weights.map( ( w ) => new THREE.Vector3( ...w ) ) },
 		bounces: { value: bounces },
+		tail: { value: 1 },
 		obstruction: { value: new THREE.Vector3( Math.cos( THREE.MathUtils.degToRad( 21 ) ), Math.cos( THREE.MathUtils.degToRad( 30 ) ), 0.03 ) },
 		frost: { value: 0.55 },
 		opacity: { value: 1 },

@@ -481,6 +481,34 @@ async function boot() {
 	let rung = [ 'medium', 1 ];
 	let busy = false;
 	let aoOn = false;
+	// The rung's resolution was fitted to the close-up, where the stone fills the screen. Wherever it
+	// is smaller (the first screen, the ring scenes) the same device can afford more pixels, so the
+	// film sharpens up there, and drops back as the stone grows again.
+	let covHeavy = 0.6;
+	let lastScale = 0;
+	// When the visitor stops scrolling (reading the words), one step sharper is fine: only the slow
+	// turn of the stone is moving. Scrolling again drops it back at once.
+	let lastMoveAt = 0;
+	const STEPS = [ 1, 0.8, 0.65, 0.5 ];
+	const tuneScale = ( force = false ) => {
+		if ( ( CAPTURE && ! q.has( 'tune' ) ) || ! engine || rung[ 1 ] >= 1 ) {
+			return;
+		}
+		const cov = Math.max( 0.02, engine.stoneCoverage() );
+		const calm = performance.now() - lastMoveAt > 400;
+		const room = rung[ 1 ] * Math.sqrt( covHeavy / cov ) * ( calm ? 1.25 : 1 );
+		const want = Math.max( rung[ 1 ], STEPS.find( ( v ) => v <= room + 1e-6 ) || rung[ 1 ] );
+		if ( want === dprCap ) {
+			return;
+		}
+		// Down at once (keep it smooth); up only after a calm half second (no flicker).
+		const now = performance.now();
+		if ( force || want < dprCap || now - lastScale > 500 ) {
+			dprCap = want;
+			lastScale = now;
+			resize();
+		}
+	};
 	// Switch to a rung: a new resolution is instant; a new quality level compiles its shaders in
 	// the background first, with the last frame left on screen meanwhile.
 	const useRung = async ( r ) => {
@@ -519,7 +547,7 @@ async function boot() {
 		}
 		await useRung( LADDER[ i + 1 ] );
 		if ( ! FORCED ) {
-			remember( rung );
+			remember( [ rung[ 0 ], rung[ 1 ], covHeavy ] );
 		}
 	};
 	document.addEventListener( 'visibilitychange', () => gov.reset( 4 ) );
@@ -577,6 +605,7 @@ async function boot() {
 			return;
 		}
 		active.classList.add( 'is-live' );
+		tuneScale();
 	};
 
 	let rt = 0;
@@ -629,6 +658,7 @@ async function boot() {
 		if ( memo ) {
 			tier = TIERS[ memo[ 0 ] ];
 			dprCap = memo[ 1 ];
+			covHeavy = memo[ 2 ] || covHeavy;
 		}
 		try {
 			engine = createEngine( canvas, { tier, preserve: CAPTURE } );
@@ -663,6 +693,7 @@ async function boot() {
 				const k = 0.35;
 				engine.resize( w, h, pixelRatio() * k );
 				const small = await engine.bench( S, 2 );
+				covHeavy = Math.max( 0.05, engine.stoneCoverage() );
 				resize();
 				return ( ms = small / ( k * k ) );
 			};
@@ -678,7 +709,7 @@ async function boot() {
 			if ( chosen !== rung ) {
 				await useRung( chosen );
 			}
-			remember( rung );
+			remember( [ rung[ 0 ], rung[ 1 ], covHeavy ] );
 		}
 		// Contact shadows on the best level: switched on now or not at all this visit.
 		if ( engine && engine.tier.ao && AO_URL ) {
@@ -702,6 +733,8 @@ async function boot() {
 				return;
 			}
 		}
+		// Sharpen for the moment on screen before the film takes over (no visible jump).
+		tuneScale( true );
 		if ( engine && shaderFailed && ! CAPTURE ) {
 			if ( ! FORCED ) {
 				remember( 'off' );
@@ -729,12 +762,18 @@ async function boot() {
 			}
 			const moving = tl.time() !== lastT || intro.e < 1;
 			lastT = tl.time();
+			if ( moving ) {
+				lastMoveAt = performance.now();
+			}
 			if ( REDUCED && ! moving && ! needs ) {
 				return;
 			}
 			needs = false;
 			draw( time );
-			if ( ! REDUCED && ! busy && gov.tick( performance.now() ) === 'down' ) {
+			// The governor keeps scrolling smooth; a calm moment (sharper, slower) is not its business.
+			if ( ! moving ) {
+				gov.reset( 6 );
+			} else if ( ! REDUCED && ! busy && gov.tick( performance.now() ) === 'down' ) {
 				busy = true;
 				stepDown().finally( () => {
 					busy = false;
@@ -768,7 +807,7 @@ async function boot() {
 				'Film check (kit ' + ( ( window.wkFilm && window.wkFilm.v ) || 'unknown' ) + ')',
 				'Graphics: ' + ( gpuName() || 'not reported by this browser' ),
 				'Stays on screen: ' + ( pinJS ? 'pinned by the film, because ' + pinJS : unblocked ? 'yes (' + unblocked + ' page wrapper' + ( unblocked > 1 ? 's' : '' ) + ' adjusted)' : 'yes' ),
-				'3D: ' + ( on ? 'on, ' + rung[ 0 ] + ' quality at ' + Math.round( rung[ 1 ] * 100 ) + '% resolution' : why ? 'off, ' + why : 'starting' ),
+				'3D: ' + ( on ? 'on, ' + rung[ 0 ] + ' quality at ' + Math.round( rung[ 1 ] * 100 ) + '% resolution' + ( dprCap > rung[ 1 ] ? ' (' + Math.round( dprCap * 100 ) + '% here, the stone is small)' : '' ) : why ? 'off, ' + why : 'starting' ),
 				on ? 'Frames a second: ' + fps : '',
 				REDUCED ? 'Reduce motion is on in this computer\'s settings, so the film shows calm still frames.' : '',
 			].filter( Boolean ).join( '\n' );
@@ -785,6 +824,32 @@ async function boot() {
 		/** The rung the film plays at ([level, resolution scale]) and the graphics chip it found. */
 		rung: () => rung,
 		gpu: () => gpuName(),
+		/** The resolution scale in use right now (the rung's, or sharper where the stone is small). */
+		scale: () => dprCap,
+		/** The stone's share of the picture in the close-up the level was fitted to (checks). */
+		covHeavy( v ) {
+			if ( v ) {
+				covHeavy = v;
+			}
+			return covHeavy;
+		},
+		coverage: () => ( engine ? engine.stoneCoverage() : 0 ),
+		/** Centre stone and small stones: bounces and tail, for comparisons. */
+		stone( { bounces, tail } ) {
+			const mats = [ engine.diamond.material, engine.ring.pave && engine.ring.pave.material ].filter( Boolean );
+			for ( const m of mats ) {
+				if ( bounces !== undefined ) {
+					m.uniforms.bounces.value = bounces;
+				}
+				if ( tail !== undefined && m.uniforms.tail ) {
+					m.uniforms.tail.value = tail;
+				}
+			}
+		},
+		/** Play at a rung, as the fitting would ([level, resolution scale]; checks and comparisons). */
+		async useRung( r ) {
+			await useRung( r );
+		},
 		/** Shader programs built so far (checks: nothing new should compile mid-film). */
 		programs: () => ( engine ? engine.renderer.info.programs.length : 0 ),
 		/** Force a quality level, as the governor would (for checks). */

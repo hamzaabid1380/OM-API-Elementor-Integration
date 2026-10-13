@@ -12,10 +12,11 @@ export const TIERS = {
 	// ao: contact shadows; supersample: render above screen resolution on 1x screens.
 	high: { name: 'high', dpr: 2, supersample: 1.5, msaa: 4, bounces: 8, waves: 7, ss: 4, exact: true, cube: 512, metal: 512, grain: true, dof: true, ao: true },
 	medium: { name: 'medium', dpr: 1.5, supersample: 1, msaa: 2, bounces: 6, waves: 7, ss: 1, exact: true, cube: 512, metal: 256, grain: true, dof: false, ao: false },
-	low: { name: 'low', dpr: 1, supersample: 1, msaa: 0, bounces: 4, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
-	// The lightest: half the light paths inside the stones (a uniform, so no shaders to rebuild
-	// from low). Only reached by measuring: for laptops that would otherwise get the pictures.
-	lite: { name: 'lite', dpr: 1, supersample: 1, msaa: 0, bounces: 2, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
+	low: { name: 'low', dpr: 1, supersample: 1, msaa: 0, bounces: 4, tail: 0.85, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
+	// The lightest: fewer light paths inside the stones (uniforms, so no shaders to rebuild from
+	// low), the light still inside after the last one turned down so the stone keeps its facet
+	// pattern. Only reached by measuring: for laptops that would otherwise get the pictures.
+	lite: { name: 'lite', dpr: 1, supersample: 1, msaa: 0, bounces: 3, tail: 0.5, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
 };
 
 /** Backdrops: [centre, edge]. */
@@ -183,6 +184,19 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 		composer.addPass( new EffectPass( camera, ...effects ) );
 	}
 	buildPost( tier );
+	// The light still inside after the last bounce, and the small stones' bounces, per level.
+	function stoneQuality( t ) {
+		const small = ring.pave && ring.pave.material.uniforms;
+		if ( small && small.bounces ) {
+			small.bounces.value = Math.min( 4, t.bounces );
+		}
+		for ( const u of [ diamond.material.uniforms, small ] ) {
+			if ( u && u.tail ) {
+				u.tail.value = t.tail === undefined ? 1 : t.tail;
+			}
+		}
+	}
+	stoneQuality( tier );
 
 	const cA = new THREE.Color();
 	const cB = new THREE.Color();
@@ -225,11 +239,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			this.tier = t;
 			// Fewer bounces, rays and colours in the centre stone; the studio as a cube map on the lightest level.
 			diamond.setQuality( { bounces: t.bounces, ss: t.ss, waves: t.waves, exact: t.exact } );
-			// The small stones (halo, pave) follow on the lightest level.
-			const small = ring.pave && ring.pave.material.uniforms && ring.pave.material.uniforms.bounces;
-			if ( small ) {
-				small.value = Math.min( 4, t.bounces );
-			}
+			stoneQuality( t );
 			buildPost( t );
 			composer.setSize( size.w, size.h );
 		},
@@ -257,6 +267,21 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 				renderer.setRenderTarget( prev );
 			}
 			return ready;
+		},
+		/** How much of the picture the centre stone covered in the last frame drawn (0 to 1). */
+		stoneCoverage() {
+			const g = diamond.mesh.geometry;
+			if ( ! g.boundingSphere ) {
+				g.computeBoundingSphere();
+			}
+			const c = g.boundingSphere.center.clone().applyMatrix4( diamond.mesh.matrixWorld );
+			const r = g.boundingSphere.radius * diamond.mesh.matrixWorld.getMaxScaleOnAxis();
+			const d = camera.position.distanceTo( c );
+			if ( d <= r ) {
+				return 1;
+			}
+			const k = r / ( d * Math.tan( THREE.MathUtils.degToRad( camera.fov ) / 2 ) );
+			return Math.min( 1, ( Math.PI * k * k ) / ( 4 * camera.aspect ) );
 		},
 		/**
 		 * How long this device takes to draw state S, in milliseconds, waiting for the graphics
