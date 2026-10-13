@@ -53,7 +53,7 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 ## Weight and speed
 
 - On WordPress the 3D code is about **240 KB compressed** (three.js, GSAP, the rest is small), loaded only on pages with the film, after the page has shown. Computers on the best quality also fetch an 80 KB add-on for contact shadows.
-- A still picture of the first frame shows straight away. The 3D takes over once it is ready (its shaders compile in the background), so the page never waits on it.
+- A still picture of the first frame shows straight away. The 3D takes over once it is ready: every shader it will need, including the depth of field and the contact shadows that only switch on later, is built during that warm-up, so nothing is compiled mid-film. The page never waits on it.
 - Four quality levels (the lightest halves the light paths inside the stones) and a resolution scale, fitted to each device (`src/fit.js`). The starting level comes from the graphics chip (built-in laptop graphics start light, dedicated graphics on the best); while the still picture shows, the heaviest frame (the stone filling the screen) is timed and the film settles on the best rung that draws it in about 26 ms. While it plays, a governor catches slowdowns within a second or two (resolution first, then quality). The rung is remembered for the visit. Drawing stops whenever the 3D is covered or the tab is hidden.
 - No 3D: when WebGL is missing, the visitor uses Data Saver, the browser draws in software (no graphics chip), even the lightest rung can't keep up, or the graphics driver or browser fails mid-film, the still pictures take over and the words still play. The film never sits frozen.
 - Reduce Motion: chapters appear as composed still frames, no camera moves.
@@ -101,7 +101,7 @@ copy in `fontcache/` (see `tools/fonts.mjs`).
 
 ### Page switches
 
-- `?tier=high|medium|low` pins a quality level (no measurement; the governor may lower the resolution but never turns the 3D off).
+- `?tier=high|medium|low` starts at that quality level without measuring (checks); the governor may still step down but never turns the 3D off.
 - `?fit` measures the device even with a pinned level or software graphics; `?fit=ms` sets the bar for the heaviest frame (checks).
 - `?filmcheck` shows a small box: the kit version, the graphics chip, whether the stage stays on screen by itself, the quality level and resolution, frames a second, or why the 3D is off.
 - `?pinjs` pins the stages by hand even where CSS sticky works (checks).

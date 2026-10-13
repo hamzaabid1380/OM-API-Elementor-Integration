@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.12.2
+Stable tag: 1.12.3
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -235,6 +235,14 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.12.3 =
+* Nothing is prepared mid-film any more: the depth-of-field blur and the contact shadows (best
+  quality only) now build their shaders during the warm-up, while the still picture shows, instead
+  of when the film first needs them. Before, that could freeze a capable laptop for a moment as the
+  shapes began.
+* A graphics driver that can't build the film's shaders gets the still pictures, and ?filmcheck says
+  so.
 
 = 1.12.2 =
 * The film stays on screen while you scroll, whatever the theme: page wrappers that hide their

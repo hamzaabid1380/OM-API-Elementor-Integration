@@ -526,6 +526,13 @@ async function boot() {
 		if ( ! engine || ! ready || ! active ) {
 			return;
 		}
+		if ( shaderFailed && ! CAPTURE ) {
+			if ( ! FORCED ) {
+				remember( 'off' );
+			}
+			fallBack( 'this graphics chip could not build the 3D (a shader failed)' );
+			return;
+		}
 		if ( clock0 === null ) {
 			clock0 = time;
 		}
@@ -577,6 +584,28 @@ async function boot() {
 		}, 120 );
 	} );
 
+	// The contact-shadow add-on (best level only): fetched while the 3D gets ready, and only ever
+	// switched on before the film takes over, so its shaders are built during the warm-up and never
+	// mid-film (a hitch on some laptops).
+	let aoLoad = null;
+	const fetchAO = () => {
+		if ( ! aoLoad && AO_URL ) {
+			window.__wulfFilmLib = AO_LIB;
+			aoLoad = new Promise( ( resolve ) => {
+				const s = document.createElement( 'script' );
+				s.src = AO_URL;
+				s.async = true;
+				s.onload = () => resolve( window.WulfFilmAO || null );
+				s.onerror = () => resolve( null );
+				document.head.appendChild( s );
+			} );
+		}
+		return aoLoad || Promise.resolve( null );
+	};
+	const wait = ( ms ) => new Promise( ( r ) => setTimeout( r, ms ) );
+	// A graphics driver that can't build one of the film's shaders: the still pictures, with the reason.
+	let shaderFailed = false;
+
 	// Build the 3D once the page has settled; the pictures cover the wait.
 	const start = async () => {
 		if ( ! use3D ) {
@@ -601,6 +630,13 @@ async function boot() {
 		} catch ( e ) {
 			fallBack( 'the 3D could not start: ' + ( ( e && e.message ) || e ) );
 			return;
+		}
+		engine.renderer.debug.onShaderError = ( gl, program ) => {
+			shaderFailed = true;
+			console.error( 'Wulf film: this graphics chip could not build a shader.', gl.getProgramInfoLog( program ) );
+		};
+		if ( tier.ao || tier.name === 'medium' ) {
+			fetchAO();
 		}
 		rung = [ tier.name, dprCap ];
 		where();
@@ -628,34 +664,40 @@ async function boot() {
 			}
 			remember( rung );
 		}
-		if ( engine ) {
-			ready = true;
-			needs = true;
-			gov.reset();
-			loadAO();
-		}
-	};
-	// Contact shadows (best tier only) come as a small add-on once the film is running.
-	const loadAO = () => {
-		if ( ! AO_URL || ! engine.tier.ao ) {
-			return;
-		}
-		window.__wulfFilmLib = AO_LIB;
-		const s = document.createElement( 'script' );
-		s.src = AO_URL;
-		s.async = true;
-		s.onload = () => {
-			if ( engine && engine.tier.ao && window.WulfFilmAO ) {
+		// Contact shadows on the best level: switched on now or not at all this visit.
+		if ( engine && engine.tier.ao && AO_URL ) {
+			const Pass = await ( CAPTURE ? fetchAO() : Promise.race( [ fetchAO(), wait( 2500 ) ] ) );
+			if ( Pass && engine && engine.tier.ao ) {
 				try {
-					engine.useAO( window.WulfFilmAO );
+					engine.useAO( Pass );
 					aoOn = true;
 				} catch ( e ) {
 					console.error( 'Wulf film (contact shadows):', e );
 				}
-				needs = true;
 			}
-		};
-		document.head.appendChild( s );
+		}
+		// One hidden frame, still under the picture: the finishing passes build their shaders now
+		// (depth of field too, which the film only switches on later).
+		if ( engine ) {
+			try {
+				engine.render( Object.assign( defaults(), F, engine.tier.dof ? { dof: 0.5 } : {} ), 0 );
+			} catch ( e ) {
+				fallBack( 'error: ' + ( ( e && e.message ) || e ) );
+				return;
+			}
+		}
+		if ( engine && shaderFailed && ! CAPTURE ) {
+			if ( ! FORCED ) {
+				remember( 'off' );
+			}
+			fallBack( 'this graphics chip could not build the 3D (a shader failed)' );
+			return;
+		}
+		if ( engine ) {
+			ready = true;
+			needs = true;
+			gov.reset();
+		}
 	};
 	const started = start();
 
@@ -727,6 +769,8 @@ async function boot() {
 		/** The rung the film plays at ([level, resolution scale]) and the graphics chip it found. */
 		rung: () => rung,
 		gpu: () => gpuName(),
+		/** Shader programs built so far (checks: nothing new should compile mid-film). */
+		programs: () => ( engine ? engine.renderer.info.programs.length : 0 ),
 		/** Force a quality level, as the governor would (for checks). */
 		setTier( name ) {
 			if ( engine && TIERS[ name ] ) {
