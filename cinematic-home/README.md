@@ -54,8 +54,8 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 
 - On WordPress the 3D code is about **240 KB compressed** (three.js, GSAP, the rest is small), loaded only on pages with the film, after the page has shown. Computers on the best quality also fetch an 80 KB add-on for contact shadows.
 - A still picture of the first frame shows straight away. The 3D takes over once it is ready (its shaders compile in the background), so the page never waits on it.
-- Three quality levels (picked from the device, then stepped down automatically if frames run slow). Drawing stops whenever the 3D is covered or the tab is hidden.
-- No 3D: when WebGL is missing or the visitor uses Data Saver, the still picture stays and the words still play.
+- Three quality levels and a resolution scale, fitted to each device (`src/fit.js`). The starting level comes from the graphics chip (built-in laptop graphics start light, dedicated graphics on the best); while the still picture shows, the heaviest frame (the stone filling the screen) is timed and the film settles on the best rung that draws it in about 26 ms. While it plays, a governor catches slowdowns within a second or two (resolution first, then quality). The rung is remembered for the visit. Drawing stops whenever the 3D is covered or the tab is hidden.
+- No 3D: when WebGL is missing, the visitor uses Data Saver, the browser draws in software (no graphics chip), even the lightest rung can't keep up, or the graphics driver or browser fails mid-film, the still pictures take over and the words still play. The film never sits frozen.
 - Reduce Motion: chapters appear as composed still frames, no camera moves.
 
 ## Technical notes
@@ -68,6 +68,7 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 | `src/atmos.js` | The air in the case: a faint beam of light from above and fine motes drifting through it. Additive, a few hundred points, almost free. |
 | `src/ring.js`, `src/tube.js` | The band (a swept squircle that draws itself), six prongs that follow the stone's outline, the basket rail, the hidden halo, and pavé set the real way: stones across most of the band, nearly touching, held by shared beads. |
 | `src/glints.js` | Star glints where a facet really catches one of the case's spotlights (they flash in step with the turning stone), used in the opening and faded for the product-photo shots; and the soft glow on the band's ends while it draws itself. |
+| `src/fit.js` | Fitting the film to the device: the ladder of rungs (quality level and resolution scale), the warm-up measurement that picks a rung, the governor that steps down while playing, and the visit's memory of both. |
 | `src/engine.js` | Renderer, lens shift (subject off-centre without bending perspective), framing for every screen shape (tall screens widen the lens; squarer landscape screens such as 4:3 laptops pull back a little and move the subject further from the words), quality tiers, post-processing: contact shadows (N8AO, best quality), bloom, tone mapping, vignette, grain, macro depth of field. Shaders compile in the background before the first frame. |
 | `src/story.js` | The story on one clock (0 to 18): what the camera, the ring and the light do in each chapter, when the words come and go, and how the quality level is picked. Shared by both versions. |
 | `src/film.js` | The stand-alone director: one GSAP timeline holds camera, ring, light and words, and scrolling scrubs it (ScrollTrigger, SplitText, Lenis). |
@@ -100,7 +101,9 @@ copy in `fontcache/` (see `tools/fonts.mjs`).
 
 ### Page switches
 
-- `?tier=high|medium|low` forces a quality level.
+- `?tier=high|medium|low` pins a quality level (no measurement; the governor may lower the resolution but never turns the 3D off).
+- `?fit` measures the device even with a pinned level or software graphics; `?fit=ms` sets the bar for the heaviest frame (checks).
+- `?filmcheck` shows a small box: the graphics chip, the quality level and resolution, frames a second, or why the 3D is off.
 - `?no3d` shows the still-picture version.
 - `?capture` turns off smooth scrolling and exposes `window.__film` for exact frames (stills, video).
 

@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.12.0
+Stable tag: 1.12.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -208,9 +208,18 @@ Speed and devices:
   shadows.
 * A still picture of each part shows straight away and stays wherever 3D cannot run (very old phones,
   Data Saver); the words and buttons work the same either way.
-* Phones and slower computers get a lighter version automatically, and the quality steps down by
-  itself if a device struggles. Nothing is drawn while the film is off screen.
-* Visitors who ask their device for less motion see each chapter as a still, composed frame.
+* Every computer gets the quality it can draw smoothly. While the first still picture shows, the
+  film draws its heaviest moment a few times and picks its level from how long that takes (the
+  graphics chip matters, not the processor). While it plays, it lowers the resolution, then the
+  quality, within a second or two if frames slow down.
+* A computer that can't keep up even on the lightest level, or whose browser or graphics driver
+  fails, gets the still pictures instead, with the words still playing as visitors scroll. It never
+  sits frozen, and it remembers this for the rest of the visit. Nothing is drawn while the film is
+  off screen.
+* Visitors who ask their device for less motion (Windows "Animation effects" off, Mac "Reduce
+  motion") see each chapter as a still, composed frame.
+* To see what the film decided on a computer, add ?filmcheck to the page address: a small box shows
+  the graphics chip, the quality level, frames a second, or why the 3D is off.
 * Speed plugins: exclude assets/js/wulf-film.js from "Delay JavaScript" (WP Rocket, LiteSpeed Cache,
   Perfmatters and similar) and turn off Cloudflare Rocket Loader for it, or the film waits for the
   first tap before it starts.
@@ -222,6 +231,18 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.12.1 =
+* The film fits itself to each computer: it measures its heaviest frame while the still picture
+  shows and starts at the quality that computer draws smoothly. Built-in laptop graphics start on
+  the light level, dedicated graphics on the best.
+* While it plays, slowdowns are caught within a second or two (lower resolution first, then lower
+  quality). Before, a computer that was very slow never stepped down, so the film could look stuck
+  after its first moments.
+* If even the lightest level can't keep up, or the browser or graphics driver fails, the still
+  pictures take over and the words keep playing; no more frozen film. Computers without a graphics
+  chip in use (software drawing) get the still pictures straight away.
+* New ?filmcheck address switch shows what the film decided on a computer, for support.
 
 = 1.12.0 =
 * "Home (cinematic)" has a new opening: the diamond turns under the spotlights of a jewelry case,

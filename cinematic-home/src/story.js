@@ -94,7 +94,29 @@ export function addStory( tl, F ) {
 	return tl;
 }
 
-/** Which quality level to start at for this device (the governor can still step down). */
+/**
+ * The heaviest moment of the film: the stone face-up, close enough to fill the screen.
+ * The film draws it a few times while the still picture is showing to choose its level.
+ */
+export const HEAVY = { el: 1.1, dist: 2.6, az: 1.2, shift: 0.1, shiftY: 0.36, spin: 0.95, mood: 0.85, glint: 1, motes: 0.6, turn: 0.2 };
+
+/** The graphics chip as the browser names it (Chrome, Edge and Safari say; Firefox may not). */
+let GPU = '';
+export function gpuName() {
+	return GPU;
+}
+
+/** Drawing without a graphics chip (software): the 3D would crawl, so the still pictures are kinder. */
+export function softwareGPU( name = GPU ) {
+	return /swiftshader|llvmpipe|softpipe|software|basic render/i.test( name );
+}
+
+/**
+ * Which quality level to start at. The graphics chip matters far more than the processor:
+ * built-in laptop graphics start on the light level, dedicated graphics on the best, and
+ * anything else in the middle. The warm-up then measures the heaviest frame and settles
+ * on the level this device really draws smoothly (see fit.js).
+ */
 export function pickTier( forced ) {
 	if ( forced && TIERS[ forced ] ) {
 		return TIERS[ forced ];
@@ -102,15 +124,21 @@ export function pickTier( forced ) {
 	const coarse = matchMedia( '(pointer: coarse)' ).matches;
 	const small = Math.min( screen.width, screen.height ) < 820;
 	const cores = navigator.hardwareConcurrency || 8;
-	// Only Chrome reports memory; elsewhere assume a normal device and let the governor judge.
+	// Only Chrome reports memory; elsewhere assume a normal device.
 	const mem = navigator.deviceMemory || 8;
+	const g = GPU.toLowerCase();
 	if ( coarse && small ) {
 		return mem <= 3 || cores <= 2 ? TIERS.low : TIERS.medium;
 	}
-	if ( cores <= 4 || mem <= 4 ) {
-		return TIERS.medium;
+	// Dedicated graphics (Intel's Arc cards before the built-in Intel chips).
+	if ( /nvidia|geforce|quadro|rtx|radeon\s?(rx|pro)|arc\s?a\d/.test( g ) ) {
+		return TIERS.high;
 	}
-	return TIERS.high;
+	// Built-in graphics: Intel UHD / Iris, AMD's laptop Radeon graphics, phone and tablet chips.
+	if ( /intel|iris|uhd|radeon\(tm\) graphics|radeon graphics|vega|mali|adreno|powervr/.test( g ) ) {
+		return TIERS.low;
+	}
+	return cores <= 4 || mem <= 4 ? TIERS.low : TIERS.medium;
 }
 
 /** WebGL2 available, and the visitor has not asked to save data. */
@@ -125,6 +153,12 @@ export function canRender3D( off = false ) {
 		const gl = document.createElement( 'canvas' ).getContext( 'webgl2' );
 		if ( ! gl ) {
 			return false;
+		}
+		// Firefox names the chip directly; Chrome and Safari need the debug extension for it.
+		GPU = String( gl.getParameter( gl.RENDERER ) || '' );
+		if ( ! GPU || /^webkit webgl$/i.test( GPU ) ) {
+			const info = gl.getExtension( 'WEBGL_debug_renderer_info' );
+			GPU = String( ( info && gl.getParameter( info.UNMASKED_RENDERER_WEBGL ) ) || GPU );
 		}
 		// Hand the test context straight back: browsers allow only a few at a time.
 		const lose = gl.getExtension( 'WEBGL_lose_context' );

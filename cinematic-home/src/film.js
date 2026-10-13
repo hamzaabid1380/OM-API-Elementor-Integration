@@ -4,7 +4,8 @@ import { SplitText } from 'gsap/SplitText';
 import Lenis from 'lenis';
 import { N8AOPostPass } from 'n8ao';
 import { createEngine, defaults, TIERS } from './engine.js';
-import { CHAPTERS, LENGTH, filmState, addStory, pickTier as tierFor, canRender3D as can3D } from './story.js';
+import { CHAPTERS, LENGTH, filmState, addStory, pickTier as tierFor, canRender3D as can3D, softwareGPU } from './story.js';
+import { LADDER, rungIndex, createGovernor } from './fit.js';
 
 /**
  * The director. One GSAP timeline holds the whole film: camera, ring,
@@ -98,7 +99,8 @@ async function boot() {
 	const film = $( '#film' );
 	const visit = $( '#visit' );
 	const lights = $$( '[data-tone="light"]' );
-	const use3D = can3D( q.has( 'no3d' ) );
+	// Without a graphics chip (software drawing) the 3D would crawl: the still picture is kinder.
+	const use3D = can3D( q.has( 'no3d' ) ) && ( q.has( 'capture' ) || !! q.get( 'tier' ) || ! softwareGPU() );
 	if ( ! use3D ) {
 		document.documentElement.classList.add( 'no-3d' );
 	}
@@ -237,40 +239,29 @@ async function boot() {
 		hd.classList.toggle( 'is-light', light );
 	};
 
-	// Governor: if frames run slow, step down quietly.
-	let lastNow = 0;
-	let acc = 0;
-	let count = 0;
-	let still = false;
-	const govern = ( now ) => {
-		if ( lastNow ) {
-			const dt = now - lastNow;
-			if ( dt < 250 ) {
-				acc += dt;
-				count ++;
+	// Governor (see fit.js): if frames run slow, step down a rung within a second or two; from
+	// the lightest rung, the still picture takes over instead of a stuttering film.
+	const gov = createGovernor();
+	let rung = [ engine ? engine.tier.name : 'low', 1 ];
+	const stepDown = () => {
+		const i = rungIndex( rung );
+		if ( i >= LADDER.length - 1 ) {
+			if ( ! q.get( 'tier' ) ) {
+				engine = null;
+				poster.classList.remove( 'gone' );
+				document.documentElement.classList.add( 'no-3d' );
 			}
-		}
-		lastNow = now;
-		if ( count < 90 ) {
 			return;
 		}
-		const avg = acc / count;
-		acc = 0;
-		count = 0;
-		if ( avg < 27 ) {
-			return;
+		rung = LADDER[ i + 1 ];
+		if ( engine.tier.name !== rung[ 0 ] ) {
+			engine.setTier( TIERS[ rung[ 0 ] ] );
 		}
-		if ( engine.tier.name === 'high' ) {
-			engine.setTier( TIERS.medium );
-		} else if ( engine.tier.name === 'medium' ) {
-			engine.setTier( TIERS.low );
-		} else if ( dprCap > 0.7 ) {
-			dprCap = Math.max( 0.7, dprCap - 0.15 );
-		} else {
-			still = true; // render only when the scroll moves
-		}
+		dprCap = rung[ 1 ];
 		resize();
+		gov.reset();
 	};
+	document.addEventListener( 'visibilitychange', () => gov.reset( 4 ) );
 
 	let started = false;
 	let lastP = - 1;
@@ -296,7 +287,17 @@ async function boot() {
 		if ( REDUCED ) {
 			time = 0;
 		}
-		engine.render( S, time );
+		try {
+			engine.render( S, time );
+		} catch ( err ) {
+			// Something in the 3D failed on this browser or graphics chip: the still picture
+			// takes over rather than a frozen film.
+			console.error( 'Wulf film:', err );
+			engine = null;
+			poster.classList.remove( 'gone' );
+			document.documentElement.classList.add( 'no-3d' );
+			return;
+		}
 		if ( ! started ) {
 			started = true;
 			poster.classList.add( 'gone' );
@@ -310,19 +311,19 @@ async function boot() {
 		gsap.ticker.add( ( time ) => {
 			where();
 			if ( ! engine || ! mode ) {
-				lastNow = 0;
+				gov.reset( 4 );
 				return;
 			}
 			const p = tl.progress();
 			const moving = p !== lastP || intro.e < 1 || pointer.sx !== pointer.x;
 			lastP = p;
-			if ( ( still || REDUCED ) && ! moving && ! needs ) {
+			if ( REDUCED && ! moving && ! needs ) {
 				return;
 			}
 			needs = false;
 			draw( time );
-			if ( ! REDUCED ) {
-				govern( performance.now() );
+			if ( ! REDUCED && gov.tick( performance.now() ) === 'down' ) {
+				stepDown();
 			}
 		} );
 	}

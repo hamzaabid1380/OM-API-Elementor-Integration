@@ -2,7 +2,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 import { createEngine, defaults, TIERS } from './engine.js';
-import { ACTS, WORDS, SHAPE_AT, METAL_AT, filmState, addStory, pickTier, canRender3D } from './story.js';
+import { ACTS, WORDS, SHAPE_AT, METAL_AT, HEAVY, filmState, addStory, pickTier, canRender3D, softwareGPU, gpuName } from './story.js';
+import { LADDER, TARGET, rungIndex, recall, remember, settle, createGovernor } from './fit.js';
 import { AO_LIB } from './ao-lib.js';
 
 /**
@@ -19,6 +20,10 @@ gsap.registerPlugin( ScrollTrigger, SplitText );
 
 const q = new URLSearchParams( location.search );
 const CAPTURE = q.has( 'capture' );
+// ?tier=high|medium|low pins a level (checks); ?fit measures the device even then (?fit=ms sets the bar).
+const FORCED = !! TIERS[ q.get( 'tier' ) ];
+const FIT = ! CAPTURE && ( ! FORCED || q.has( 'fit' ) );
+const FIT_TARGET = Number( q.get( 'fit' ) ) || TARGET;
 const REDUCED = ! CAPTURE && matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 const $ = ( s, el = document ) => el.querySelector( s );
 const $$ = ( s, el = document ) => [ ...el.querySelectorAll( s ) ];
@@ -79,7 +84,14 @@ async function boot() {
 	};
 	setTop();
 
-	const use3D = canRender3D( q.has( 'no3d' ) );
+	// Without a graphics chip (software drawing) the 3D would crawl: the still pictures are kinder.
+	const can3D = canRender3D( q.has( 'no3d' ) );
+	const use3D = can3D && ( CAPTURE || FORCED || q.has( 'fit' ) || ! softwareGPU() );
+	// Why the 3D is off, when it is (shown by ?filmcheck).
+	let why = '';
+	if ( ! use3D ) {
+		why = q.has( 'no3d' ) ? 'turned off in the address (?no3d)' : can3D ? 'software graphics (no graphics chip in use)' : 'this browser has no WebGL 2, or Data Saver is on';
+	}
 	if ( ! use3D ) {
 		root.classList.add( 'film-no3d' );
 	}
@@ -220,15 +232,34 @@ async function boot() {
 	const canvas = document.createElement( 'canvas' );
 	canvas.className = 'film-canvas';
 	canvas.setAttribute( 'aria-hidden', 'true' );
-	const fallBack = () => {
+	// The still pictures take over (the words keep playing), and the graphics memory is freed.
+	const fallBack = ( reason ) => {
+		why = reason || why;
+		const e = engine;
 		engine = null;
 		ready = false;
+		if ( e ) {
+			try {
+				e.renderer.dispose();
+				e.renderer.forceContextLoss();
+			} catch ( err ) {
+				// Already gone.
+			}
+		}
+		canvas.remove();
+		holder = null;
 		acts.forEach( ( a ) => a.classList.remove( 'is-live' ) );
 		root.classList.add( 'film-no3d' );
 	};
 	canvas.addEventListener( 'webglcontextlost', ( e ) => {
 		e.preventDefault();
-		fallBack();
+		// The graphics driver dropped the film (a phone short of memory, a driver reset): the
+		// still pictures for the rest of the visit.
+		// (When the film turned itself off, freeing the graphics memory lands here too: keep its reason.)
+		if ( engine && ! FORCED && ! CAPTURE ) {
+			remember( 'off' );
+		}
+		fallBack( engine ? 'the graphics driver dropped the 3D' : '' );
 	} );
 
 	let dprCap = 1;
@@ -307,36 +338,53 @@ async function boot() {
 		}
 	};
 
-	let lastNow = 0;
-	let acc = 0;
-	let count = 0;
-	const govern = ( now ) => {
-		if ( lastNow ) {
-			const dt = now - lastNow;
-			if ( dt < 250 ) {
-				acc += dt;
-				count ++;
+	/* ---------- Fitting the film to the device (see fit.js) ---------- */
+	const gov = createGovernor();
+	let rung = [ 'medium', 1 ];
+	let busy = false;
+	let aoOn = false;
+	// Switch to a rung: a new resolution is instant; a new quality level compiles its shaders in
+	// the background first, with the last frame left on screen meanwhile.
+	const useRung = async ( r ) => {
+		if ( ! engine ) {
+			return;
+		}
+		const recompile = engine.tier.name !== r[ 0 ];
+		rung = r;
+		dprCap = r[ 1 ];
+		if ( recompile ) {
+			const was = ready;
+			ready = false;
+			engine.setTier( TIERS[ r[ 0 ] ] );
+			resize();
+			try {
+				await engine.warm();
+			} catch ( e ) {
+				// The first frame compiles anyway.
 			}
+			ready = was && !! engine;
+		} else {
+			resize();
 		}
-		lastNow = now;
-		if ( count < 90 ) {
-			return;
-		}
-		const avg = acc / count;
-		acc = 0;
-		count = 0;
-		if ( avg < 27 ) {
-			return;
-		}
-		if ( engine.tier.name === 'high' ) {
-			engine.setTier( TIERS.medium );
-		} else if ( engine.tier.name === 'medium' ) {
-			engine.setTier( TIERS.low );
-		} else if ( dprCap > 0.7 ) {
-			dprCap = Math.max( 0.7, dprCap - 0.15 );
-		}
-		resize();
+		needs = true;
+		gov.reset();
 	};
+	// The film runs slow: one rung down, or the still pictures from the lightest rung.
+	const stepDown = async () => {
+		const i = rungIndex( rung );
+		if ( i >= LADDER.length - 1 ) {
+			if ( ! FORCED ) {
+				remember( 'off' );
+				fallBack( 'too slow while playing, even on the lightest level' );
+			}
+			return;
+		}
+		await useRung( LADDER[ i + 1 ] );
+		if ( ! FORCED ) {
+			remember( rung );
+		}
+	};
+	document.addEventListener( 'visibilitychange', () => gov.reset( 4 ) );
 
 	// The film's own clock starts at 0 on its first frame, like the still pictures, so the
 	// hand-over from picture to 3D is exact.
@@ -360,7 +408,29 @@ async function boot() {
 			S.az += pointer.sx * 0.06;
 			S.el += pointer.sy * 0.035;
 		}
-		engine.render( S, REDUCED ? 0 : time );
+		try {
+			engine.render( S, REDUCED ? 0 : time );
+		} catch ( err ) {
+			// Something in the 3D failed on this browser or graphics chip. The contact shadows are
+			// an extra, so they go first; otherwise the still pictures take over rather than a
+			// frozen film (the error stays in the console for checks).
+			console.error( 'Wulf film:', err );
+			if ( aoOn ) {
+				aoOn = false;
+				try {
+					engine.useAO( null );
+					needs = true;
+					return;
+				} catch ( e2 ) {
+					// Fall through to the pictures.
+				}
+			}
+			if ( ! FORCED ) {
+				remember( 'off' );
+			}
+			fallBack( 'error: ' + ( ( err && err.message ) || err ) );
+			return;
+		}
 		active.classList.add( 'is-live' );
 	};
 
@@ -382,12 +452,24 @@ async function boot() {
 		if ( ! CAPTURE ) {
 			await idle( 600 );
 		}
-		try {
-			engine = createEngine( canvas, { tier: pickTier( q.get( 'tier' ) ), preserve: CAPTURE } );
-		} catch ( e ) {
-			fallBack();
+		// Earlier in this visit the film already found its level (or found it couldn't run smoothly).
+		const memo = FORCED || CAPTURE ? null : recall();
+		if ( memo === 'off' ) {
+			fallBack( 'turned off earlier in this visit (too slow, or it failed)' );
 			return;
 		}
+		let tier = pickTier( q.get( 'tier' ) );
+		if ( memo ) {
+			tier = TIERS[ memo[ 0 ] ];
+			dprCap = memo[ 1 ];
+		}
+		try {
+			engine = createEngine( canvas, { tier, preserve: CAPTURE } );
+		} catch ( e ) {
+			fallBack( 'the 3D could not start: ' + ( ( e && e.message ) || e ) );
+			return;
+		}
+		rung = [ tier.name, dprCap ];
 		where();
 		resize();
 		try {
@@ -395,9 +477,28 @@ async function boot() {
 		} catch ( e ) {
 			// Compiling in the background is only a nicety; the first frame compiles anyway.
 		}
+		// Measure the heaviest frame while the still picture still shows, and settle on a level.
+		if ( engine && FIT && ! memo ) {
+			const S = Object.assign( defaults(), filmState(), HEAVY );
+			let ms = 0;
+			const chosen = await settle( rung, useRung, async () => ( ms = await engine.bench( S ) ), FIT_TARGET );
+			if ( ! engine ) {
+				return;
+			}
+			if ( ! chosen ) {
+				remember( 'off' );
+				fallBack( 'too slow on this computer (the heaviest frame took ' + Math.round( ms ) + ' ms)' );
+				return;
+			}
+			if ( chosen !== rung ) {
+				await useRung( chosen );
+			}
+			remember( rung );
+		}
 		if ( engine ) {
 			ready = true;
 			needs = true;
+			gov.reset();
 			loadAO();
 		}
 	};
@@ -412,7 +513,12 @@ async function boot() {
 		s.async = true;
 		s.onload = () => {
 			if ( engine && engine.tier.ao && window.WulfFilmAO ) {
-				engine.useAO( window.WulfFilmAO );
+				try {
+					engine.useAO( window.WulfFilmAO );
+					aoOn = true;
+				} catch ( e ) {
+					console.error( 'Wulf film (contact shadows):', e );
+				}
 				needs = true;
 			}
 		};
@@ -425,7 +531,7 @@ async function boot() {
 		gsap.ticker.add( ( time ) => {
 			where();
 			if ( ! engine || ! ready || ! active ) {
-				lastNow = 0;
+				gov.reset( 4 );
 				return;
 			}
 			const moving = tl.time() !== lastT || intro.e < 1;
@@ -435,10 +541,46 @@ async function boot() {
 			}
 			needs = false;
 			draw( time );
-			if ( ! REDUCED ) {
-				govern( performance.now() );
+			if ( ! REDUCED && ! busy && gov.tick( performance.now() ) === 'down' ) {
+				busy = true;
+				stepDown().finally( () => {
+					busy = false;
+				} );
 			}
 		} );
+	}
+
+	/* ---------- ?filmcheck: what the film decided on this computer, for support ---------- */
+	if ( q.has( 'filmcheck' ) ) {
+		const box = document.createElement( 'div' );
+		box.className = 'film-check';
+		box.setAttribute( 'role', 'status' );
+		box.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:99999;max-width:min(380px,calc(100vw - 24px));padding:12px 14px;border-radius:10px;background:rgba(5,7,11,.9);color:#fff;font:500 12.5px/1.55 system-ui,sans-serif;white-space:pre-line;pointer-events:none';
+		document.body.appendChild( box );
+		let frames = 0;
+		let since = performance.now();
+		let fps = 0;
+		gsap.ticker.add( () => {
+			frames ++;
+			const now = performance.now();
+			if ( now - since >= 1000 ) {
+				fps = Math.round( ( frames * 1000 ) / ( now - since ) );
+				frames = 0;
+				since = now;
+			}
+		} );
+		const show = () => {
+			const on = engine && ready;
+			box.textContent = [
+				'Film check',
+				'Graphics: ' + ( gpuName() || 'not reported by this browser' ),
+				'3D: ' + ( on ? 'on, ' + rung[ 0 ] + ' quality at ' + Math.round( rung[ 1 ] * 100 ) + '% resolution' : why ? 'off, ' + why : 'starting' ),
+				on ? 'Frames a second: ' + fps : '',
+				REDUCED ? 'Reduce motion is on in this computer\'s settings, so the film shows calm still frames.' : '',
+			].filter( Boolean ).join( '\n' );
+		};
+		show();
+		setInterval( show, 500 );
 	}
 
 	/* ---------- Capture: exact frames for the still pictures and checks ---------- */
@@ -446,6 +588,9 @@ async function boot() {
 		started,
 		live: () => !! ( engine && ready ),
 		tier: () => engine && engine.tier.name,
+		/** The rung the film plays at ([level, resolution scale]) and the graphics chip it found. */
+		rung: () => rung,
+		gpu: () => gpuName(),
 		/** Force a quality level, as the governor would (for checks). */
 		setTier( name ) {
 			if ( engine && TIERS[ name ] ) {

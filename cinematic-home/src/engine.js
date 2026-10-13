@@ -250,6 +250,34 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			}
 			return ready;
 		},
+		/**
+		 * How long this device takes to draw state S, in milliseconds, waiting for the graphics
+		 * chip to finish each frame: the median of a few frames, after one that wakes it up.
+		 * A very slow device stops early (the answer is already clear).
+		 */
+		async bench( S, frames = 3 ) {
+			const gl = renderer.getContext();
+			const px = new Uint8Array( 4 );
+			const times = [];
+			for ( let i = 0; i <= frames; i ++ ) {
+				const t0 = performance.now();
+				this.render( S, i * 0.04 );
+				renderer.setRenderTarget( null );
+				gl.readPixels( 0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px );
+				const ms = performance.now() - t0;
+				// The first frame wakes the chip up; it only counts when it already shows the device is far too slow.
+				if ( i > 0 || ms > 1500 ) {
+					times.push( ms );
+				}
+				if ( ms > ( i ? 300 : 1500 ) ) {
+					break;
+				}
+				// Let the page breathe between frames.
+				await new Promise( ( r ) => setTimeout( r, 0 ) );
+			}
+			times.sort( ( a, b ) => a - b );
+			return times[ Math.floor( ( times.length - 1 ) / 2 ) ];
+		},
 		/** Draw one frame of state S at time (seconds). */
 		render( S, time ) {
 			const ce = Math.cos( S.el );
