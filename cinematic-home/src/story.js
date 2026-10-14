@@ -15,7 +15,7 @@ export const ACTS = {
 	details: [ 11.8, 18 ], // the hidden details, then since 1971
 };
 
-/** When each chapter's words come and go (film clock); a held frame for reduced motion. */
+/** When each chapter's words come and go (film clock); a held frame for reduced motion (never mid-sweep). */
 export const WORDS = [
 	{ in: - 1, out: 0.3, hold: 0.01 },
 	{ in: 2.2, out: 4.3, hold: 4.4 },
@@ -73,7 +73,7 @@ export function addStory( tl, F ) {
 	to( 3.0, { prongs: 1 }, 1.15, 'power1.inOut' );
 	to( 3.1, { spin: 0.3 }, 1.5, 'power2.inOut' );
 	to( 3.2, { env: 2.1 }, 1.4, 'power1.inOut' );
-	sweep( 3.95, 0.65, 3.2 );
+	sweep( 3.75, 0.6, 3.2 );
 
 	// 3 · The shape: up and over the stone, the band running up the screen, then the shapes Wulf
 	// sets most (round, emerald, pear, oval), each change riding a sweep of light while the claws
@@ -103,7 +103,7 @@ export function addStory( tl, F ) {
 	to( 12.5, { halo: 1 }, 1.0, 'none' );
 	to( 13.5, { tx: 0.7, ty: 1.25, dist: 3.7, el: 0.36, az: 0.35, shift: - 0.42 }, 1.2 );
 	to( 13.7, { pave: 1 }, 1.0, 'none' );
-	sweep( 14.3, 0.7, 2.4 );
+	sweep( 14.1, 0.65, 2.4 );
 
 	// 6 · Since 1971: the finished ring (the Oval Hidden Halo with a diamond band) from above, the
 	// way the catalog photographs it, turning slowly in warm light, one last light across it.

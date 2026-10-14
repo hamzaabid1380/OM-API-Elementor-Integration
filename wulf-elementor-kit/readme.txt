@@ -243,8 +243,9 @@ is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 * The film now shows our own rings. The 3D ring is modelled on the catalog: a slim polished band
   and four claw prongs (the Round 4-Prong Solitaire, style 85121) while the setting builds, and at
   the end the Oval Hidden Halo Engagement Ring with a diamond band (style 51162-E), with its hidden
-  halo under the stone and French pavé along the band. A small caption under the last scene names it,
-  with a "View this ring" link (Cinematic film widget, details part: "The ring on screen").
+  halo under the stone and French pavé along the band. A small caption in the last scene names it,
+  with a "View this ring" link (Cinematic film widget, details part: "The ring on screen"). Pages
+  already built get all of this by themselves; only words you changed yourself stay as you wrote them.
 * "Find your shape" shows the shapes of our best sellers: round, emerald, pear and oval. The emerald
   is a true step cut with its long "hall of mirrors" flashes; the claws move to the corners as the
   stone changes, and the pear gets a fifth claw to guard its tip. The film then stays on the oval.

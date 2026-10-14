@@ -21,12 +21,13 @@ async function open(w, h, dpr) {
 const what = process.argv[2] || 'all';
 if (what === 'all' || what === 'cards') {
   const page = await open(1440, 900, 1);
+  // From above, the way the catalog photographs its rings: round, emerald, pear, oval.
   const cards = await page.evaluate(() => window.__film.cards([
-    { morph: 0, metal: 0, az: 1.0, env: 0.0 },
-    { morph: 1, metal: 1, az: 1.05, env: 0.35 },
-    { morph: 2, metal: 2, az: 0.95, env: -0.3 },
-    { morph: 3, metal: 0, az: 1.1, env: 0.6 },
-  ].map(c => Object.assign({ dist: 6.5, ty: 0.98, el: 0.78 }, c)), 800, 1000));
+    { morph: 0, metal: 0, az: 0.05, env: 0.0 },
+    { morph: 1, metal: 1, az: 0.1, env: 0.35 },
+    { morph: 2, metal: 2, az: 0.0, env: -0.3 },
+    { morph: 3, metal: 0, az: 0.08, env: 0.6 },
+  ].map(c => Object.assign({ dist: 7.6, ty: 0.95, el: 1.1, spin: -0.45 }, c)), 800, 1000));
   cards.forEach((d, i) => save(`card-${i}.webp`, d));
 }
 if (what === 'all' || what === 'poster') {
