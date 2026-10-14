@@ -164,7 +164,7 @@ async function boot() {
 		if ( w * h * dpr * dpr > budget ) {
 			dpr = Math.sqrt( budget / ( w * h ) );
 		}
-		engine.resize( w, h, Math.max( 0.5, dpr ) );
+		engine.resize( w, h, Math.max( 0.33, dpr ) );
 	};
 	resize();
 	let resizeTimer = 0;
@@ -322,7 +322,7 @@ async function boot() {
 			}
 			needs = false;
 			draw( time );
-			if ( ! REDUCED && gov.tick( performance.now() ) === 'down' ) {
+			if ( ! REDUCED && gov.tick( performance.now(), rungIndex( rung ) >= LADDER.length - 1 ) === 'down' ) {
 				stepDown();
 			}
 		} );

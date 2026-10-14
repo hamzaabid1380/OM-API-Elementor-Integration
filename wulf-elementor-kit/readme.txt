@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.13.0
+Stable tag: 1.13.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -238,6 +238,18 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.13.1 =
+* Fixes the film stopping after its first moments on modest laptops (built-in graphics such as
+  Intel UHD 620). Since 1.12.5 the lightest quality level was heavier, and on those laptops the
+  close-up of the stone made the film switch itself to the still pictures. Two lighter steps now
+  come first (a little softer, then fewer light paths inside the stone), and on the lightest step
+  the film plays through a slow moment instead of giving up: it only switches off if it really
+  crawls for several seconds.
+* After a plugin update each computer is measured again, instead of keeping a choice made by the
+  previous version (including "off").
+* Fixes the ring's metal that could go black on some Windows computers once the gold changes color.
+* If the film ever switches itself off, ?filmcheck also says how many frames a second it managed.
 
 = 1.13.0 =
 * The film now shows our own rings. The 3D ring is modelled on the catalog: a slim polished band

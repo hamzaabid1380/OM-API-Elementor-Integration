@@ -118,7 +118,9 @@ ${ SWEEP_GLSL }` )
 float ringU = abs( atan( vRingPos.x, vRingPos.y ) );
 diffuseColor.rgb = mix( metalB, metalA, smoothstep( front - 0.14, front + 0.14, ringU ) );` )
 			.replace( '#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-totalEmissiveRadiance += vec3( 1.0, 0.95, 0.86 ) * seam * exp( - pow( ( ringU - front ) / 0.06, 2.0 ) );
+// (Squared by hand: pow() of a negative number is undefined, and NaN on Windows graphics.)
+float seamD = ( ringU - front ) / 0.06;
+totalEmissiveRadiance += vec3( 1.0, 0.95, 0.86 ) * seam * exp( - seamD * seamD );
 #ifdef FORGE
 	float fresh = ringU - forge.x;
 	if ( forge.y > 0.0 && fresh > - 0.02 ) {

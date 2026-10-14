@@ -409,7 +409,8 @@ async function boot() {
 		if ( w * h * dpr * dpr > budget ) {
 			dpr = Math.sqrt( budget / ( w * h ) );
 		}
-		return Math.max( 0.5, dpr );
+		// Never below a third of the screen's pixels (the lightest rungs go under half).
+		return Math.max( 0.33, dpr );
 	};
 	const resize = () => {
 		if ( ! engine ) {
@@ -543,7 +544,7 @@ async function boot() {
 		if ( i >= LADDER.length - 1 ) {
 			if ( ! FORCED ) {
 				remember( 'off' );
-				fallBack( 'too slow while playing, even on the lightest level' );
+				fallBack( 'too slow while playing, even on the lightest level (about ' + Math.max( 1, Math.round( 1000 / ( gov.last || 1000 ) ) ) + ' frames a second)' );
 			}
 			return;
 		}
@@ -775,7 +776,7 @@ async function boot() {
 			// The governor keeps scrolling smooth; a calm moment (sharper, slower) is not its business.
 			if ( ! moving ) {
 				gov.reset( 6 );
-			} else if ( ! REDUCED && ! busy && gov.tick( performance.now() ) === 'down' ) {
+			} else if ( ! REDUCED && ! busy && gov.tick( performance.now(), rungIndex( rung ) >= LADDER.length - 1 ) === 'down' ) {
 				busy = true;
 				stepDown().finally( () => {
 					busy = false;
@@ -809,7 +810,7 @@ async function boot() {
 				'Film check (kit ' + ( ( window.wkFilm && window.wkFilm.v ) || 'unknown' ) + ')',
 				'Graphics: ' + ( gpuName() || 'not reported by this browser' ),
 				'Stays on screen: ' + ( pinJS ? 'pinned by the film, because ' + pinJS : unblocked ? 'yes (' + unblocked + ' page wrapper' + ( unblocked > 1 ? 's' : '' ) + ' adjusted)' : 'yes' ),
-				'3D: ' + ( on ? 'on, ' + rung[ 0 ] + ' quality at ' + Math.round( rung[ 1 ] * 100 ) + '% resolution' + ( dprCap > rung[ 1 ] ? ' (' + Math.round( dprCap * 100 ) + '% here, the stone is small)' : '' ) : why ? 'off, ' + why : 'starting' ),
+				'3D: ' + ( on ? 'on, ' + ( rung[ 0 ] === 'lite2' ? 'lightest' : rung[ 0 ] ) + ' quality at ' + Math.round( rung[ 1 ] * 100 ) + '% resolution' + ( dprCap > rung[ 1 ] ? ' (' + Math.round( dprCap * 100 ) + '% here, the stone is small)' : '' ) : why ? 'off, ' + why : 'starting' ),
 				on ? 'Frames a second: ' + fps : '',
 				REDUCED ? 'Reduce motion is on in this computer\'s settings, so the film shows calm still frames.' : '',
 			].filter( Boolean ).join( '\n' );

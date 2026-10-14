@@ -12,11 +12,15 @@ import { TIERS } from './engine.js';
  * is remembered for the rest of the visit, so the next page starts there straight away.
  */
 
-/** Rungs, best first: [quality level, resolution scale]. */
-export const LADDER = [ [ 'high', 1 ], [ 'medium', 1 ], [ 'medium', 0.8 ], [ 'low', 1 ], [ 'low', 0.8 ], [ 'low', 0.65 ], [ 'lite', 0.65 ], [ 'lite', 0.5 ] ];
+/**
+ * Rungs, best first: [quality level, resolution scale]. At the bottom the film first gives up a
+ * little sharpness and keeps its sparkle (lite at 42%), and only then a light path (lite2), so a
+ * modest laptop never has to fall back to the still pictures.
+ */
+export const LADDER = [ [ 'high', 1 ], [ 'medium', 1 ], [ 'medium', 0.8 ], [ 'low', 1 ], [ 'low', 0.8 ], [ 'low', 0.65 ], [ 'lite', 0.65 ], [ 'lite', 0.5 ], [ 'lite', 0.42 ], [ 'lite2', 0.42 ], [ 'lite2', 0.35 ] ];
 
 /** Rough cost of a pixel on each level, relative to the best: a guess at how far down to go. */
-const COST = { high: 1, medium: 0.4, low: 0.22, lite: 0.17 };
+const COST = { high: 1, medium: 0.4, low: 0.22, lite: 0.17, lite2: 0.115 };
 
 /** Milliseconds allowed for the heaviest frame: about 38 a second there, more everywhere else. */
 export const TARGET = 26;
@@ -29,7 +33,8 @@ function predict( ms, from, to ) {
 	return ms * ( COST[ to[ 0 ] ] / COST[ from[ 0 ] ] ) * Math.pow( to[ 1 ] / from[ 1 ], 2 );
 }
 
-const KEY = 'wk-film-fit';
+// A new key when the ladder changes, so an old "off" or rung from an earlier version is not reused.
+const KEY = 'wk-film-fit-2';
 
 /** The rung chosen earlier in this visit: [level, scale], 'off' for the still pictures, or null. */
 export function recall() {
@@ -93,10 +98,12 @@ export async function settle( rung, apply, bench, target = TARGET, probe = null 
 }
 
 /**
- * Watches the frame rate while the film plays: tick( now ) once per drawn frame. Returns
+ * Watches the frame rate while the film plays: tick( now, floor ) once per drawn frame. Returns
  * 'down' when the film should drop a rung. Slow frames count however slow they are (a film
  * crawling at two frames a second must step down too); call reset() after a change, when
  * the film comes back on screen, or when the tab comes back, so those pauses don't count.
+ * On the lightest rung (floor) dropping means the still pictures, so it is patient: it plays
+ * through a slow moment such as the close-up, and gives up only when the film really crawls.
  */
 export function createGovernor() {
 	let last = 0;
@@ -105,7 +112,12 @@ export function createGovernor() {
 	let wait = 12;
 	let since = 0;
 	let strikes = 0;
+	let judged = 0;
 	return {
+		/** The last judged average frame time (ms), for the check box. */
+		get last() {
+			return judged;
+		},
 		reset( frames = 12 ) {
 			last = 0;
 			acc = 0;
@@ -114,7 +126,7 @@ export function createGovernor() {
 			since = 0;
 			strikes = 0;
 		},
-		tick( now ) {
+		tick( now, floor = false ) {
 			const dt = last ? now - last : 0;
 			last = now;
 			if ( ! dt ) {
@@ -136,11 +148,15 @@ export function createGovernor() {
 			const avg = acc / n;
 			acc = 0;
 			n = 0;
-			if ( avg <= 38 ) {
+			judged = avg;
+			if ( avg <= ( floor ? 55 : 38 ) ) {
 				strikes = 0;
 				return '';
 			}
 			strikes ++;
+			if ( floor ) {
+				return avg > 110 || strikes >= 3 ? 'down' : '';
+			}
 			return avg > 70 || strikes >= 2 ? 'down' : '';
 		},
 	};

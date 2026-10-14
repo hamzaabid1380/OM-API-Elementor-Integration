@@ -17,6 +17,9 @@ export const TIERS = {
 	// low), the light still inside after the last one turned down so the stone keeps its facet
 	// pattern. Only reached by measuring: for laptops that would otherwise get the pictures.
 	lite: { name: 'lite', dpr: 1, supersample: 1, msaa: 0, bounces: 3, tail: 0.5, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
+	// The floor, for the weakest built-in graphics: two light paths inside the stones (a third
+	// cheaper again than the light level), what is left turned well down so no facet goes flat white.
+	lite2: { name: 'lite2', dpr: 1, supersample: 1, msaa: 0, bounces: 2, tail: 0.45, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
 };
 
 /** Backdrops: [centre, edge]. */
