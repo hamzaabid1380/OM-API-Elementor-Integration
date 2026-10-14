@@ -172,6 +172,19 @@ class WK_Film_Widget extends WK_Widget {
 		return ! empty( $media['url'] ) ? $media['url'] : $fallback;
 	}
 
+	/**
+	 * A still picture's src and srcset attributes: an uploaded one as it is, else the built-in one
+	 * ($file, $w pixels wide) with its sharper copy for Retina screens and phones (half as wide again).
+	 */
+	private function poster_attrs( $media, $file, $w ) {
+		$url = $this->poster_url( $media, '' );
+		if ( '' !== $url ) {
+			return array( esc_url( $url ), esc_url( $url ) );
+		}
+		$base = WK_URL . 'assets/media/' . $file;
+		return array( esc_url( $base . '.webp' ), esc_url( $base . '.webp' ) . ' ' . $w . 'w, ' . esc_url( $base . '-2x.webp' ) . ' ' . round( $w * 1.5 ) . 'w' );
+	}
+
 	/** A text link from a text + link pair, with an arrow. */
 	private function text_link( $s, $id ) {
 		$text = trim( (string) ( $s[ $id . '_text' ] ?? '' ) );
@@ -184,9 +197,8 @@ class WK_Film_Widget extends WK_Widget {
 		$act  = isset( $acts[ $s['act'] ?? '' ] ) ? $s['act'] : 'opening';
 		$def  = $acts[ $act ];
 		$len  = is_numeric( $s['len'] ?? '' ) && (float) $s['len'] >= 2 ? min( 8, (float) $s['len'] ) : $def['len'];
-		$media = WK_URL . 'assets/media/';
-		$wide  = $this->poster_url( $s['poster'] ?? array(), $media . $def['poster'] . '.webp' );
-		$tall  = $this->poster_url( $s['poster_tall'] ?? array(), $media . $def['poster'] . '-tall.webp' );
+		list( $wide, $wide_set ) = $this->poster_attrs( $s['poster'] ?? array(), $def['poster'], 1920 );
+		list( , $tall_set )      = $this->poster_attrs( $s['poster_tall'] ?? array(), $def['poster'] . '-tall', 900 );
 		$names = array(
 			'opening' => __( 'How a Wulf ring comes together', 'wulf-kit' ),
 			'shapes'  => __( 'Shapes and metals', 'wulf-kit' ),
@@ -196,8 +208,9 @@ class WK_Film_Widget extends WK_Widget {
 		$this->open( $s );
 		echo '<section class="film-act dark txt-light' . ( 'opening' === $act ? ' film-hero' : '' ) . '" data-act="' . esc_attr( $act ) . '" style="--film-len:' . esc_attr( (string) round( $len * 100 ) ) . '" aria-label="' . esc_attr( $names[ $act ] ) . '"' . $this->anchor_attr( $s ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<div class="film-stage">';
-		// The opening's picture is the first thing on the page: fetched first, never lazy.
-		echo '<picture class="film-poster" aria-hidden="true"><source media="(max-aspect-ratio: 20/21)" srcset="' . esc_url( $tall ) . '"><img src="' . esc_url( $wide ) . '" alt="" width="1920" height="1038"' . ( 'opening' === $act ? ' fetchpriority="high"' : ' loading="lazy" decoding="async"' ) . '></picture>';
+		// The opening's picture is the first thing on the page: fetched first, never lazy. The browser
+		// picks the copy that matches the screen, so a Retina screen gets the sharper one.
+		echo '<picture class="film-poster" aria-hidden="true"><source media="(max-aspect-ratio: 20/21)" srcset="' . $tall_set . '" sizes="100vw"><img src="' . $wide . '" srcset="' . $wide_set . '" sizes="100vw" alt="" width="1920" height="1038"' . ( 'opening' === $act ? ' fetchpriority="high"' : ' loading="lazy" decoding="async"' ) . '></picture>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_url() above.
 		echo '<div class="film-scrim l" aria-hidden="true"></div><div class="film-scrim r" aria-hidden="true"></div><div class="film-bar" aria-hidden="true"></div>';
 
 		if ( 'opening' === $act ) {

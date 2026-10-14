@@ -9,18 +9,23 @@ import { createGlints } from './glints.js';
 /** Quality tiers. The governor in film.js steps down when frames run slow. */
 export const TIERS = {
 	// ss: rays per pixel inside the centre stone; exact: the studio evaluated light by light;
-	// ao: contact shadows; supersample: render above screen resolution on 1x screens.
-	high: { name: 'high', dpr: 2, supersample: 1.5, msaa: 4, bounces: 8, waves: 7, ss: 4, exact: true, cube: 512, metal: 512, grain: true, dof: true, ao: true },
-	medium: { name: 'medium', dpr: 1.5, supersample: 1, msaa: 2, bounces: 6, waves: 7, ss: 1, exact: true, cube: 512, metal: 256, grain: true, dof: false, ao: false },
-	low: { name: 'low', dpr: 1, supersample: 1, msaa: 0, bounces: 4, tail: 0.85, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
+	// ao: contact shadows; dpr: the most pixels drawn per point (2: a Retina screen in full);
+	// supersample: render above screen resolution on 1x screens; budget: pixels at most (see fit.js);
+	// dof: a macro lens's depth of field, off everywhere: the ring stays crisp edge to edge.
+	high: { name: 'high', dpr: 2, supersample: 1.5, budget: 8.3e6, msaa: 4, bounces: 8, waves: 7, ss: 4, exact: true, cube: 512, metal: 512, grain: true, dof: false, ao: true },
+	medium: { name: 'medium', dpr: 2, supersample: 1, budget: 8.3e6, msaa: 2, bounces: 6, waves: 7, ss: 1, exact: true, cube: 512, metal: 256, grain: true, dof: false, ao: false },
+	low: { name: 'low', dpr: 1, supersample: 1, budget: 2.6e6, msaa: 0, bounces: 4, tail: 0.85, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
 	// The lightest: fewer light paths inside the stones (uniforms, so no shaders to rebuild from
 	// low), the light still inside after the last one turned down so the stone keeps its facet
 	// pattern. Only reached by measuring: for laptops that would otherwise get the pictures.
-	lite: { name: 'lite', dpr: 1, supersample: 1, msaa: 0, bounces: 3, tail: 0.5, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
+	lite: { name: 'lite', dpr: 1, supersample: 1, budget: 2.6e6, msaa: 0, bounces: 3, tail: 0.5, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
 	// The floor, for the weakest built-in graphics: two light paths inside the stones (a third
 	// cheaper again than the light level), what is left turned well down so no facet goes flat white.
-	lite2: { name: 'lite2', dpr: 1, supersample: 1, msaa: 0, bounces: 2, tail: 0.45, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
+	lite2: { name: 'lite2', dpr: 1, supersample: 1, budget: 2.6e6, msaa: 0, bounces: 2, tail: 0.45, waves: 3, ss: 1, exact: false, cube: 256, metal: 256, grain: false, dof: false, ao: false },
 };
+
+/** Film grain on the richer levels: a hint of texture that never clouds the stone's edges. */
+const GRAIN = 0.02;
 
 /** Backdrops: [centre, edge]. */
 const PALETTES = [
@@ -169,7 +174,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			Object.assign( ao.configuration, { aoRadius: 0.09, distanceFalloff: 0.6, intensity: 2.2, aoSamples: 16, denoiseSamples: 8, denoiseRadius: 8, gammaCorrection: false, halfRes: false } );
 			composer.addPass( ao );
 		}
-		// Macro-lens depth of field for the close shots (best tier only, off when unused).
+		// Macro-lens depth of field, for a level that asks for it (none does now; off when unused).
 		dof = null;
 		dofPass = null;
 		if ( t.dof ) {
@@ -186,7 +191,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 		noise = null;
 		if ( t.grain ) {
 			noise = new NoiseEffect( { premultiply: true, blendFunction: BlendFunction.SCREEN } );
-			noise.blendMode.opacity.value = 0.045;
+			noise.blendMode.opacity.value = GRAIN;
 			effects.push( noise );
 		}
 		composer.addPass( new EffectPass( camera, ...effects ) );
@@ -423,7 +428,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			bloom.intensity = 0.35 * S.bloom * ( 1 - white );
 			bloom.luminanceMaterial.threshold = Math.max( 0.9, 1.6 - 0.45 * ( S.bloom - 1 ) );
 			if ( noise ) {
-				noise.blendMode.opacity.value = 0.045 * ( 1 - white );
+				noise.blendMode.opacity.value = GRAIN * ( 1 - white );
 			}
 
 			if ( dofPass ) {

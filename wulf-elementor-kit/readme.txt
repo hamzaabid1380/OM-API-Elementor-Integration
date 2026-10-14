@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.13.1
+Stable tag: 1.13.2
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -238,6 +238,24 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.13.2 =
+* The film is crisp on Retina screens (a recent Mac, a 4K laptop at 200%). The two richer quality
+  levels now draw at the screen's full sharpness; before, they stopped at three quarters of it or
+  less. On a sharp screen the film keeps its sharpness through more steps and gives up effects in
+  the close-up first, so a strong Mac no longer drops to a soft, plain picture.
+* Strong graphics chips are now timed on a real full-size frame before the film picks its level,
+  instead of an estimate from a small copy that made them look slower than they are.
+* Close-ups stay sharp edge to edge: the blur that copied a macro lens is off, and the film grain
+  is fainter.
+* The still pictures have a sharper copy for Retina screens and phones; the browser picks the
+  one that matches the screen.
+* The 3D follows the size of its stage if the site header settles after the page loads, instead
+  of stretching until the window is resized.
+* Modest laptops (built-in graphics, ordinary screens) keep exactly the levels and limits that
+  1.13.1 gave them.
+* ?filmcheck also shows the screen's size and density, and how sharp the film draws as a share
+  of the screen.
 
 = 1.13.1 =
 * Fixes the film stopping after its first moments on modest laptops (built-in graphics such as

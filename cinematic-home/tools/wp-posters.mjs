@@ -12,15 +12,16 @@ const out = path.join( root, '../wulf-elementor-kit/assets/media' );
 const url = ( process.env.WP_URL || 'http://localhost:8089/home-cinematic/' ) + '?capture&tier=high';
 const ACTS = { opening: 0, shapes: 4.6, details: 11.8 };
 const only = process.argv[ 2 ];
-// [suffix, stage width, stage height] in CSS pixels; the engine draws at 1.5x, so 1920x1038
-// (a laptop or desktop screen below the header) and 900x1800 (a phone below the header).
+// [suffix, stage width, stage height in CSS pixels, everyday copy width x height]. Each picture is drawn
+// on a Retina-class screen (2x: 2880x1556 for a laptop or desktop below the header, 1350x2700 for a
+// phone), saved as the sharp copy (-2x), and scaled down for the everyday copy (1920x1038, 900x1800).
 // The pictures fill the stage edge to edge, so the closer their shape, the more exact the
 // hand-over from picture to 3D.
-const SIZES = [ [ '', 1280, 692 ], [ '-tall', 600, 1200 ] ];
+const SIZES = [ [ '', 1440, 778, 1920, 1038 ], [ '-tall', 675, 1350, 900, 1800 ] ];
 
 const browser = await launch();
-for ( const [ suffix, w, h ] of SIZES ) {
-	const ctx = await browser.newContext( { viewport: { width: w, height: h + 80 }, deviceScaleFactor: 1 } );
+for ( const [ suffix, w, h, w1, h1 ] of SIZES ) {
+	const ctx = await browser.newContext( { viewport: { width: w, height: h + 80 }, deviceScaleFactor: 2 } );
 	await routeFonts( ctx, root + '/fontcache' );
 	const page = await ctx.newPage();
 	page.on( 'pageerror', ( e ) => console.log( 'PAGEERROR', String( e ) ) );
@@ -40,16 +41,26 @@ for ( const [ suffix, w, h ] of SIZES ) {
 			continue;
 		}
 		const t0 = Date.now();
-		const data = await page.evaluate( async ( [ a, time ] ) => {
+		const data = await page.evaluate( async ( [ a, time, cw, ch ] ) => {
 			const el = document.querySelector( `.film-act[data-act="${ a }"]` );
 			window.__film.frame( el.getBoundingClientRect().top + scrollY + 4 );
 			const r = window.__film.at( time );
 			const c = document.querySelector( '.film-canvas' );
-			return { r, w: c.width, h: c.height, url: c.toDataURL( 'image/webp', 0.92 ) };
-		}, [ act, t ] );
-		const file = path.join( out, `film-${ act }${ suffix }.webp` );
-		fs.writeFileSync( file, Buffer.from( data.url.split( ',' )[ 1 ], 'base64' ) );
-		console.log( path.basename( file ), `${ data.w }x${ data.h }`, Math.round( fs.statSync( file ).size / 1024 ) + ' KB', data.r.act, ( ( Date.now() - t0 ) / 1000 ).toFixed( 0 ) + 's' );
+			// The everyday copy: the sharp one scaled down with the browser's best filtering.
+			const small = document.createElement( 'canvas' );
+			small.width = cw;
+			small.height = ch;
+			const g = small.getContext( '2d' );
+			g.imageSmoothingEnabled = true;
+			g.imageSmoothingQuality = 'high';
+			g.drawImage( c, 0, 0, cw, ch );
+			return { r, w: c.width, h: c.height, sharp: c.toDataURL( 'image/webp', 0.92 ), url: small.toDataURL( 'image/webp', 0.92 ) };
+		}, [ act, t, w1, h1 ] );
+		for ( const [ name, url, size ] of [ [ `film-${ act }${ suffix }-2x.webp`, data.sharp, `${ data.w }x${ data.h }` ], [ `film-${ act }${ suffix }.webp`, data.url, `${ w1 }x${ h1 }` ] ] ) {
+			const file = path.join( out, name );
+			fs.writeFileSync( file, Buffer.from( url.split( ',' )[ 1 ], 'base64' ) );
+			console.log( name, size, Math.round( fs.statSync( file ).size / 1024 ) + ' KB', data.r.act, ( ( Date.now() - t0 ) / 1000 ).toFixed( 0 ) + 's' );
+		}
 	}
 	await ctx.close();
 }

@@ -3,7 +3,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 import { createEngine, defaults, TIERS } from './engine.js';
 import { ACTS, WORDS, SHAPE_AT, METAL_AT, HEAVY, filmState, addStory, pickTier, canRender3D, softwareGPU, gpuName } from './story.js';
-import { LADDER, TARGET, rungIndex, recall, remember, settle, createGovernor } from './fit.js';
+import { TARGET, recall, remember, settle, createGovernor, dprFor, ladderFor } from './fit.js';
 import { AO_LIB } from './ao-lib.js';
 
 /**
@@ -400,25 +400,36 @@ async function boot() {
 
 	let dprCap = 1;
 	const stageSize = () => [ canvas.clientWidth || innerWidth, canvas.clientHeight || innerHeight ];
+	// The richer levels draw at the screen's own sharpness (a Retina screen in full), the best one
+	// finer than ordinary screens; the light levels at one pixel per point at most (see fit.js).
 	const pixelRatio = () => {
 		const [ w, h ] = stageSize();
-		// The best tier renders above screen resolution on 1x screens (cleaner, sharper detail).
-		let dpr = Math.min( Math.max( devicePixelRatio || 1, engine.tier.supersample || 1 ), engine.tier.dpr ) * dprCap;
-		// Keep the pixel count sane on very large screens.
-		const budget = engine.tier.name === 'high' ? 4.2e6 : 2.6e6;
-		if ( w * h * dpr * dpr > budget ) {
-			dpr = Math.sqrt( budget / ( w * h ) );
-		}
-		// Never below a third of the screen's pixels (the lightest rungs go under half).
-		return Math.max( 0.33, dpr );
+		return dprFor( engine.tier, dprCap, w, h );
 	};
+	// The rungs this screen offers, cheapest last (worked out again when the stage changes size).
+	let ladder = ladderFor( innerWidth, innerHeight );
 	const resize = () => {
 		if ( ! engine ) {
 			return;
 		}
 		const [ w, h ] = stageSize();
-		engine.resize( w, h, pixelRatio() );
+		ladder = ladderFor( w, h );
+		const dpr = pixelRatio();
+		// Unchanged: nothing to do (a new size clears the picture until the next frame).
+		if ( engine.size.w === w && engine.size.h === h && engine.renderer.getPixelRatio() === dpr ) {
+			return;
+		}
+		engine.resize( w, h, dpr );
 	};
+	// The stage can change size without the window doing so (the site header settling once the page
+	// has loaded, an announcement bar closing): the picture would be stretched until the next resize.
+	// Picked up at the start of the next frame, so it is drawn at its new size straight away.
+	let stale = false;
+	if ( window.ResizeObserver ) {
+		new ResizeObserver( () => {
+			stale = true;
+		} ).observe( canvas );
+	}
 
 	// The opening's still picture lights up as the page appears (CSS). If the 3D
 	// arrives while that is still happening, it takes over at the same brightness.
@@ -540,15 +551,15 @@ async function boot() {
 	};
 	// The film runs slow: one rung down, or the still pictures from the lightest rung.
 	const stepDown = async () => {
-		const i = rungIndex( rung );
-		if ( i >= LADDER.length - 1 ) {
+		const next = ladder.next( rung );
+		if ( ! next ) {
 			if ( ! FORCED ) {
 				remember( 'off' );
 				fallBack( 'too slow while playing, even on the lightest level (about ' + Math.max( 1, Math.round( 1000 / ( gov.last || 1000 ) ) ) + ' frames a second)' );
 			}
 			return;
 		}
-		await useRung( LADDER[ i + 1 ] );
+		await useRung( next );
 		if ( ! FORCED ) {
 			remember( [ rung[ 0 ], rung[ 1 ], covHeavy ] );
 		}
@@ -700,7 +711,7 @@ async function boot() {
 				resize();
 				return ( ms = small / ( k * k ) );
 			};
-			const chosen = await settle( rung, useRung, async () => ( ms = await engine.bench( S ) ), FIT_TARGET, probe );
+			const chosen = await settle( rung, useRung, async () => ( ms = await engine.bench( S ) ), FIT_TARGET, probe, ladder );
 			if ( ! engine ) {
 				return;
 			}
@@ -763,6 +774,11 @@ async function boot() {
 				gov.reset( 4 );
 				return;
 			}
+			if ( stale ) {
+				stale = false;
+				resize();
+				needs = true;
+			}
 			const moving = tl.time() !== lastT || intro.e < 1;
 			lastT = tl.time();
 			if ( moving ) {
@@ -776,7 +792,7 @@ async function boot() {
 			// The governor keeps scrolling smooth; a calm moment (sharper, slower) is not its business.
 			if ( ! moving ) {
 				gov.reset( 6 );
-			} else if ( ! REDUCED && ! busy && gov.tick( performance.now(), rungIndex( rung ) >= LADDER.length - 1 ) === 'down' ) {
+			} else if ( ! REDUCED && ! busy && gov.tick( performance.now(), ! ladder.next( rung ) ) === 'down' ) {
 				busy = true;
 				stepDown().finally( () => {
 					busy = false;
@@ -804,13 +820,21 @@ async function boot() {
 				since = now;
 			}
 		} );
+		// How sharp the film draws, as a share of what this screen can show (100% = every pixel of it).
+		const sharpness = ( scale ) => {
+			const [ w, h ] = stageSize();
+			return Math.round( ( 100 * dprFor( engine.tier, scale, w, h ) ) / ( devicePixelRatio || 1 ) );
+		};
 		const show = () => {
 			const on = engine && ready;
+			const [ sw, sh ] = stageSize();
+			const density = Math.round( ( devicePixelRatio || 1 ) * 100 ) / 100;
 			box.textContent = [
 				'Film check (kit ' + ( ( window.wkFilm && window.wkFilm.v ) || 'unknown' ) + ')',
 				'Graphics: ' + ( gpuName() || 'not reported by this browser' ),
+				'Screen: ' + Math.round( sw ) + ' x ' + Math.round( sh ) + ', ' + density + 'x density' + ( density >= 1.75 ? ' (Retina class)' : '' ),
 				'Stays on screen: ' + ( pinJS ? 'pinned by the film, because ' + pinJS : unblocked ? 'yes (' + unblocked + ' page wrapper' + ( unblocked > 1 ? 's' : '' ) + ' adjusted)' : 'yes' ),
-				'3D: ' + ( on ? 'on, ' + ( rung[ 0 ] === 'lite2' ? 'lightest' : rung[ 0 ] ) + ' quality at ' + Math.round( rung[ 1 ] * 100 ) + '% resolution' + ( dprCap > rung[ 1 ] ? ' (' + Math.round( dprCap * 100 ) + '% here, the stone is small)' : '' ) : why ? 'off, ' + why : 'starting' ),
+				'3D: ' + ( on ? 'on, ' + ( rung[ 0 ] === 'lite2' ? 'lightest' : rung[ 0 ] ) + ' quality, sharpness ' + sharpness( rung[ 1 ] ) + '% of this screen' + ( sharpness( rung[ 1 ] ) > 100 ? ' (drawn finer than the screen)' : '' ) + ( dprCap > rung[ 1 ] ? ', ' + sharpness( dprCap ) + '% right now' : '' ) : why ? 'off, ' + why : 'starting' ),
 				on ? 'Frames a second: ' + fps : '',
 				REDUCED ? 'Reduce motion is on in this computer\'s settings, so the film shows calm still frames.' : '',
 			].filter( Boolean ).join( '\n' );
@@ -829,6 +853,9 @@ async function boot() {
 		gpu: () => gpuName(),
 		/** The resolution scale in use right now (the rung's, or sharper where the stone is small). */
 		scale: () => dprCap,
+		/** Pixels drawn per point right now, and the rungs this screen offers (checks). */
+		dpr: () => ( engine ? engine.renderer.getPixelRatio() : 0 ),
+		ladder: () => ladder.rungs.map( ( r ) => [ r[ 0 ], r[ 1 ], Math.round( ladder.dpr( r ) * 100 ) / 100 ] ),
 		/** The stone's share of the picture in the close-up the level was fitted to (checks). */
 		covHeavy( v ) {
 			if ( v ) {

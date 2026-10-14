@@ -5,7 +5,7 @@ import Lenis from 'lenis';
 import { N8AOPostPass } from 'n8ao';
 import { createEngine, defaults, TIERS } from './engine.js';
 import { CHAPTERS, LENGTH, filmState, addStory, pickTier as tierFor, canRender3D as can3D, softwareGPU } from './story.js';
-import { LADDER, rungIndex, createGovernor } from './fit.js';
+import { createGovernor, dprFor, ladderFor } from './fit.js';
 
 /**
  * The director. One GSAP timeline holds the whole film: camera, ring,
@@ -151,20 +151,18 @@ async function boot() {
 		poster.classList.remove( 'gone' );
 		document.documentElement.classList.add( 'no-3d' );
 	} );
+	// The rungs this screen offers (see fit.js), worked out again when the window changes size.
+	let ladder = ladderFor( innerWidth, innerHeight );
 	const resize = () => {
 		if ( ! engine ) {
 			return;
 		}
 		const w = canvas.clientWidth || innerWidth;
 		const h = canvas.clientHeight || innerHeight;
-		// The best tier renders above screen resolution on 1x screens (cleaner, sharper detail).
-		let dpr = Math.min( Math.max( devicePixelRatio || 1, engine.tier.supersample || 1 ), engine.tier.dpr ) * dprCap;
-		// Keep the pixel count sane on very large screens.
-		const budget = engine.tier.name === 'high' ? 4.2e6 : 2.6e6;
-		if ( w * h * dpr * dpr > budget ) {
-			dpr = Math.sqrt( budget / ( w * h ) );
-		}
-		engine.resize( w, h, Math.max( 0.33, dpr ) );
+		ladder = ladderFor( w, h );
+		// The richer levels draw at the screen's own sharpness (a Retina screen in full), the best one
+		// finer than ordinary screens; the light ones at one pixel per point at most.
+		engine.resize( w, h, dprFor( engine.tier, dprCap, w, h ) );
 	};
 	resize();
 	let resizeTimer = 0;
@@ -244,8 +242,8 @@ async function boot() {
 	const gov = createGovernor();
 	let rung = [ engine ? engine.tier.name : 'low', 1 ];
 	const stepDown = () => {
-		const i = rungIndex( rung );
-		if ( i >= LADDER.length - 1 ) {
+		const next = ladder.next( rung );
+		if ( ! next ) {
 			if ( ! q.get( 'tier' ) ) {
 				engine = null;
 				poster.classList.remove( 'gone' );
@@ -253,7 +251,7 @@ async function boot() {
 			}
 			return;
 		}
-		rung = LADDER[ i + 1 ];
+		rung = next;
 		if ( engine.tier.name !== rung[ 0 ] ) {
 			engine.setTier( TIERS[ rung[ 0 ] ] );
 		}
@@ -322,7 +320,7 @@ async function boot() {
 			}
 			needs = false;
 			draw( time );
-			if ( ! REDUCED && gov.tick( performance.now(), rungIndex( rung ) >= LADDER.length - 1 ) === 'down' ) {
+			if ( ! REDUCED && gov.tick( performance.now(), ! ladder.next( rung ) ) === 'down' ) {
 				stepDown();
 			}
 		} );

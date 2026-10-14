@@ -79,7 +79,7 @@ export function addStory( tl, F ) {
 	// sets most (round, emerald, pear, oval), each change riding a sweep of light while the claws
 	// slide to their new places. It stays an oval: the ring the film finishes on.
 	// (On tall screens the band runs across instead, above the words.)
-	to( 4.6, { ty: 2.12, dist: 5.2, el: 1.38, az: 0, shift: 0.3, shiftY: 0.27, spin: Math.PI / 2, spinTall: - Math.PI / 2, mood: 0.8, glint: 0.6, dof: 0.55 }, 1.0 );
+	to( 4.6, { ty: 2.12, dist: 5.2, el: 1.38, az: 0, shift: 0.3, shiftY: 0.27, spin: Math.PI / 2, spinTall: - Math.PI / 2, mood: 0.8, glint: 0.6 }, 1.0 );
 	to( 5.7, { morph: 1, env: 2.6 }, 0.6 );
 	to( 6.6, { morph: 2, env: 3.1 }, 0.6 );
 	to( 7.5, { morph: 3, env: 3.6 }, 0.6 );
@@ -89,7 +89,7 @@ export function addStory( tl, F ) {
 
 	// 4 · The metal: down to a low three-quarter view, the ring turning as each metal flows around
 	// it from the head, a seam of light at its edge.
-	to( 8.6, { ty: 0.8, dist: 10.8, el: 0.2, az: 1.1, shift: - 0.27, shiftY: 0.4, dof: 0, mood: 0.45, glint: 0.4 }, 1.1 );
+	to( 8.6, { ty: 0.8, dist: 10.8, el: 0.2, az: 1.1, shift: - 0.27, shiftY: 0.4, mood: 0.45, glint: 0.4 }, 1.1 );
 	to( 8.6, { spin: 0.3, spinTall: 0 }, 1.1 );
 	to( 9.7, { spin: 0.55 }, 2.1, 'none' );
 	to( 9.5, { metal: 1, env: 5.2 }, 0.95, 'power1.inOut' );
@@ -99,7 +99,7 @@ export function addStory( tl, F ) {
 
 	// 5 · The details: low and close under the stone while the hidden halo's stones drop into their
 	// collar one by one, then along the shoulder as the pave is set from the head down.
-	to( 11.8, { tx: 0, ty: 1.95, dist: 4.6, el: 0.08, az: 0.3, fov: 22, shift: - 0.47, shiftY: 0.24, wobble: 0.15, spin: 0, dof: 1, mood: 0.6 }, 1.0 );
+	to( 11.8, { tx: 0, ty: 1.95, dist: 4.6, el: 0.08, az: 0.3, fov: 22, shift: - 0.47, shiftY: 0.24, wobble: 0.15, spin: 0, mood: 0.6 }, 1.0 );
 	to( 12.5, { halo: 1 }, 1.0, 'none' );
 	to( 13.5, { tx: 0.7, ty: 1.25, dist: 3.7, el: 0.36, az: 0.35, shift: - 0.42 }, 1.2 );
 	to( 13.7, { pave: 1 }, 1.0, 'none' );
@@ -107,7 +107,7 @@ export function addStory( tl, F ) {
 
 	// 6 · Since 1971: the finished ring (the Oval Hidden Halo with a diamond band) from above, the
 	// way the catalog photographs it, turning slowly in warm light, one last light across it.
-	to( 15, { tx: 0, ty: 1.0, dist: 7.7, el: 1.1, az: 0.05, fov: 24, shift: 0.4, shiftY: 0.42, bg: 1, exposure: 0.95, wobble: 0.5, dof: 0, mood: 0.7, glint: 0.55, motes: 0.55, bloom: 1.3 }, 1.4 );
+	to( 15, { tx: 0, ty: 1.0, dist: 7.7, el: 1.1, az: 0.05, fov: 24, shift: 0.4, shiftY: 0.42, bg: 1, exposure: 0.95, wobble: 0.5, mood: 0.7, glint: 0.55, motes: 0.55, bloom: 1.3 }, 1.4 );
 	to( 15, { spin: - 0.62 }, 1.4 );
 	to( 16.4, { spin: - 0.22 }, 1.6, 'none' );
 	sweep( 16.3, 1.1, 2.6 );

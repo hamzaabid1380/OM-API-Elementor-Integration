@@ -13,11 +13,14 @@ import { TIERS } from './engine.js';
  */
 
 /**
- * Rungs, best first: [quality level, resolution scale]. At the bottom the film first gives up a
- * little sharpness and keeps its sparkle (lite at 42%), and only then a light path (lite2), so a
- * modest laptop never has to fall back to the still pictures.
+ * Rungs, best first: [quality level, sharpness]. The sharpness is a share of the most the level draws
+ * at on this screen (see dprFor): the richer levels at the screen's own sharpness (a Retina screen in
+ * full), the light ones at one pixel per point at most. Not every rung suits every screen, so each
+ * device gets its own ladder (ladderFor). At the bottom the film first gives up a little sharpness and
+ * keeps its sparkle (lite at 42%), and only then a light path (lite2), so a modest laptop never has to
+ * fall back to the still pictures.
  */
-export const LADDER = [ [ 'high', 1 ], [ 'medium', 1 ], [ 'medium', 0.8 ], [ 'low', 1 ], [ 'low', 0.8 ], [ 'low', 0.65 ], [ 'lite', 0.65 ], [ 'lite', 0.5 ], [ 'lite', 0.42 ], [ 'lite2', 0.42 ], [ 'lite2', 0.35 ] ];
+export const LADDER = [ [ 'high', 1 ], [ 'high', 0.9 ], [ 'high', 0.8 ], [ 'medium', 1 ], [ 'medium', 0.8 ], [ 'medium', 0.65 ], [ 'medium', 0.5 ], [ 'low', 1 ], [ 'low', 0.8 ], [ 'low', 0.65 ], [ 'lite', 0.65 ], [ 'lite', 0.5 ], [ 'lite', 0.42 ], [ 'lite2', 0.42 ], [ 'lite2', 0.35 ] ];
 
 /** Rough cost of a pixel on each level, relative to the best: a guess at how far down to go. */
 const COST = { high: 1, medium: 0.4, low: 0.22, lite: 0.17, lite2: 0.115 };
@@ -25,16 +28,61 @@ const COST = { high: 1, medium: 0.4, low: 0.22, lite: 0.17, lite2: 0.115 };
 /** Milliseconds allowed for the heaviest frame: about 38 a second there, more everywhere else. */
 export const TARGET = 26;
 
-export function rungIndex( r ) {
-	return Math.max( 0, LADDER.findIndex( ( x ) => x[ 0 ] === r[ 0 ] && x[ 1 ] === r[ 1 ] ) );
+const screenDpr = () => ( typeof devicePixelRatio === 'number' && devicePixelRatio > 0 ? devicePixelRatio : 1 );
+
+/**
+ * Pixels drawn per point for level `t` at sharpness `scale` on a w x h stage (in points). Each level
+ * has a top (`dpr`; the best one draws finer than ordinary screens, `supersample`) and a pixel budget,
+ * so a very large screen stays sane; never below a third.
+ */
+export function dprFor( t, scale, w, h, native = screenDpr() ) {
+	const top = Math.min( Math.max( native, t.supersample || 1 ), t.dpr || 1 );
+	return Math.max( 0.33, Math.min( top * scale, Math.sqrt( ( t.budget || 2.6e6 ) / Math.max( 1, w * h ) ) ) );
 }
 
-function predict( ms, from, to ) {
-	return ms * ( COST[ to[ 0 ] ] / COST[ from[ 0 ] ] ) * Math.pow( to[ 1 ] / from[ 1 ], 2 );
+/**
+ * The ladder on this screen (a w x h stage, in points): the rungs worth offering, dearest first, and
+ * what each costs here. On a sharp screen (a Mac's Retina) the middle level keeps going at the screen's
+ * own sharpness before anything plainer is tried, so a strong chip that cannot afford everything gives
+ * up effects in the close-up, not crispness. On ordinary screens the ladder is the one modest laptops
+ * already play well on.
+ */
+export function ladderFor( w, h, native = screenDpr() ) {
+	const dpr = ( r ) => dprFor( TIERS[ r[ 0 ] ], r[ 1 ], w, h, native );
+	const cost = ( r ) => COST[ r[ 0 ] ] * w * h * dpr( r ) * dpr( r );
+	const rank = ( r ) => Object.keys( COST ).indexOf( r[ 0 ] );
+	const rungs = [];
+	const offered = LADDER.filter( ( r ) => {
+		// The best level at most a shade softer than the middle one: any softer, the middle one looks better.
+		if ( r[ 0 ] === 'high' && r[ 1 ] < 1 ) {
+			return dpr( r ) >= dpr( [ 'medium', 1 ] ) * 0.9 - 1e-6;
+		}
+		// The middle level's extra steps are for sharp screens, where they still draw a pixel per point.
+		if ( r[ 0 ] === 'medium' && r[ 1 ] < 0.8 ) {
+			return dpr( r ) >= 1 - 1e-6;
+		}
+		return true;
+	} );
+	for ( const r of offered.sort( ( a, b ) => cost( b ) - cost( a ) ) ) {
+		const last = rungs[ rungs.length - 1 ];
+		// Each rung clearly lighter than the one before, and never a richer level below a plainer one.
+		if ( ! last || ( cost( r ) < cost( last ) * 0.97 && rank( r ) >= rank( last ) ) ) {
+			rungs.push( r );
+		}
+	}
+	return {
+		rungs,
+		dpr,
+		cost,
+		/** The rung to drop to from r: the best one that costs clearly less, or null on the lightest. */
+		next( r ) {
+			return rungs.find( ( x ) => cost( x ) < cost( r ) * 0.97 ) || null;
+		},
+	};
 }
 
 // A new key when the ladder changes, so an old "off" or rung from an earlier version is not reused.
-const KEY = 'wk-film-fit-2';
+const KEY = 'wk-film-fit-3';
 
 /** The rung chosen earlier in this visit: [level, scale], 'off' for the still pictures, or null. */
 export function recall() {
@@ -59,38 +107,45 @@ export function remember( v ) {
  * to a rung and resolves once its shaders are ready; `bench()` resolves to the milliseconds
  * the heaviest frame takes there. `probe()`, when given, estimates that first measurement
  * from a small copy of the frame instead, so a weak chip is never handed a full-size heavy
- * frame; every later measurement is on a rung expected to fit. Resolves to the rung to play
- * at, or null when even the lightest rung would stutter (show the still pictures instead).
+ * frame. `ladder` is this screen's (ladderFor). Resolves to the rung to play at, or null when
+ * even the lightest rung would stutter (show the still pictures instead).
  */
-export async function settle( rung, apply, bench, target = TARGET, probe = null ) {
+export async function settle( rung, apply, bench, target = TARGET, probe = null, ladder = ladderFor( 1280, 720, 1 ) ) {
+	const predict = ( ms, from, to ) => ms * ( ladder.cost( to ) / ladder.cost( from ) );
+	// A chip believed strong starts on a richer level. The small copy overstates what a frame costs
+	// (the fixed part of every frame is counted eight times over), and on a fast chip that part is most
+	// of it: so a strong chip is timed on a real frame whenever the estimate is anywhere near. A modest
+	// chip only gets a full-size frame where the small copy already says it fits.
+	const strong = COST[ rung[ 0 ] ] >= COST.medium;
 	let ms = await ( probe || bench )();
-	// The small copy overstates the cost a little; where it already fits, a real frame is safe and exact.
-	if ( probe && ms <= target ) {
+	if ( probe && ms <= target * ( strong ? 4 : 1 ) ) {
 		ms = await bench();
 	}
-	// A strong chip that started in the middle: try the best level.
-	if ( rung[ 0 ] === 'medium' && rung[ 1 ] === 1 && predict( ms, rung, LADDER[ 0 ] ) <= target * 0.8 ) {
-		await apply( LADDER[ 0 ] );
-		if ( ( await bench() ) <= target ) {
-			return LADDER[ 0 ];
+	// Room to spare on a strong chip: try the best rung that should still fit, at most a shade less sharp.
+	if ( strong && ms <= target ) {
+		const from = rung;
+		const up = ladder.rungs.find( ( r ) => ladder.cost( r ) > ladder.cost( from ) * 1.03 && ladder.dpr( r ) >= ladder.dpr( from ) * 0.9 - 1e-6 && predict( ms, from, r ) <= target * 0.8 );
+		if ( up ) {
+			await apply( up );
+			if ( ( await bench() ) <= target ) {
+				return up;
+			}
+			await apply( from );
 		}
-		await apply( rung );
 	}
 	for ( let tries = 0; ms > target && tries < 4; tries ++ ) {
-		const i = rungIndex( rung );
-		if ( i >= LADDER.length - 1 ) {
+		const below = ladder.rungs.filter( ( r ) => ladder.cost( r ) < ladder.cost( rung ) * 0.97 );
+		if ( ! below.length ) {
 			break;
 		}
 		// Hopeless even on the lightest rung: don't keep the visitor waiting on more tries.
-		if ( predict( ms, rung, LADDER[ LADDER.length - 1 ] ) > target * 2.2 ) {
+		const lightest = below[ below.length - 1 ];
+		if ( predict( ms, rung, lightest ) > target * 2.2 ) {
 			return null;
 		}
 		// Straight to the first rung that should fit.
-		let j = i + 1;
-		while ( j < LADDER.length - 1 && predict( ms, rung, LADDER[ j ] ) > target ) {
-			j ++;
-		}
-		rung = LADDER[ j ];
+		const from = rung;
+		rung = below.find( ( r ) => predict( ms, from, r ) <= target ) || lightest;
 		await apply( rung );
 		ms = await bench();
 	}
