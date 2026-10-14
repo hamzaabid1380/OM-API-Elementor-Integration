@@ -130,6 +130,8 @@ async function boot() {
 	} );
 	$$( '.film-cue' ).forEach( ( el ) => tl.to( el, { opacity: 0, duration: 0.2 }, 0.1 ) );
 	$$( '.film-year' ).forEach( ( el ) => tl.fromTo( el, { opacity: 0, yPercent: 8 }, { opacity: 1, yPercent: 0, duration: 1.2, ease: 'power2.out' }, 15.3 ) );
+	// The caption naming the ring the film ends on, once it is turning at its best angle.
+	$$( '.film-shown' ).forEach( ( el ) => tl.fromTo( el, { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 16.1 ) );
 	// The words sit left, then right for the metal and the details, then left: the scrim follows.
 	$$( '.film-scrim.l' ).forEach( ( el ) => {
 		tl.to( el, { opacity: 0, duration: 0.6 }, 8.7 );

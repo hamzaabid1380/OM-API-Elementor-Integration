@@ -113,7 +113,7 @@ class WK_Film_Widget extends WK_Widget {
 		$this->start_controls_section( 'c_shapes', array( 'label' => __( 'Shape and metal words', 'wulf-kit' ), 'condition' => array( 'act' => 'shapes' ) ) );
 		$this->add_control( 's_eyebrow', array( 'label' => __( 'Small label above', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'The shape', 'wulf-kit' ) ) );
 		$this->add_control( 's_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'Find your shape.', 'wulf-kit' ) ) );
-		$this->add_control( 's_text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => __( 'Round, oval, cushion or pear. Each returns light in its own way, so we compare them side by side before you decide.', 'wulf-kit' ) ) );
+		$this->add_control( 's_text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => __( 'Round, emerald, pear or oval. Each returns light in its own way, so we compare them side by side before you decide.', 'wulf-kit' ), 'description' => __( 'The film shows these four, in this order.', 'wulf-kit' ) ) );
 		$this->button_fields( 's_lk', __( 'Link under the shapes', 'wulf-kit' ), __( 'Try each one in the ring designer', 'wulf-kit' ), '#studio' );
 		$this->add_control( 'm_heading', array( 'label' => __( 'Second chapter: the metal', 'wulf-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ) );
 		$this->add_control( 'm_eyebrow', array( 'label' => __( 'Small label above', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'The metal', 'wulf-kit' ) ) );
@@ -133,6 +133,15 @@ class WK_Film_Widget extends WK_Widget {
 		$this->add_control( 'y_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'It started with a suitcase of gems.', 'wulf-kit' ) ) );
 		$this->add_control( 'y_text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 4, 'default' => __( 'In 1971 Tom Moriarty traded his tool belt for a suitcase of fine gems. Today Cullen Wulf, a GIA-certified jeweler, carries on the same promise from a newly built showroom on Broadway in Crown Point: honest advice, and never a rushed decision.', 'wulf-kit' ) ) );
 		$this->button_fields( 'y_lk', __( 'Link', 'wulf-kit' ), __( 'Read our story', 'wulf-kit' ), class_exists( 'WK_Pages' ) ? WK_Pages::url( 'about-us' ) : '/about-us/' );
+		$this->add_control( 'shown_heading', array( 'label' => __( 'The ring on screen', 'wulf-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ) );
+		$this->add_control( 'shown', array(
+			'label'       => __( 'Caption', 'wulf-kit' ),
+			'type'        => Controls_Manager::TEXT,
+			'default'     => __( 'On screen: Oval Hidden Halo Engagement Ring, Diamond Band', 'wulf-kit' ),
+			'label_block' => true,
+			'description' => __( 'The film ends on one of our rings (style 51162-E); this small line under it says which. Leave empty to hide.', 'wulf-kit' ),
+		) );
+		$this->button_fields( 'shown_lk', __( 'Link to the ring', 'wulf-kit' ), __( 'View this ring', 'wulf-kit' ), home_url( '/catalog/engagement-rings/51162-E-8X6/' ) );
 		$this->end_controls_section();
 	}
 
@@ -237,11 +246,12 @@ class WK_Film_Widget extends WK_Widget {
 			$this->chapter( 1, $s['o2_eyebrow'], $s['o2_title'], $s['o2_text'] );
 			echo '<div class="film-cue" aria-hidden="true"><span>' . esc_html__( 'Scroll', 'wulf-kit' ) . '</span><i></i></div>';
 		} elseif ( 'shapes' === $act ) {
+			// In the order the film shows them (it ends on the oval).
 			$shapes = array(
 				array( __( 'Round', 'wulf-kit' ), '<circle cx="8" cy="8" r="6.5"/>' ),
-				array( __( 'Oval', 'wulf-kit' ), '<ellipse cx="8" cy="8" rx="4.6" ry="6.8"/>' ),
-				array( __( 'Cushion', 'wulf-kit' ), '<rect x="2" y="2" width="12" height="12" rx="4"/>' ),
+				array( __( 'Emerald', 'wulf-kit' ), '<path d="M5.4 1.4h5.2l2.4 2.4v8.4l-2.4 2.4H5.4L3 12.2V3.8Z"/>' ),
 				array( __( 'Pear', 'wulf-kit' ), '<path d="M8 1.2C6 4.6 3.4 7.6 3.4 10.4a4.6 4.6 0 0 0 9.2 0C12.6 7.6 10 4.6 8 1.2Z"/>' ),
+				array( __( 'Oval', 'wulf-kit' ), '<ellipse cx="8" cy="8" rx="4.6" ry="6.8"/>' ),
 			);
 			$chips = '<div class="film-chips" role="group" aria-label="' . esc_attr__( 'Diamond shapes', 'wulf-kit' ) . '">';
 			foreach ( $shapes as $i => $sh ) {
@@ -263,6 +273,11 @@ class WK_Film_Widget extends WK_Widget {
 			}
 			$this->chapter( 4, $s['d_eyebrow'], $s['d_title'], $s['d_text'], '', 'h2', 'r' );
 			$this->chapter( 5, $s['y_eyebrow'], $s['y_title'], $s['y_text'], $this->text_link( $s, 'y_lk' ) );
+			// Which of our rings the film ends on, under it.
+			$shown = trim( (string) ( $s['shown'] ?? '' ) );
+			if ( '' !== $shown ) {
+				echo '<p class="film-shown">' . esc_html( $shown ) . ' ' . $this->text_link( $s, 'shown_lk' ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
 		}
 
 		$skip_text = trim( (string) ( $s['skip_text'] ?? '' ) );

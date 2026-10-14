@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, NoiseEffect, ToneMappingEffect, ToneMappingMode, BlendFunction, Effect, DepthOfFieldEffect } from 'postprocessing';
 import { createStudio, stoneStudioUniforms, moodLights } from './studio.js';
 import { createAtmosphere } from './atmos.js';
-import { createDiamond } from './diamond.js';
+import { createDiamond, SWEEP } from './diamond.js';
 import { createRing, HEAD_Y } from './ring.js';
 import { createGlints } from './glints.js';
 
@@ -40,6 +40,11 @@ export function defaults() {
 		bloom: 1,
 		// spinTall: an extra turn on tall screens only, where the words sit below the ring instead of beside it.
 		spinTall: 0,
+		// The light sweep: a tall strip of light crossing behind the camera from left (-1) to right (1);
+		// sweepGain: how bright; idle: sweeps on its own every few seconds (the opening, before any scroll).
+		sweep: - 2, sweepGain: 0, idle: 0,
+		// forge: how hot newly cast metal glows behind the band's growing ends.
+		forge: 0,
 	};
 }
 
@@ -203,6 +208,40 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 	// The white backdrop is pushed past 1 so it still reads pure white after tone mapping.
 	const palettes = PALETTES.map( ( p, i ) => [ new THREE.Color( p[ 0 ] ).multiplyScalar( i === 3 ? 2.2 : 1 ), new THREE.Color( p[ 1 ] ).multiplyScalar( i === 3 ? 2.2 : 1 ) ] );
 	const ends = [ new THREE.Vector3(), new THREE.Vector3() ];
+	const camBack = new THREE.Vector3();
+	const camUp = new THREE.Vector3();
+	const swDir = new THREE.Vector3();
+	const swAxis = new THREE.Vector3();
+	const pings = [];
+	const pingPool = Array.from( { length: 24 }, () => ( { pos: new THREE.Vector3(), s: 0, size: 0 } ) );
+
+	/**
+	 * The light sweep for this frame: where the strip is (-1 left .. 1 right, beyond 1.4 off)
+	 * and how bright. It crosses behind the camera, a little above it, so its reflection runs
+	 * across whatever faces the lens.
+	 */
+	function sweepLight( S, time ) {
+		let at = S.sweep;
+		let gain = S.sweepGain;
+		if ( Math.abs( at ) >= 1.4 || gain <= 0 ) {
+			// Between scroll sweeps, the opening's own: one pass every few seconds.
+			at = ( ( time / 6.5 ) % 1 ) * 4 - 1.6;
+			gain = S.idle;
+		}
+		const fade = 1 - THREE.MathUtils.smoothstep( Math.abs( at ), 1, 1.4 );
+		const k = gain * fade;
+		if ( k <= 0.001 ) {
+			SWEEP.dir.value.w = 0;
+			return;
+		}
+		camBack.copy( camera.position ).sub( target ).normalize();
+		camUp.set( 0, 1, 0 ).applyQuaternion( camera.quaternion );
+		swDir.copy( camBack ).applyAxisAngle( camUp, at * 1.05 ).addScaledVector( camUp, 0.3 ).normalize();
+		swAxis.crossVectors( swDir, camUp ).normalize();
+		SWEEP.axis.value.set( swAxis.x, swAxis.y, swAxis.z, 0.085 );
+		SWEEP.dir.value.set( swDir.x, swDir.y, swDir.z, k );
+	}
+	const target = new THREE.Vector3();
 
 	function setBackdrop( bg ) {
 		const i = Math.max( 0, Math.min( palettes.length - 1, Math.floor( bg ) ) );
@@ -332,7 +371,8 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 			camera.fov = fov;
 			camera.position.set( S.tx + S.dist * ce * Math.sin( S.az ), S.ty + S.dist * Math.sin( S.el ), S.tz + S.dist * ce * Math.cos( S.az ) );
 			camera.up.set( 0, 1, 0 );
-			camera.lookAt( S.tx, S.ty, S.tz );
+			target.set( S.tx, S.ty, S.tz );
+			camera.lookAt( target );
 			// Lens shift: move the subject off-centre without bending the perspective.
 			const sx = portrait ? 0 : S.shift * ( 1 + 0.45 * squeeze );
 			const sy = portrait ? S.shiftY : 0;
@@ -390,6 +430,8 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 				dof.cocMaterial.focusRange = 0.25 + S.dist * 0.12;
 			}
 			scene.updateMatrixWorld();
+			ring.syncFlow();
+			sweepLight( S, time );
 			const growing = S.band > 0.001 && S.band < 0.999;
 			ends[ 0 ].copy( ring.bandEnds[ 0 ] ).applyMatrix4( ring.group.matrixWorld );
 			ends[ 1 ].copy( ring.bandEnds[ 1 ] ).applyMatrix4( ring.group.matrixWorld );
@@ -401,6 +443,29 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 				beam: S.beam * ( 1 - white ),
 				pxScale: buffer.y / ( 2 * Math.tan( THREE.MathUtils.degToRad( camera.fov ) / 2 ) ),
 			} );
+			// Glints where a claw closes over the stone and where a small stone lands in its seat.
+			pings.length = 0;
+			let used = 0;
+			const ping = ( local, obj, s, size ) => {
+				if ( s > 0.02 && used < pingPool.length ) {
+					const p = pingPool[ used ++ ];
+					p.pos.copy( local ).applyMatrix4( obj.matrixWorld );
+					p.s = s;
+					p.size = size;
+					pings.push( p );
+				}
+			};
+			for ( const tip of ring.tips ) {
+				if ( tip.on > 0.5 ) {
+					ping( tip.pos, ring.head, Math.sin( Math.PI * THREE.MathUtils.clamp( ( tip.closed - 0.7 ) / 0.3, 0, 1 ) ), 0.75 );
+				}
+			}
+			for ( const sp of ring.sparks.halo ) {
+				ping( sp.pos, ring.head, sp.s, sp.size );
+			}
+			for ( const sp of ring.sparks.pave ) {
+				ping( sp.pos, ring.group, sp.s, sp.size );
+			}
 			glints.update( camera, {
 				diamond: diamond.mesh,
 				pave: ring.pave,
@@ -408,6 +473,7 @@ export function createEngine( canvas, { tier = TIERS.high, preserve = false, aoP
 				strength: S.glint,
 				ends,
 				endGlow: growing ? S.endGlow * Math.min( 1, ( 1 - S.band ) * 6 ) : 0,
+				pings,
 			} );
 			composer.render();
 		},

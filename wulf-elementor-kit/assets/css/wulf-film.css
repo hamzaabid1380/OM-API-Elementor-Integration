@@ -64,6 +64,11 @@ body.wk-calm .wk.wk-film .gold-em { font-style: italic; color: var(--gold); }
 .wk.wk-film .film-skip { position: absolute; z-index: 3; right: var(--col); top: 22px; display: inline-flex; align-items: center; gap: 8px; color: rgba(255, 255, 255, .72); font-size: 13px; font-weight: 600; text-decoration: none; }
 .wk.wk-film .film-skip:hover { color: #fff; }
 .wk.wk-film .film-skip svg { width: 15px; height: 15px; }
+/* Which of our rings the film ends on: a small caption under it. */
+.wk.wk-film .film-shown { position: absolute; z-index: 2; right: var(--col); top: 22px; max-width: min(420px, 40vw); margin: 0; color: rgba(255, 255, 255, .66); font-size: 13px; line-height: 1.5; text-align: right; text-wrap: pretty; opacity: 0; visibility: hidden; }
+.wk.wk-film .film-stage:has(.film-skip) .film-shown { top: 54px; }
+.wk.wk-film .film-shown .film-link { margin: 0 0 0 6px; font-size: 13px; gap: 6px; }
+.wk.wk-film .film-shown .film-link svg { width: 14px; height: 14px; }
 .wk.wk-film .film-year { position: absolute; z-index: 1; left: calc(var(--col) - .06em); top: 40%; translate: 0 -64%; color: transparent; font: 300 clamp(140px, 22vw, 360px)/.8 var(--serif); letter-spacing: -.05em; -webkit-text-stroke: 1px rgba(214, 185, 127, .5); opacity: 0; pointer-events: none; white-space: nowrap; }
 
 /* The first screen: the picture lights up and the words rise in as the page appears (no script needed). */
@@ -123,10 +128,12 @@ html.film-playing body .om-ai-starter { opacity: 0; visibility: hidden; pointer-
 	.wk.wk-film .film-acts { gap: 10px; }
 	.wk.wk-film .film-acts { margin-top: 20px; }
 	.wk.wk-film .film-acts .btn { flex: 1 1 auto; }
-	.wk.wk-film .film-chips { margin-top: 16px; gap: 6px; }
-	.wk.wk .film-chips button { height: 36px; padding: 0 12px 0 10px; font-size: 13px; }
+	/* Four shapes (and three metals) on one line, down to a 360px phone. */
+	.wk.wk-film .film-chips { margin-top: 16px; gap: 5px; }
+	.wk.wk .film-chips button { height: 36px; gap: 6px; padding: 0 9px 0 8px; font-size: 13px; }
 	.wk.wk-film .film-cue,
-	.wk.wk-film .film-year { display: none; }
+	.wk.wk-film .film-year,
+	.wk.wk-film .film-shown { display: none; }
 	.wk.wk-film .film-skip { top: 14px; }
 }
 
@@ -138,6 +145,7 @@ html:not(.film-on) .wk.wk-film .film-chap.r { align-self: flex-end; }
 html:not(.film-on) .wk.wk-film .film-cue,
 html:not(.film-on) .wk.wk-film .film-bar { display: none; }
 html:not(.film-on) .wk.wk-film .film-year { opacity: .7; }
+html:not(.film-on) .wk.wk-film .film-shown { position: relative; right: auto; bottom: auto; align-self: flex-end; opacity: 1; visibility: visible; }
 @media (prefers-reduced-motion: reduce) {
 	.wk.wk-film .film-cue i::after,
 	body:not(.elementor-editor-active) .wk.wk-film .film-hero .film-poster img,

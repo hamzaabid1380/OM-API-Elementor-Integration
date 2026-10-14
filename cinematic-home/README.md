@@ -35,24 +35,34 @@ It comes two ways from the same code:
 
 ## The chapters
 
+The ring is one of Wulf's: the Round 4-Prong Solitaire (85121) while it builds, the same head on
+each shape, and at the end the Oval Hidden Halo Engagement Ring with a diamond band (51162-E).
+
 1. **First light**: the stone face-up, turning slowly under a jewelry case's
    spotlights: fire, star glints, fine motes drifting through a soft beam, a pool
-   of light behind it. "Independent since 1971." The first scroll brings it close,
-   face-up, through a sweep of light.
-2. **The setting**: one long pull-back: the band rises to the stone seen side-on,
-   the prongs close over it, and the ring turns to a three-quarter view.
-3. **The shape**: from above, the stone large: round, oval, cushion, pear (the
-   shank upright on computers, across the screen on phones; the pear points away
-   from the words).
-4. **The metal**: a low three-quarter view while the ring turns: white, yellow, rose.
-5. **The details**: close on the head (hidden halo), then along the pavé.
-6. **Since 1971**: the story, in warm light, the ring turning.
+   of light behind it, and every few seconds a strip of light crossing it.
+   "Independent since 1971." The first scroll brings it close, face-up, as a light
+   sweeps across the crown.
+2. **The setting**: one long pull-back: the band is cast under the stone, seen side-on,
+   glowing where it forms and cooling to polish; the four claws close over the stone
+   one after another (opposite pairs, as a jeweler sets them), each with a glint, and
+   the ring turns to a three-quarter view.
+3. **The shape**: from above, the stone large: round, emerald (a true step cut), pear,
+   oval, each change riding a sweep of light while the claws slide to their places
+   (the pear gets a fifth claw at its tip). It stays an oval. (The shank upright on
+   computers, across the screen on phones; the pear points away from the words.)
+4. **The metal**: a low three-quarter view while the ring turns: each new metal flows
+   around the ring from the head down, a seam of light at its edge: white, yellow, rose.
+5. **The details**: close on the head while the hidden halo's stones drop into their
+   collar, then along the shoulder as the pavé is set from the head down.
+6. **Since 1971**: the story, in warm light, the finished ring from above as the catalog
+   photographs it, with a caption naming it.
 
 Then: the shapes row, reviews, and the visit section with the ring on a slow turntable.
 
 ## Weight and speed
 
-- On WordPress the 3D code is about **240 KB compressed** (three.js, GSAP, the rest is small), loaded only on pages with the film, after the page has shown. Computers on the best quality also fetch an 80 KB add-on for contact shadows.
+- On WordPress the 3D code is about **245 KB compressed** (three.js, GSAP, the rest is small), loaded only on pages with the film, after the page has shown. Computers on the best quality also fetch an 80 KB add-on for contact shadows.
 - A still picture of the first frame shows straight away. The 3D takes over once it is ready: every shader it will need, including the depth of field and the contact shadows that only switch on later, is built during that warm-up, so nothing is compiled mid-film. The page never waits on it.
 - Four quality levels (the lightest follows three light paths inside the stones and dims what is left, so the facet pattern holds) and a resolution scale, fitted to each device (`src/fit.js`). The starting level comes from the graphics chip (built-in laptop graphics start light, dedicated graphics on the best); while the still picture shows, a small copy of the heaviest frame (the stone filling the screen, an eighth of the pixels) is timed first, so a weak chip is never handed a full-size frame long enough for Windows to reset its driver, and the film settles on the best rung that draws the full frame in about 26 ms. The scale is fitted to that close-up, so wherever the stone is smaller on screen the WordPress film draws sharper (up to full resolution, a step more while the visitor pauses), dropping back as the stone grows. While it plays, a governor catches slowdowns during scrolling within a second or two (resolution first, then quality). The rung is remembered for the visit. Drawing stops whenever the 3D is covered or the tab is hidden.
 - No 3D: when WebGL is missing, the visitor uses Data Saver, the browser draws in software (no graphics chip), even the lightest rung can't keep up, or the graphics driver or browser fails mid-film, the still pictures take over and the words still play. The film never sits frozen.
@@ -62,14 +72,14 @@ Then: the shapes row, reviews, and the visit section with the ring on a slow tur
 
 | File | What it does |
 | --- | --- |
-| `src/cut.js` | A true 57-facet round brilliant (table 56%, crown 34.5°, pavilion 40.8°, depth 61.3%): every facet a flat plane, meeting a round, slightly scalloped girdle. Fancy shapes reuse the same facets on their own outline, so one shape morphs into the next facet by facet. |
+| `src/cut.js` | A true 57-facet round brilliant (table 56%, crown 34.5°, pavilion 40.8°, depth 61.3%): every facet a flat plane, meeting a round, slightly scalloped girdle; oval and pear use the same facets on their own outline. The emerald is a real step cut (7.5 x 5.5 mm, three steps on the crown, three down to a keel, cut corners). All of them sit on one shared layout of facet rings (a brilliant puts the rings it doesn't need on its own facet edges), so a brilliant flows into the step cut facet by facet. A shape at rest is traced against its own lean set of triangles. |
 | `src/diamond.js` | The stones' shader: refraction in, total internal reflection inside (BVH ray tracing with three-mesh-bvh), Fresnel at every exit, and dispersion from diamond's measured refractive index at 7 wavelengths (3 on the lightest quality level), so the fire is the soft, pastel kind seen in photos. The camera and photographer are a dark patch in front of the stone, which draws the crisp grey and black facet pattern of real diamond photos. For sharp close-ups the studio lights are evaluated exactly for every ray (no blurry baked map), the best quality traces 4 rays per pixel, and rays inside the centre stone also see the setting's own prongs and rails. The same shader, instanced, draws every pavé and halo stone. |
 | `src/studio.js` | Two studios built from light: a product-photo studio for the stones (bright softboxes, darker horizon, black cards), evaluated light by light in the shader or baked to a cube map on the lightest level, and a bright light tent for the metal, baked once. The stone studio has a "mood" that blends it into a jewelry case (small, bright spotlights, a darker dome) for the opening. Turning the lights is a rotation, so light sweeps are free. |
 | `src/atmos.js` | The air in the case: a faint beam of light from above and fine motes drifting through it. Additive, a few hundred points, almost free. |
-| `src/ring.js`, `src/tube.js` | The band (a swept squircle that draws itself), six prongs that follow the stone's outline, the basket rail, the hidden halo, and pavé set the real way: stones across most of the band, nearly touching, held by shared beads. |
-| `src/glints.js` | Star glints where a facet really catches one of the case's spotlights (they flash in step with the turning stone), used in the opening and faded for the product-photo shots; and the soft glow on the band's ends while it draws itself. |
+| `src/ring.js`, `src/tube.js` | The catalog ring: a slim, rounded polished band that draws itself (glowing where it is cast), four claw prongs that meet the band in a V and move with the stone's shape (five on the pear), a slim basket rail, the hidden halo in its collar under the girdle (stones spaced evenly by length), and French pavé along the shoulders: stones as wide as the band, nearly touching, held by shared beads. Every metal part shares one shader addition: the light sweep, the metal that flows from the head down when it changes, and the casting glow. Softer 14k golds matched to the catalog photos. |
+| `src/glints.js` | Star glints where a facet really catches one of the case's spotlights (they flash in step with the turning stone), used in the opening and faded for the product-photo shots; flashes as each claw closes and each small stone lands; and the soft glow on the band's ends while it draws itself. |
 | `src/fit.js` | Fitting the film to the device: the ladder of rungs (quality level and resolution scale), the warm-up measurement that picks a rung, the governor that steps down while playing, and the visit's memory of both. |
-| `src/engine.js` | Renderer, lens shift (subject off-centre without bending perspective), framing for every screen shape (tall screens widen the lens; squarer landscape screens such as 4:3 laptops pull back a little and move the subject further from the words), quality tiers, post-processing: contact shadows (N8AO, best quality), bloom, tone mapping, vignette, grain, macro depth of field. Shaders compile in the background before the first frame. |
+| `src/engine.js` | Renderer, the light sweep (a tall strip of light crossing behind the camera, so its reflection runs across the stones and along the metal; its position is part of the story's state), lens shift (subject off-centre without bending perspective), framing for every screen shape (tall screens widen the lens; squarer landscape screens such as 4:3 laptops pull back a little and move the subject further from the words), quality tiers, post-processing: contact shadows (N8AO, best quality), bloom, tone mapping, vignette, grain, macro depth of field. Shaders compile in the background before the first frame. |
 | `src/story.js` | The story on one clock (0 to 18): what the camera, the ring and the light do in each chapter, when the words come and go, and how the quality level is picked. Shared by both versions. |
 | `src/film.js` | The stand-alone director: one GSAP timeline holds camera, ring, light and words, and scrolling scrubs it (ScrollTrigger, SplitText, Lenis). |
 | `src/wp.js` | The WordPress director: up to three acts between other sections, each scrubbing its part of the story. One canvas moves into the act on screen; nothing draws while none is. Each act's stage stays on screen with CSS sticky; wrappers that hide their overflow (which silently turns sticky off) are switched to `overflow: clip`, and if a stage still drifts the director pins it by hand. |

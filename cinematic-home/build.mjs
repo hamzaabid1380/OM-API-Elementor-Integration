@@ -30,9 +30,9 @@ html = html.replace( '<!--POSTER-->', () => wide ? `<source media="(max-aspect-r
 
 const cards = [
 	'Round diamond engagement ring, rendered in white gold',
-	'Oval diamond engagement ring, rendered in yellow gold',
-	'Cushion diamond engagement ring, rendered in rose gold',
-	'Pear diamond engagement ring, rendered in white gold',
+	'Emerald cut diamond engagement ring, rendered in yellow gold',
+	'Pear diamond engagement ring, rendered in rose gold',
+	'Oval diamond engagement ring, rendered in white gold',
 ];
 cards.forEach( ( alt, i ) => {
 	const src = b64( path.join( assets, `card-${ i }.webp` ) );

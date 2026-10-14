@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.12.5
+Stable tag: 1.13.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -168,18 +168,20 @@ account; Google shares up to 5 reviews and picks them). When both are filled in,
 == Cinematic film (3D) ==
 
 "Home (cinematic)" is the conversion homepage told as a short film. It opens on a diamond turning
-under the spotlights of a jewelry case; as visitors scroll it comes close, a ring builds itself
+under the spotlights of a jewelry case; as visitors scroll it comes close, a ring is cast and set
 around it, the stone changes shape, the gold changes color and the camera moves in on the hidden
-details. Nothing is a video or a 3D file: the ring, the diamond and the
-studio lights are drawn live in the browser, and the diamond follows the light through all 57 facets,
+details. The ring is one of ours, modelled on the catalog: the Round 4-Prong Solitaire (85121) as it
+builds, and at the end the Oval Hidden Halo Engagement Ring with a diamond band (51162-E), named in a
+small caption with a link to it. Nothing is a video or a 3D file: the ring, the diamond and the
+studio lights are drawn live in the browser, and the diamond follows the light through every facet,
 which is where its sparkle and coloured fire come from.
 
 The film comes in three parts, with the conversion sections in between:
 
 1. The opening (the first screen): the headline, "Book a free consultation" and "Design your ring",
    then the band and prongs build around the stone. The booking bar rests on its last frame.
-2. Shapes and metals, before the favorites: round, oval, cushion and pear, then white, yellow
-   and rose gold. Visitors can tap a shape or a metal to jump to it.
+2. Shapes and metals, before the favorites: round, emerald, pear and oval (the emerald a true
+   step cut), then white, yellow and rose gold. Visitors can tap a shape or a metal to jump to it.
 3. The details and your story, before "Why Wulf": the hidden halo and the pavé, then "Independent
    since 1971".
 
@@ -236,6 +238,26 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.13.0 =
+* The film now shows our own rings. The 3D ring is modelled on the catalog: a slim polished band
+  and four claw prongs (the Round 4-Prong Solitaire, style 85121) while the setting builds, and at
+  the end the Oval Hidden Halo Engagement Ring with a diamond band (style 51162-E), with its hidden
+  halo under the stone and French pavé along the band. A small caption under the last scene names it,
+  with a "View this ring" link (Cinematic film widget, details part: "The ring on screen").
+* "Find your shape" shows the shapes of our best sellers: round, emerald, pear and oval. The emerald
+  is a true step cut with its long "hall of mirrors" flashes; the claws move to the corners as the
+  stone changes, and the pear gets a fifth claw to guard its tip. The film then stays on the oval.
+* Softer, truer 14k yellow and rose gold, matched to the catalog photos.
+* More to watch: a strip of light sweeps across the diamond and along the band at key moments (and
+  every few seconds on the first screen, until visitors scroll); the band glows as it is cast, then
+  cools to polished metal; the claws close one after another, each with a glint; a new metal flows
+  around the ring from the head down, with a seam of light at its edge; and the hidden halo and pavé
+  stones drop into their seats one by one, each with a sparkle.
+* The last scene shows the ring from above, the way the catalog photographs it.
+* As light as before: the heaviest moment of the film costs the same as in 1.12.5, so every computer
+  keeps the quality it had, and nothing new is prepared mid-film.
+* Phones: the four shape buttons fit on one line.
 
 = 1.12.5 =
 * A much better diamond on laptops with built-in graphics (Intel UHD and similar): the lightest

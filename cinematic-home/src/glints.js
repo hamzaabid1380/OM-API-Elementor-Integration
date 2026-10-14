@@ -61,7 +61,7 @@ function glowTexture() {
 
 const WINDOW = Math.cos( THREE.MathUtils.degToRad( 4.5 ) );
 
-export function createGlints( scene, { max = 3, paveMax = 3 } = {} ) {
+export function createGlints( scene, { max = 3, paveMax = 3, pingMax = 6 } = {} ) {
 	const star = starTexture();
 	const glow = glowTexture();
 	const sprite = ( map, rot = 0 ) => {
@@ -77,6 +77,11 @@ export function createGlints( scene, { max = 3, paveMax = 3 } = {} ) {
 		stars.push( sprite( star, 0.21 ) );
 	}
 	const glows = [ sprite( glow ), sprite( glow ) ];
+	// Moments in the making: a claw closing over the stone, a small stone landing in its seat.
+	const flashes = [];
+	for ( let i = 0; i < pingMax; i ++ ) {
+		flashes.push( sprite( star, 0.62 ) );
+	}
 
 	const lights = () => LIGHTS;
 	const cA = new THREE.Vector3();
@@ -116,7 +121,7 @@ export function createGlints( scene, { max = 3, paveMax = 3 } = {} ) {
 		 * diamond: the centre stone mesh; pave: the pave InstancedMesh; envAngle:
 		 * studio rotation; strength: overall glint level; ends: band growth glows.
 		 */
-		update( camera, { diamond, pave, envAngle, strength = 1, ends = null, endGlow = 0, size = 1 } ) {
+		update( camera, { diamond, pave, envAngle, strength = 1, ends = null, endGlow = 0, size = 1, pings = null } ) {
 			const found = [];
 			if ( diamond && diamond.visible && strength > 0 ) {
 				const pos = diamond.geometry.attributes.position.array;
@@ -183,10 +188,21 @@ export function createGlints( scene, { max = 3, paveMax = 3 } = {} ) {
 					sp.material.color.setScalar( 3.2 * endGlow );
 				}
 			} );
+			const ps = pings ? pings.slice().sort( ( a, b ) => b.s - a.s ) : [];
+			flashes.forEach( ( sp, i ) => {
+				const g = ps[ i ];
+				sp.visible = !! g;
+				if ( g ) {
+					sp.position.copy( g.pos );
+					sp.scale.setScalar( g.size * ( 0.35 + 0.65 * g.s ) );
+					sp.material.color.setScalar( 2.2 * g.s );
+				}
+			} );
 		},
 		hide() {
 			stars.forEach( ( sp ) => ( sp.visible = false ) );
 			glows.forEach( ( sp ) => ( sp.visible = false ) );
+			flashes.forEach( ( sp ) => ( sp.visible = false ) );
 		},
 	};
 }

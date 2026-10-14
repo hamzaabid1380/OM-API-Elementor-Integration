@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MeshBVH, MeshBVHUniformStruct, BVHShaderGLSL, SAH } from 'three-mesh-bvh';
-import { shapePositions, morphPositions } from './cut.js';
+import { shapePositions, morphPositions, restPositions, smallStoneGeometry, SHAPE_ORDER } from './cut.js';
 
 /**
  * Diamonds, ray traced through the real cut. The ray enters through the
@@ -51,6 +51,27 @@ function spectrum( waves ) {
 	return { iors: nms.map( diamondIOR ), weights: rgb.map( ( w ) => w.map( ( v, c ) => v / sum[ c ] ) ) };
 }
 
+/**
+ * The light sweep: a tall strip of light that crosses the room (world space), so its
+ * reflection runs across the stones and along the metal. One set of uniforms, shared by every
+ * material that shows it; the engine moves it.
+ */
+export const SWEEP = {
+	axis: { value: new THREE.Vector4( 1, 0, 0, 0.12 ) }, // normal of the strip's plane, half width
+	dir: { value: new THREE.Vector4( 0, 0, 1, 0 ) }, // the strip's middle, brightness
+};
+export const SWEEP_GLSL = /* glsl */`
+	uniform vec4 sweepAxis;
+	uniform vec4 sweepDir;
+	vec3 sweepLight( vec3 d ) {
+		if ( sweepDir.w <= 0.0 ) return vec3( 0.0 );
+		float across = abs( dot( d, sweepAxis.xyz ) );
+		float band = 1.0 - smoothstep( sweepAxis.w * 0.5, sweepAxis.w, across );
+		float facing = smoothstep( - 0.1, 0.5, dot( d, sweepDir.xyz ) );
+		return vec3( 1.0, 0.97, 0.93 ) * ( band * facing * sweepDir.w );
+	}
+`;
+
 /** The most capsules (prong and rail pieces) the centre stone can see inside it. */
 export const MAX_CAPS = 36;
 
@@ -94,6 +115,7 @@ const fragmentShader = /* glsl */`
 	uniform float frost;
 	uniform float opacity;
 	uniform float glow;
+	${ SWEEP_GLSL }
 	#ifdef ANALYTIC_ENV
 		uniform vec4 cardC[ CARDS ];
 		uniform vec4 cardU[ CARDS ];
@@ -150,7 +172,7 @@ const fragmentShader = /* glsl */`
 	// What a ray leaving the stone sees: the studio, with the camera and
 	// photographer as a dark patch in front of the stone.
 	vec3 env( vec3 dir ) {
-		vec3 c = studio( envRotation * dir ) * envIntensity;
+		vec3 c = studio( envRotation * dir ) * envIntensity + sweepLight( dir );
 		float o = smoothstep( obstruction.y, obstruction.x, dot( dir, toCamera ) );
 		return c * mix( 1.0, obstruction.z, o );
 	}
@@ -314,8 +336,7 @@ let roundBVH = null;
 function sharedRoundBVH() {
 	// Small stones share one BVH: the round cut never changes shape.
 	if ( ! roundBVH ) {
-		const g = new THREE.BufferGeometry();
-		g.setAttribute( 'position', new THREE.BufferAttribute( shapePositions( 'round' ).slice(), 3 ) );
+		const g = smallStoneGeometry();
 		const bvh = new MeshBVH( g, { strategy: SAH, targetLeafSize: 4 } );
 		roundBVH = { geometry: g, struct: new MeshBVHUniformStruct() };
 		roundBVH.struct.updateFrom( bvh );
@@ -345,6 +366,8 @@ export function stoneMaterial( envCube, { bounces = 7, waves = 7, ss = 1, bvhStr
 		frost: { value: 0.55 },
 		opacity: { value: 1 },
 		glow: { value: 0 },
+		sweepAxis: SWEEP.axis,
+		sweepDir: SWEEP.dir,
 	};
 	if ( studio ) {
 		defines.ANALYTIC_ENV = '';
@@ -371,15 +394,28 @@ export function stoneMaterial( envCube, { bounces = 7, waves = 7, ss = 1, bvhStr
 	return new THREE.ShaderMaterial( { vertexShader, fragmentShader, defines, uniforms } );
 }
 
-/** The centre stone: morphs between shapes (the BVH is refitted as it does). */
+/**
+ * The centre stone: morphs between shapes. While it moves, its rays are traced against the
+ * morphing triangles (the BVH refitted each step); once it settles on a shape, against that
+ * shape's own lean set of triangles (one BVH per shape, built once), so its rays stay quick.
+ */
+const restBVH = {};
+function shapeBVH( name ) {
+	if ( ! restBVH[ name ] ) {
+		const g = new THREE.BufferGeometry();
+		g.setAttribute( 'position', new THREE.BufferAttribute( restPositions( name ).slice(), 3 ) );
+		restBVH[ name ] = new MeshBVH( g, { strategy: SAH, targetLeafSize: 4 } );
+	}
+	return restBVH[ name ];
+}
+
 export function createDiamond( envCube, { bounces = 7, waves = 7, ss = 1, studio = null, setting = null } = {} ) {
 	const geometry = new THREE.BufferGeometry();
 	const positions = shapePositions( 'round' ).slice();
 	geometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-	const bvh = new MeshBVH( geometry, { strategy: SAH, targetLeafSize: 4 } );
-	geometry.boundsTree = bvh;
+	let bvh = null;
 	const bvhStruct = new MeshBVHUniformStruct();
-	bvhStruct.updateFrom( bvh );
+	bvhStruct.updateFrom( shapeBVH( 'round' ) );
 
 	const material = stoneMaterial( envCube, { bounces, waves, ss, bvhStruct, studio, setting } );
 	const mesh = new THREE.Mesh( geometry, material );
@@ -389,7 +425,7 @@ export function createDiamond( envCube, { bounces = 7, waves = 7, ss = 1, studio
 	return {
 		mesh,
 		material,
-		/** 0 round, 1 oval, 2 cushion, 3 pear, 4 round again. */
+		/** 0 round, 1 emerald, 2 pear, 3 oval (see SHAPE_ORDER). */
 		setMorph( m ) {
 			if ( Math.abs( m - current ) < 1e-5 ) {
 				return;
@@ -398,7 +434,16 @@ export function createDiamond( envCube, { bounces = 7, waves = 7, ss = 1, studio
 			morphPositions( m, positions );
 			geometry.attributes.position.needsUpdate = true;
 			geometry.computeBoundingSphere();
-			bvh.refit();
+			if ( Math.abs( m - Math.round( m ) ) < 1e-4 ) {
+				const n = SHAPE_ORDER.length;
+				bvhStruct.updateFrom( shapeBVH( SHAPE_ORDER[ ( ( Math.round( m ) % n ) + n ) % n ] ) );
+				return;
+			}
+			if ( ! bvh ) {
+				bvh = new MeshBVH( geometry, { strategy: SAH, targetLeafSize: 4 } );
+			} else {
+				bvh.refit();
+			}
 			bvhStruct.updateFrom( bvh );
 		},
 		setBounces( n ) {
