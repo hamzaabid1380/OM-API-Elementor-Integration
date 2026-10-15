@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OM_Insights {
 
-	const DB_VERSION   = '2';
+	const DB_VERSION   = '3'; // 2: page speed columns (1.44.0); 3: the same, checked before use (1.44.1).
 	const SID_COOKIE   = 'om_sid';
 	const VID_COOKIE   = 'om_vid';
 	const MAX_BATCH    = 40;
@@ -167,12 +167,48 @@ class OM_Insights {
 	 * Tables
 	 * ------------------------------------------------------------- */
 
+	/**
+	 * Brings the tables up to date after an update (new columns are added,
+	 * nothing is removed or rewritten). One request does it while the others
+	 * carry on; if the database refuses, collecting goes on without page
+	 * speed and the update is tried again an hour later.
+	 */
 	public function maybe_install() {
-		if ( self::DB_VERSION !== get_option( 'om_ins_db' ) ) {
-			self::install();
+		if ( self::DB_VERSION === get_option( 'om_ins_db' ) || get_transient( 'om_ins_db_wait' ) ) {
+			return;
 		}
+		if ( ! add_option( 'om_ins_db_lock', (string) time(), '', 'no' ) ) {
+			if ( time() - (int) get_option( 'om_ins_db_lock' ) < 10 * MINUTE_IN_SECONDS ) {
+				return;
+			}
+			update_option( 'om_ins_db_lock', (string) time(), false );
+		}
+		if ( ! self::install() ) {
+			set_transient( 'om_ins_db_wait', 1, HOUR_IN_SECONDS );
+		}
+		delete_option( 'om_ins_db_lock' );
 	}
 
+	/** Page speed can be kept: the tables have its columns (1.44). */
+	public static function has_speed() {
+		return self::DB_VERSION === get_option( 'om_ins_db' );
+	}
+
+	/** Whether the actions table has the page speed columns. */
+	private static function speed_columns() {
+		global $wpdb;
+		$quiet = $wpdb->suppress_errors( true );
+		$wpdb->get_var( 'SELECT lcp + inp + cls + ttfb FROM ' . self::events_table() . ' LIMIT 1' ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+		$ok = '' === (string) $wpdb->last_error;
+		$wpdb->suppress_errors( $quiet );
+		return $ok;
+	}
+
+	/**
+	 * Creates the two tables, or adds what an update brings to them. dbDelta()
+	 * only adds tables, columns and keys: visits and actions already kept stay
+	 * as they are. Returns whether the tables are complete.
+	 */
 	public static function install() {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -247,7 +283,12 @@ class OM_Insights {
   KEY vid (vid)
 ) {$charset};"
 		);
+		// The version moves on only once the new columns are really there.
+		if ( ! self::speed_columns() ) {
+			return false;
+		}
 		update_option( 'om_ins_db', self::DB_VERSION );
+		return true;
 	}
 
 	/* ---------------------------------------------------------------
@@ -274,7 +315,7 @@ class OM_Insights {
 					'dnt' => '0' !== self::opt( 'om_ins_dnt' ) ? 1 : 0,
 					'vid' => '0' !== self::opt( 'om_ins_vid' ) ? 1 : 0,
 					// How fast the page showed and answered (Core Web Vitals), and pages that don't exist.
-					'cwv' => '0' !== self::opt( 'om_ins_speed' ) ? 1 : 0,
+					'cwv' => '0' !== self::opt( 'om_ins_speed' ) && self::has_speed() ? 1 : 0,
 					'nf'  => is_404() ? 1 : 0,
 				)
 			) . ';',
@@ -406,9 +447,15 @@ class OM_Insights {
 		}
 		if ( $engage ) {
 			$events = self::events_table();
+			$speed  = self::has_speed();
 			foreach ( $engage as $pv => $pair ) {
-				// Speed: the browser's latest reading wins (largest paint and layout shift settle as the page loads).
-				$wpdb->query( $wpdb->prepare( "UPDATE {$events} SET dur = CASE WHEN dur < %d THEN %d ELSE dur END, scroll = CASE WHEN scroll < %d THEN %d ELSE scroll END, lcp = CASE WHEN %d > 0 THEN %d ELSE lcp END, inp = CASE WHEN %d > 0 THEN %d ELSE inp END, cls = CASE WHEN %d > 0 THEN %d ELSE cls END, ttfb = CASE WHEN %d > 0 THEN %d ELSE ttfb END WHERE sid = %s AND pv = %s AND type = 'pageview'", $pair[0], $pair[0], $pair[1], $pair[1], $pair[2], $pair[2], $pair[3], $pair[3], $pair[4], $pair[4], $pair[5], $pair[5], $sid, $pv ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+				if ( $speed ) {
+					// Speed: the browser's latest reading wins (largest paint and layout shift settle as the page loads).
+					$wpdb->query( $wpdb->prepare( "UPDATE {$events} SET dur = CASE WHEN dur < %d THEN %d ELSE dur END, scroll = CASE WHEN scroll < %d THEN %d ELSE scroll END, lcp = CASE WHEN %d > 0 THEN %d ELSE lcp END, inp = CASE WHEN %d > 0 THEN %d ELSE inp END, cls = CASE WHEN %d > 0 THEN %d ELSE cls END, ttfb = CASE WHEN %d > 0 THEN %d ELSE ttfb END WHERE sid = %s AND pv = %s AND type = 'pageview'", $pair[0], $pair[0], $pair[1], $pair[1], $pair[2], $pair[2], $pair[3], $pair[3], $pair[4], $pair[4], $pair[5], $pair[5], $sid, $pv ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+				} else {
+					// The tables aren't updated yet: time and scroll as before.
+					$wpdb->query( $wpdb->prepare( "UPDATE {$events} SET dur = CASE WHEN dur < %d THEN %d ELSE dur END, scroll = CASE WHEN scroll < %d THEN %d ELSE scroll END WHERE sid = %s AND pv = %s AND type = 'pageview'", $pair[0], $pair[0], $pair[1], $pair[1], $sid, $pv ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+				}
 			}
 			$wpdb->query( $wpdb->prepare( "UPDATE {$visits} SET engaged = (SELECT COALESCE(SUM(dur), 0) FROM {$events} WHERE sid = %s AND type = 'pageview'), last = CASE WHEN last < %d THEN %d ELSE last END WHERE sid = %s", $sid, $now, $now, $sid ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
 		}

@@ -549,7 +549,7 @@ as the page, plus `cmp=year` and `names=0|1`; `manage_options` and the
 2.1, in `lib/tfpdf`) and the fonts in `lib/fonts` (SIL Open Font License).
 It needs PHP's mbstring extension. Page speed is stored per page view in
 the actions table (`lcp`, `inp`, `ttfb` in milliseconds, `cls` x1000 + 1;
-database version 2, added on update) and a "page not found" view has
+database version 3, added on update) and a "page not found" view has
 `meta = '404'`.
 
 ## Analytics
@@ -1255,6 +1255,14 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.44.1
+- **Updating keeps everything**: replacing the plugin with a new version
+  keeps every visit, lead, inquiry and setting. The Insights tables only
+  gain the four page speed columns: they are added once, by one request,
+  and checked before Insights uses them. If the database refuses (rare
+  hosting limits), visits are still recorded as before, without page
+  speed, and the update is tried again an hour later.
 
 ### 1.44.0
 - **Insights 2.0, results first.** The overview opens with a dark results

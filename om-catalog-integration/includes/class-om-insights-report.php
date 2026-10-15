@@ -1570,6 +1570,14 @@ class OM_Insights_Report {
 	 * and the slowest pages.
 	 */
 	public function speed() {
+		if ( ! OM_Insights::has_speed() ) {
+			// The tables haven't had their 1.44 update yet: nothing measured.
+			$none = array();
+			foreach ( array_keys( self::vitals() ) as $key ) {
+				$none[ $key ] = array( 'n' => 0, 'p75' => 0, 'good' => 0, 'slow' => 0, 'poor' => 0, 'dev' => array() );
+			}
+			return array( 'n' => 0, 'm' => $none, 'slow' => array() );
+		}
 		$e = OM_Insights::events_table();
 		$s = OM_Insights::sessions_table();
 		list( $es, $ea ) = $this->escope( $this->from, $this->to, 'e' );
