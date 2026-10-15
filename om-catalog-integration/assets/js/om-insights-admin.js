@@ -116,13 +116,23 @@
 		return ( i18n.dH || '%1$dh %2$02dm' ).replace( '%1$d', String( Math.floor( s / 3600 ) ) ).replace( '%2$02d', two( Math.floor( ( s % 3600 ) / 60 ) ) );
 	}
 
-	// kind: n number, t seconds, p percent.
+	// Money as the site writes it ("$%s"); set from the chart's data.
+	var moneyFmt = '$%s';
+
+	function money( text ) {
+		return moneyFmt.replace( '%s', text );
+	}
+
+	// kind: n number, t seconds, p percent, m money.
 	function metric( kind, v ) {
 		if ( 't' === kind ) {
 			return duration( v );
 		}
 		if ( 'p' === kind ) {
 			return num( v, 1 ) + '%';
+		}
+		if ( 'm' === kind ) {
+			return money( num( Math.round( +v || 0 ) ) );
 		}
 		return num( v );
 	}
@@ -134,20 +144,25 @@
 		if ( 'p' === kind ) {
 			return num( v, v % 1 ? 1 : 0 ) + '%';
 		}
+		if ( 'm' === kind ) {
+			return money( compact( v ) );
+		}
 		return compact( v );
 	}
 
 	// "▲ 12% more than the period before", or nothing when there is no "before".
-	function change( now, before ) {
+	function change( now, before, vs ) {
 		before = +before || 0;
+		vs = vs || i18n.before || '';
 		if ( before <= 0 ) {
 			return '';
 		}
 		var pct = Math.round( ( 100 * ( ( +now || 0 ) - before ) ) / before );
 		if ( 0 === pct ) {
-			return i18n.same || '';
+			return ( i18n.same || '%s' ).replace( '%s', vs );
 		}
-		return pct > 0 ? '▲ ' + ( i18n.more || '%s' ).replace( '%s', num( pct ) + '%' ) : '▼ ' + ( i18n.less || '%s' ).replace( '%s', num( -pct ) + '%' );
+		var words = ( pct > 0 ? i18n.more : i18n.less ) || '%1$s';
+		return ( pct > 0 ? '▲ ' : '▼ ' ) + words.replace( '%1$s', num( Math.abs( pct ) ) + '%' ).replace( '%2$s', vs );
 	}
 
 	/* ---------- Talking to the server ---------- */
@@ -837,6 +852,31 @@
 		return list && null !== list[ i ] && undefined !== list[ i ];
 	}
 
+	// Points 0..count-1 that have a value: runs of whole ones (each drawn as one line) and,
+	// apart, the ones cut short.
+	function pieces( count, present, cutShort, at ) {
+		var runs = [];
+		var loose = [];
+		var run = [];
+		for ( var k = 0; k < count; k++ ) {
+			if ( ! present( k ) || cutShort( k ) ) {
+				if ( run.length ) {
+					runs.push( run );
+					run = [];
+				}
+				if ( present( k ) ) {
+					loose.push( at( k ) );
+				}
+				continue;
+			}
+			run.push( at( k ) );
+		}
+		if ( run.length ) {
+			runs.push( run );
+		}
+		return { runs: runs, loose: loose };
+	}
+
 	function initChart() {
 		if ( resizeObs ) {
 			resizeObs.disconnect();
@@ -858,7 +898,12 @@
 			return;
 		}
 		var plot = $( '[data-om-ins-plot]', card );
-		chart = { card: card, plot: plot, data: data, metric: 'visitors', idx: -1 };
+		chart = { card: card, plot: plot, data: data, metric: data.m.leads ? 'leads' : 'visitors', idx: -1 };
+		moneyFmt = data.money || moneyFmt;
+		var menu = $( '[data-om-ins-metric-select]', card );
+		if ( menu && data.m[ menu.value ] ) {
+			chart.metric = menu.value;
+		}
 		plot.setAttribute( 'tabindex', '0' );
 		plot.style.touchAction = 'pan-y';
 		var help = document.createElement( 'span' );
@@ -879,11 +924,11 @@
 		plot.addEventListener( 'focus', onPlotFocus );
 		plot.addEventListener( 'blur', hideHover );
 
-		var saved = keep( 'local', 'omInsMetric' );
-		if ( saved && /^[a-z]+$/.test( saved ) && data.m[ saved ] && $( '[data-om-ins-metric="' + saved + '"]', view ) ) {
+		var saved = keep( 'local', 'omInsMetric2' );
+		if ( saved && /^[a-z]+$/.test( saved ) && data.m[ saved ] ) {
 			chart.metric = saved;
 		}
-		selectKpi( chart.metric, false );
+		selectKpi( chart.metric );
 		applyCompare();
 		sparks();
 		draw( true );
@@ -967,9 +1012,10 @@
 		c.ph = ph;
 
 		var root = svg( 'svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, 'aria-hidden': 'true', focusable: 'false' } );
+		// The fill under the line fades out; its colour comes from the stylesheet (the brand's gold).
 		var grad = svg( 'linearGradient', { id: 'om-ins-fill', x1: '0', y1: '0', x2: '0', y2: '1' }, svg( 'defs', {}, root ) );
-		svg( 'stop', { offset: '0', 'stop-color': '#2a78d6', 'stop-opacity': '0.16' }, grad );
-		svg( 'stop', { offset: '1', 'stop-color': '#2a78d6', 'stop-opacity': '0' }, grad );
+		svg( 'stop', { class: 'f0', offset: '0' }, grad );
+		svg( 'stop', { class: 'f1', offset: '1' }, grad );
 
 		// Hairline grid, amounts on the left.
 		scale.ticks.forEach( function ( v, k ) {
@@ -999,39 +1045,62 @@
 			svg( 'text', { class: 't', x: r1( lx ), y: H - 8, 'text-anchor': anchor }, root ).textContent = label;
 		}
 
-		// The period before (grey), under this period (blue).
-		if ( compare ) {
-			var pp = [];
-			for ( i = 0; i < n; i++ ) {
-				if ( has( prev, i ) ) {
-					pp.push( [ x( i ), y( prev[ i ] ) ] );
-				}
-			}
-			if ( pp.length > 1 ) {
-				svg( 'path', { class: 'ln prev', d: moveTo( pp[ 0 ] ) + curve( pp ).join( '' ) }, root );
-			}
-		}
-		var pts = [];
-		for ( i = 0; i < cut; i++ ) {
-			pts.push( [ x( i ), y( cur[ i ] ) ] );
-		}
-		var area = null;
-		var line = null;
+		// Weeks or months cut short by the period's ends, and today (not over yet), stand
+		// apart as hollow dots instead of pulling the line down as if the numbers had fallen.
+		var partial = !! d.partial && cut > 0;
+		var cutC = function ( k ) {
+			return !! ( d.short && d.short[ k ] ) || ( partial && k === cut - 1 );
+		};
+		var cutP = function ( k ) {
+			return !! ( d.pshort && d.pshort[ k ] );
+		};
+		var lines = [];
+		var areas = [];
 		var tail = null;
-		if ( pts.length > 1 ) {
-			var segs = curve( pts );
-			var last = pts[ pts.length - 1 ];
-			area = svg( 'path', { class: 'area', d: moveTo( pts[ 0 ] ) + segs.join( '' ) + 'L' + r1( last[ 0 ] ) + ',' + baseY + 'L' + r1( pts[ 0 ][ 0 ] ) + ',' + baseY + 'Z' }, root );
-			// Today isn't over: its piece of the line is dashed.
-			var solid = d.partial ? segs.slice( 0, -1 ) : segs;
-			if ( solid.length ) {
-				line = svg( 'path', { class: 'ln cur', d: moveTo( pts[ 0 ] ) + solid.join( '' ) }, root );
+		if ( compare ) {
+			var pp = pieces( n, function ( k ) {
+				return has( prev, k );
+			}, cutP, function ( k ) {
+				return [ x( k ), y( prev[ k ] ) ];
+			} );
+			pp.runs.forEach( function ( run ) {
+				if ( run.length > 1 ) {
+					svg( 'path', { class: 'ln prev', d: moveTo( run[ 0 ] ) + curve( run ).join( '' ) }, root );
+				} else {
+					svg( 'circle', { class: 'dot prev lone', cx: r1( run[ 0 ][ 0 ] ), cy: r1( run[ 0 ][ 1 ] ), r: 3 }, root );
+				}
+			} );
+			pp.loose.forEach( function ( pt ) {
+				svg( 'circle', { class: 'dot pshort', cx: r1( pt[ 0 ] ), cy: r1( pt[ 1 ] ), r: 3.5 }, root );
+			} );
+		}
+		var pc = pieces( cut, function () {
+			return true;
+		}, cutC, function ( k ) {
+			return [ x( k ), y( cur[ k ] ) ];
+		} );
+		pc.runs.forEach( function ( run ) {
+			if ( run.length > 1 ) {
+				var segs = curve( run );
+				var last = run[ run.length - 1 ];
+				areas.push( svg( 'path', { class: 'area', d: moveTo( run[ 0 ] ) + segs.join( '' ) + 'L' + r1( last[ 0 ] ) + ',' + baseY + 'L' + r1( run[ 0 ][ 0 ] ) + ',' + baseY + 'Z' }, root ) );
+				lines.push( svg( 'path', { class: 'ln cur', d: moveTo( run[ 0 ] ) + segs.join( '' ) }, root ) );
+			} else {
+				svg( 'circle', { class: 'dot cur', cx: r1( run[ 0 ][ 0 ] ), cy: r1( run[ 0 ][ 1 ] ), r: 4.5 }, root );
 			}
-			if ( d.partial ) {
-				tail = svg( 'path', { class: 'ln part', d: moveTo( pts[ pts.length - 2 ] ) + segs[ segs.length - 1 ] }, root );
+		} );
+		if ( pc.loose.length ) {
+			tail = svg( 'g', { class: 'part' }, root );
+			pc.loose.forEach( function ( pt ) {
+				svg( 'circle', { class: 'dot part', cx: r1( pt[ 0 ] ), cy: r1( pt[ 1 ] ), r: 4.5 }, tail );
+			} );
+			if ( partial ) {
+				var px = x( cut - 1 );
+				var py = y( cur[ cut - 1 ] );
+				var below = py < top + 22;
+				var edge = px > W - right - 40;
+				svg( 'text', { class: 't part', x: r1( px - ( edge ? 2 : 0 ) ), y: r1( below ? py + 20 : py - 11 ), 'text-anchor': edge ? 'end' : 'middle' }, tail ).textContent = i18n.soFar || '';
 			}
-		} else if ( 1 === pts.length ) {
-			svg( 'circle', { class: 'dot cur', cx: r1( pts[ 0 ][ 0 ] ), cy: r1( pts[ 0 ][ 1 ] ), r: 4.5 }, root );
 		}
 
 		c.cross = svg( 'line', { class: 'cross', x1: 0, x2: 0, y1: top, y2: top + ph, visibility: 'hidden' }, root );
@@ -1041,27 +1110,37 @@
 		plot.textContent = '';
 		plot.appendChild( root );
 
-		if ( animate && ! reduce && line && line.getTotalLength ) {
-			var len = line.getTotalLength();
-			line.style.strokeDasharray = len + ' ' + len;
-			line.style.strokeDashoffset = String( len );
-			area.style.opacity = '0';
+		if ( animate && ! reduce && lines.length && lines[ 0 ].getTotalLength ) {
+			lines.forEach( function ( line ) {
+				var len = line.getTotalLength();
+				line.style.strokeDasharray = len + ' ' + len;
+				line.style.strokeDashoffset = String( len );
+			} );
+			areas.forEach( function ( area ) {
+				area.style.opacity = '0';
+			} );
 			if ( tail ) {
 				tail.style.opacity = '0';
 			}
-			line.getBoundingClientRect(); // Start from the hidden state.
-			line.style.transition = 'stroke-dashoffset 0.7s cubic-bezier(0.2, 0.7, 0.2, 1)';
-			line.style.strokeDashoffset = '0';
-			area.style.transition = 'opacity 0.5s ease 0.2s';
-			area.style.opacity = '1';
+			lines[ 0 ].getBoundingClientRect(); // Start from the hidden state.
+			lines.forEach( function ( line ) {
+				line.style.transition = 'stroke-dashoffset 0.7s cubic-bezier(0.2, 0.7, 0.2, 1)';
+				line.style.strokeDashoffset = '0';
+			} );
+			areas.forEach( function ( area ) {
+				area.style.transition = 'opacity 0.5s ease 0.2s';
+				area.style.opacity = '1';
+			} );
 			if ( tail ) {
 				tail.style.transition = 'opacity 0.3s ease 0.6s';
 				tail.style.opacity = '1';
 			}
 			window.setTimeout( function () {
-				line.style.strokeDasharray = '';
-				line.style.strokeDashoffset = '';
-				line.style.transition = '';
+				lines.forEach( function ( line ) {
+					line.style.strokeDasharray = '';
+					line.style.strokeDashoffset = '';
+					line.style.transition = '';
+				} );
 			}, 800 );
 		}
 		if ( c.idx >= 0 ) {
@@ -1139,7 +1218,7 @@
 			chartTip.appendChild( tipRow( 'prev', metric( c.kind, prev[ i ] ), when ) );
 			words.push( when + ' ' + metric( c.kind, prev[ i ] ) );
 		}
-		var diff = hasCur && hasPrev ? change( cur[ i ], prev[ i ] ) : '';
+		var diff = hasCur && hasPrev && ! ( d.partial && i === c.cut - 1 ) ? change( cur[ i ], prev[ i ], d.vs ) : '';
 		if ( diff ) {
 			var line = document.createElement( 'span' );
 			line.className = 'c';
@@ -1241,7 +1320,7 @@
 			return;
 		}
 		var d = chart.data;
-		var cols = [ 'visitors', 'visits', 'pageviews', 'leads', 'conv' ];
+		var cols = [ 'leads', 'bookings', 'conv', 'visitors', 'visits', 'designs' ];
 		var wrap = document.createElement( 'div' );
 		wrap.className = 'om-ins-scroll';
 		var table = document.createElement( 'table' );
@@ -1291,24 +1370,36 @@
 			if ( ! d.m[ key ] ) {
 				return;
 			}
-			var cur = ( d.m[ key ].c || [] ).slice( 0, cut );
-			var prev = compare ? ( d.m[ key ].p || [] ).filter( function ( v ) {
-				return null !== v && undefined !== v;
-			} ) : [];
+			// Only whole days, weeks and months: today, and weeks or months cut short, are left out.
+			var whole = function ( list, cutShort, upto ) {
+				var out = [];
+				for ( var k = 0; k < upto; k++ ) {
+					if ( has( list, k ) && ! cutShort( k ) ) {
+						out.push( [ k, +list[ k ] || 0 ] );
+					}
+				}
+				return out;
+			};
+			var cur = whole( d.m[ key ].c || [], function ( k ) {
+				return !! ( d.short && d.short[ k ] ) || ( !! d.partial && k === cut - 1 );
+			}, cut );
+			var prev = compare ? whole( d.m[ key ].p || [], function ( k ) {
+				return !! ( d.pshort && d.pshort[ k ] );
+			}, n ) : [];
 			var max = 0;
-			cur.concat( prev ).forEach( function ( v ) {
-				max = Math.max( max, +v || 0 );
+			cur.concat( prev ).forEach( function ( pt ) {
+				max = Math.max( max, pt[ 1 ] );
 			} );
 			max = max || 1;
 			var X = function ( i ) {
 				return n > 1 ? ( W * i ) / ( n - 1 ) : W / 2;
 			};
 			var Y = function ( v ) {
-				return 2 + ( H - 4 ) * ( 1 - ( +v || 0 ) / max );
+				return 2 + ( H - 4 ) * ( 1 - v / max );
 			};
-			var path = function ( vals ) {
-				return vals.map( function ( v, i ) {
-					return ( i ? 'L' : 'M' ) + r1( X( i ) ) + ',' + r1( Y( v ) );
+			var path = function ( pts ) {
+				return pts.map( function ( pt, i ) {
+					return ( i ? 'L' : 'M' ) + r1( X( pt[ 0 ] ) ) + ',' + r1( Y( pt[ 1 ] ) );
 				} ).join( '' );
 			};
 			var s = svg( 'svg', { viewBox: '0 0 ' + W + ' ' + H, preserveAspectRatio: 'none', 'aria-hidden': 'true', focusable: 'false' } );
@@ -1316,7 +1407,7 @@
 				svg( 'path', { class: 'prev', d: path( prev ), 'vector-effect': 'non-scaling-stroke' }, s );
 			}
 			if ( cur.length > 1 ) {
-				svg( 'path', { class: 'area', d: path( cur ) + 'L' + r1( X( cur.length - 1 ) ) + ',' + H + 'L0,' + H + 'Z' }, s );
+				svg( 'path', { class: 'area', d: path( cur ) + 'L' + r1( X( cur[ cur.length - 1 ][ 0 ] ) ) + ',' + H + 'L' + r1( X( cur[ 0 ][ 0 ] ) ) + ',' + H + 'Z' }, s );
 				svg( 'path', { class: 'cur', d: path( cur ), 'vector-effect': 'non-scaling-stroke' }, s );
 			}
 			holder.textContent = '';
@@ -1324,39 +1415,30 @@
 		} );
 	}
 
-	function selectKpi( key, focus ) {
-		var picked = null;
+	// The measure in the chart: its tile shows pressed, the menu shows its name.
+	function selectKpi( key ) {
 		$$( '[data-om-ins-metric]', view ).forEach( function ( b ) {
-			var on = b.getAttribute( 'data-om-ins-metric' ) === key;
-			b.setAttribute( 'aria-selected', on ? 'true' : 'false' );
-			b.tabIndex = on ? 0 : -1;
-			if ( on ) {
-				picked = b;
-			}
+			b.setAttribute( 'aria-pressed', b.getAttribute( 'data-om-ins-metric' ) === key ? 'true' : 'false' );
 		} );
-		if ( ! picked ) {
-			return;
-		}
-		if ( focus ) {
-			picked.focus();
+		var menu = chart && $( '[data-om-ins-metric-select]', chart.card );
+		if ( menu && menu.value !== key ) {
+			menu.value = key;
 		}
 		if ( chart ) {
 			chart.metric = key;
-			chart.plot.setAttribute( 'aria-labelledby', picked.id );
-			var title = $( '[data-om-ins-chart-title]', chart.card );
-			if ( title && chart.data.names && chart.data.names[ key ] ) {
-				title.textContent = chart.data.names[ key ];
+			if ( chart.data.names && chart.data.names[ key ] ) {
+				chart.plot.setAttribute( 'aria-label', chart.data.names[ key ] );
 			}
 		}
 	}
 
 	function pickMetric( key ) {
 		if ( ! chart || ! chart.data.m[ key ] || key === chart.metric ) {
-			selectKpi( key, false );
+			selectKpi( key );
 			return;
 		}
-		selectKpi( key, false );
-		keep( 'local', 'omInsMetric', key );
+		selectKpi( key );
+		keep( 'local', 'omInsMetric2', key );
 		hideHover();
 		draw( true );
 	}
@@ -1400,6 +1482,7 @@
 					return;
 				}
 				c.data = d;
+				moneyFmt = d.money || moneyFmt;
 				window.history.replaceState( window.history.state, '', clean( link.href ) );
 				retarget( d.unit );
 				buildTable();
@@ -1829,6 +1912,8 @@
 			function () {
 				if ( box ) {
 					input.checked = before;
+				} else if ( 'number' === input.type ) {
+					input.value = undefined !== before ? before : input.defaultValue;
 				} else if ( before ) {
 					$$( 'input[type="radio"][data-om-ins-opt]', view ).forEach( function ( r ) {
 						if ( r.name === input.name ) {
@@ -2033,6 +2118,10 @@
 			namesChoice( true );
 			return;
 		}
+		if ( t.matches( '[data-om-ins-metric-select]' ) ) {
+			pickMetric( t.value );
+			return;
+		}
 		if ( t.matches( '[data-om-ins-opt]' ) ) {
 			saveSetting( t );
 		}
@@ -2178,7 +2267,7 @@
 			}
 		} );
 		$$( 'table[data-om-ins-cap]', view ).forEach( refreshRows );
-		$$( 'input[type="radio"][data-om-ins-opt]:checked', view ).forEach( function ( r ) {
+		$$( 'input[type="radio"][data-om-ins-opt]:checked, input[type="number"][data-om-ins-opt]', view ).forEach( function ( r ) {
 			savedRadio[ r.name ] = r.value;
 		} );
 		var name = sectionName();

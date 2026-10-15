@@ -110,6 +110,66 @@
 		}
 	}
 
+	/* ---------- Speed: how fast the first page showed and answered (Core Web Vitals) ---------- */
+
+	// Largest paint and first byte (ms), slowest response to a tap, click or key (ms), and how
+	// much the layout jumped (x1000, plus 1 so "no jump at all" isn't read as "not measured").
+	// Only for the page the browser loaded; Safari doesn't report most of them.
+	var VITALS = { l: 0, n: 0, c: 0, b: 0 };
+	var vitalsPV = '';
+	(function measure() {
+		var P = window.PerformanceObserver;
+		if (!C.cwv || !P || !window.performance) { return; }
+		var start = 0;
+		try {
+			var navEntry = performance.getEntriesByType('navigation')[0];
+			if (navEntry) {
+				start = navEntry.activationStart || 0;
+				if (navEntry.responseStart > 0) { VITALS.b = Math.max(1, Math.round(navEntry.responseStart - start)); }
+			}
+		} catch (e) { /* not supported */ }
+		var types = (P.supportedEntryTypes || []);
+		function watch(type, fn, opts) {
+			if (types.indexOf(type) < 0) { return; }
+			try {
+				var o = new P(function (list) { list.getEntries().forEach(fn); });
+				var args = { type: type, buffered: true };
+				for (var k in (opts || {})) { if (Object.prototype.hasOwnProperty.call(opts, k)) { args[k] = opts[k]; } }
+				o.observe(args);
+			} catch (e) { /* not supported */ }
+		}
+		// The largest paint until the visitor first does something.
+		var lcpDone = false;
+		['keydown', 'pointerdown'].forEach(function (name) {
+			window.addEventListener(name, function () { lcpDone = true; }, { once: true, capture: true, passive: true });
+		});
+		watch('largest-contentful-paint', function (e) {
+			if (!lcpDone) { VITALS.l = Math.max(1, Math.round((e.renderTime || e.startTime) - start)); }
+		});
+		// Layout shifts in session windows (1 s apart, 5 s at most); the worst window counts.
+		var win = 0, winFirst = 0, winLast = 0, worst = 0;
+		if (types.indexOf('layout-shift') >= 0) { VITALS.c = 1; }
+		watch('layout-shift', function (e) {
+			if (e.hadRecentInput) { return; }
+			if (win && e.startTime - winLast < 1000 && e.startTime - winFirst < 5000) {
+				win += e.value;
+			} else {
+				win = e.value;
+				winFirst = e.startTime;
+			}
+			winLast = e.startTime;
+			worst = Math.max(worst, win);
+			VITALS.c = Math.min(65000, Math.round(worst * 1000) + 1);
+		});
+		// The slowest interaction (taps, clicks, keys).
+		watch('event', function (e) {
+			if (e.interactionId) { VITALS.n = Math.max(VITALS.n, Math.round(e.duration)); }
+		}, { durationThreshold: 40 });
+		watch('first-input', function (e) {
+			VITALS.n = Math.max(VITALS.n, Math.round(e.duration));
+		});
+	})();
+
 	/* ---------- Pages: views, time on screen, scroll ---------- */
 
 	var PV = '';
@@ -118,6 +178,9 @@
 	var lastInput = Date.now();
 	var lastReport = '';
 	var lastParams = '';
+	// A page that doesn't exist (the theme's "not found" page): flagged on its view.
+	var NF = !!C.nf;
+	var firstPath = '';
 
 	// A private hint page lives at the home address with a token: kept apart, without the token.
 	var HINT = !!document.querySelector('[data-om-hint-page]');
@@ -149,10 +212,13 @@
 	}
 	function report() {
 		if (!PV) { return; }
-		var mark = PV + ':' + ticks + ':' + maxScroll;
+		var speed = PV === vitalsPV ? VITALS : null;
+		var mark = PV + ':' + ticks + ':' + maxScroll + (speed ? ':' + speed.l + ':' + speed.n + ':' + speed.c + ':' + speed.b : '');
 		if (mark === lastReport) { return; }
 		lastReport = mark;
-		push({ t: 'engage', x: PV, d: Math.min(ticks * 5, 10800), y: maxScroll });
+		var ev = { t: 'engage', x: PV, d: Math.min(ticks * 5, 10800), y: maxScroll };
+		if (speed) { ev.l = speed.l; ev.n = speed.n; ev.c = speed.c; ev.b = speed.b; }
+		push(ev);
 	}
 	function pageview() {
 		report();
@@ -161,8 +227,11 @@
 		maxScroll = scrollPct();
 		lastParams = params();
 		var p = productOn();
+		var here = path();
+		// The page the browser loaded gets its speed; pages changed in place (catalog filters) don't.
+		if (!vitalsPV) { vitalsPV = PV; firstPath = here; }
 		// A hint page's title carries a name: not kept.
-		push({ t: 'pageview', x: PV, p: path(), l: HINT ? 'Drop a hint page' : String(document.title || '').slice(0, 150), m: HINT ? '' : lastParams, i: p ? p.i : '' });
+		push({ t: 'pageview', x: PV, p: here, l: HINT ? 'Drop a hint page' : String(document.title || '').slice(0, 150), m: HINT ? '' : (NF && here === firstPath ? '404' : lastParams), i: p ? p.i : '' });
 	}
 
 	// Engaged time: 5-second steps while the page is on screen and in use (input in the last minute).

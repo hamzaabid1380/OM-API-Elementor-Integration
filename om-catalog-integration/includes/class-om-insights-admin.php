@@ -88,11 +88,13 @@ class OM_Insights_Admin {
 					'soFar'      => __( 'so far', 'om-catalog' ),
 					'noData'     => __( 'No data for this period.', 'om-catalog' ),
 					'period'     => __( 'Period', 'om-catalog' ),
-					/* translators: %s: percent. */
-					'more'       => __( '%s more than the period before', 'om-catalog' ),
-					/* translators: %s: percent. */
-					'less'       => __( '%s less than the period before', 'om-catalog' ),
-					'same'       => __( 'Same as the period before', 'om-catalog' ),
+					/* translators: 1: percent, 2: "the period before" or "the same time last year". */
+					'more'       => __( '%1$s more than %2$s', 'om-catalog' ),
+					/* translators: 1: percent, 2: "the period before" or "the same time last year". */
+					'less'       => __( '%1$s less than %2$s', 'om-catalog' ),
+					/* translators: %s: "the period before" or "the same time last year". */
+					'same'       => __( 'Same as %s', 'om-catalog' ),
+					'before'     => __( 'the period before', 'om-catalog' ),
 					'chartKeys'  => __( 'Use the left and right arrow keys to read each point.', 'om-catalog' ),
 					'loading'    => __( 'Loading', 'om-catalog' ),
 					'copyFailed' => __( 'Couldn\'t copy. Select the text and copy it yourself.', 'om-catalog' ),
@@ -129,7 +131,7 @@ class OM_Insights_Admin {
 		$live = $r->live_count();
 		$tab  = $r->visit || $r->visitor ? 'journeys' : $r->tab;
 		// phpcs:disable WordPress.Security.EscapeOutput -- icons are fixed markup; the rest is built escaped by the report.
-		echo '<div class="wrap om-ins" data-om-ins-app data-om-ins-tab="' . esc_attr( $tab ) . '">';
+		echo '<div class="wrap om-ins" data-om-ins-app data-om-ins-tab="' . esc_attr( $tab ) . '"' . self::brand_style() . '>';
 		echo '<hr class="wp-header-end" />';
 		echo '<header class="om-ins-top">';
 		echo '<div class="om-ins-brand"><span class="om-ins-logo" aria-hidden="true">' . OM_Insights_Report::icon( 'logo' ) . '</span><h1>' . esc_html__( 'Insights', 'om-catalog' ) . '</h1>';
@@ -153,6 +155,33 @@ class OM_Insights_Admin {
 		echo '<div class="om-ins-toasts" role="status" aria-live="polite" data-om-ins-toasts></div>';
 		echo '</div>';
 		// phpcs:enable
+	}
+
+	/**
+	 * The Wulf Elementor Kit's brand colours, when it is active, as the page's
+	 * colour tokens (gold for the marks, ink for type, night for the results).
+	 */
+	private static function brand_style() {
+		if ( ! class_exists( 'WK_Settings' ) ) {
+			return '';
+		}
+		$map  = array(
+			'c_gold'      => array( '--oi-gold' ),
+			'c_gold_deep' => array( '--oi-gold-deep' ),
+			'c_gold_ink'  => array( '--oi-gold-ink', '--oi-accent-ink' ),
+			'c_ink'       => array( '--oi-ink', '--oi-accent-btn' ),
+			'c_night'     => array( '--oi-night' ),
+		);
+		$vars = array();
+		foreach ( $map as $key => $names ) {
+			$value = (string) WK_Settings::get( $key );
+			if ( preg_match( '/^#[0-9a-f]{6}$/i', $value ) ) {
+				foreach ( $names as $name ) {
+					$vars[] = $name . ':' . $value;
+				}
+			}
+		}
+		return $vars ? ' style="' . esc_attr( implode( ';', $vars ) ) . '"' : '';
 	}
 
 	/* ---------------------------------------------------------------
@@ -224,10 +253,13 @@ class OM_Insights_Admin {
 		$name  = isset( $_POST['name'] ) ? sanitize_key( wp_unslash( $_POST['name'] ) ) : '';
 		$value = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
 		// phpcs:enable
-		if ( in_array( $name, array( 'om_ins', 'om_ins_staff', 'om_ins_vid', 'om_ins_dnt', 'om_ins_journey' ), true ) ) {
+		if ( in_array( $name, self::switches(), true ) ) {
 			update_option( $name, '1' === $value ? '1' : '0' );
 		} elseif ( 'om_ins_months' === $name && in_array( (int) $value, array( 3, 6, 13, 25, 37 ), true ) ) {
 			update_option( 'om_ins_months', (string) (int) $value );
+		} elseif ( in_array( $name, array( 'om_ins_goal', 'om_ins_goal_v' ), true ) && preg_match( '/^\d{0,6}$/', $value ) ) {
+			update_option( $name, (string) min( 100000, (int) $value ) );
+			self::forget_cache();
 		} else {
 			wp_send_json_error( null, 400 );
 		}
@@ -238,6 +270,11 @@ class OM_Insights_Admin {
 				'policy' => OM_Insights_Report::policy_text(),
 			)
 		);
+	}
+
+	/** The on / off settings. */
+	private static function switches() {
+		return array( 'om_ins', 'om_ins_staff', 'om_ins_vid', 'om_ins_dnt', 'om_ins_journey', 'om_ins_speed' );
 	}
 
 	public function ajax_wipe() {
@@ -261,9 +298,15 @@ class OM_Insights_Admin {
 		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'om_ins_settings' ) ) {
 			wp_die( esc_html__( 'Not allowed.', 'om-catalog' ) );
 		}
-		foreach ( array( 'om_ins', 'om_ins_staff', 'om_ins_vid', 'om_ins_dnt', 'om_ins_journey' ) as $name ) {
+		foreach ( self::switches() as $name ) {
 			update_option( $name, empty( $_POST[ $name ] ) ? '0' : '1' );
 		}
+		foreach ( array( 'om_ins_goal', 'om_ins_goal_v' ) as $name ) {
+			if ( isset( $_POST[ $name ] ) ) {
+				update_option( $name, (string) min( 100000, absint( $_POST[ $name ] ) ) );
+			}
+		}
+		self::forget_cache();
 		$months = isset( $_POST['om_ins_months'] ) ? (int) $_POST['om_ins_months'] : 13;
 		update_option( 'om_ins_months', (string) ( in_array( $months, array( 3, 6, 13, 25, 37 ), true ) ? $months : 13 ) );
 		wp_safe_redirect( add_query_arg( array( 'page' => self::SLUG, 'tab' => 'settings', 'saved' => 1 ), admin_url( 'admin.php' ) ) );

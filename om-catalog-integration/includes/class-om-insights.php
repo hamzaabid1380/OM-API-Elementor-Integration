@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OM_Insights {
 
-	const DB_VERSION   = '1';
+	const DB_VERSION   = '2';
 	const SID_COOKIE   = 'om_sid';
 	const VID_COOKIE   = 'om_vid';
 	const MAX_BATCH    = 40;
@@ -69,6 +69,9 @@ class OM_Insights {
 			'om_ins_vid'     => '1',  // Recognise returning visitors.
 			'om_ins_months'  => '13', // Keep data this many months.
 			'om_ins_journey' => '1',  // Their visit with inquiries and in the shop's emails.
+			'om_ins_speed'   => '1',  // Measure how fast pages load (Core Web Vitals).
+			'om_ins_goal'    => '0',  // Leads a month to aim for (0: no goal).
+			'om_ins_goal_v'  => '0',  // Visit requests a month to aim for (0: no goal).
 		);
 	}
 
@@ -193,6 +196,10 @@ class OM_Insights {
   pv char(8) NOT NULL DEFAULT '',
   dur smallint(5) unsigned NOT NULL DEFAULT 0,
   scroll tinyint(3) unsigned NOT NULL DEFAULT 0,
+  lcp smallint(5) unsigned NOT NULL DEFAULT 0,
+  inp smallint(5) unsigned NOT NULL DEFAULT 0,
+  cls smallint(5) unsigned NOT NULL DEFAULT 0,
+  ttfb smallint(5) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (id),
   KEY day_type (day,type),
   KEY sid (sid),
@@ -266,6 +273,9 @@ class OM_Insights {
 					'u'   => admin_url( 'admin-ajax.php' ) . '?action=om_v',
 					'dnt' => '0' !== self::opt( 'om_ins_dnt' ) ? 1 : 0,
 					'vid' => '0' !== self::opt( 'om_ins_vid' ) ? 1 : 0,
+					// How fast the page showed and answered (Core Web Vitals), and pages that don't exist.
+					'cwv' => '0' !== self::opt( 'om_ins_speed' ) ? 1 : 0,
+					'nf'  => is_404() ? 1 : 0,
 				)
 			) . ';',
 			'before'
@@ -323,7 +333,12 @@ class OM_Insights {
 			if ( 'engage' === $type ) {
 				$pv = self::id( $e['x'] ?? '', 8 );
 				if ( '' !== $pv ) {
-					$engage[ $pv ] = array( min( 10800, max( 0, (int) ( $e['d'] ?? 0 ) ) ), min( 100, max( 0, (int) ( $e['y'] ?? 0 ) ) ) );
+					// Time and scroll, then the page's speed when the browser measured it: largest
+					// paint, slowest response to a tap or key (ms), layout shift (x1000), first byte (ms).
+					$ms = static function ( $v ) {
+						return min( 65000, max( 0, (int) round( (float) $v ) ) );
+					};
+					$engage[ $pv ] = array( min( 10800, max( 0, (int) ( $e['d'] ?? 0 ) ) ), min( 100, max( 0, (int) ( $e['y'] ?? 0 ) ) ), $ms( $e['l'] ?? 0 ), $ms( $e['n'] ?? 0 ), $ms( $e['c'] ?? 0 ), $ms( $e['b'] ?? 0 ) );
 				}
 				continue;
 			}
@@ -392,7 +407,8 @@ class OM_Insights {
 		if ( $engage ) {
 			$events = self::events_table();
 			foreach ( $engage as $pv => $pair ) {
-				$wpdb->query( $wpdb->prepare( "UPDATE {$events} SET dur = CASE WHEN dur < %d THEN %d ELSE dur END, scroll = CASE WHEN scroll < %d THEN %d ELSE scroll END WHERE sid = %s AND pv = %s AND type = 'pageview'", $pair[0], $pair[0], $pair[1], $pair[1], $sid, $pv ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+				// Speed: the browser's latest reading wins (largest paint and layout shift settle as the page loads).
+				$wpdb->query( $wpdb->prepare( "UPDATE {$events} SET dur = CASE WHEN dur < %d THEN %d ELSE dur END, scroll = CASE WHEN scroll < %d THEN %d ELSE scroll END, lcp = CASE WHEN %d > 0 THEN %d ELSE lcp END, inp = CASE WHEN %d > 0 THEN %d ELSE inp END, cls = CASE WHEN %d > 0 THEN %d ELSE cls END, ttfb = CASE WHEN %d > 0 THEN %d ELSE ttfb END WHERE sid = %s AND pv = %s AND type = 'pageview'", $pair[0], $pair[0], $pair[1], $pair[1], $pair[2], $pair[2], $pair[3], $pair[3], $pair[4], $pair[4], $pair[5], $pair[5], $sid, $pv ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
 			}
 			$wpdb->query( $wpdb->prepare( "UPDATE {$visits} SET engaged = (SELECT COALESCE(SUM(dur), 0) FROM {$events} WHERE sid = %s AND type = 'pageview'), last = CASE WHEN last < %d THEN %d ELSE last END WHERE sid = %s", $sid, $now, $now, $sid ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
 		}
