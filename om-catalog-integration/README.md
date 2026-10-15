@@ -394,111 +394,112 @@ For developers: `window.omHint.open({ items: [{ l: line, s: style, c:
 `om_hint_sent` action runs after a hint is sent, and a theme can replace
 the page with `om-catalog/hint.php`.
 
-## Insights (1.40, redesigned in 1.41, PDF report in 1.42)
+## Insights (1.40; Insights 2.0 in 1.44)
 
 Your own visitor analytics, built into the site and kept in your own
 database. **Insights** (in the WordPress menu, under Dashboard) shows what
 visitors do for any period (today, yesterday, the last 7, 30 or 90 days,
-this month, last month, the last 12 months or your own dates), with the
-change against the period before.
+this month, last month, the last 12 months or your own dates), compared
+with the period just before or with **the same time last year** (choose
+under the period menu, **Compare with**).
 
 It works like an app: sections, periods, filters and visits load in place
 without reloading the page, and Back, Forward and bookmarks work as usual.
+It wears the brand: ivory, ink and gold, the Fraunces and Manrope fonts,
+and the colours set in the Wulf Elementor Kit.
 
-- **Click to filter.** Click any source, website, campaign, page, design,
-  search, place, device, browser or system to see only those visits in
-  every section (for example only visits from Google Maps, or only visits
-  that looked at one design). Filters show at the top; take one off with
-  its ×, or several at once with **Clear all**.
-- **Headline numbers.** Eight numbers at the top, each with its change
-  against the period before and a small trend line. Click one to show it
-  in the big chart.
-- **The chart.** Point at it (or tab to it and use the arrow keys) for the
-  exact numbers of each day, the same day in the period before and the
-  change. Switch between hours, days, weeks and months. **Compare** shows
-  or hides the period before (the grey line). Today is drawn dashed
-  because it isn't over yet. "Show as table" lists the same numbers.
-- **Periods.** The period menu at the top right, with your own dates at the
-  bottom, or one key: **T** today, **Y** yesterday, **W** last 7 days,
-  **M** last 30 days, **Q** last 90 days, **L** last 12 months.
-- **Visits open in a side panel**, so you keep your place. Close it with
-  ×, Esc or a click beside it.
-- **Refresh** (the round arrow) gets the newest numbers. Results are
-  otherwise kept for 3 minutes so the pages stay fast.
-- Long lists show the top rows with **Show all**, can be sorted by any
-  column and have a **Find** box.
-- Everything also works with JavaScript switched off (each link is an
-  ordinary page), by keyboard, with a screen reader and on phones.
+**The overview, results first (1.44).**
+
+- **Results**: a dark band at the top with the numbers that matter most:
+  leads, visit requests (the leads closest to a sale), the lead rate and
+  the **value asked about** (the listed prices of the designs people asked
+  about, requested or emailed themselves). Each shows its change and what
+  it was. Under them, **what the leads were**: visit requests, inquiries
+  and hints, designs emailed and newsletter sign-ups, as one bar.
+- **This month's goals**: set a monthly goal for leads and visit requests
+  (Settings) and the band shows how the month is pacing: "50 of 140, on
+  pace for 110".
+- **Visits and interest**: visitors, visits, engaged visits (more than a
+  glance), designs viewed, saved and contact taps (calls, emails,
+  directions), each with its change and a small trend line.
+- **What stood out**: plain sentences ranked by how much they matter,
+  each with a **next step** and a link to the numbers behind it. For
+  example "Phones lag behind computers", "Best leads come from Email",
+  "90 searches found nothing", "Halo Cushion Ring 2: much looked at, never
+  asked about", "Pages are slow on phones", "28 visits reached missing
+  pages", "Many buyers take their time".
+- **The chart**: pick any measure from the menu above it, or click a tile.
+  Point at it (or tab to it and use the arrow keys) for each day, the same
+  day in the period compared with, and the change. A day, week or month
+  that isn't over (or that the period cuts short) shows as a hollow dot
+  marked "so far" instead of a fall in the line. "Show as table" lists the
+  same numbers.
+- Where leads came from (the visit they got in touch on, or their first
+  visit), designs (most viewed, rising, asked about, saved), pages,
+  searches, who visited, the busiest hours and the latest leads.
 
 The sections:
 
-- **Overview**: visitors, visits, pages viewed, time per visit, designs
-  viewed, saved (hearts), leads and the share of visits that became leads,
-  charted over time; where visitors come from; the most viewed pages and
-  designs; where visitors are; phones and computers; searches; the latest
-  leads.
-- **Sources**: search engines, Google Maps & Business Profile,
-  direct, social media, paid ads, email, AI assistants (ChatGPT and
-  others) and other websites, each with its lead rate; the websites and
-  campaigns (utm links) that sent people; the first page of each visit and
-  how many left straight away; devices, browsers and systems; new and
-  returning visitors; where visitors are; and the busiest days and hours.
-- **Pages**: every page with views, time on the page, how far people
-  scroll, and how often visits start or end there.
-- **Designs**: every design looked at, with views, time, saves, compares,
-  shares, hints and leads; product lines; popular designs nobody has asked
-  about yet; the metals, gold colours, ring sizes and diamond qualities
-  people pick; designs compared side by side; story reels.
-- **Searches**: what people search for (and how often it ends in a lead),
-  searches that found nothing (with a "Try it" link), and the catalog
-  filters used.
-- **Actions**: everything people do, from the heart to the ring builder,
-  the quiz, the assistant and the booking window, calls (which number and
-  where they tapped), directions and links to other sites, and which
-  buttons get clicked and where.
-- **Funnels**: from visit to lead, the booking window, the ring builder,
-  the ring style quiz and Drop a hint, step by step.
-- **Journeys**: every visit, newest first, with quick filters (became
-  leads, saved something, returning, over 3 minutes, from ads, on phones).
-  Open one to see everything that person did, in order, and every visit
-  from the same visitor. **Show more visits** adds the next 40 below.
-- **Leads**: every lead with the visit behind it: where they came from,
-  how many visits it took and how many days from their first visit.
-- **Live**: who is on the site right now (the last 5 minutes), updating by
-  itself every 10 seconds (it waits while you point at the list). The
-  count also shows at the top of every Insights page.
+- **Leads**: leads by kind over time (stacked columns, visit requests at
+  the bottom); kinds of lead; **where leads began** (the source of each
+  lead's first visit, of the visit they got in touch on, and the visits
+  that helped along the way); how long they took and how many visits; and
+  every lead with the listed price of the design they asked about.
+- **Sources**: each source with its share, engaged visits, lead rate (a
+  small bar; an asterisk when fewer than 30 visits make it shaky) and the
+  leads that began there; websites (l.facebook.com counts as
+  facebook.com); campaigns; the first page of each visit.
+- **Audience** (new): first-time and returning visitors and how each did,
+  how often people came, devices with their lead rate, browsers and
+  systems, where visitors are, the languages their browsers are set to,
+  and the busiest days and hours.
+- **Designs**: interest by price (share of views against share of leads
+  for each price range), rising and cooling designs, every design with its
+  price, designs viewed in the same visit, popular designs nobody asked
+  about, product lines, options people pick, designs compared, story
+  reels.
+- **Pages**: **page speed** measured in visitors' own browsers (Google's
+  Core Web Vitals: when the main picture showed, how fast taps answered,
+  whether the page jumped, how fast the server answered), each rated
+  good, needs work or poor, for phones and computers; the slowest pages;
+  **missing pages** (addresses that showed "page not found" and where
+  people came from, so you can add a redirect); every page.
+- **Searches**, **Actions**, **Journeys**, **Live**: as before.
+- **Funnels**: each step with the period compared with beside it.
 - **Settings**: see below.
+
+Everything also works with JavaScript switched off (each link is an
+ordinary page), by keyboard, with a screen reader and on phones. Click
+any source, website, campaign, page, design, search, place, device,
+browser or system to see only those visits everywhere. Visits open in a
+side panel. **Refresh** (the round arrow) gets the newest numbers; results
+are otherwise kept for 3 minutes. Keys for periods: **T** today, **Y**
+yesterday, **W** last 7 days, **M** last 30 days, **Q** last 90 days, **L**
+last 12 months.
 
 A small "Insights: last 7 days" box shows on the WordPress Dashboard.
 
-**PDF report (1.42).** **Report** (next to the period menu) downloads all
-of Insights for the period and filters you have chosen as one branded PDF,
-ready to print, keep or send:
+**PDF report.** **Report** (next to the period menu) downloads Insights for
+the period, comparison and filters chosen as one branded PDF, results
+first:
 
-- a cover with the eight headline numbers (each with its change and a
-  small trend line), a few plain sentences on what stood out, and the
-  contents (click a line to jump to that page);
-- visits and leads over time, compared with the period before;
-- where visitors came from, the websites and campaigns that sent them and
-  the first page of their visit;
-- new and returning visitors, devices, browsers, systems and where
-  visitors are, and the busiest days and hours;
-- the most viewed pages and designs, product lines, popular designs nobody
-  asked about, the options people pick and designs compared side by side;
-- searches (and the ones that found nothing) and the catalog filters used;
-- what visitors did, calls and directions by where they were tapped, and
-  the buttons clicked;
-- the funnels, every lead (the newest 100, with where they came from and
-  how long it took), and the numbers for each day (or hour, week or month)
-  with the whole period at the bottom;
-- what each number means.
+- a cover with the results (leads, visit requests, lead rate, value
+  asked about), what the leads were, the month's goals, visits and
+  interest, the first things that stood out, and the contents;
+- **What stood out**: every finding with its next step;
+- **Leads**: by kind over time, where leads began, how long they took;
+- visits over time, where visitors came from, who visited, when they
+  visit, designs (with prices, interest by price, rising and cooling,
+  viewed together), pages and speed (with missing pages), searches, what
+  visitors did, and the funnels against the period compared with;
+- at the back, every lead (the newest 100, with the listed price), the
+  numbers for each day (or hour, week or month) and what each number
+  means.
 
-It uses the brand colours set in the Wulf Elementor Kit, the Fraunces and
-Manrope fonts and the gem logo, and opens with bookmarks for each part. It
-takes a few seconds and is made on the site itself, so nothing is sent
-anywhere. Untick **Include the names of people who got in touch** for a
-copy you can share outside the business. The file is named after the site
-and the dates, for example
+It opens with bookmarks for each part and takes a few seconds; nothing is
+sent anywhere. Untick **Include the names of people who got in touch** for
+a copy you can share outside the business. The file is named after the
+site and the dates, for example
 `wulf-diamond-jewelers-insights-2026-09-13-to-2026-10-12.pdf`.
 
 **The visit behind each lead.** Each inquiry in wp-admin gets a **Their
@@ -521,9 +522,10 @@ Settings tab suggests a line for your privacy policy.
 
 **Settings** (Insights > Settings): collect on or off, leave out logged-in
 staff, recognise returning visitors, respect Do Not Track, show the visit
-behind each inquiry, and how long to keep data. Each change is saved the
-moment you make it (a green tick and "Saved" show). **Delete everything**
-asks you to type DELETE first.
+behind each inquiry, measure page speed, how long to keep data, and the
+**monthly goals** for leads and visit requests (0: no goal). Each change is
+saved the moment you make it (a tick and "Saved" show). **Delete
+everything** asks you to type DELETE first.
 
 **Tips**
 
@@ -542,10 +544,13 @@ automatic block of every real email) and the Wulf Kit's
 `wk_mail_after_rows` filter. Visits and actions live in two tables,
 `{prefix}om_ins_sessions` and `{prefix}om_ins_events`. The PDF report is
 `admin-post.php?action=om_ins_report` (same period and filter parameters
-as the page, plus `names=0|1`; `manage_options` and the `om_ins_report`
-nonce), drawn by `OM_Insights_Pdf` with tFPDF 1.34 (LGPL 2.1, in
-`lib/tfpdf`) and the fonts in `lib/fonts` (SIL Open Font License). It
-needs PHP's mbstring extension.
+as the page, plus `cmp=year` and `names=0|1`; `manage_options` and the
+`om_ins_report` nonce), drawn by `OM_Insights_Pdf` with tFPDF 1.34 (LGPL
+2.1, in `lib/tfpdf`) and the fonts in `lib/fonts` (SIL Open Font License).
+It needs PHP's mbstring extension. Page speed is stored per page view in
+the actions table (`lcp`, `inp`, `ttfb` in milliseconds, `cls` x1000 + 1;
+database version 2, added on update) and a "page not found" view has
+`meta = '404'`.
 
 ## Analytics
 
@@ -1250,6 +1255,42 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.44.0
+- **Insights 2.0, results first.** The overview opens with a dark results
+  band: leads, visit requests, lead rate and the **value asked about**
+  (the listed prices of the designs people asked about), what the leads
+  were (visit requests, inquiries and hints, designs emailed, sign-ups),
+  and this month's pace against your **goals**. Six tiles follow for
+  visits and interest, including engaged visits and contact taps.
+- **What stood out**: ranked findings in plain words, each with a next
+  step and a link (sources that moved, the best and weakest source,
+  phones against computers, slow pages, missing pages, searches that found
+  nothing, popular designs nobody asks about, rising designs, buyers who
+  take their time, returning visitors, the busiest time, goals).
+- **Compare with the same time last year** (jewellery is seasonal), or the
+  period just before.
+- **Where leads began**: the source of each lead's first visit, the visit
+  they got in touch on and the visits that helped; how long leads took and
+  how many visits.
+- New **Audience** tab (new and returning compared, how often people come,
+  devices with lead rates, browsers, systems, places, languages, busy
+  hours).
+- **Page speed** (Core Web Vitals from visitors' browsers, phones and
+  computers) and **missing pages** (with where people came from) under
+  Pages; **interest by price**, rising and cooling designs and designs
+  viewed together under Designs; funnels against the period compared
+  with; sources with engaged share and lead-rate bars.
+- The chart: a menu for any measure (value in dollars too); unfinished
+  days, weeks and months are a hollow "so far" point, not a fall.
+- A new look in the Wulf brand: ivory, ink and gold, Fraunces and Manrope,
+  the kit's colours.
+- **PDF report**: results first on the cover, a "What stood out" part with
+  next steps, Leads second, the new parts (audience, speed, missing pages,
+  prices, rising designs), the lead list and day by day at the back, and
+  the comparison chosen (period before or last year).
+- Settings: monthly goals for leads and visit requests; measure page speed
+  on or off.
 
 ### 1.43.0
 - **GoHighLevel contact fields**: each lead now fills in fields on the

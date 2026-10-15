@@ -128,18 +128,22 @@ class OM_Insights_Pdf {
 
 		$this->cover();
 		if ( $this->d['now']['visits'] || $this->d['before']['visits'] ) {
+			// Results first: what stood out and what to do, then the leads; then where the visits came from and what they did.
+			$this->findings_part();
+			$this->leads_part();
 			$this->over_time();
 			$this->sources();
 			$this->audience();
 			if ( $this->r->span() >= 7 ) {
 				$this->busy_times();
 			}
-			$this->pages_part();
 			$this->designs();
+			$this->pages_part();
 			$this->searches();
 			$this->doing();
 			$this->funnels();
-			$this->leads_part();
+			// The long lists, for reference.
+			$this->lead_list();
 			$this->by_day();
 		}
 		$this->about();
@@ -524,19 +528,21 @@ class OM_Insights_Pdf {
 		$this->y += 18;
 	}
 
-	/** ▲ 12% (green) / ▼ 8% (red) / 0%; returns the width drawn. */
-	private function delta( $x, $y, $pct, $size = 7.5, $up_is_good = true ) {
+	/** ▲ 12% (green) / ▼ 8% (red) / 0%; returns the width drawn. $dark: on the night colour. */
+	private function delta( $x, $y, $pct, $size = 7.5, $up_is_good = true, $dark = false ) {
 		$p = $this->pdf;
 		$c = $this->c;
 		if ( null === $pct || '' === $pct ) {
 			$p->font( 'sans6', $size );
-			$p->ink( $c['muted'] );
+			$p->ink( $dark ? '#cfcac0' : $c['muted'] );
 			$label = null === $pct ? __( 'New', 'om-catalog' ) : '–';
 			$p->put( $x, $y, $label );
 			return $p->width( $label );
 		}
 		$good  = 0 === $pct ? null : ( $pct > 0 ) === $up_is_good;
-		$color = null === $good ? $c['sub'] : ( $good ? $c['up'] : $c['down'] );
+		$up    = $dark ? '#8fe0a8' : $c['up'];
+		$down  = $dark ? '#ffb4a3' : $c['down'];
+		$color = null === $good ? ( $dark ? '#cfcac0' : $c['sub'] ) : ( $good ? $up : $down );
 		$t     = $size * 0.62;
 		$p->fill( $color );
 		if ( $pct > 0 ) {
@@ -907,7 +913,11 @@ class OM_Insights_Pdf {
 		}
 	}
 
-	/** This period (gold, filled) and the period before (grey), on one scale. */
+	/**
+	 * This period (gold, filled) and the period compared with (grey), on one scale.
+	 * Today, and weeks or months cut short by the period's ends, are hollow dots
+	 * apart from the line (they would look like a fall).
+	 */
 	private function line_chart( $chart, $key, $x, $y, $w, $h ) {
 		$p      = $this->pdf;
 		$c      = $this->c;
@@ -916,85 +926,79 @@ class OM_Insights_Pdf {
 		$n      = count( $labels );
 		$cut    = max( 0, min( $n, (int) $chart['cut'] ) );
 		$cur    = array_slice( $chart['m'][ $key ]['c'], 0, $cut );
-		$prev   = array_values( array_filter( $chart['m'][ $key ]['p'], static function ( $v ) { return null !== $v; } ) );
-		list( $top, $ticks )         = self::scale( max( array_merge( array( 0 ), $cur, $prev ) ), $kind );
-		list( $px, $pw, $ph, $ys )   = $this->grid( $ticks, $top, $kind, $x, $y, $w, $h );
+		$prevs  = $chart['m'][ $key ]['p'];
+		$prev   = array_values( array_filter( $prevs, static function ( $v ) { return null !== $v; } ) );
+		list( $top, $ticks )       = self::scale( max( array_merge( array( 0 ), $cur, $prev ) ), $kind );
+		list( $px, $pw, $ph, $ys ) = $this->grid( $ticks, $top, $kind, $x, $y, $w, $h );
 		$xs = static function ( $i ) use ( $px, $pw, $n ) {
 			return $n > 1 ? $px + $pw * $i / ( $n - 1 ) : $px + $pw / 2;
 		};
 		$this->x_labels( $labels, $xs, $px, $pw, $y + $ph + 12 );
-		$pts = array();
-		foreach ( $cur as $i => $v ) {
-			$pts[] = array( $xs( $i ), $ys( $v ) );
-		}
+		$short_c = static function ( $i ) use ( $chart, $cut ) {
+			return ! empty( $chart['short'][ $i ] ) || ( ! empty( $chart['partial'] ) && $i === $cut - 1 );
+		};
+		$short_p = static function ( $i ) use ( $chart ) {
+			return ! empty( $chart['pshort'][ $i ] );
+		};
+		$runs = static function ( $values, $count, $short ) use ( $xs, $ys ) {
+			$out   = array();
+			$loose = array();
+			$run   = array();
+			for ( $i = 0; $i < $count; $i++ ) {
+				$has = isset( $values[ $i ] ) && null !== $values[ $i ];
+				if ( ! $has || $short( $i ) ) {
+					if ( $run ) {
+						$out[] = $run;
+						$run   = array();
+					}
+					if ( $has ) {
+						$loose[] = array( $xs( $i ), $ys( $values[ $i ] ) );
+					}
+					continue;
+				}
+				$run[] = array( $xs( $i ), $ys( $values[ $i ] ) );
+			}
+			if ( $run ) {
+				$out[] = $run;
+			}
+			return array( $out, $loose );
+		};
+		list( $cur_runs, $cur_loose )   = $runs( $cur, $cut, $short_c );
+		list( $prev_runs, $prev_loose ) = $runs( $prevs, $n, $short_p );
 		$p->round_lines( true );
-		// The fill first, so the grey line of the period before shows on top of it.
-		if ( count( $pts ) > 1 ) {
-			$p->fill( $c['area'] );
-			$p->smooth( $pts, 'f', $ys( 0 ) );
-		}
-		if ( count( $prev ) > 1 ) {
-			$line = array();
-			foreach ( $prev as $i => $v ) {
-				$line[] = array( $xs( $i ), $ys( $v ) );
+		// The fill first, so the grey line of the period compared with shows on top of it.
+		$p->fill( $c['area'] );
+		foreach ( $cur_runs as $run ) {
+			if ( count( $run ) > 1 ) {
+				$p->smooth( $run, 'f', $ys( 0 ) );
 			}
-			$p->stroke( $c['prev'], 1 );
-			$p->smooth( $line, 'S' );
 		}
-		if ( count( $pts ) > 1 ) {
-			$p->stroke( $c['series'], 1.7 );
-			if ( ! empty( $chart['partial'] ) && count( $pts ) > 2 ) {
-				$p->smooth( array_slice( $pts, 0, -1 ), 'S' );
-				$p->dash( 2.2, 2.4 );
-				$p->smooth( array_slice( $pts, -2 ), 'S' );
-				$p->dash();
+		foreach ( $prev_runs as $run ) {
+			if ( count( $run ) > 1 ) {
+				$p->stroke( $c['prev'], 1 );
+				$p->smooth( $run, 'S' );
+			}
+		}
+		foreach ( $prev_loose as $pt ) {
+			$p->fill( '#ffffff' );
+			$p->stroke( $c['prev'], 0.9 );
+			$p->circle( $pt[0], $pt[1], 2, 'DF' );
+		}
+		foreach ( $cur_runs as $run ) {
+			if ( count( $run ) > 1 ) {
+				$p->stroke( $c['series'], 1.7 );
+				$p->smooth( $run, 'S' );
 			} else {
-				$p->smooth( $pts, 'S' );
+				$p->fill( $c['series'] );
+				$p->circle( $run[0][0], $run[0][1], 2.4 );
 			}
-		} elseif ( 1 === count( $pts ) ) {
-			$p->fill( $c['series'] );
-			$p->circle( $pts[0][0], $pts[0][1], 2.6 );
+		}
+		foreach ( $cur_loose as $pt ) {
+			$p->fill( '#ffffff' );
+			$p->stroke( $c['series'], 1.3 );
+			$p->circle( $pt[0], $pt[1], 2.6, 'DF' );
 		}
 		$p->round_lines( false );
-	}
-
-	/**
-	 * Columns for small counts such as leads: this period (gold) beside the
-	 * period before (grey). The last gold column is pale while it isn't over.
-	 */
-	private function bar_chart( $chart, $key, $x, $y, $w, $h ) {
-		$c      = $this->c;
-		$labels = $chart['labels'];
-		$n      = max( 1, count( $labels ) );
-		$cut    = max( 0, min( $n, (int) $chart['cut'] ) );
-		$cur    = array_slice( $chart['m'][ $key ]['c'], 0, $cut );
-		$prev   = $chart['m'][ $key ]['p'];
-		$all    = array_merge( array( 0 ), $cur, array_filter( $prev, static function ( $v ) { return null !== $v; } ) );
-		list( $top, $ticks )       = self::scale( max( $all ), 'n' );
-		list( $px, $pw, $ph, $ys ) = $this->grid( $ticks, $top, 'n', $x, $y, $w, $h );
-		$slot = $pw / $n;
-		$pair = min( 26, $slot * 0.74 );
-		$bw   = max( 0.8, ( $pair - 1 ) / 2 );
-		$this->x_labels(
-			$labels,
-			static function ( $i ) use ( $px, $slot ) {
-				return $px + ( $i + 0.5 ) * $slot;
-			},
-			$px,
-			$pw,
-			$y + $ph + 12
-		);
-		$base = $ys( 0 );
-		for ( $i = 0; $i < $n; $i++ ) {
-			$bx = $px + $i * $slot + ( $slot - $pair ) / 2;
-			if ( $i < $cut ) {
-				$pale = ! empty( $chart['partial'] ) && $i === $cut - 1;
-				$this->bar( $bx, $base, $bw, $base - $ys( $cur[ $i ] ), $pale ? $c['tint2'] : $c['series'] );
-			}
-			if ( isset( $prev[ $i ] ) ) {
-				$this->bar( $bx + $bw + 1, $base, $bw, $base - $ys( $prev[ $i ] ), $c['prev'] );
-			}
-		}
 	}
 
 	/** A column standing on $base, with rounded top corners. */
@@ -1037,7 +1041,7 @@ class OM_Insights_Pdf {
 	}
 
 	/** A small line for a headline number (this period only). */
-	private function spark( $values, $x, $y, $w, $h ) {
+	private function spark( $values, $x, $y, $w, $h, $color = null ) {
 		$values = array_values( $values );
 		$n      = count( $values );
 		if ( $n < 2 ) {
@@ -1051,7 +1055,7 @@ class OM_Insights_Pdf {
 		}
 		$p = $this->pdf;
 		$p->round_lines( true );
-		$p->stroke( $this->c['gold_deep'], 0.9 );
+		$p->stroke( null !== $color ? $color : $this->c['gold_deep'], 0.9 );
 		$p->poly( $pts );
 		$p->round_lines( false );
 	}
@@ -1095,15 +1099,14 @@ class OM_Insights_Pdf {
 		$p->ink( self::mix( $c['gold'], '#ffffff', 0.5 ) );
 		$today = wp_date( 'Y-m-d', $this->made );
 		$p->put( self::X, 164, self::long_period( $r->from, $r->to ) . ( $r->to === $today ? ' (' . __( 'so far', 'om-catalog' ) . ')' : '' ) );
-		list( $pf, $pt ) = $r->previous();
-		$days            = $r->span();
+		$days = $r->span();
 		$p->font( 'sans', 9 );
 		$p->ink( '#b3afa6' );
-		/* translators: 1: number of days, 2: the period before. */
-		$p->put( self::X, 182, sprintf( _n( '%1$s day, compared with %2$s', '%1$s days, compared with %2$s', $days, 'om-catalog' ), self::n( $days ), self::long_period( $pf, $pt ) ) );
+		/* translators: 1: number of days, 2: "compared with ..." */
+		$p->put( self::X, 182, sprintf( _n( '%1$s day, %2$s', '%1$s days, %2$s', $days, 'om-catalog' ), self::n( $days ), $this->compared_words() ) );
 		$p->fill( $c['gold_deep'] );
 		$p->Rect( 0, 216, self::W, 1.4, 'F' );
-		$this->y = 240;
+		$this->y = 238;
 
 		$filters = $this->filter_words();
 		if ( $filters ) {
@@ -1122,39 +1125,122 @@ class OM_Insights_Pdf {
 				$p->put( self::X + 14, $ly + 9, $line );
 				$ly += 12;
 			}
-			$this->y += $h + 14;
+			$this->y += $h + 12;
 		}
 
-		$this->label( __( 'At a glance', 'om-catalog' ) );
+		$this->label( __( 'Results', 'om-catalog' ) );
 		if ( ! $now['visits'] && ! $bef['visits'] ) {
 			$this->para( __( 'No visits were recorded in this period. Visits show up a few seconds after they happen; logged-in staff are left out.', 'om-catalog' ), 10, $c['text'], 15 );
 			$this->y += 6;
 			$this->para( __( 'Try a longer period, or check that collecting is switched on under Insights > Settings.', 'om-catalog' ), 9, $c['sub'], 13.5 );
 			return;
 		}
-		$tw    = ( $this->cw() - 3 * 10 ) / 4;
-		$th    = 78;
 		$chart = $this->d['chart'];
-		$cut   = max( 0, (int) $chart['cut'] );
-		$i     = 0;
-		foreach ( OM_Insights_Report::metrics() as $key => $m ) {
-			$x  = self::X + ( $i % 4 ) * ( $tw + 10 );
-			$ty = $this->y + (int) floor( $i / 4 ) * ( $th + 10 );
-			$dy = $this->tile( $x, $ty, $tw, $th, $m[0], self::metric( $key, $now[ $key ] ), self::change( $now[ $key ], $bef[ $key ] ), self::metric( $key, $bef[ $key ] ) );
-			$this->spark( array_slice( $chart['m'][ $key ]['c'], 0, $cut ), $x + 11, $dy + 5, $tw - 22, 10 );
+		$tw    = ( $this->cw() - 3 * 10 ) / 4;
+		$th    = 86;
+		$names = OM_Insights_Report::metrics();
+		/* translators: %s: number of leads. */
+		$sub   = $now['valued'] ? sprintf( _n( '%s lead named a design', '%s leads named a design', $now['valued'], 'om-catalog' ), self::n( $now['valued'] ) ) : '';
+		$tiles = array(
+			array( 'leads', '' ),
+			array( 'bookings', '' ),
+			array( 'conv', '' ),
+			array( 'value', $sub ),
+		);
+		foreach ( $tiles as $i => $t ) {
+			$key = $t[0];
+			$x   = self::X + $i * ( $tw + 10 );
+			$dy  = $this->result_tile( $x, $this->y, $tw, $th, $names[ $key ][0], self::metric( $key, $now[ $key ] ), self::change( $now[ $key ], $bef[ $key ] ), self::metric( $key, $bef[ $key ] ), 0 === $i, $t[1] );
+			if ( '' === $t[1] ) {
+				$this->spark( self::whole( $chart, $key ), $x + 11, $dy + 6, $tw - 22, 11, 0 === $i ? $c['gold'] : null );
+			}
+		}
+		$this->y += $th + 14;
+		if ( $now['leads'] ) {
+			$p->font( 'sans6', 6.6 );
+			$p->ink( $c['sub'] );
+			/* translators: %s: number of leads. */
+			$p->put( self::X, $this->y + 6, self::upper( sprintf( _n( 'What the %s lead was', 'What the %s leads were', $now['leads'], 'om-catalog' ), self::n( $now['leads'] ) ) ), 'L', 0.5 );
+			$this->y += 12;
+			$this->y += $this->mix_bar( $now['groups'], self::X, $this->y, $this->cw() ) + 10;
+		}
+		$gh = $this->goals( $this->y );
+		$this->y += $gh ? $gh + 10 : 0;
+
+		$this->label( __( 'Visits and interest', 'om-catalog' ) );
+		$small = array(
+			'visitors' => __( 'Visitors', 'om-catalog' ),
+			'visits'   => __( 'Visits', 'om-catalog' ),
+			'engaged'  => __( 'Engaged visits', 'om-catalog' ),
+			'designs'  => __( 'Designs viewed', 'om-catalog' ),
+			'saves'    => __( 'Saved (hearts)', 'om-catalog' ),
+			'contacts' => __( 'Contact taps', 'om-catalog' ),
+		);
+		$sw = ( $this->cw() - 5 * 8 ) / 6;
+		$i  = 0;
+		foreach ( $small as $key => $label ) {
+			$this->mini_tile( self::X + $i * ( $sw + 8 ), $this->y, $sw, 52, $label, self::metric( $key, $now[ $key ] ), self::change( $now[ $key ], $bef[ $key ] ), self::metric( $key, $bef[ $key ] ) );
 			++$i;
 		}
-		$this->y += 2 * $th + 10 + 22;
+		$this->y += 52 + 16;
 
-		$this->label( __( 'What stood out', 'om-catalog' ) );
-		foreach ( $this->highlights() as $line ) {
-			$p->fill( $c['gold_deep'] );
-			$cx = self::X + 3;
-			$cy = $this->y + 6.5;
-			$p->poly( array( array( $cx, $cy - 3 ), array( $cx + 3, $cy ), array( $cx, $cy + 3 ), array( $cx - 3, $cy ) ), 'f', true );
-			$top = $this->y;
-			$this->para( $line, 9.4, $c['text'], 13.4, self::X + 14, $this->cw() - 14 );
-			$this->y = max( $this->y, $top + 13.4 ) + 3.5;
+		// The first findings, two to a row, as many rows as fit above the contents (the goals are drawn above already).
+		$list = array_values(
+			array_filter(
+				$this->d['findings'] ?? array(),
+				static function ( $f ) use ( $gh ) {
+					return ! $gh || 'goal' !== ( $f['kind'] ?? '' );
+				}
+			)
+		);
+		if ( $list ) {
+			$parts = count( $this->first );
+			$stop  = $parts >= 3 ? self::BOTTOM - 12 - 18 - (int) ceil( $parts / 3 ) * 16 - 14 : self::BOTTOM;
+			$this->label( __( 'What stood out', 'om-catalog' ) );
+			$cw    = ( $this->cw() - self::GAP ) / 2;
+			$shown = 0;
+			foreach ( array_chunk( $list, 2 ) as $pair ) {
+				$sets = array();
+				$h    = 0;
+				foreach ( $pair as $f ) {
+					$p->font( 'sans', 8.2 );
+					$all    = $this->wrap( $f['text'], $cw - 14 );
+					$lines  = array_slice( $all, 0, 2 );
+					if ( count( $all ) > 2 ) {
+						$lines[1] = $this->fit( $lines[1] . ' ' . $all[2], $cw - 14 );
+					}
+					$sets[] = $lines;
+					$h      = max( $h, 13 + 11 * count( $lines ) + 9 );
+				}
+				if ( $this->y + $h > $stop ) {
+					break;
+				}
+				foreach ( $pair as $k => $f ) {
+					$x    = self::X + $k * ( $cw + self::GAP );
+					$tone = self::tones()[ $f['tone'] ] ?? self::tones()['info'];
+					$cx   = $x + 3;
+					$cy   = $this->y + 6;
+					$p->fill( $tone[1] );
+					$p->poly( array( array( $cx, $cy - 3 ), array( $cx + 3, $cy ), array( $cx, $cy + 3 ), array( $cx - 3, $cy ) ), 'f', true );
+					$p->font( 'sans6', 8.8 );
+					$p->ink( $c['ink'] );
+					$p->put( $x + 14, $this->y + 9, $this->fit( $f['title'], $cw - 14 ) );
+					$p->font( 'sans', 8.2 );
+					$p->ink( $c['sub'] );
+					foreach ( $sets[ $k ] as $j => $line ) {
+						$p->put( $x + 14, $this->y + 22 + 11 * $j, $line );
+					}
+					++$shown;
+				}
+				$this->y += $h;
+			}
+			if ( $shown < count( $this->d['findings'] ) ) {
+				$p->font( 'sans6', 7.6 );
+				$p->ink( $c['gold_ink'] );
+				/* translators: %s: number of findings. */
+				$p->put( self::X + 14, $this->y + 4, sprintf( __( 'All %s, each with a next step, on the next page.', 'om-catalog' ), self::n( count( $this->d['findings'] ) ) ) );
+				$this->y += 10;
+			}
 		}
 		$this->contents();
 	}
@@ -1315,71 +1401,547 @@ class OM_Insights_Pdf {
 
 	private function over_time() {
 		$chart = $this->d['chart'];
-		$bars  = $this->d['bars'];
-		/* translators: %s: hour, day, week or month. */
-		$desc = sprintf( __( 'Visitors each %s in this period, with the period before in grey.', 'om-catalog' ), self::unit_word( $chart['unit'] ) );
-		if ( ! empty( $chart['partial'] ) ) {
-			/* translators: %s: hour, day, week or month. */
-			$desc .= ' ' . sprintf( __( 'A dashed end means that %s isn\'t over yet.', 'om-catalog' ), self::unit_word( $chart['unit'] ) );
+		/* translators: 1: hour, day, week or month, 2: "the period before" or "the same time last year". */
+		$desc = sprintf( __( 'Visitors each %1$s in this period, with %2$s in grey.', 'om-catalog' ), self::unit_word( $chart['unit'] ), $this->r->compare_name() );
+		if ( ! empty( $chart['partial'] ) || in_array( true, (array) ( $chart['short'] ?? array() ), true ) ) {
+			$desc .= ' ' . __( 'A hollow dot stands for a stretch that isn\'t over yet, or that the period cuts short, so it would look like a fall in the line.', 'om-catalog' );
 		}
 		$this->section( __( 'Visits over time', 'om-catalog' ), $desc, 262 );
-		$this->legend( self::W - self::X, $this->y + 4, __( 'Period before', 'om-catalog' ) );
+		$this->legend( self::W - self::X, $this->y + 4, $this->r->compare_name( true ) );
 		$this->y += 14;
 		$this->line_chart( $chart, 'visitors', self::X, $this->y, $this->cw(), 230 );
 		$this->y += 248;
+	}
 
-		/* translators: %s: hour, day, week or month. */
-		$note = sprintf( __( 'Leads each %s in this period, beside the same stretch of the period before.', 'om-catalog' ), self::unit_word( $bars['unit'] ) );
-		if ( ! empty( $bars['partial'] ) ) {
-			/* translators: %s: hour, day, week or month. */
-			$note .= ' ' . sprintf( __( 'The last gold column is paler because that %s isn\'t over yet.', 'om-catalog' ), self::unit_word( $bars['unit'] ) );
+	/** Leads by how close they are to a sale: one gold each, darkest for visit requests. */
+	private static function group_colors() {
+		return array( '#4e3a16', '#7c5f27', '#a8853f', '#c9a865' );
+	}
+
+	/** What a finding is: [ name, colour ]. */
+	private static function tones() {
+		return array(
+			'good'  => array( __( 'Going well', 'om-catalog' ), '#1f7a3d' ),
+			'watch' => array( __( 'Worth a look', 'om-catalog' ), '#9a5b00' ),
+			'idea'  => array( __( 'Idea', 'om-catalog' ), '#7a5b24' ),
+			'info'  => array( __( 'Good to know', 'om-catalog' ), '#5a5f67' ),
+		);
+	}
+
+	/**
+	 * A results tile on the cover: bigger, the first one on the night colour.
+	 * The number shrinks to fit rather than being cut.
+	 */
+	private function result_tile( $x, $y, $w, $h, $label, $value, $change, $before, $dark = false, $sub = '' ) {
+		$p = $this->pdf;
+		$c = $this->c;
+		$p->fill( $dark ? $c['night'] : $c['ivory'] );
+		$p->rrect( $x, $y, $w, $h, 7 );
+		$p->font( 'sans6', 6.6 );
+		$p->ink( $dark ? $c['gold'] : $c['sub'] );
+		$p->put( $x + 11, $y + 16, $this->fit( self::upper( $label ), $w - 22 ), 'L', 0.5 );
+		$size = 25;
+		$p->font( 'serif', $size );
+		while ( $size > 15 && $p->width( $value ) > $w - 22 ) {
+			--$size;
+			$p->font( 'serif', $size );
 		}
-		$base = $this->sub( __( 'Leads over time', 'om-catalog' ), $note, 162 );
-		$this->legend( self::W - self::X, $base, __( 'Period before', 'om-catalog' ), true );
-		$this->bar_chart( $bars, 'leads', self::X, $this->y + 2, $this->cw(), 150 );
-		$this->y += 162;
+		$p->ink( $dark ? $c['gold'] : $c['ink'] );
+		$p->put( $x + 11, $y + 44, $value );
+		$dy = $y + 58;
+		$dw = $this->delta( $x + 11, $dy, $change, 7.5, true, $dark );
+		$p->font( 'sans', 6.8 );
+		$p->ink( $dark ? '#b3afa6' : $c['sub'] );
+		/* translators: %s: the number in the period compared with. */
+		$p->put( $x + 11 + $dw + 5, $dy, $this->fit( sprintf( __( 'from %s', 'om-catalog' ), $before ), $w - $dw - 26 ) );
+		if ( '' !== $sub ) {
+			$p->put( $x + 11, $dy + 11, $this->fit( $sub, $w - 22 ) );
+		}
+		return $dy;
+	}
+
+	/** Leads by kind: one bar in four golds and a key with each count; returns the height used. */
+	private function mix_bar( $groups, $x, $y, $w ) {
+		$p      = $this->pdf;
+		$c      = $this->c;
+		$colors = self::group_colors();
+		$total  = array_sum( array_map( 'intval', (array) $groups ) );
+		if ( ! $total ) {
+			return 0;
+		}
+		$keys = array_keys( OM_Insights_Report::lead_groups() );
+		$live = array_values(
+			array_filter(
+				$keys,
+				static function ( $g ) use ( $groups ) {
+					return (int) ( $groups[ $g ] ?? 0 ) > 0;
+				}
+			)
+		);
+		$gap  = 1.5;
+		$room = $w - $gap * max( 0, count( $live ) - 1 );
+		$bx   = $x;
+		foreach ( $keys as $i => $g ) {
+			$n = (int) ( $groups[ $g ] ?? 0 );
+			if ( ! $n ) {
+				continue;
+			}
+			$bw = max( 2, $room * $n / $total );
+			$p->fill( $colors[ $i ] );
+			$p->rrect( $bx, $y, $bw, 7, 2 );
+			$bx += $bw + $gap;
+		}
+		$kx = $x;
+		$ky = $y + 20;
+		foreach ( OM_Insights_Report::lead_groups() as $g => $def ) {
+			$i    = array_search( $g, $keys, true );
+			$n    = (int) ( $groups[ $g ] ?? 0 );
+			$name = $def[0];
+			$num  = self::n( $n );
+			$sh   = self::pct( $n, $total, 0 );
+			$p->font( 'sans', 7.6 );
+			$nw = $p->width( $name );
+			$p->font( 'sans7', 7.6 );
+			$cw = $p->width( $num );
+			$p->font( 'sans', 7 );
+			$sw   = $p->width( $sh );
+			$item = 10 + $nw + 5 + $cw + 4 + $sw;
+			if ( $kx > $x && $kx + $item > $x + $w ) {
+				$kx  = $x;
+				$ky += 13;
+			}
+			$p->fill( $colors[ $i ] );
+			$p->rrect( $kx, $ky - 6.4, 6.6, 6.6, 1.5 );
+			$p->font( 'sans', 7.6 );
+			$p->ink( $c['text'] );
+			$p->put( $kx + 10, $ky, $name );
+			$p->font( 'sans7', 7.6 );
+			$p->ink( $c['ink'] );
+			$p->put( $kx + 10 + $nw + 5, $ky, $num );
+			$p->font( 'sans', 7 );
+			$p->ink( $c['sub'] );
+			$p->put( $kx + 10 + $nw + 5 + $cw + 4, $ky, $sh );
+			$kx += $item + 16;
+		}
+		return $ky - $y + 6;
+	}
+
+	/** This month against its goals (whole site), side by side; returns the height used (0 without goals). */
+	private function goals( $y ) {
+		$pace = $this->d['pace'] ?? array();
+		if ( ! $pace ) {
+			return 0;
+		}
+		$p    = $this->pdf;
+		$c    = $this->c;
+		$list = array();
+		foreach ( array( 'leads' => __( 'leads', 'om-catalog' ), 'visits' => __( 'visit requests', 'om-catalog' ) ) as $key => $word ) {
+			if ( $pace[ $key ]['goal'] ) {
+				$list[] = array( $word, $pace[ $key ] );
+			}
+		}
+		if ( ! $list ) {
+			return 0;
+		}
+		$w = ( $this->cw() - self::GAP ) / 2;
+		foreach ( $list as $i => $it ) {
+			list( $word, $g ) = $it;
+			$x = self::X + $i * ( $w + self::GAP );
+			$p->font( 'sans6', 8 );
+			$p->ink( $c['text'] );
+			/* translators: 1: month, 2: "leads" or "visit requests". */
+			$p->put( $x, $y + 8, sprintf( __( '%1$s goal: %2$s', 'om-catalog' ), $pace['month'], $word ) );
+			$p->font( 'sans7', 9 );
+			$p->ink( $c['ink'] );
+			$p->put( $x + $w, $y + 8, self::n( $g['n'] ) . ' / ' . self::n( $g['goal'] ), 'R' );
+			$p->fill( $c['hair'] );
+			$p->rrect( $x, $y + 14, $w, 5, 2.5 );
+			$p->fill( $c['gold_deep'] );
+			$p->rrect( $x, $y + 14, max( 3, $w * min( 1, $g['n'] / $g['goal'] ) ), 5, 2.5 );
+			if ( null !== $g['pace'] ) {
+				$mx = $x + $w * min( 1, $g['pace'] / $g['goal'] );
+				$ok = $g['pace'] >= $g['goal'];
+				$p->fill( $ok ? $c['up'] : ( $g['pace'] < 0.85 * $g['goal'] ? $c['down'] : $c['ink'] ) );
+				$p->Rect( $mx - 0.7, $y + 11.5, 1.4, 10, 'F' );
+				$p->font( 'sans', 7 );
+				$p->ink( $c['sub'] );
+				/* translators: 1: projected number, 2: day of the month, 3: days in the month. */
+				$p->put( $x, $y + 31, sprintf( __( 'On pace for %1$s by the end of the month · day %2$s of %3$s', 'om-catalog' ), self::n( $g['pace'] ), self::n( $pace['day'] ), self::n( $pace['days'] ) ) );
+			}
+		}
+		return 38;
+	}
+
+	/** The words for "compared with ...", after the dates. */
+	private function compared_words() {
+		list( $pf, $pt ) = $this->r->previous();
+		if ( 'year' === $this->r->cmp ) {
+			/* translators: %s: the same dates last year. */
+			return sprintf( __( 'compared with the same time last year (%s)', 'om-catalog' ), self::long_period( $pf, $pt ) );
+		}
+		/* translators: %s: the period before. */
+		return sprintf( __( 'compared with %s', 'om-catalog' ), self::long_period( $pf, $pt ) );
+	}
+
+	/** A small headline number for the cover's second row: label, number, then the change and the number before. */
+	private function mini_tile( $x, $y, $w, $h, $label, $value, $change, $before ) {
+		$p = $this->pdf;
+		$c = $this->c;
+		$p->fill( $c['ivory'] );
+		$p->rrect( $x, $y, $w, $h, 6 );
+		$p->font( 'sans6', 6.2 );
+		$p->ink( $c['sub'] );
+		$p->put( $x + 9, $y + 14, $this->fit( self::upper( $label ), $w - 18 ), 'L', 0.4 );
+		$p->font( 'serif', 16 );
+		$p->ink( $c['ink'] );
+		$p->put( $x + 9, $y + 32, $this->fit( $value, $w - 18 ) );
+		$dw = $this->delta( $x + 9, $y + 44, $change, 6.8 );
+		$p->font( 'sans', 6.3 );
+		$p->ink( $c['sub'] );
+		/* translators: %s: the number in the period compared with. */
+		$p->put( $x + 9 + $dw + 4, $y + 44, $this->fit( sprintf( __( 'from %s', 'om-catalog' ), $before ), $w - $dw - 22 ) );
+	}
+
+	/** One measure's numbers for whole days, weeks and months (today and short ends left out). */
+	private static function whole( $chart, $key ) {
+		$out = array();
+		$cut = max( 0, (int) $chart['cut'] );
+		foreach ( array_slice( $chart['m'][ $key ]['c'], 0, $cut ) as $i => $v ) {
+			if ( empty( $chart['short'][ $i ] ) && ! ( ! empty( $chart['partial'] ) && $i === $cut - 1 ) ) {
+				$out[] = $v;
+			}
+		}
+		return $out;
+	}
+
+	/** Everything that stood out, most important first, each with a next step. */
+	private function findings_part() {
+		$list = $this->d['findings'] ?? array();
+		if ( ! $list ) {
+			return;
+		}
+		$p    = $this->pdf;
+		$c    = $this->c;
+		$w    = $this->cw() - 28;
+		$size = function ( $f ) use ( $p, $w ) {
+			$p->font( 'sans7', 10.4 );
+			$t = count( $this->wrap( $f['title'], $w ) );
+			$p->font( 'sans', 8.8 );
+			$x = count( $this->wrap( $f['text'], $w ) );
+			$d = 0;
+			if ( '' !== $f['do'] ) {
+				// As drawn: the first line after "Next step:", the rest at the margin.
+				$p->font( 'sans7', 8.8 );
+				$lw = $p->width( __( 'Next step:', 'om-catalog' ) . ' ' );
+				$p->font( 'sans', 8.8 );
+				$words = $this->wrap( $f['do'], $w - $lw );
+				array_shift( $words );
+				$d = 1 + ( $words ? count( $this->wrap( implode( ' ', $words ), $w ) ) : 0 );
+			}
+			return array( $t, $x, $d, 18 + 14 * $t + 12.8 * $x + ( $d ? 4 + 12.8 * $d : 0 ) + 10 );
+		};
+		/* translators: %s: "the period before" or "the same time last year". */
+		$this->section( __( 'What stood out', 'om-catalog' ), sprintf( __( 'The most important first, each against %s, with a next step. The same list is on the overview of Insights in wp-admin, with a link to the numbers behind each one.', 'om-catalog' ), $this->r->compare_name() ), $size( $list[0] )[3] );
+		foreach ( $list as $i => $f ) {
+			list( $tl, $xl, $dl, $h ) = $size( $f );
+			$this->ensure( $h + 8 );
+			$tone = self::tones()[ $f['tone'] ] ?? self::tones()['info'];
+			$top  = $this->y;
+			$p->fill( $c['ivory'] );
+			$p->rrect( self::X, $top, $this->cw(), $h, 6 );
+			$p->fill( $tone[1] );
+			$p->rrect( self::X, $top, 3, $h, 1.5 );
+			$p->font( 'sans7', 6.6 );
+			$p->ink( $tone[1] );
+			$p->put( self::X + 16, $top + 15, self::upper( $tone[0] ), 'L', 0.9 );
+			$p->font( 'sans7', 7 );
+			$p->ink( $c['muted'] );
+			$p->put( self::W - self::X - 12, $top + 15, sprintf( '%02d', $i + 1 ), 'R' );
+			$this->y = $top + 18;
+			$this->para( $f['title'], 10.4, $c['ink'], 14, self::X + 16, $w, 'sans7' );
+			$this->para( $f['text'], 8.8, $c['text'], 12.8, self::X + 16, $w );
+			if ( '' !== $f['do'] ) {
+				$this->y += 4;
+				$p->font( 'sans7', 8.8 );
+				$lead = __( 'Next step:', 'om-catalog' ) . ' ';
+				$lw   = $p->width( $lead );
+				$p->ink( $c['gold_ink'] );
+				$p->put( self::X + 16, $this->y + 8.8, $lead );
+				// The first line follows the words "Next step:", the rest start at the margin.
+				$p->font( 'sans', 8.8 );
+				$words = $this->wrap( $f['do'], $w - $lw );
+				$first = array_shift( $words );
+				$p->ink( $c['ink'] );
+				$p->put( self::X + 16 + $lw, $this->y + 8.8, (string) $first );
+				$this->y += 12.8;
+				if ( $words ) {
+					$this->para( implode( ' ', $words ), 8.8, $c['ink'], 12.8, self::X + 16, $w );
+				}
+			}
+			$this->y = $top + $h + 8;
+		}
+	}
+
+	/** Leads each day (week, month), stacked by kind: visit requests at the bottom, in the darkest gold. */
+	private function stacked_columns( $chart, $x, $y, $w, $h ) {
+		$p      = $this->pdf;
+		$colors = self::group_colors();
+		$keys   = array_keys( OM_Insights_Report::lead_groups() );
+		$labels = $chart['labels'];
+		$n      = max( 1, count( $labels ) );
+		$cut    = max( 0, min( $n, (int) $chart['cut'] ) );
+		$totals = array();
+		for ( $i = 0; $i < $cut; $i++ ) {
+			$t = 0;
+			foreach ( $keys as $g ) {
+				$t += (int) ( $chart['g'][ $g ][ $i ] ?? 0 );
+			}
+			$totals[] = $t;
+		}
+		list( $top, $ticks )       = self::scale( max( array_merge( array( 0 ), $totals ) ), 'n' );
+		list( $px, $pw, $ph, $ys ) = $this->grid( $ticks, $top, 'n', $x, $y, $w, $h );
+		$slot = $pw / $n;
+		$bw   = max( 1, min( 16, $slot * 0.62 ) );
+		$this->x_labels(
+			$labels,
+			static function ( $i ) use ( $px, $slot ) {
+				return $px + ( $i + 0.5 ) * $slot;
+			},
+			$px,
+			$pw,
+			$y + $ph + 12
+		);
+		$base = $ys( 0 );
+		for ( $i = 0; $i < $cut; $i++ ) {
+			$bx   = $px + $i * $slot + ( $slot - $bw ) / 2;
+			$sum  = 0;
+			$last = -1;
+			foreach ( $keys as $j => $g ) {
+				if ( (int) ( $chart['g'][ $g ][ $i ] ?? 0 ) ) {
+					$last = $j;
+				}
+			}
+			foreach ( $keys as $j => $g ) {
+				$v = (int) ( $chart['g'][ $g ][ $i ] ?? 0 );
+				if ( ! $v ) {
+					continue;
+				}
+				$y0 = $ys( $sum );
+				$y1 = $ys( $sum + $v );
+				$sh = max( 0.4, $y0 - $y1 - ( $sum ? 0.8 : 0 ) );
+				if ( $j === $last ) {
+					$this->bar( $bx, $y0 - ( $sum ? 0.8 : 0 ), $bw, $sh, $colors[ $j ] );
+				} else {
+					$p->fill( $colors[ $j ] );
+					$p->Rect( $bx, $y0 - ( $sum ? 0.8 : 0 ) - $sh, $bw, $sh, 'F' );
+				}
+				$sum += $v;
+			}
+		}
+	}
+
+	/** The key for the stacked columns: each kind's colour, name and count; returns its height. */
+	private function group_key( $counts, $x, $y ) {
+		$p      = $this->pdf;
+		$c      = $this->c;
+		$colors = self::group_colors();
+		$i      = 0;
+		$kx     = $x;
+		foreach ( OM_Insights_Report::lead_groups() as $g => $def ) {
+			$label = $def[0] . ' ' . self::n( (int) ( $counts[ $g ] ?? 0 ) );
+			$p->fill( $colors[ $i ] );
+			$p->rrect( $kx, $y - 6.4, 6.6, 6.6, 1.5 );
+			$p->font( 'sans', 7.4 );
+			$p->ink( $c['text'] );
+			$p->put( $kx + 10, $y, $label );
+			$kx += 10 + $p->width( $label ) + 16;
+			++$i;
+		}
+		return 14;
+	}
+
+	/** Page speed: four boxes, each the value 3 in 4 page views beat, its rating, and good / needs work / poor. */
+	private function speed() {
+		$sp = $this->d['speed'];
+		$p  = $this->pdf;
+		$c  = $this->c;
+		/* translators: %s: number of page views. */
+		$note = $sp['n'] ? sprintf( _n( 'From %s page view. Each number is the one 3 in 4 page views beat, the way Google judges speed. Safari and some other browsers report only some of these.', 'From %s page views. Each number is the one 3 in 4 page views beat, the way Google judges speed. Safari and some other browsers report only some of these.', $sp['n'], 'om-catalog' ), self::n( $sp['n'] ) ) : __( 'Nothing measured in this period yet: speed is measured from version 1.44 on (Insights > Settings > Measure page speed).', 'om-catalog' );
+		$this->sub( __( 'Page speed', 'om-catalog' ), $note, $sp['n'] ? 110 : 0 );
+		if ( ! $sp['n'] ) {
+			return;
+		}
+		$states = array(
+			'good' => array( __( 'Good', 'om-catalog' ), '#2f8a50' ),
+			'slow' => array( __( 'Needs work', 'om-catalog' ), '#c98a14' ),
+			'poor' => array( __( 'Poor', 'om-catalog' ), '#c2412b' ),
+		);
+		$text   = array(
+			'good' => '#1f7a3d',
+			'slow' => '#8a5a00',
+			'poor' => '#b4321e',
+		);
+		$bw = ( $this->cw() - 3 * 10 ) / 4;
+		$bh = 110;
+		$i  = 0;
+		foreach ( OM_Insights_Report::vitals() as $key => $v ) {
+			$m = $sp['m'][ $key ];
+			$x = self::X + $i * ( $bw + 10 );
+			$y = $this->y;
+			$p->fill( $c['ivory'] );
+			$p->rrect( $x, $y, $bw, $bh, 7 );
+			$p->font( 'sans6', 7.2 );
+			$p->ink( $c['text'] );
+			$lines = $this->wrap( $v[0], $bw - 20 );
+			foreach ( array_slice( $lines, 0, 2 ) as $k => $line ) {
+				$p->put( $x + 10, $y + 15 + 9 * $k, $line );
+			}
+			if ( ! $m['n'] ) {
+				$p->font( 'sans', 8 );
+				$p->ink( $c['muted'] );
+				$p->put( $x + 10, $y + 48, __( 'Not measured yet', 'om-catalog' ) );
+				++$i;
+				continue;
+			}
+			$rating = OM_Insights_Report::vital_rating( $key, $m['p75'] );
+			$p->font( 'serif', 19 );
+			$p->ink( $c['ink'] );
+			$val = OM_Insights_Report::vital_text( $key, $m['p75'] );
+			$p->put( $x + 10, $y + 50, $val );
+			$p->font( 'sans7', 7 );
+			$p->ink( $text[ $rating ] );
+			$p->put( $x + 10, $y + 62, self::upper( $states[ $rating ][0] ), 'L', 0.5 );
+			// Good, needs work and poor, as one bar.
+			$room = $bw - 20 - 3;
+			$bx   = $x + 10;
+			foreach ( $states as $s => $def ) {
+				if ( ! $m[ $s ] ) {
+					continue;
+				}
+				$sw = max( 1.5, $room * $m[ $s ] / $m['n'] );
+				$p->fill( $def[1] );
+				$p->rrect( $bx, $y + 69, $sw, 5, 1.2 );
+				$bx += $sw + 1.5;
+			}
+			$p->font( 'sans', 6.4 );
+			$p->ink( $c['sub'] );
+			/* translators: 1: share good, 2: share poor. */
+			$p->put( $x + 10, $y + 83, $this->fit( sprintf( __( 'Good %1$s · Poor %2$s', 'om-catalog' ), self::pct( $m['good'], $m['n'], 0 ), self::pct( $m['poor'], $m['n'], 0 ) ), $bw - 20 ) );
+			$dy = $y + 95;
+			foreach ( array( 'phone' => __( 'Phones', 'om-catalog' ), 'desktop' => __( 'Computers', 'om-catalog' ) ) as $dk => $dn ) {
+				if ( ! empty( $m['dev'][ $dk ]['n'] ) ) {
+					$p->font( 'sans', 6.6 );
+					$p->ink( $c['sub'] );
+					$p->put( $x + 10, $dy, $dn );
+					$p->font( 'sans6', 6.6 );
+					$p->ink( $text[ OM_Insights_Report::vital_rating( $key, $m['dev'][ $dk ]['p75'] ) ] );
+					$p->put( $x + $bw - 10, $dy, OM_Insights_Report::vital_text( $key, $m['dev'][ $dk ]['p75'] ), 'R' );
+					$dy += 9;
+				}
+			}
+			++$i;
+		}
+		$this->y += $bh + 10;
+		$p->font( 'sans', 7.2 );
+		$p->ink( $c['sub'] );
+		$parts = array();
+		foreach ( OM_Insights_Report::vitals() as $key => $v ) {
+			/* translators: 1: measure, 2: good up to, 3: poor above. */
+			$parts[] = sprintf( __( '%1$s: good %2$s or less, poor over %3$s', 'om-catalog' ), $v[0], OM_Insights_Report::vital_text( $key, $v[1] ), OM_Insights_Report::vital_text( $key, $v[2] ) );
+		}
+		$this->para( implode( '. ', $parts ) . '.', 7.2, $c['sub'], 10.5 );
+		$this->y += 12;
+	}
+
+	/** Every lead, newest first (the list behind the Leads part). */
+	private function lead_list() {
+		$d     = $this->d;
+		$total = (int) $d['now']['leads'];
+		$rows  = array();
+		foreach ( $d['leads'] as $r ) {
+			$kind  = OM_Insights::lead_types()[ $r['kind'] ] ?? (string) $r['kind'];
+			$about = '' !== (string) $r['item'] ? OM_Insights_Report::design( $r['item'] )['title'] : '';
+			$about = trim( $about . ( '' !== (string) $r['meta'] && $r['meta'] !== $about ? ( '' !== $about ? ' · ' : '' ) . $r['meta'] : '' ) );
+			$days  = $r['first'] ? max( 0, (int) floor( ( (int) $r['ts'] - (int) $r['first'] ) / DAY_IN_SECONDS ) ) : null;
+			$known = (int) $r['visits'] > 0;
+			$price = '' !== (string) $r['item'] ? (float) ( $d['prices'][ $r['item'] ] ?? 0 ) : 0;
+			$row   = array( wp_date( 'M j, g:i a', (int) $r['ts'] ) );
+			if ( $this->names ) {
+				$row[] = '' !== (string) $r['sid'] ? OM_Insights_Report::visitor_label( (string) $r['vid'], (string) $r['lead_name'] ) : __( 'Not linked to a visit', 'om-catalog' );
+			}
+			$row[]  = array(
+				't' => $kind,
+				's' => $about,
+			);
+			$row[]  = $price > 0 ? OM_Insights_Report::money( $price ) : '–';
+			$row[]  = '' !== (string) $r['sid'] ? self::source_short( (string) $r['channel'] ) : '–';
+			$row[]  = $known ? self::n( $r['visits'] ) : '–';
+			$row[]  = ! $known || null === $days ? '–' : ( 0 === $days ? __( 'Same day', 'om-catalog' ) : sprintf( /* translators: %s: days. */ _n( '%s day', '%s days', $days, 'om-catalog' ), self::n( $days ) ) );
+			$rows[] = $row;
+		}
+		$cols = array( array( __( 'When', 'om-catalog' ), 80 ) );
+		if ( $this->names ) {
+			$cols[] = array( __( 'Who', 'om-catalog' ), 82 );
+		}
+		$cols[] = array( __( 'What', 'om-catalog' ), $this->names ? 114 : 188 );
+		$cols[] = array( __( 'Price', 'om-catalog' ), 52, 'R' );
+		$cols[] = array( __( 'Came from', 'om-catalog' ), $this->names ? 84 : 92 );
+		$cols[] = array( __( 'Visits', 'om-catalog' ), 38, 'R' );
+		$cols[] = array( __( 'Took', 'om-catalog' ), 54, 'R' );
+		$more   = max( 0, $total - count( $rows ) );
+		$desc   = __( 'Newest first. Price: the listed price of the design they asked about. Visits: how many times they came before getting in touch. Took: days from their first visit.', 'om-catalog' );
+		if ( $more ) {
+			/* translators: %s: number of further leads. */
+			$desc .= ' ' . sprintf( __( 'The %s earlier leads are in Insights > Leads.', 'om-catalog' ), self::n( $more ) );
+		}
+		$this->section( __( 'Every lead', 'om-catalog' ), $desc, self::table_need( $rows ) );
+		$this->table( $cols, $rows, array( 'empty' => __( 'No leads in this period.', 'om-catalog' ) ) );
 	}
 
 	private function sources() {
 		$d     = $this->d;
 		$total = $d['now']['visits'];
+		$first = $d['attr']['by'];
 		$max   = 0;
 		$rows  = array();
 		foreach ( $d['channels'] as $r ) {
 			$max = max( $max, (int) $r['visits'] );
 		}
 		foreach ( $d['channels'] as $r ) {
+			$v      = (int) $r['visits'];
+			$few    = $v < 30;
 			$rows[] = array(
 				array(
 					't'   => OM_Insights_Report::channel_name( $r['k'] ),
-					'bar' => $max ? $r['visits'] / $max : 0,
+					'bar' => $max ? $v / $max : 0,
 				),
-				self::n( $r['visits'] ),
-				self::pct( $r['visits'], $total, 0 ),
-				self::n( $r['visitors'] ),
-				self::n( $r['pages'], 1 ),
-				self::dur( $r['engaged'] ),
+				self::n( $v ),
+				self::pct( $v, $total, 0 ),
+				self::pct( $v - (int) $r['quick'], $v, 0 ),
 				self::n( $r['converted'] ),
-				self::pct( (int) $r['converted'], (int) $r['visits'] ),
+				array(
+					't' => self::pct( (int) $r['converted'], $v ) . ( $few ? '*' : '' ),
+					'c' => $few ? $this->c['muted'] : null,
+				),
+				self::n( (int) ( $first[ $r['k'] ]['first'] ?? 0 ) ),
 			);
 		}
-		$this->section( __( 'Where visitors came from', 'om-catalog' ), __( 'How each visit arrived, and which sources brought leads. Pages and time are per visit. Paid ads: visits with an ad click or a paid campaign tag. Maps: links tagged on your Business Profile.', 'om-catalog' ), self::table_need( $rows ) );
+		$this->section( __( 'Where visitors came from', 'om-catalog' ), __( 'How each visit arrived and which sources bring leads. Engaged: visits that did more than glance. With a lead: visits that ended in one. Leads began here: leads whose first visit came this way. * Fewer than 30 visits, so the rate can swing a lot.', 'om-catalog' ), self::table_need( $rows ) );
 		$this->table(
 			array(
-				array( __( 'Source', 'om-catalog' ), 154 ),
-				array( __( 'Visits', 'om-catalog' ), 48, 'R' ),
+				array( __( 'Source', 'om-catalog' ), 168 ),
+				array( __( 'Visits', 'om-catalog' ), 46, 'R' ),
 				array( __( 'Share', 'om-catalog' ), 42, 'R' ),
-				array( __( 'Visitors', 'om-catalog' ), 52, 'R' ),
-				array( __( 'Pages', 'om-catalog' ), 44, 'R' ),
-				array( __( 'Time', 'om-catalog' ), 54, 'R' ),
-				array( __( 'Leads', 'om-catalog' ), 46, 'R' ),
-				array( __( 'Lead rate', 'om-catalog' ), 64, 'R' ),
+				array( __( 'Engaged', 'om-catalog' ), 52, 'R' ),
+				array( __( 'With a lead', 'om-catalog' ), 58, 'R' ),
+				array( __( 'Lead rate', 'om-catalog' ), 58, 'R' ),
+				array( __( 'Leads began here', 'om-catalog' ), 80, 'R' ),
 			),
 			$rows
 		);
 
 		$refs = self::ranked_rows(
-			$d['refs'],
+			$d['webs'],
 			static function ( $r ) {
 				return (string) $r['k'];
 			},
@@ -1399,7 +1961,7 @@ class OM_Insights_Pdf {
 		$this->columns(
 			array(
 				$this->part( __( 'Websites that sent visitors', 'om-catalog' ), array( array( __( 'Website', 'om-catalog' ), 0 ), array( __( 'Visits', 'om-catalog' ), 48, 'R' ), array( __( 'Share', 'om-catalog' ), 44, 'R' ) ), $refs, __( 'Every visit came direct or from search so far.', 'om-catalog' ) ),
-				$this->part( __( 'Campaigns', 'om-catalog' ), array( array( __( 'Campaign', 'om-catalog' ), 0 ), array( __( 'Visits', 'om-catalog' ), 46, 'R' ), array( __( 'Leads', 'om-catalog' ), 46, 'R' ) ), $camps, __( 'No tagged links (utm_campaign) were used.', 'om-catalog' ) ),
+				$this->part( __( 'Campaigns', 'om-catalog' ), array( array( __( 'Campaign', 'om-catalog' ), 0 ), array( __( 'Visits', 'om-catalog' ), 46, 'R' ), array( __( 'With a lead', 'om-catalog' ), 56, 'R' ) ), $camps, __( 'No tagged links (utm_campaign) were used.', 'om-catalog' ) ),
 			)
 		);
 
@@ -1425,8 +1987,8 @@ class OM_Insights_Pdf {
 				array( __( 'Visits', 'om-catalog' ), 50, 'R' ),
 				array( __( 'Quick exits', 'om-catalog' ), 66, 'R' ),
 				array( __( 'Pages', 'om-catalog' ), 46, 'R' ),
-				array( __( 'Leads', 'om-catalog' ), 50, 'R' ),
-				array( __( 'Lead rate', 'om-catalog' ), 72, 'R' ),
+				array( __( 'With a lead', 'om-catalog' ), 58, 'R' ),
+				array( __( 'Lead rate', 'om-catalog' ), 64, 'R' ),
 			),
 			$rows
 		);
@@ -1435,63 +1997,97 @@ class OM_Insights_Pdf {
 	private function audience() {
 		$d     = $this->d;
 		$now   = $d['now'];
-		$bef   = $d['before'];
 		$total = $now['visits'];
-		$p     = $this->pdf;
-		$c     = $this->c;
+		$aud   = $d['audience'];
+		$this->section( __( 'Who visited', 'om-catalog' ), __( 'First-time and returning visitors and how each did, how often people came, their devices, where they are and the languages their browsers are set to.', 'om-catalog' ), 150 );
+
+		$cell = static function ( $kind, $what ) use ( $aud, $total ) {
+			$r = $aud['kinds'][ $kind ] ?? null;
+			if ( ! $r || ! (int) $r['visits'] ) {
+				return '–';
+			}
+			$v = (int) $r['visits'];
+			switch ( $what ) {
+				case 'visits':
+					return self::n( $v );
+				case 'share':
+					return self::pct( $v, $total, 0 );
+				case 'conv':
+					return self::pct( (int) $r['converted'], $v );
+				case 'engaged':
+					return self::pct( $v - (int) $r['quick'], $v, 0 );
+				case 'pages':
+					return self::n( $r['pages'], 1 );
+				default:
+					return self::dur( $r['engaged'] );
+			}
+		};
+		$compare = array();
+		foreach ( array( 'visits' => __( 'Visits', 'om-catalog' ), 'share' => __( 'Share of visits', 'om-catalog' ), 'conv' => __( 'Lead rate', 'om-catalog' ), 'engaged' => __( 'Engaged', 'om-catalog' ), 'pages' => __( 'Pages per visit', 'om-catalog' ), 'time' => __( 'Time per visit', 'om-catalog' ) ) as $what => $label ) {
+			$compare[] = array(
+				array(
+					't' => $label,
+					'b' => true,
+				),
+				$cell( 'new', $what ),
+				$cell( 'returning', $what ),
+			);
+		}
+		$all  = max( 1, array_sum( $aud['freq'] ) );
+		$most = max( 1, max( $aud['freq'] ) );
+		$freq = array();
+		foreach ( array( '1' => __( 'Once', 'om-catalog' ), '2' => __( 'Twice', 'om-catalog' ), '3' => __( '3 or 4 times', 'om-catalog' ), '5' => __( '5 times or more', 'om-catalog' ) ) as $key => $label ) {
+			$freq[] = array(
+				array(
+					't'   => $label,
+					'bar' => $aud['freq'][ $key ] / $most,
+				),
+				self::n( $aud['freq'][ $key ] ),
+				self::pct( $aud['freq'][ $key ], $all, 0 ),
+			);
+		}
+		$this->columns(
+			array(
+				$this->part( __( 'First visit and came back', 'om-catalog' ), array( array( '', 0 ), array( __( 'First visit', 'om-catalog' ), 62, 'R' ), array( __( 'Came back', 'om-catalog' ), 62, 'R' ) ), $compare ),
+				$this->part( __( 'How often people came', 'om-catalog' ), array( array( __( 'Came', 'om-catalog' ), 0 ), array( __( 'Visitors', 'om-catalog' ), 52, 'R' ), array( __( 'Share', 'om-catalog' ), 40, 'R' ) ), $freq ),
+			)
+		);
+
+		$devices = array();
+		foreach ( $d['devices'] as $r ) {
+			$v         = (int) $r['visits'];
+			$devices[] = array( OM_Insights_Report::device_one( $r['k'] ), self::n( $v ), self::pct( $v, $total, 0 ), self::pct( $v - (int) $r['quick'], $v, 0 ), self::pct( (int) $r['converted'], $v ) );
+		}
+		$this->sub( __( 'Devices', 'om-catalog' ), '', self::table_need( $devices ) );
+		$this->table(
+			array(
+				array( __( 'Device', 'om-catalog' ), 200 ),
+				array( __( 'Visits', 'om-catalog' ), 70, 'R' ),
+				array( __( 'Share', 'om-catalog' ), 70, 'R' ),
+				array( __( 'Engaged', 'om-catalog' ), 82, 'R' ),
+				array( __( 'Lead rate', 'om-catalog' ), 82, 'R' ),
+			),
+			$devices
+		);
+
 		$name  = array( array( __( 'Name', 'om-catalog' ), 0 ), array( __( 'Visits', 'om-catalog' ), 42, 'R' ), array( __( 'Share', 'om-catalog' ), 36, 'R' ) );
 		$plain = static function ( $r ) {
 			return '' !== (string) $r['k'] ? (string) $r['k'] : __( 'Unknown', 'om-catalog' );
 		};
-		$lists = array(
-			$this->part(
-				__( 'Devices', 'om-catalog' ),
-				$name,
-				self::ranked_rows(
-					$d['devices'],
-					static function ( $r ) {
-						return OM_Insights_Report::device_one( $r['k'] );
-					},
-					$total
-				)
-			),
-			$this->part( __( 'Browsers', 'om-catalog' ), $name, self::ranked_rows( $d['browsers'], $plain, $total ) ),
-			$this->part( __( 'Systems', 'om-catalog' ), $name, self::ranked_rows( $d['os'], $plain, $total ) ),
+		$langs = self::ranked_rows(
+			array_slice( $aud['langs'], 0, 8 ),
+			static function ( $r ) {
+				return OM_Insights_Report::language( $r['k'] );
+			},
+			$total
 		);
-		$this->section( __( 'Who visited', 'om-catalog' ), __( 'New and returning visitors, their devices and where they are.', 'om-catalog' ), 74 );
-
-		$new = (int) $now['new'];
-		$ret = max( 0, $total - $new );
-		$bw  = ( $this->cw() - 10 ) / 2;
-		foreach ( array( array( __( 'First visit', 'om-catalog' ), $new, (int) $bef['new'] ), array( __( 'Came back', 'om-catalog' ), $ret, max( 0, (int) $bef['visits'] - (int) $bef['new'] ) ) ) as $i => $box ) {
-			$x = self::X + $i * ( $bw + 10 );
-			$p->fill( $c['ivory'] );
-			$p->rrect( $x, $this->y, $bw, 56, 7 );
-			$p->font( 'sans6', 6.6 );
-			$p->ink( $c['sub'] );
-			$p->put( $x + 12, $this->y + 17, self::upper( $box[0] ), 'L', 0.5 );
-			$p->font( 'serif', 20 );
-			$p->ink( $c['ink'] );
-			$val = self::n( $box[1] );
-			$p->put( $x + 12, $this->y + 42, $val );
-			$vw = $p->width( $val );
-			$p->font( 'sans6', 8 );
-			$p->ink( $c['sub'] );
-			/* translators: %s: share of visits. */
-			$p->put( $x + 12 + $vw + 8, $this->y + 41, sprintf( __( '%s of visits', 'om-catalog' ), self::pct( $box[1], $total, 0 ) ) );
-			// The change and the number before, at the right.
-			$p->font( 'sans', 6.8 );
-			/* translators: %s: the number in the period before. */
-			$from  = sprintf( __( 'from %s', 'om-catalog' ), self::n( $box[2] ) );
-			$right = $x + $bw - 12 - $p->width( $from );
-			$chg   = self::change( $box[1], $box[2] );
-			$this->delta( $right - 5 - $this->delta_width( $chg ), $this->y + 41, $chg );
-			$p->font( 'sans', 6.8 );
-			$p->ink( $c['sub'] );
-			$p->put( $right, $this->y + 41, $from );
-		}
-		$this->y += 56 + 18;
-		$this->columns( $lists );
+		$this->columns(
+			array(
+				$this->part( __( 'Browsers', 'om-catalog' ), $name, self::ranked_rows( $d['browsers'], $plain, $total ) ),
+				$this->part( __( 'Systems', 'om-catalog' ), $name, self::ranked_rows( $d['os'], $plain, $total ) ),
+				$this->part( __( 'Languages', 'om-catalog' ), $name, $langs, __( 'None recorded yet.', 'om-catalog' ) ),
+			)
+		);
 
 		$loc = $d['loc'];
 		if ( isset( $loc['tz'] ) ) {
@@ -1595,7 +2191,45 @@ class OM_Insights_Pdf {
 				$r['entries'] ? self::pct( $r['quick'], $r['entries'], 0 ) : '–',
 			);
 		}
-		$this->section( __( 'Pages', 'om-catalog' ), __( 'The 20 most viewed pages. Time: how long the page was on screen and in use. Scrolled: how far down people got on average. Entries and exits: visits that started or ended there. Quick: entries that left within 10 seconds.', 'om-catalog' ), self::table_need( $rows ) );
+		$this->section( __( 'Pages and speed', 'om-catalog' ), __( 'How fast pages showed in visitors\' own browsers, the slowest pages, addresses that showed "page not found", and the 20 most viewed pages.', 'om-catalog' ), 150 );
+		$this->speed();
+
+		$slow = array();
+		foreach ( $this->d['speed']['slow'] as $r ) {
+			$slow[] = array(
+				array(
+					't' => OM_Insights_Report::title( $r['title'], $r['page'] ),
+					's' => (string) $r['page'],
+				),
+				OM_Insights_Report::vital_text( 'lcp', $r['p75'] ),
+			);
+		}
+		$missing = array();
+		foreach ( array_slice( $this->d['missing'], 0, 8 ) as $r ) {
+			$from = array();
+			foreach ( array_slice( $r['from'], 0, 2, true ) as $where => $n ) {
+				$from[] = $where . ' (' . self::n( $n ) . ')';
+			}
+			$missing[] = array(
+				array(
+					't' => (string) $r['page'],
+					's' => implode( ', ', $from ),
+				),
+				self::n( $r['n'] ),
+			);
+		}
+		$this->columns(
+			array(
+				$this->part( __( 'Slowest pages', 'om-catalog' ), array( array( __( 'Page', 'om-catalog' ), 0 ), array( __( 'Showed within', 'om-catalog' ), 70, 'R' ) ), $slow, __( 'Not enough measured views yet (10 per page).', 'om-catalog' ) ),
+				$this->part( __( 'Missing pages', 'om-catalog' ), array( array( __( 'Address and where from', 'om-catalog' ), 0 ), array( __( 'Times', 'om-catalog' ), 44, 'R' ) ), $missing, __( 'Nobody reached a missing page.', 'om-catalog' ) ),
+			)
+		);
+		if ( $missing ) {
+			$this->para( __( 'Missing pages: a redirect to the right page fixes each one (the free Redirection plugin does it). "Typed or bookmarked": an old bookmark or a mistyped address.', 'om-catalog' ), 7.6, $this->c['sub'], 11 );
+			$this->y += 10;
+		}
+
+		$this->sub( __( 'The 20 most viewed pages', 'om-catalog' ), __( 'Time: how long the page was on screen and in use. Scrolled: how far down people got on average. Entries and exits: visits that started or ended there. Quick: entries that left within 10 seconds.', 'om-catalog' ), self::table_need( $rows ) );
 		$this->table(
 			array(
 				array( __( 'Page', 'om-catalog' ), 182 ),
@@ -1632,6 +2266,7 @@ class OM_Insights_Pdf {
 					't' => $design['title'],
 					's' => self::design_line( $design ),
 				),
+				(float) $r['price'] > 0 ? OM_Insights_Report::money( $r['price'] ) : '–',
 				self::n( $r['views'] ),
 				self::n( $r['viewers'] ),
 				self::dur( $r['dur'] ),
@@ -1643,19 +2278,20 @@ class OM_Insights_Pdf {
 				self::pct( (int) $r['leads'], (int) $r['viewers'] ),
 			);
 		}
-		$this->section( __( 'Designs', 'om-catalog' ), __( 'The designs looked at most. Views: product pages and quick views. People: different visitors. Comp.: put in the compare table. Leads: inquiries and requests about the design. Hints: "Drop a hint" emails sent with it. Rate: leads for every 100 people.', 'om-catalog' ), self::table_need( $rows ) );
+		$this->section( __( 'Designs', 'om-catalog' ), __( 'The designs looked at most, at their listed price. Views: product pages and quick views. People: different visitors. Comp.: put in the compare table. Leads: inquiries and requests about the design. Hints: "Drop a hint" emails sent with it. Rate: leads for every 100 people.', 'om-catalog' ), self::table_need( $rows ) );
 		$this->table(
 			array(
-				array( __( 'Design', 'om-catalog' ), 150 ),
-				array( __( 'Views', 'om-catalog' ), 40, 'R' ),
-				array( __( 'People', 'om-catalog' ), 42, 'R' ),
-				array( __( 'Time', 'om-catalog' ), 46, 'R' ),
-				array( __( 'Saved', 'om-catalog' ), 38, 'R' ),
-				array( __( 'Comp.', 'om-catalog' ), 38, 'R' ),
-				array( __( 'Shared', 'om-catalog' ), 40, 'R' ),
-				array( __( 'Hints', 'om-catalog' ), 34, 'R' ),
-				array( __( 'Leads', 'om-catalog' ), 36, 'R' ),
-				array( __( 'Rate', 'om-catalog' ), 40, 'R' ),
+				array( __( 'Design', 'om-catalog' ), 136 ),
+				array( __( 'Price', 'om-catalog' ), 48, 'R' ),
+				array( __( 'Views', 'om-catalog' ), 36, 'R' ),
+				array( __( 'People', 'om-catalog' ), 38, 'R' ),
+				array( __( 'Time', 'om-catalog' ), 40, 'R' ),
+				array( __( 'Saved', 'om-catalog' ), 34, 'R' ),
+				array( __( 'Comp.', 'om-catalog' ), 34, 'R' ),
+				array( __( 'Shared', 'om-catalog' ), 36, 'R' ),
+				array( __( 'Hints', 'om-catalog' ), 30, 'R' ),
+				array( __( 'Leads', 'om-catalog' ), 34, 'R' ),
+				array( __( 'Rate', 'om-catalog' ), 38, 'R' ),
 			),
 			$rows,
 			array( 'empty' => __( 'No designs were looked at in this period.', 'om-catalog' ) )
@@ -1663,6 +2299,67 @@ class OM_Insights_Pdf {
 		if ( ! $list ) {
 			return;
 		}
+
+		// Interest by price.
+		$views = max( 1, array_sum( wp_list_pluck( $d['bands'], 'views' ) ) );
+		$leads = max( 1, array_sum( wp_list_pluck( $d['bands'], 'leads' ) ) );
+		$rows  = array();
+		foreach ( $d['bands'] as $i => $band ) {
+			if ( ! $band['views'] && ! $band['leads'] ) {
+				continue;
+			}
+			$rows[] = array(
+				array(
+					't' => OM_Insights_Report::band_name( $i ),
+					'b' => true,
+				),
+				self::n( $band['designs'] ),
+				array(
+					't'   => self::pct( $band['views'], $views, 0 ),
+					'bar' => $band['views'] / $views,
+				),
+				self::n( $band['saves'] ),
+				array(
+					't'   => self::pct( $band['leads'], $leads, 0 ),
+					'bar' => $band['leads'] / $leads,
+				),
+			);
+		}
+		if ( $rows ) {
+			$this->sub( __( 'Interest by price', 'om-catalog' ), __( 'Where people look and where they get in touch. A price range with a bigger share of the leads than of the views converts well.', 'om-catalog' ), self::table_need( $rows ) );
+			$this->table(
+				array(
+					array( __( 'Listed price', 'om-catalog' ), 140 ),
+					array( __( 'Designs seen', 'om-catalog' ), 70, 'R' ),
+					array( __( 'Share of views', 'om-catalog' ), 112, 'R' ),
+					array( __( 'Saved', 'om-catalog' ), 70, 'R' ),
+					array( __( 'Share of leads', 'om-catalog' ), 112, 'R' ),
+				),
+				$rows
+			);
+		}
+
+		$move = static function ( $list, $up ) {
+			$rows = array();
+			foreach ( $list as $r ) {
+				$design = OM_Insights_Report::design( $r['item'], $r['title'] );
+				$rows[] = array(
+					array(
+						't' => $design['title'],
+						/* translators: 1: views now, 2: views before. */
+						's' => sprintf( __( '%1$s views, from %2$s', 'om-catalog' ), self::n( $r['now'] ), self::n( $r['before'] ) ),
+					),
+					( $up ? '+' : '−' ) . self::n( abs( (int) $r['diff'] ) ),
+				);
+			}
+			return $rows;
+		};
+		$this->columns(
+			array(
+				$this->part( __( 'Rising', 'om-catalog' ), array( array( __( 'Design', 'om-catalog' ), 0 ), array( __( 'Views', 'om-catalog' ), 50, 'R' ) ), $move( $d['movers'][0], true ), __( 'No design gained many views.', 'om-catalog' ) ),
+				$this->part( __( 'Cooling', 'om-catalog' ), array( array( __( 'Design', 'om-catalog' ), 0 ), array( __( 'Views', 'om-catalog' ), 50, 'R' ) ), $move( $d['movers'][1], false ), __( 'No design lost many views.', 'om-catalog' ) ),
+			)
+		);
 
 		$quiet = array();
 		foreach ( $list as $r ) {
@@ -1678,11 +2375,22 @@ class OM_Insights_Pdf {
 				);
 			}
 		}
+		$pairs = array();
+		foreach ( $d['together'] as $r ) {
+			$pairs[] = array( OM_Insights_Report::design( $r['a'] )['title'] . ' + ' . OM_Insights_Report::design( $r['b'] )['title'], self::n( $r['visits'] ) );
+		}
+		$this->columns(
+			array(
+				$this->part( __( 'Viewed in the same visit', 'om-catalog' ), array( array( __( 'Designs', 'om-catalog' ), 0 ), array( __( 'Visits', 'om-catalog' ), 46, 'R' ) ), $pairs, __( 'No two designs looked at together yet.', 'om-catalog' ) ),
+				$this->part( __( 'Looked at often, never asked about', 'om-catalog' ), array( array( __( 'Design', 'om-catalog' ), 0 ), array( __( 'People', 'om-catalog' ), 46, 'R' ), array( __( 'Saved', 'om-catalog' ), 46, 'R' ) ), $quiet, __( 'Every popular design had a lead.', 'om-catalog' ) ),
+			)
+		);
+
 		$this->columns(
 			array(
 				$this->part( __( 'Product lines', 'om-catalog' ), array( array( __( 'Line', 'om-catalog' ), 0 ), array( __( 'Views', 'om-catalog' ), 46, 'R' ), array( __( 'Visits', 'om-catalog' ), 46, 'R' ) ), self::line_rows( $d['lines'] ) ),
-				$this->part( __( 'Looked at often, never asked about', 'om-catalog' ), array( array( __( 'Design', 'om-catalog' ), 0 ), array( __( 'People', 'om-catalog' ), 46, 'R' ), array( __( 'Saved', 'om-catalog' ), 46, 'R' ) ), $quiet, __( 'Every popular design had a lead.', 'om-catalog' ) ),
-			)
+			),
+			2
 		);
 
 		$titles = array(
@@ -1941,16 +2649,18 @@ class OM_Insights_Pdf {
 
 	private function funnels() {
 		$f    = $this->d['funnels'];
+		$b    = $this->d['funnels_b'] ?? array();
 		$list = array(
-			array( __( 'From visit to lead', 'om-catalog' ), $f['shop'] ),
-			array( __( 'Booking window', 'om-catalog' ), $f['booking'] ),
-			array( __( 'Ring builder', 'om-catalog' ), $f['builder'] ),
-			array( __( 'Ring style quiz', 'om-catalog' ), $f['quiz'] ),
-			array( __( 'Drop a hint (counted in hints)', 'om-catalog' ), $f['hint'] ),
+			array( __( 'From visit to lead', 'om-catalog' ), 'shop' ),
+			array( __( 'Booking window', 'om-catalog' ), 'booking' ),
+			array( __( 'Ring builder', 'om-catalog' ), 'builder' ),
+			array( __( 'Ring style quiz', 'om-catalog' ), 'quiz' ),
+			array( __( 'Drop a hint (counted in hints)', 'om-catalog' ), 'hint' ),
 		);
-		$this->section( __( 'Step by step', 'om-catalog' ), __( 'How far people get. Each bar is the visits that reached that step, as a share of the first step; the small line says how many carried on from the step before.', 'om-catalog' ), self::funnel_h( $f['shop'] ) );
+		/* translators: %s: "Period before" or "Last year". */
+		$this->section( __( 'Step by step', 'om-catalog' ), sprintf( __( 'How far people get. Each bar is the visits that reached that step, as a share of the first step; the small line says how many carried on from the step before. Grey numbers: %s. The Leads part counts every form sent; here a visit counts once.', 'om-catalog' ), $this->r->compare_name() ), self::funnel_h( $f['shop'] ) );
 		foreach ( $list as $one ) {
-			$this->funnel( $one[0], $one[1] );
+			$this->funnel( $one[0], $f[ $one[1] ], $b[ $one[1] ] ?? array() );
 		}
 	}
 
@@ -1959,18 +2669,25 @@ class OM_Insights_Pdf {
 		return (int) ( $steps[0][1] ?? 0 ) ? 8 + 20 * count( $steps ) + 8 * max( 0, count( $steps ) - 1 ) : 22;
 	}
 
-	private function funnel( $title, $steps ) {
+	private function funnel( $title, $steps, $before = array() ) {
 		$p     = $this->pdf;
 		$c     = $this->c;
 		$first = max( 1, (int) ( $steps[0][1] ?? 0 ) );
+		$base  = max( 1, (int) ( $before[0][1] ?? 0 ) );
 		$this->sub( $title, '', self::funnel_h( $steps ) );
 		if ( ! (int) ( $steps[0][1] ?? 0 ) ) {
 			$this->none();
 			return;
 		}
 		$nw   = 170;
-		$bw   = $this->cw() - $nw - 100;
+		$bw   = $this->cw() - $nw - 130;
 		$prev = 0;
+		if ( $before ) {
+			$p->font( 'sans6', 6 );
+			$p->ink( $c['sub'] );
+			$p->put( self::W - self::X - 88, $this->y - 6, self::upper( $this->r->compare_name( true ) ), 'R', 0.4 );
+			$p->put( self::W - self::X - 40, $this->y - 6, self::upper( __( 'Now', 'om-catalog' ) ), 'R', 0.4 );
+		}
 		foreach ( $steps as $i => $s ) {
 			$n = (int) $s[1];
 			$p->font( 'sans', 8.6 );
@@ -1980,9 +2697,17 @@ class OM_Insights_Pdf {
 			$p->rrect( self::X + $nw, $this->y + 4, $bw, 11, 3 );
 			$p->fill( $i ? $c['gold'] : $c['gold_deep'] );
 			$p->rrect( self::X + $nw, $this->y + 4, max( 3, $bw * min( 1, $n / $first ) ), 11, 3 );
+			if ( isset( $before[ $i ][1] ) ) {
+				$mx = self::X + $nw + $bw * min( 1, (int) $before[ $i ][1] / $base );
+				$p->fill( $c['ink'] );
+				$p->Rect( $mx - 0.6, $this->y + 2, 1.2, 15, 'F' );
+				$p->font( 'sans', 7.2 );
+				$p->ink( $c['muted'] );
+				$p->put( self::W - self::X - 88, $this->y + 12.5, self::n( $before[ $i ][1] ), 'R' );
+			}
 			$p->font( 'sans6', 8.6 );
 			$p->ink( $c['ink'] );
-			$p->put( self::W - self::X - 52, $this->y + 12.5, self::n( $n ), 'R' );
+			$p->put( self::W - self::X - 40, $this->y + 12.5, self::n( $n ), 'R' );
 			$p->font( 'sans', 7.4 );
 			$p->ink( $c['sub'] );
 			$p->put( self::W - self::X, $this->y + 12.5, $i ? self::pct( $n, $first, 0 ) : '100%', 'R' );
@@ -2000,23 +2725,40 @@ class OM_Insights_Pdf {
 	}
 
 	private function leads_part() {
-		$d   = $this->d;
-		$now = $d['now'];
-		$bef = $d['before'];
-		$this->section( __( 'Leads', 'om-catalog' ), __( 'Everyone who got in touch through the site: visit requests, inquiries, hints, emailed designs and lists, quiz matches and sign-ups.', 'om-catalog' ), 80 + 22 + 17 + 4 * 19 );
+		$d     = $this->d;
+		$now   = $d['now'];
+		$bef   = $d['before'];
+		$names = OM_Insights_Report::lead_groups();
+		$this->section( __( 'Leads', 'om-catalog' ), __( 'Everyone who got in touch through the site, by how close they are to a sale: visit requests, then inquiries and hints, designs emailed, and newsletter sign-ups. Value asked about: the listed prices of the designs they named.', 'om-catalog' ), 2 * 62 + 10 + 30 );
 		$tiles = array(
-			array( __( 'Leads', 'om-catalog' ), 'leads' ),
-			array( __( 'Lead rate', 'om-catalog' ), 'conv' ),
-			array( __( 'Calls tapped', 'om-catalog' ), 'calls' ),
-			array( __( 'Directions opened', 'om-catalog' ), 'directions' ),
+			array( __( 'Leads', 'om-catalog' ), $now['leads'], $bef['leads'], 'leads' ),
+			array( $names['visit'][0], $now['groups']['visit'], $bef['groups']['visit'], 'leads' ),
+			array( $names['ask'][0], $now['groups']['ask'], $bef['groups']['ask'], 'leads' ),
+			array( $names['emails'][0], $now['groups']['emails'], $bef['groups']['emails'], 'leads' ),
+			array( __( 'Lead rate', 'om-catalog' ), $now['conv'], $bef['conv'], 'conv' ),
+			array( __( 'Value asked about', 'om-catalog' ), $now['value'], $bef['value'], 'value' ),
 		);
-		$tw    = ( $this->cw() - 30 ) / 4;
+		$tw = ( $this->cw() - 2 * 10 ) / 3;
 		foreach ( $tiles as $i => $t ) {
-			$key = $t[1];
-			$fmt = 'conv' === $key ? 'conv' : 'leads';
-			$this->tile( self::X + $i * ( $tw + 10 ), $this->y, $tw, 62, $t[0], self::metric( $fmt, $now[ $key ] ), self::change( $now[ $key ], $bef[ $key ] ), self::metric( $fmt, $bef[ $key ] ), 19 );
+			$x  = self::X + ( $i % 3 ) * ( $tw + 10 );
+			$ty = $this->y + (int) floor( $i / 3 ) * 72;
+			$this->tile( $x, $ty, $tw, 62, $t[0], self::metric( $t[3], $t[1] ), self::change( $t[1], $t[2] ), self::metric( $t[3], $t[2] ), 19 );
 		}
-		$this->y += 62 + 18;
+		$this->y += 2 * 72 + 8;
+		$gh = $this->goals( $this->y );
+		$this->y += $gh ? $gh + 12 : 0;
+
+		$bars = $d['bars'];
+		/* translators: %s: day, week or month. */
+		$note = sprintf( __( 'Leads each %s, split by kind, visit requests at the bottom.', 'om-catalog' ), self::unit_word( $bars['unit'] ) );
+		if ( ! empty( $bars['partial'] ) ) {
+			/* translators: %s: day, week or month. */
+			$note .= ' ' . sprintf( __( 'The last column is this %s so far.', 'om-catalog' ), self::unit_word( $bars['unit'] ) );
+		}
+		$this->sub( __( 'Leads over time', 'om-catalog' ), $note, 176 );
+		$this->y += $this->group_key( $now['groups'], self::X, $this->y + 6 );
+		$this->stacked_columns( $bars, self::X, $this->y + 2, $this->cw(), 150 );
+		$this->y += 166;
 
 		$total = (int) $now['leads'];
 		$kinds = array();
@@ -2025,76 +2767,75 @@ class OM_Insights_Pdf {
 			$max = max( $max, (int) $r['n'] );
 		}
 		foreach ( $d['lead_kinds'] as $r ) {
+			$group   = $names[ OM_Insights_Report::lead_group( $r['k'] ) ];
 			$kinds[] = array(
 				array(
 					't'   => OM_Insights::lead_types()[ $r['k'] ] ?? (string) $r['k'],
+					's'   => count( $group[1] ) > 1 ? $group[0] : '',
 					'bar' => $max ? $r['n'] / $max : 0,
 				),
 				self::n( $r['n'] ),
 				self::pct( $r['n'], $total, 0 ),
 			);
 		}
-		$srcs = array();
-		$by   = array_filter(
-			$d['channels'],
-			static function ( $r ) {
-				return (int) $r['converted'] > 0;
-			}
-		);
-		usort(
-			$by,
-			static function ( $a, $b ) {
-				return (int) $b['converted'] <=> (int) $a['converted'];
-			}
-		);
-		foreach ( $by as $r ) {
-			$srcs[] = array( OM_Insights_Report::channel_name( $r['k'] ), self::n( $r['converted'] ), self::pct( (int) $r['converted'], (int) $r['visits'] ) );
+		$began = array();
+		foreach ( $d['attr']['by'] as $channel => $row ) {
+			$began[] = array( self::source_short( $channel ), self::n( $row['first'] ), self::n( $row['last'] ), self::n( $row['helped'] ) );
 		}
 		$this->columns(
 			array(
-				$this->part( __( 'Kinds of lead', 'om-catalog' ), array( array( __( 'Kind', 'om-catalog' ), 0 ), array( __( 'Leads', 'om-catalog' ), 42, 'R' ), array( __( 'Share', 'om-catalog' ), 42, 'R' ) ), $kinds ),
-				$this->part( __( 'Leads by source', 'om-catalog' ), array( array( __( 'Source', 'om-catalog' ), 0 ), array( __( 'Leads', 'om-catalog' ), 46, 'R' ), array( __( 'Lead rate', 'om-catalog' ), 58, 'R' ) ), $srcs ),
+				$this->part( __( 'Kinds of lead', 'om-catalog' ), array( array( __( 'Kind', 'om-catalog' ), 0 ), array( __( 'Leads', 'om-catalog' ), 40, 'R' ), array( __( 'Share', 'om-catalog' ), 40, 'R' ) ), $kinds ),
+				$this->part( __( 'Where leads began', 'om-catalog' ), array( array( __( 'Source', 'om-catalog' ), 0 ), array( __( 'First visit', 'om-catalog' ), 44, 'R' ), array( __( 'Got in touch', 'om-catalog' ), 48, 'R' ), array( __( 'Helped', 'om-catalog' ), 40, 'R' ) ), $began ),
 			)
 		);
+		$this->para( __( 'First visit: how each lead first found you. Got in touch: where the visit they got in touch on came from. Helped: other visits on the way. Recognised only in the same browser.', 'om-catalog' ), 7.6, $this->c['sub'], 11 );
+		$this->y += 10;
 
-		$rows = array();
-		foreach ( $d['leads'] as $r ) {
-			$kind  = OM_Insights::lead_types()[ $r['kind'] ] ?? (string) $r['kind'];
-			$about = '' !== (string) $r['item'] ? OM_Insights_Report::design( $r['item'] )['title'] : '';
-			$about = trim( $about . ( '' !== (string) $r['meta'] && $r['meta'] !== $about ? ( '' !== $about ? ' · ' : '' ) . $r['meta'] : '' ) );
-			$days  = $r['first'] ? max( 0, (int) floor( ( (int) $r['ts'] - (int) $r['first'] ) / DAY_IN_SECONDS ) ) : null;
-			$known = (int) $r['visits'] > 0;
-			$row   = array( wp_date( 'M j, g:i a', (int) $r['ts'] ) );
-			if ( $this->names ) {
-				$row[] = '' !== (string) $r['sid'] ? OM_Insights_Report::visitor_label( (string) $r['vid'], (string) $r['lead_name'] ) : __( 'Not linked to a visit', 'om-catalog' );
-			}
-			$row[]  = array(
-				't' => $kind,
-				's' => $about,
-			);
-			$row[]  = '' !== (string) $r['sid'] ? self::source_short( (string) $r['channel'] ) : '–';
-			$row[]  = $known ? self::n( $r['visits'] ) : '–';
-			$row[]  = ! $known || null === $days ? '–' : ( 0 === $days ? __( 'Same day', 'om-catalog' ) : sprintf( /* translators: %s: days. */ _n( '%s day', '%s days', $days, 'om-catalog' ), self::n( $days ) ) );
-			$rows[] = $row;
-		}
-		$cols = array( array( __( 'When', 'om-catalog' ), 76 ) );
-		if ( $this->names ) {
-			$cols[] = array( __( 'Who', 'om-catalog' ), 92 );
-		}
-		$cols[] = array( __( 'What', 'om-catalog' ), $this->names ? 132 : 212 );
-		$cols[] = array( __( 'Came from', 'om-catalog' ), $this->names ? 112 : 124 );
-		$cols[] = array( __( 'Visits', 'om-catalog' ), 38, 'R' );
-		$cols[] = array( __( 'Took', 'om-catalog' ), 54, 'R' );
-		$more   = max( 0, $total - count( $rows ) );
-		$this->sub(
-			__( 'Every lead, newest first', 'om-catalog' ),
-			$more
-				/* translators: %s: number of further leads. */
-				? sprintf( __( 'Visits: how many times they came before getting in touch. Took: days from their first visit. The %s earlier leads are in Insights > Leads.', 'om-catalog' ), self::n( $more ) )
-				: __( 'Visits: how many times they came before getting in touch. Took: days from their first visit.', 'om-catalog' ),
-			self::table_need( $rows )
+		$a     = $d['attr'];
+		$tot   = max( 1, (int) $a['total'] );
+		$took  = array();
+		$words = array(
+			'visit' => __( 'On their first visit', 'om-catalog' ),
+			'day'   => __( 'Came back the same day', 'om-catalog' ),
+			'week'  => __( 'Within a week', 'om-catalog' ),
+			'month' => __( 'Within a month', 'om-catalog' ),
+			'more'  => __( 'After more than a month', 'om-catalog' ),
 		);
-		$this->table( $cols, $rows, array( 'empty' => __( 'No leads in this period.', 'om-catalog' ) ) );
+		$most  = max( 1, max( $a['days'] ) );
+		foreach ( $words as $key => $label ) {
+			$took[] = array(
+				array(
+					't'   => $label,
+					'bar' => $a['days'][ $key ] / $most,
+				),
+				self::n( $a['days'][ $key ] ),
+				self::pct( $a['days'][ $key ], $tot, 0 ),
+			);
+		}
+		$visits = array();
+		$most   = max( 1, max( $a['visits'] ) );
+		foreach ( array( '1' => __( '1 visit', 'om-catalog' ), '2' => __( '2 visits', 'om-catalog' ), '3' => __( '3 or 4 visits', 'om-catalog' ), '5' => __( '5 visits or more', 'om-catalog' ) ) as $key => $label ) {
+			$visits[] = array(
+				array(
+					't'   => $label,
+					'bar' => $a['visits'][ $key ] / $most,
+				),
+				self::n( $a['visits'][ $key ] ),
+				self::pct( $a['visits'][ $key ], $tot, 0 ),
+			);
+		}
+		$lead = array( array( '', 0 ), array( __( 'Leads', 'om-catalog' ), 40, 'R' ), array( __( 'Share', 'om-catalog' ), 40, 'R' ) );
+		$this->columns(
+			array(
+				$this->part( __( 'How long they took', 'om-catalog' ), $lead, $took ),
+				$this->part( __( 'Visits before getting in touch', 'om-catalog' ), $lead, $visits ),
+			)
+		);
+		if ( $a['back'] ) {
+			/* translators: 1: typical days, 2: typical visits. */
+			$this->para( sprintf( __( 'Leads who came back first took %1$s days and %2$s visits, typically.', 'om-catalog' ), self::n( max( 1, round( $a['dmed'] ) ) ), self::n( $a['vmed'] ) ), 7.6, $this->c['sub'], 11 );
+			$this->y += 6;
+		}
 	}
 
 	private function by_day() {
@@ -2146,14 +2887,18 @@ class OM_Insights_Pdf {
 		$c     = $this->c;
 		$p     = $this->pdf;
 		$items = array(
+			array( __( 'Leads', 'om-catalog' ), __( 'Visit requests, inquiries, "Drop a hint" emails, saved lists, ring designs and quiz matches emailed, and newsletter sign-ups sent from the site, in four groups by how close they are to a sale. Phone calls happen off the site, so taps on a number are counted separately (contact taps).', 'om-catalog' ) ),
+			array( __( 'Lead rate', 'om-catalog' ), __( 'The share of visits that ended in at least one lead.', 'om-catalog' ) ),
+			array( __( 'Value asked about', 'om-catalog' ), __( 'The listed prices of the designs named in leads (inquiries, visit requests, designs emailed). A guide to the interest, not a sale.', 'om-catalog' ) ),
+			array( __( 'First visit', 'om-catalog' ), __( 'Where a lead first found you: the source of the first visit this site knows from the same browser. Many people visit several times before getting in touch.', 'om-catalog' ) ),
 			array( __( 'Visitors', 'om-catalog' ), __( 'Different people: each browser counts once, even over several visits.', 'om-catalog' ) ),
 			array( __( 'Visits', 'om-catalog' ), __( 'A visit ends after 30 minutes without any activity.', 'om-catalog' ) ),
-			array( __( 'Time per visit', 'om-catalog' ), __( 'Time the site was on screen and in use, on average.', 'om-catalog' ) ),
+			array( __( 'Engaged visits', 'om-catalog' ), __( 'Visits that did more than glance: more than one page, more than 10 seconds, a design opened or a lead.', 'om-catalog' ) ),
+			array( __( 'Contact taps', 'om-catalog' ), __( 'Taps on the phone number, the email address or directions.', 'om-catalog' ) ),
 			array( __( 'Designs viewed', 'om-catalog' ), __( 'Product pages and quick views opened.', 'om-catalog' ) ),
 			array( __( 'Saved (hearts)', 'om-catalog' ), __( 'Designs added to a visitor\'s saved list.', 'om-catalog' ) ),
-			array( __( 'Leads', 'om-catalog' ), __( 'Visit requests, inquiries, "Drop a hint" emails, saved lists, ring designs and quiz matches emailed, and newsletter sign-ups sent from the site. Phone calls happen off the site, so taps on a number are counted separately.', 'om-catalog' ) ),
-			array( __( 'Lead rate', 'om-catalog' ), __( 'The share of visits that ended in at least one lead.', 'om-catalog' ) ),
-			array( __( 'Period before', 'om-catalog' ), __( 'The same number of days just before this period. Changes are shown against it.', 'om-catalog' ) ),
+			array( __( 'Page speed', 'om-catalog' ), __( 'Measured in visitors\' own browsers (Google\'s Core Web Vitals). Each number is the one 3 in 4 page views beat.', 'om-catalog' ) ),
+			array( __( 'Compared with', 'om-catalog' ), 'year' === $this->r->cmp ? __( 'The same dates last year. Changes are shown against them.', 'om-catalog' ) : __( 'The same number of days just before this period. Changes are shown against it.', 'om-catalog' ) ),
 			array( __( 'Where the numbers come from', 'om-catalog' ), __( 'The website records them itself, in its own database: nothing is shared with other companies. Logged-in staff and bots are left out, and so are browsers that ask not to be tracked when that setting is on.', 'om-catalog' ) ),
 		);
 		$lw   = 150;

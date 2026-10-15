@@ -757,6 +757,7 @@ class OM_Insights_Report {
 				$landing         = $this->by_visit( 'landing', 12 );
 				$e               = OM_Insights::events_table();
 				list( $es, $ea ) = $this->escope( $this->from, $this->to );
+				$leads           = $this->leads( 100 );
 				$charts          = array( $unit => $this->chart( $unit ) );
 				foreach ( array( $table, $bars ) as $u ) {
 					if ( ! isset( $charts[ $u ] ) ) {
@@ -791,8 +792,21 @@ class OM_Insights_Report {
 					'directions' => $this->clicks( 'directions', 10 ),
 					'outbound'   => $this->clicks( 'outbound', 10 ),
 					'funnels'    => $this->funnels(),
-					'leads'      => $this->leads( 100 ),
+					'funnels_b'  => $this->funnels( $pf, $pt ),
+					'leads'      => $leads,
+					'prices'     => self::prices( wp_list_pluck( $leads, 'item' ) ),
 					'lead_kinds' => self::rows( "SELECT label AS k, COUNT(*) AS n FROM {$e} WHERE type = 'lead' AND day BETWEEN %s AND %s{$es} GROUP BY label ORDER BY n DESC", array_merge( array( $this->from, $this->to ), $ea ) ),
+					// Insights 2.0: what stood out, where leads began, the audience, speed, missing pages, prices.
+					'findings'   => $this->findings( $this->findings_data(), 10 ),
+					'attr'       => $this->attribution(),
+					'audience'   => $this->audience(),
+					'webs'       => $this->websites( 10 ),
+					'bands'      => $this->bands(),
+					'movers'     => $this->movers( 6 ),
+					'together'   => $this->together( 8 ),
+					'speed'      => $this->speed(),
+					'missing'    => $this->not_found(),
+					'pace'       => self::pace(),
 				);
 			}
 		);
@@ -807,6 +821,9 @@ class OM_Insights_Report {
 		}
 		if ( $this->filters ) {
 			$q['f'] = $this->filters;
+		}
+		if ( 'year' === $this->cmp ) {
+			$q['cmp'] = 'year';
 		}
 		$q['names']    = $names ? 1 : 0;
 		$q['_wpnonce'] = wp_create_nonce( 'om_ins_report' );
@@ -824,7 +841,8 @@ class OM_Insights_Report {
 		$out .= '<div class="om-ins-pop om-ins-report-pop" data-om-ins-report-pop hidden>';
 		$out .= '<p class="om-ins-pop-t">' . esc_html__( 'PDF report', 'om-catalog' ) . '</p>';
 		$out .= '<p class="om-ins-pop-sub">' . esc_html( $this->period_text() ) . ( $filters ? '<br />' . esc_html( implode( ' · ', $filters ) ) : '' ) . '</p>';
-		$out .= '<p class="om-ins-pop-note">' . esc_html__( 'Every section of Insights for this period with all its numbers, each compared with the period before, in your brand. It takes a few seconds.', 'om-catalog' ) . '</p>';
+		/* translators: %s: "the period before" or "the same time last year". */
+		$out .= '<p class="om-ins-pop-note">' . esc_html( sprintf( __( 'Results first, what to do next, then every section of Insights with all its numbers, each compared with %s, in your brand. It takes a few seconds.', 'om-catalog' ), $this->compare_name() ) ) . '</p>';
 		$out .= '<label class="om-ins-check"><input type="checkbox" checked data-om-ins-report-names /><span>' . esc_html__( 'Include the names of people who got in touch', 'om-catalog' ) . '</span></label>';
 		$out .= '<a class="om-ins-btn primary om-ins-report-dl" href="' . esc_url( $this->report_url( true ) ) . '" data-om-ins-report-dl>' . self::icon( 'download' ) . '<span>' . esc_html__( 'Download PDF', 'om-catalog' ) . '</span></a>';
 		return $out . '</div></div>';
@@ -1776,13 +1794,13 @@ class OM_Insights_Report {
 	}
 
 	/**
-	 * Findings, most important first: [ tone (good, watch, idea, info), title, text, do, href, link, score ].
+	 * Findings, most important first: [ tone (good, watch, idea, info), title, text, do, href, link, score, kind ('goal' for the month's goals) ].
 	 * $d: the numbers from findings_data().
 	 */
 	public function findings( $d, $max = 8 ) {
 		$out  = array();
-		$add  = static function ( $tone, $score, $title, $text, $do = '', $href = '', $link = '' ) use ( &$out ) {
-			$out[] = compact( 'tone', 'score', 'title', 'text', 'do', 'href', 'link' );
+		$add  = static function ( $tone, $score, $title, $text, $do = '', $href = '', $link = '', $kind = '' ) use ( &$out ) {
+			$out[] = compact( 'tone', 'score', 'title', 'text', 'do', 'href', 'link', 'kind' );
 		};
 		$k    = $d['now'];
 		$b    = $d['before'];
@@ -1794,8 +1812,11 @@ class OM_Insights_Report {
 			return $visits ? self::pct( $conv, $visits ) : '0%';
 		};
 
+		// Today isn't over: against a whole day before, every count looks like a fall, so changes are left out.
+		$whole = ! ( 1 === $this->span() && $this->to === wp_date( 'Y-m-d' ) );
+
 		// Leads, and visit requests, against the period compared with.
-		if ( $b['leads'] >= 5 && abs( $k['leads'] - $b['leads'] ) / $b['leads'] >= 0.1 ) {
+		if ( $whole && $b['leads'] >= 5 && abs( $k['leads'] - $b['leads'] ) / $b['leads'] >= 0.1 ) {
 			$up = $k['leads'] > $b['leads'];
 			$add(
 				$up ? 'good' : 'watch',
@@ -1812,7 +1833,7 @@ class OM_Insights_Report {
 			/* translators: %s: number of leads. */
 			$add( 'good', 90, __( 'First leads', 'om-catalog' ), sprintf( _n( '%s lead this period.', '%s leads this period.', $k['leads'], 'om-catalog' ), $n( $k['leads'] ) ), '', $this->url( array( 'tab' => 'leads' ) ), __( 'See leads', 'om-catalog' ) );
 		}
-		if ( $b['conv'] > 0 && $k['visits'] >= 200 && abs( $k['conv'] - $b['conv'] ) / $b['conv'] >= 0.15 ) {
+		if ( $whole && $b['conv'] > 0 && $k['visits'] >= 200 && abs( $k['conv'] - $b['conv'] ) / $b['conv'] >= 0.15 ) {
 			$up = $k['conv'] > $b['conv'];
 			$add(
 				$up ? 'good' : 'watch',
@@ -1840,7 +1861,10 @@ class OM_Insights_Report {
 					sprintf( __( 'On pace for %1$s %2$s in %3$s', 'om-catalog' ), $n( $g['pace'] ), $word, $d['pace']['month'] ),
 					/* translators: 1: so far, 2: goal, 3: day of the month, 4: days in the month. */
 					sprintf( __( '%1$s so far against a goal of %2$s, on day %3$s of %4$s.', 'om-catalog' ), $n( $g['n'] ), $n( $g['goal'] ), $n( $d['pace']['day'] ), $n( $d['pace']['days'] ) ),
-					$ok ? '' : __( 'A post or an email about a featured design usually brings a quick rise in requests.', 'om-catalog' )
+					$ok ? '' : ( 'leads' === $key ? __( 'A post or an email about a featured design usually brings a quick rise in leads.', 'om-catalog' ) : __( 'Put "Book a visit" on the most viewed designs and in your next post or email.', 'om-catalog' ) ),
+					$this->url( array( 'tab' => 'leads' ) ),
+					__( 'See leads', 'om-catalog' ),
+					'goal'
 				);
 			}
 		}
@@ -1851,7 +1875,7 @@ class OM_Insights_Report {
 			$before[ $r['k'] ] = $r;
 		}
 		$moves = array();
-		foreach ( $d['chan'] as $r ) {
+		foreach ( $whole ? $d['chan'] : array() as $r ) {
 			$p    = (int) ( $before[ $r['k'] ]['visits'] ?? 0 );
 			$diff = (int) $r['visits'] - $p;
 			if ( $p >= 15 && abs( $diff ) >= 15 && abs( $diff ) / $p >= 0.25 ) {
@@ -2043,7 +2067,7 @@ class OM_Insights_Report {
 		}
 
 		// A design on the rise.
-		$rise = $d['movers'][0][0] ?? null;
+		$rise = $whole ? ( $d['movers'][0][0] ?? null ) : null;
 		if ( $rise && $rise['now'] >= 15 && $rise['before'] > 0 && $rise['diff'] / $rise['before'] >= 0.5 ) {
 			$name = self::design( $rise['item'], $rise['title'] )['title'];
 			$add(
@@ -3564,7 +3588,16 @@ class OM_Insights_Report {
 		);
 		$total = $k['visits'];
 		$out   = $this->hero( $k, $b ) . $this->strip( $k, $b );
-		$out  .= $this->findings_card( $this->findings( $f, 10 ), 4 );
+		// The month's goals are in the results band already.
+		$finds = array_values(
+			array_filter(
+				$this->findings( $f, 12 ),
+				static function ( $x ) use ( $f ) {
+					return ! $f['pace'] || 'goal' !== $x['kind'];
+				}
+			)
+		);
+		$out  .= $this->findings_card( array_slice( $finds, 0, 10 ), 4 );
 		$out  .= $this->chart_card( $data['chart'], 'leads' );
 		$out  .= '<div class="om-ins-grid">';
 		$out  .= $this->panel(
