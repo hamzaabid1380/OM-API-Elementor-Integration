@@ -36,6 +36,7 @@ class WK_Pages {
 			'home'                        => array( __( 'Home', 'wulf-kit' ), 'home', 'main', __( 'The full homepage: showcase, categories, ring studio, story, 4Cs, services, visit.', 'wulf-kit' ) ),
 			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, a booking bar right under it, "What brings you in?" choices that each lead somewhere, a ring style quiz that ends in three matching rings, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, common questions, and booking. Each section is a showcase with one clear next step, and every "Book" button opens the booking popup.', 'wulf-kit' ) ),
 			'home-cinematic'              => array( __( 'Home (cinematic)', 'wulf-kit' ), 'home-cinematic', 'main', __( 'The conversion homepage told as a 3D film: a ring and a real-looking diamond, drawn live in the browser, build themselves as visitors scroll. The film comes in three parts between the conversion sections (the opening with the booking buttons, the shapes and metals, the hidden details and your story since 1971), with the booking bar, "What brings you in?", the ring style quiz, favorites, why Wulf, how a visit works, the ring designer, questions and booking in between. Phones get a lighter version, and a still picture shows wherever 3D cannot run.', 'wulf-kit' ) ),
+			'home-film'                   => array( __( 'Home (brand film)', 'wulf-kit' ), 'home-film', 'main', __( 'The homepage told with your two films. The first screen plays the brand film\'s highlights beside the headline, with "Watch our film" (with sound). Then the booking bar, "What brings you in?", the film in five chapters (shapes, ring styles, the ring builder, custom design and fine jewelry, each with its next step), the 360° favorites, The Suitcase beside your story since 1971 with its years lighting up as it plays, why Wulf, questions and booking.', 'wulf-kit' ) ),
 			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer homepage with a few big moments: the 360° spotlight, the ring that builds itself, the ring designer and the 4Cs. Fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
 			'about-us'                    => array( __( 'About', 'wulf-kit' ), 'about-us', 'main', __( 'Your story since 1971, Cullen, concierge service, values, reviews, visit.', 'wulf-kit' ) ),
 			'contact-us'                  => array( __( 'Free Consultation', 'wulf-kit' ), 'contact-us', 'main', __( 'Contact and booking form, map, hours, common questions.', 'wulf-kit' ) ),
@@ -68,7 +69,7 @@ class WK_Pages {
 
 	/** Homepage variants: "Go live" makes them the site's front page. */
 	public static function is_home( $key ) {
-		return in_array( $key, array( 'home', 'home-simple', 'home-conversion', 'home-cinematic' ), true );
+		return in_array( $key, array( 'home', 'home-simple', 'home-conversion', 'home-cinematic', 'home-film' ), true );
 	}
 
 	/** The page being shown is the front page, or a homepage version from the library (e.g. still being tried). */
@@ -81,7 +82,7 @@ class WK_Pages {
 
 	/** Extra page meta a template sets (e.g. the calmer look). */
 	public static function meta( $key ) {
-		return in_array( $key, array( 'home-simple', 'home-conversion', 'home-cinematic' ), true ) ? array( '_wk_style' => 'calm' ) : array();
+		return in_array( $key, array( 'home-simple', 'home-conversion', 'home-cinematic', 'home-film' ), true ) ? array( '_wk_style' => 'calm' ) : array();
 	}
 
 	/** Which library pages already exist on this site: key => post ID. */
@@ -205,6 +206,22 @@ class WK_Pages {
 			__( 'Will you look at jewelry I bought somewhere else?', 'wulf-kit' ) => '<p>' . __( 'Of course. Our in-house experts help with all aspects of your jewelry, including pieces purchased from another store.', 'wulf-kit' ) . '</p>',
 			__( 'Can I sell jewelry, gold or coins during my visit?', 'wulf-kit' ) => '<p>' . __( 'Yes. Bring the pieces with you and we\'ll evaluate them in front of you and make you an offer, with no obligation.', 'wulf-kit' ) . '</p>',
 		);
+	}
+
+	/** A part of the brand films beside a heading and text (Wulf · Brand film). */
+	private static function film( $clip, $eyebrow, $title, $lead, $o = array() ) {
+		return array( 'reel', array_merge( array(
+			'clip'       => $clip,
+			'layout'     => 'split',
+			'side'       => 'right',
+			'eyebrow'    => $eyebrow,
+			'title'      => $title,
+			'lead'       => $lead,
+			'text'       => '',
+			'b1_text'    => '',
+			'b2_text'    => '',
+			'watch_text' => __( 'Watch the whole film', 'wulf-kit' ),
+		), $o ) );
 	}
 
 	private static function reviews( $o = array() ) {
@@ -348,14 +365,79 @@ class WK_Pages {
 				}
 				return $b;
 
+			case 'home-film':
+				// The conversion page, told with the two films: the highlights as the first screen, the
+				// brand film in five chapters (each with its next step), and The Suitcase beside the story.
+				if ( class_exists( '\Elementor\Widget_Base' ) ) {
+					require_once WK_DIR . 'includes/class-wk-widget.php';
+					require_once WK_DIR . 'widgets/class-wk-paths.php';
+					require_once WK_DIR . 'widgets/class-wk-spotlight.php';
+					require_once WK_DIR . 'widgets/class-wk-filmtabs.php';
+				}
+				$conv = array();
+				foreach ( self::blocks( 'home-conversion' ) as $block ) {
+					$conv[ $block[0] ] = $block;
+				}
+				$paths = $conv['paths'];
+				if ( class_exists( 'WK_Paths_Widget' ) ) {
+					// "Design your ring" goes to the ring builder (this page has no ring designer section).
+					$paths[1]['items'] = WK_Paths_Widget::default_items( self::url( 'ring-builder' ) );
+				}
+				$values              = $conv['values'];
+				$values[1]['tone']   = 'white';
+				return array(
+					array( 'reel', array(
+						'clip'       => 'highlights',
+						'layout'     => 'hero',
+						'anchor'     => 'top',
+						'eyebrow'    => __( 'Crown Point, Indiana · Since 1971', 'wulf-kit' ),
+						'title'      => __( 'From the first spark to *the final setting.*', 'wulf-kit' ),
+						'title_tag'  => 'h1',
+						'lead'       => __( 'Certified diamonds in every shape, engagement rings to try on in person, and custom pieces designed with a GIA-certified jeweler.', 'wulf-kit' ),
+						'lead_m'     => __( 'Certified diamonds, engagement rings and custom design, with a GIA-certified jeweler.', 'wulf-kit' ),
+						'b1_text'    => __( 'Book a free consultation', 'wulf-kit' ),
+						'b1_link'    => array( 'url' => '#visit' ),
+						'b2_text'    => '',
+						'watch_text' => __( 'Watch our film', 'wulf-kit' ),
+						'note'       => __( 'Free, no obligation | We confirm by call or text', 'wulf-kit' ),
+						'cues_src'   => 'none',
+					) ),
+					$conv['bookbar'],
+					$paths,
+					array( 'filmtabs', class_exists( 'WK_Filmtabs_Widget' ) ? array( 'items' => WK_Filmtabs_Widget::default_items() ) : array() ),
+					$conv['spotlight'],
+					self::film( 'story', __( 'Our story · Independent since 1971', 'wulf-kit' ), __( 'It started with a *suitcase of gems.*', 'wulf-kit' ), __( 'In 1971 Tom Moriarty traded his tool belt for a suitcase of fine gems. Today Cullen Wulf, a GIA-certified jeweler, carries on the same promise from our showroom on Broadway in Crown Point: honest advice, and never a rushed decision.', 'wulf-kit' ), array( 'side' => 'left', 'anchor' => 'story', 'b2_text' => __( 'Read our story', 'wulf-kit' ), 'b2_link' => self::link( 'about-us' ), 'watch_text' => __( 'Watch our story', 'wulf-kit' ) ) ),
+					$values,
+					$conv['faq'],
+					$conv['visit'],
+				);
+
 			case 'about-us':
 				return array(
-					self::banner( __( 'About us · Crown Point jeweler', 'wulf-kit' ), __( 'Your *hometown* diamond jewelers.', 'wulf-kit' ), __( 'Independent since 1971: from a suitcase of fine gems to a newly built showroom on Broadway in Crown Point.', 'wulf-kit' ), array( 'image' => self::img( 'cullen.webp' ), 'fit' => 'cover', 'cap' => __( 'Cullen Wulf, owner · GIA-certified', 'wulf-kit' ), 'b2_text' => __( 'Our services', 'wulf-kit' ), 'b2_link' => self::link( 'jewelry-services-and-repairs' ) ) ),
+					// The Suitcase plays beside the headline: the story since 1971, in 35 seconds.
+					array( 'reel', array(
+						'clip'       => 'story',
+						'layout'     => 'hero',
+						'eyebrow'    => __( 'About us · Crown Point jeweler', 'wulf-kit' ),
+						'title'      => __( 'Your *hometown* diamond jewelers.', 'wulf-kit' ),
+						'title_tag'  => 'h1',
+						'lead'       => __( 'Independent since 1971: from a suitcase of fine gems to a newly built showroom on Broadway in Crown Point.', 'wulf-kit' ),
+						'b1_text'    => __( 'Book a free consultation', 'wulf-kit' ),
+						'b1_link'    => array( 'url' => '#visit' ),
+						'b2_text'    => '',
+						'watch_text' => __( 'Watch our story', 'wulf-kit' ),
+						'cues_src'   => 'none',
+						'trust'      => array(
+							array( 'icon' => 'clock', 'text' => __( 'Since 1971', 'wulf-kit' ) ),
+							array( 'icon' => 'cert', 'text' => __( 'GIA-certified jewelers', 'wulf-kit' ) ),
+							array( 'icon' => 'pin', 'text' => __( 'Locals serving locals', 'wulf-kit' ) ),
+						),
+					) ),
 					array( 'story', array() ),
 					self::split( __( 'Concierge service', 'wulf-kit' ), __( 'We come to *you*.', 'wulf-kit' ), '<p>' . __( 'Our concierge service lets our jewelers come out to see you in person and make the most of your valuable time.', 'wulf-kit' ) . '</p><p>' . __( 'Whether you\'re celebrating an engagement, anniversary or birthday, or you just want the convenience of browsing quality jewelry from home, let us take care of you.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'cullen-desk.webp' ), 'tone' => 'ivory', 'b1_text' => __( 'Ask about concierge service', 'wulf-kit' ), 'b1_link' => array( 'url' => '#visit' ) ) ),
 					array( 'values', array( 'image' => self::img( 'wear-ring.webp' ) ) ),
 					self::split( __( 'Indiana gold & diamond buyer', 'wulf-kit' ), __( 'Fair, honest offers for what you no longer wear.', 'wulf-kit' ), '<p>' . __( 'Over time we have become a premium buyer of gold, silver, diamonds and more for Indiana and beyond. We give fair and honest appraisals to help you get the best deal possible on your pieces.', 'wulf-kit' ) . '</p><p>' . __( 'Whether you\'re looking to sell a diamond engagement ring or unwanted gold and silver, Wulf Diamond is Northwest Indiana\'s trusted gold and diamond buyer.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'rings-tray.webp' ), 'side' => 'left', 'rule' => 'yes', 'b1_text' => __( 'Sell gold & silver', 'wulf-kit' ), 'b1_link' => self::link( 'gold-silver-platinum' ), 'b2_text' => __( 'Sell a diamond', 'wulf-kit' ), 'b2_link' => self::link( 'diamond-buyers' ) ) ),
-					self::split( __( 'Custom jewelry', 'wulf-kit' ), __( 'Inspired by *your* design.', 'wulf-kit' ), '<p>' . __( 'In addition to a robust selection of diamond engagement rings and wedding bands, we create custom jewelry inspired by your design. See our custom jewelry process, or ask about our diamond concierge service.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'custom-cad.webp' ), 'rule' => 'yes', 'b1_text' => __( 'See the custom process', 'wulf-kit' ), 'b1_link' => self::link( 'custom-jewelry' ) ) ),
+					self::film( 'custom', __( 'Custom jewelry', 'wulf-kit' ), __( 'Inspired by *your* design.', 'wulf-kit' ), __( 'Beyond engagement rings and wedding bands, we create custom jewelry inspired by your design: drawn in 3D with you, made in wax, cast in your metal and set.', 'wulf-kit' ), array( 'b1_text' => __( 'See the custom process', 'wulf-kit' ), 'b1_link' => self::link( 'custom-jewelry' ), 'b1_topic' => '' ) ),
 					self::reviews(),
 					array( 'visit', array() ),
 				);
@@ -390,6 +472,7 @@ class WK_Pages {
 					self::banner( __( 'Engagement rings · Crown Point', 'wulf-kit' ), __( 'Engagement *rings*.', 'wulf-kit' ), __( 'Find the ring style you or your significant other loves, and let one of our experienced team accompany you through one of life\'s most important decisions.', 'wulf-kit' ), array( 'tone' => 'white', 'media' => 'none', 'call_line' => '', 'b1_text' => __( 'Design your ring', 'wulf-kit' ), 'b1_link' => self::link( 'ring-builder' ), 'b2_text' => __( 'Book a free consultation', 'wulf-kit' ), 'b2_link' => array( 'url' => '#visit' ), 'b2_topic' => 'Engagement ring' ) ),
 					self::om( 'om_reels_widget', array( 'source' => 'line', 'line' => 'engagement-rings' ), __( 'Video highlights', 'wulf-kit' ) ),
 					self::om( 'om_catalog_widget', array( 'product_line' => 'engagement-rings' ), __( 'Engagement ring catalog', 'wulf-kit' ) ),
+					self::film( 'builder', __( 'Design it online', 'wulf-kit' ), __( 'Can\'t find it? *Build it.*', 'wulf-kit' ), __( 'Pick the shape, the setting and the metal in our ring builder, from 1,906 engagement ring designs. Then book a time to see your favorite in person.', 'wulf-kit' ), array( 'side' => 'left', 'b1_text' => __( 'Open the ring builder', 'wulf-kit' ), 'b1_link' => self::link( 'ring-builder' ) ) ),
 					array( 'studio', array() ),
 					array( 'fourcs', array() ),
 					self::faq( __( 'Engagement ring questions.', 'wulf-kit' ), self::engagement_faq() ),
@@ -439,6 +522,7 @@ class WK_Pages {
 					self::banner( __( 'Diamond jewelry · Crown Point', 'wulf-kit' ), __( 'Crown Point\'s diamond *jewelry* seller.', 'wulf-kit' ), __( 'A vast selection of diamond rings, bracelets, earrings, necklaces and more. We only buy high-quality diamonds, and we only sell high-quality diamonds.', 'wulf-kit' ), array( 'image' => self::img( '41101.webp' ), 'fit' => 'contain', 'cap' => __( 'Floral halo stud earrings', 'wulf-kit' ), 'cap_link' => self::link( 'earrings' ), 'b2_text' => __( 'Browse the catalog', 'wulf-kit' ), 'b2_link' => self::link( 'catalogue' ) ) ),
 					array( 'help', array( 'title' => __( 'Shop diamond jewelry', 'wulf-kit' ), 'items' => self::category_circles() ) ),
 					self::split( __( 'Wulf Diamond Jewelers', 'wulf-kit' ), __( 'Know what to look for, before you buy.', 'wulf-kit' ), '<p>' . __( 'With certified gemologists and jewelry repair experts on staff, we can easily separate the wheat from the chaff. Below is a plain-words guide to what matters in a diamond. If you have questions, or you\'d like to weigh your options with a local diamond expert, just ask.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'diamond-hand.webp' ), 'rule' => 'yes' ) ),
+					self::film( 'shapes', __( 'Diamond shapes', 'wulf-kit' ), __( 'Eight shapes, *side by side.*', 'wulf-kit' ), __( 'Shape is a diamond\'s outline; cut is how well its facets are angled and polished. Each of these shapes can be cut beautifully, and each one sparkles in its own way.', 'wulf-kit' ), array( 'b1_text' => __( 'Compare them in person', 'wulf-kit' ), 'b1_link' => array( 'url' => '#visit' ), 'b1_topic' => 'Engagement ring' ) ),
 					array( 'fourcs', array() ),
 					self::lists( __( 'The 4Cs, in detail', 'wulf-kit' ), __( 'How diamonds are graded.', 'wulf-kit' ), array(
 						self::group( __( 'Cut', 'wulf-kit' ), "Ideal cut (0)\nExcellent cut (1)\nVery good cut (2)\nGood cut (3–4)\nFair cut (5–7)\nPoor cut (8–10)", __( 'Cut is the angles, polish, proportions and symmetry that make a diamond sparkle. Don\'t confuse it with shape.', 'wulf-kit' ), 'spark' ),
@@ -493,6 +577,7 @@ class WK_Pages {
 			case 'custom-jewelry':
 				return array(
 					self::banner( __( 'Custom jewelry · Crown Point, Indiana', 'wulf-kit' ), __( 'Custom designed jewelry in *Crown Point*.', 'wulf-kit' ), __( 'Ever wanted a one-of-a-kind piece? Come in and our experienced designers will help you create whatever your heart desires.', 'wulf-kit' ), array( 'image' => self::img( 'ring-cushion-dark.webp' ), 'fit' => 'cover', 'cap' => __( 'Every piece starts as a 3D design you approve', 'wulf-kit' ), 'b1_topic' => 'Custom design' ) ),
+					self::film( 'custom', __( 'Design · Wax · Cast · Set', 'wulf-kit' ), __( 'Watch a ring *come together.*', 'wulf-kit' ), __( 'Every custom piece goes through the same four steps. Here they are in eleven seconds; further down, how each one works with you.', 'wulf-kit' ), array( 'side' => 'left', 'b1_text' => __( 'Start a custom design', 'wulf-kit' ), 'b1_link' => array( 'url' => '#visit' ), 'b1_topic' => 'Custom design' ) ),
 					self::split( __( 'Made for you', 'wulf-kit' ), __( 'Every accessory becomes a *statement piece*.', 'wulf-kit' ), '<p>' . __( 'We believe everyone deserves to feel and look their best. Whether you need something special for your collection or want to create a family heirloom, you can trust our craftsmen.', 'wulf-kit' ) . '</p><p>' . __( 'For over five decades we\'ve helped customers with their unique jewelry needs, from engagement rings to statement necklaces.', 'wulf-kit' ) . '</p>', array( 'image' => self::img( 'custom-finished.webp' ) ) ),
 					self::custom_steps(),
 					self::reviews( array( 'tone' => 'white' ) ),

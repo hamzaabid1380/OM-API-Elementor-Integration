@@ -40,6 +40,9 @@ class WK_Icons {
 		'mail'   => array( '0 0 24 24', '<g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6.5L20.5 7"/></g>' ),
 		'calendar' => array( '0 0 24 24', '<g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></g>' ),
 		'shield' => array( '0 0 24 24', '<path d="M12 3 5 6v5c0 4.5 3 8.4 7 10 4-1.6 7-5.5 7-10V6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' ),
+		// Film controls (play, pause): filled, so they read at small sizes.
+		'play'   => array( '0 0 24 24', '<path d="M8.5 5.6v12.8c0 .6.6.9 1.1.6l10-6.4a.7.7 0 0 0 0-1.2l-10-6.4c-.5-.3-1.1 0-1.1.6Z" fill="currentColor"/>' ),
+		'pause'  => array( '0 0 24 24', '<path d="M7.5 5.5h3v13h-3zm6 0h3v13h-3z" fill="currentColor"/>' ),
 		'none'   => array( '0 0 24 24', '' ),
 	);
 

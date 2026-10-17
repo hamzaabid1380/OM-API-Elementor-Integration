@@ -16,10 +16,10 @@
 	var icon = function (n, cls) { var d = (CFG.icons || {})[n]; return d ? '<svg viewBox="' + d[0] + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-hidden="true" focusable="false">' + d[1] + '</svg>' : ''; };
 	var cfgOf = function (el) { try { return JSON.parse(el.getAttribute('data-wk-cfg') || '{}'); } catch (e) { return {}; } };
 	var MCOL = { white: '14K white gold', yellow: '14K yellow gold', rose: '14K rose gold' };
-	/* Past the first screen? The usual hero, or the cinematic film's opening (whose words leave after a short scroll).
-	   Returns null when the page has neither. */
+	/* Past the first screen? The usual hero, the brand film's first screen, or the cinematic film's opening
+	   (whose words leave after a short scroll). Returns null when the page has none of them. */
 	var pastHero = function (edge) {
-		var hero = $('.wk-hero .hero');
+		var hero = $('.wk-hero .hero') || $('.wk-reel .reel.l-hero');
 		if (hero) return hero.getBoundingClientRect().bottom < edge;
 		var film = $('.wk-film .film-hero');
 		if (!film) return null;
@@ -1645,6 +1645,237 @@
 				b.textContent = T.subscribed || 'Subscribed';
 			}).catch(function (er) { b.disabled = false; toast((er && er.message) || T.error || 'Sorry, that didn\'t send.'); });
 		});
+	};
+
+	/* ================= Brand films: silent loops on the page, the whole film with sound in a window ================= */
+	var REEL = {
+		// The smaller AV1 copy where the browser plays it (Chrome, Edge, Firefox, newer Apple devices).
+		av1: (function () { try { return !!document.createElement('video').canPlayType('video/mp4; codecs="av01.0.08M.08"'); } catch (e) { return false; } })(),
+		// Data saver on, or a very slow connection: still pictures until a visitor presses play.
+		lowData: (function () { var c = navigator.connection; return !!(c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))); })(),
+		ready: document.readyState === 'complete',
+		hold: false,
+		all: []
+	};
+	window.addEventListener('load', function () { REEL.ready = true; REEL.all.forEach(function (s) { if (s.waiting) s.play(); }); });
+
+	/* One film stage. Its video gets an address only when it nears the screen, plays while on screen (not
+	   when motion is reduced, data is saved, or the visitor paused it) and rests when scrolled away; the
+	   still picture stays until the first frame shows. Film chapters switch which video is the stage's. */
+	function reelStage(stage, o) {
+		var S = { v: null, paused: !o.auto, vis: false, waiting: false, raf: 0, onTime: null, onEnd: null };
+		var pp = $('.reel-pp', stage);
+		var load = function (v) { if (v && !v.getAttribute('src') && v.dataset.src) v.src = REEL.av1 && v.dataset.av1 ? v.dataset.av1 : v.dataset.src; };
+		function sync() {
+			var v = S.v, on = !!(v && !v.paused && !v.ended);
+			stage.classList.toggle('is-idle', !on && S.paused);
+			if (!pp) return;
+			pp.hidden = !v;
+			pp.classList.toggle('is-paused', !on);
+			pp.setAttribute('aria-label', on ? pp.dataset.pause : pp.dataset.play);
+		}
+		function tick() { S.raf = 0; var v = S.v; if (!v) return; if (S.onTime) S.onTime(v.currentTime, v.duration || 0); if (!v.paused) S.raf = requestAnimationFrame(tick); }
+		S.sync = sync;
+		S.load = function () { load(S.v); };
+		S.preload = load;
+		S.play = function (user) {
+			var v = S.v;
+			if (!v) return;
+			if (user) S.paused = false;
+			if (S.paused || REEL.hold || !(S.vis || user)) return sync();
+			if (o.wait && !REEL.ready && !user) { S.waiting = true; return; } // the first screen's film waits for the page
+			S.waiting = false;
+			load(v);
+			var p = v.play();
+			if (p && p.catch) p.catch(function () { if (v === S.v && v.paused) { S.paused = true; sync(); } }); // e.g. a phone in power saving
+		};
+		S.pause = function (user) { if (user) S.paused = true; if (S.v) S.v.pause(); sync(); };
+		S.use = function (v) {
+			if (S.v && S.v !== v) S.v.pause();
+			S.v = v || null;
+			if (v && !v.__reel) {
+				v.__reel = 1;
+				v.addEventListener('playing', function () { if (v.parentNode) v.parentNode.classList.add('is-on'); if (v === S.v) { sync(); if (!S.raf) S.raf = requestAnimationFrame(tick); } });
+				v.addEventListener('pause', function () { if (v === S.v) sync(); });
+				v.addEventListener('seeked', function () { if (v === S.v && S.onTime) S.onTime(v.currentTime, v.duration || 0); });
+				v.addEventListener('ended', function () { if (v === S.v) { sync(); if (S.onEnd) S.onEnd(); } });
+			}
+			sync();
+		};
+		if (pp) pp.addEventListener('click', function () { if (!S.v) return; if (S.v.paused || S.v.ended) S.play(true); else S.pause(true); });
+		if ('IntersectionObserver' in window) {
+			new IntersectionObserver(function (es) { S.vis = es[0].isIntersecting; if (S.vis) S.play(); else if (S.v) S.v.pause(); }, { threshold: 0.2 }).observe(stage);
+			new IntersectionObserver(function (es, ob) { if (!es[0].isIntersecting) return; ob.disconnect(); if (!S.paused && !o.wait) load(S.v); }, { rootMargin: '600px 0px' }).observe(stage);
+		} else { S.vis = true; }
+		REEL.all.push(S);
+		return S;
+	}
+
+	/* "Fill the space": crop only the film's empty sides, never its words ("safe" = the part that must show). */
+	function reelFit(stage, safe) {
+		if (!safe || !stage.closest('.fit-fill')) return;
+		var media = $$('.reel-poster, .reel-v', stage);
+		function fit() {
+			var w = stage.clientWidth, h = stage.clientHeight;
+			if (!w || !h) return;
+			var f = (w / h) / (16 / 9), cover = true, pos = 50;
+			if (f < 1) {
+				if (f + 0.005 < safe[1] - safe[0]) cover = false;
+				else { var start = Math.min(Math.max((safe[0] + safe[1]) / 2 - f / 2, 0), 1 - f); pos = start / (1 - f) * 100; }
+			}
+			media.forEach(function (m) { m.style.objectFit = cover ? 'cover' : 'contain'; m.style.objectPosition = cover ? pos.toFixed(1) + '% 50%' : ''; });
+		}
+		fit();
+		if ('ResizeObserver' in window) new ResizeObserver(fit).observe(stage); else window.addEventListener('resize', fit);
+	}
+
+	/* Keep the current chip / year / tab in view inside a row that scrolls sideways (never scrolls the page). */
+	function reelInView(row, item) {
+		if (!row || !item || row.scrollWidth <= row.clientWidth + 4) return;
+		var r = row.getBoundingClientRect(), b = item.getBoundingClientRect();
+		row.scrollBy({ left: (b.left - r.left) - (r.width - b.width) / 2, behavior: reduce ? 'auto' : 'smooth' });
+	}
+
+	/* The whole film with sound, in a window over the page (one for the page, made when first needed). */
+	var FW = null;
+	function filmWindow() {
+		if (FW) return FW;
+		var w = document.createElement('div');
+		w.className = 'wk wk-reel-win';
+		w.innerHTML = '<dialog class="reel-dlg" aria-labelledby="wk-film-h"><div class="rd-box"><div class="rd-top"><h2 class="rd-h" id="wk-film-h"></h2><button type="button" class="icon-btn rd-x" aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div>' +
+			'<div class="rd-frame"><video controls playsinline preload="none"></video></div><div class="reel-cues cs-chips rd-ch" role="group" aria-label="' + esc(T.filmParts || 'Parts of the film') + '"></div></div></dialog>';
+		document.body.appendChild(w);
+		FW = { d: $('dialog', w), v: $('video', w), h: $('.rd-h', w), ch: $('.rd-ch', w), from: null, f: null, cur: -1 };
+		$('.rd-x', w).addEventListener('click', function () { FW.d.close(); });
+		FW.d.addEventListener('click', function (e) { if (e.target === FW.d) FW.d.close(); }); // outside the film
+		FW.d.addEventListener('close', function () {
+			FW.v.pause();
+			document.documentElement.classList.remove('wk-reel-lock');
+			REEL.hold = false;
+			REEL.all.forEach(function (s) { if (s.vis) s.play(); });
+			if (FW.from && FW.from.focus) FW.from.focus();
+		});
+		FW.ch.addEventListener('click', function (e) {
+			var b = e.target.closest('[data-t]');
+			if (!b) return;
+			try { FW.v.currentTime = parseFloat(b.dataset.t) || 0; } catch (er) {}
+			var p = FW.v.play(); if (p && p.catch) p.catch(function () {});
+		});
+		FW.v.addEventListener('timeupdate', function () {
+			var bs = $$('[data-t]', FW.ch), t = FW.v.currentTime, i = 0;
+			bs.forEach(function (b, k) { if (t + 0.1 >= parseFloat(b.dataset.t)) i = k; });
+			if (i === FW.cur) return;
+			FW.cur = i;
+			bs.forEach(function (b, k) { if (k === i) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+			reelInView(FW.ch, bs[i]);
+		});
+		FW.v.addEventListener('ended', function () { track('film_complete', { film: FW.f ? FW.f.k : '' }); });
+		return FW;
+	}
+	function filmOpen(f, from) {
+		var W = filmWindow();
+		if (typeof W.d.showModal !== 'function') { window.location.href = f.src; return; }
+		W.f = f; W.from = from; W.cur = -1;
+		W.h.textContent = f.title || '';
+		W.ch.innerHTML = (f.ch || []).map(function (c) { return '<button type="button" class="rc" data-t="' + (+c[0] || 0) + '"><span class="rc-l">' + esc(c[1]) + '</span></button>'; }).join('');
+		W.ch.hidden = !(f.ch && f.ch.length);
+		var src = f.av1 && W.v.canPlayType('video/mp4; codecs="av01.0.08M.08, opus"') ? f.av1 : f.src;
+		if (W.v.getAttribute('src') !== src) { W.v.poster = f.poster || ''; W.v.src = src; }
+		REEL.hold = true;
+		REEL.all.forEach(function (s) { if (s.v) s.v.pause(); });
+		document.documentElement.classList.add('wk-reel-lock');
+		W.d.showModal();
+		try { W.v.currentTime = 0; } catch (e) {}
+		var p = W.v.play(); if (p && p.catch) p.catch(function () {}); // with sound: the click allows it
+		track('film_play', { film: f.k || '', cta_location: where(from) });
+	}
+	function filmButtons(el, f) {
+		$$('[data-reel-watch]', el).forEach(function (a) {
+			a.addEventListener('click', function (e) {
+				if (!f || !f.src || e.metaKey || e.ctrlKey || e.shiftKey) return; // a new tab gets the film file itself
+				e.preventDefault();
+				filmOpen(f, a);
+			});
+		});
+	}
+	var reelAuto = function (c) { return !!c.auto && !reduce && !REEL.lowData; };
+
+	INIT.reel = function (el, c) {
+		var stage = $('.reel-stage', el);
+		if (!stage) return;
+		var S = reelStage(stage, { auto: reelAuto(c), wait: !!c.hero });
+		S.use($('.reel-v', stage));
+		reelFit(stage, c.safe);
+		filmButtons(el, c.film);
+		var cues = $$('.reel-cues .rc', el), list = $('.reel-cues', el), cap = $('.reel-tl-cap', el), cur = 0;
+		if (!cues.length) return;
+		var times = cues.map(function (b) { return parseFloat(b.dataset.t) || 0; });
+		function mark(i, p) {
+			if (i !== cur) {
+				cues.forEach(function (b, k) { if (k === i) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); b.classList.toggle('is-done', k < i); b.style.removeProperty('--p'); });
+				cur = i;
+				if (cap) cap.textContent = cues[i].dataset.x || '';
+				reelInView(list, cues[i]);
+			}
+			cues[i].style.setProperty('--p', p.toFixed(3));
+		}
+		// The moment on screen lights up, with a line that fills until the next one.
+		S.onTime = function (t, d) {
+			var i = 0;
+			for (var k = 0; k < times.length; k++) if (t + 0.04 >= times[k]) i = k;
+			var end = i + 1 < times.length ? times[i + 1] : (d > times[i] ? d : times[i] + 1);
+			mark(i, Math.max(0, Math.min(1, (t - times[i]) / Math.max(0.1, end - times[i]))));
+		};
+		cues.forEach(function (b, k) {
+			b.addEventListener('click', function () {
+				var v = S.v;
+				if (!v) return;
+				S.load();
+				var go = function () { try { v.currentTime = times[k] + 0.01; } catch (e) {} S.play(true); };
+				if (v.readyState >= 1) go(); else v.addEventListener('loadedmetadata', go, { once: true });
+				mark(k, 0);
+				track('film_moment', { moment: (b.querySelector('.rc-l') || b).textContent.trim().slice(0, 40), cta_location: 'reel' });
+			});
+		});
+	};
+
+	INIT.filmtabs = function (el, c) {
+		var stage = $('.ft-stage', el), tabs = $$('.ft-tab', el), panels = $$('.ft-panel', el), layers = $$('.ft-layer', el), row = $('.ft-tabs', el);
+		if (!stage || !tabs.length) return;
+		var S = reelStage(stage, { auto: reelAuto(c) }), cur = -1, chosen = false;
+		filmButtons(el, c.film);
+		function show(i, user) {
+			i = (i + tabs.length) % tabs.length;
+			tabs.forEach(function (t, k) { var on = k === i; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; if (!on) t.style.removeProperty('--p'); });
+			panels.forEach(function (p, k) { p.hidden = k !== i; });
+			layers.forEach(function (l, k) { l.classList.toggle('is-active', k === i); });
+			cur = i;
+			var v = layers[i] ? $('.reel-v', layers[i]) : null;
+			if (v) { v.loop = chosen; if (v.readyState) { try { v.currentTime = 0; } catch (e) {} } }
+			S.use(v);
+			// A visitor's choice plays it (unless they asked for less motion or save data; then the play button does).
+			S.play(user && !reduce && !REEL.lowData);
+			if (!S.paused && S.vis && layers[(i + 1) % layers.length]) S.preload($('.reel-v', layers[(i + 1) % layers.length])); // the next chapter, ready ahead
+			reelInView(row, tabs[i]);
+		}
+		S.onTime = function (t, d) { if (tabs[cur]) tabs[cur].style.setProperty('--p', d ? Math.min(1, t / d).toFixed(3) : '0'); };
+		S.onEnd = function () { if (!chosen && !S.paused) show(cur + 1); }; // until a visitor picks one, the next chapter follows
+		tabs.forEach(function (t, k) {
+			t.addEventListener('click', function () {
+				chosen = true;
+				show(k, true);
+				track('film_chapter', { chapter: ($('.ft-l', t) || t).textContent.trim().slice(0, 40), cta_location: 'filmtabs' });
+			});
+			t.addEventListener('keydown', function (e) {
+				var n = { ArrowRight: k + 1, ArrowLeft: k - 1, Home: 0, End: tabs.length - 1 }[e.key];
+				if (n === undefined) return;
+				e.preventDefault();
+				n = (n + tabs.length) % tabs.length;
+				tabs[n].focus();
+				tabs[n].click();
+			});
+		});
+		show(0);
 	};
 
 	/* ================= Boot ================= */

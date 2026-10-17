@@ -2,14 +2,14 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.13.2
+Stable tag: 1.14.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
 
 == What you get ==
 
-28 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
+30 widgets under "Wulf Diamond Jewelers" in the Elementor panel:
 
 * Announcement bar (live "Open now / Closed now" from your hours)
 * Header (logo, menu with drop-down panels, search, phone, tray, "Book a free consultation", phone menu)
@@ -45,12 +45,18 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Cinematic film (3D): a ring and a real-looking diamond, drawn live in the browser, that build
   themselves as visitors scroll. Comes in three parts (the opening, shapes and metals, the details and
   your story) to place between other sections
+* Brand film: a part of your films "Wulf Diamond Jewelers" and "The Suitcase" (or your own video)
+  playing silently as the first screen of a page or beside a heading. The moments under it (the
+  shapes, the steps, the years) light up as they play and jump there when chosen; "Watch the film"
+  plays the whole film with sound in a window on the page
+* Film chapters: the brand film as tabs (shapes, ring styles, the ring builder, custom design, fine
+  jewelry); each chapter plays beside its own words and next step, then the next one follows
 
-30 page templates: one for every page on the live site, plus "Home (simpler)", "Home (conversion)" and
-"Home (cinematic)", with the wording from that page and the same web address:
+31 page templates: one for every page on the live site, plus "Home (simpler)", "Home (conversion)",
+"Home (cinematic)" and "Home (brand film)", with the wording from that page and the same web address:
 
-* Main: Home, Home (simpler), Home (conversion), Home (cinematic), About, Free Consultation, Blog, Thank You,
-  Page not found
+* Main: Home, Home (simpler), Home (conversion), Home (cinematic), Home (brand film), About, Free
+  Consultation, Blog, Thank You, Page not found
 * Shop (with the OM Catalog plugin): Engagement Rings, Ring Builder, Wedding Bands, Fashion Rings,
   Earrings, Necklaces, Pendants, Bracelets, Catalogue, Single Product layout
 * Diamonds & gems: Diamond Jewelry, Where to Buy Engagement Rings, Gems
@@ -231,6 +237,41 @@ Speed and devices:
   Perfmatters and similar) and turn off Cloudflare Rocket Loader for it, or the film waits for the
   first tap before it starts.
 
+== Brand films ==
+
+Your two films ("Wulf Diamond Jewelers", 1:15, and "The Suitcase", 0:39) are cut into short silent
+parts that come with the kit: highlights (a diamond, four ring styles, fine jewelry), the eight
+shapes, ring styles, fine jewelry, the ring builder, custom design (design, wax, cast, set) and
+The Suitcase's story since 1971. Each part comes in two copies (a smaller AV1 one for Chrome, Edge,
+Firefox and newer Apple devices, and an H.264 one that plays everywhere) with a still picture.
+
+Where they are used:
+
+* Home (brand film): the highlights beside the headline as the first screen, the film in five
+  chapters, and The Suitcase beside your story with its years lighting up as it plays.
+* About: The Suitcase is the first screen; the custom section plays design, wax, cast and set.
+* Custom Jewelry: the four steps as a film right under the banner.
+* Diamond Jewelry: the eight shapes before the 4Cs.
+* Engagement Rings: the ring builder film after the catalog.
+
+Pages you already built keep their design: build a fresh copy in Wulf Kit > Pages & templates to
+get the film sections, compare, then "Go live".
+
+The full films with sound play from your Media Library, so the plugin stays light: upload the two
+MP4 files once (Media > Add New), then choose them in Wulf Kit > Settings > Brand films. Until a film
+is chosen its "Watch the film" buttons stay hidden (the Elementor editor shows a note where they
+go). Any section can also use your own video instead, under Film > "My own video" and Watch the film
+> "My own video".
+
+How they behave: a film only downloads when its section nears the screen, plays silently while on
+screen and rests when scrolled away; the first screen's film waits until the page has loaded. A
+small button pauses it. Visitors whose device asks for less motion, or who save mobile data, see
+the still picture with a play button instead. The films' black melts into the section's dark
+background, so keep film sections dark (Style > Section > Background).
+
+Measured (with "Measure clicks and bookings" on): film_play (the window opened), film_complete,
+film_moment (a moment under a film chosen) and film_chapter (a chapter tab chosen).
+
 == Visit requests and newsletter ==
 
 The "Book a visit" form and the footer sign-up email you (Wulf Kit > Settings > "Visit requests
@@ -238,6 +279,18 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.14.0 =
+* Brand films: your two films on the site. New widgets "Brand film" (first screen, or beside a
+  heading, with the film's moments lighting up as they play) and "Film chapters" (tabs), and a
+  window that plays the whole film with sound.
+* New page template "Home (brand film)". About, Custom Jewelry, Diamond Jewelry and Engagement
+  Rings now use film sections where they help (build a fresh copy to get them).
+* Wulf Kit > Settings > Brand films: choose the full films with sound from the Media Library.
+  Only the short silent parts ship with the kit (about 10 MB).
+* Films load only near the screen, rest when scrolled away, have a pause button, and stay still
+  for visitors who ask for less motion or save data.
+* The header and the booking bar treat the brand film's first screen like the usual hero.
 
 = 1.13.2 =
 * The film is crisp on Retina screens (a recent Mac, a 4K laptop at 200%). The two richer quality

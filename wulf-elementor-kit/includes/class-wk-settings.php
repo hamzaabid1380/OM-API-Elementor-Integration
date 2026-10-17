@@ -76,6 +76,9 @@ class WK_Settings {
 			'google_place'  => '',
 			'reviews_hours' => '12',
 			'om_media'      => 'https://overnightmountings.s3.amazonaws.com/',
+			// The full brand films with sound ("Watch the film"), from the Media Library or any link.
+			'film_motion'   => '',
+			'film_suitcase' => '',
 		);
 	}
 
@@ -237,7 +240,7 @@ class WK_Settings {
 			$val = $in[ $k ] ?? '';
 			if ( 0 === strpos( $k, 'c_' ) ) {
 				$out[ $k ] = sanitize_hex_color( $val ) ? sanitize_hex_color( $val ) : $v;
-			} elseif ( in_array( $k, array( 'maps_url', 'om_media', 'book_img' ), true ) ) {
+			} elseif ( in_array( $k, array( 'maps_url', 'om_media', 'book_img', 'film_motion', 'film_suitcase' ), true ) ) {
 				$out[ $k ] = esc_url_raw( $val );
 			} elseif ( 'email' === $k ) {
 				$out[ $k ] = sanitize_email( $val );
@@ -293,6 +296,11 @@ class WK_Settings {
 				echo '<option value="' . (int) $p->ID . '"' . selected( (string) $p->ID, (string) self::all()[ $key ], false ) . '>' . esc_html( $p->post_title ) . '</option>';
 			}
 			echo '</select>';
+		} elseif ( 'video' === $type ) {
+			// A link, with a button to pick (or upload) the video in the Media Library.
+			echo '<div class="wk-media-row"><input type="url" class="regular-text code" id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( self::all()[ $key ] ) . '" placeholder="https://"> ';
+			echo '<button type="button" class="button wk-media-pick" data-for="wk-' . esc_attr( $key ) . '" data-title="' . esc_attr( $label ) . '">' . esc_html__( 'Choose from Media Library', 'wulf-kit' ) . '</button> ';
+			echo '<button type="button" class="button-link wk-media-clear" data-for="wk-' . esc_attr( $key ) . '"' . ( '' === (string) self::all()[ $key ] ? ' hidden' : '' ) . '>' . esc_html__( 'Remove', 'wulf-kit' ) . '</button></div>';
 		} else {
 			echo '<input type="' . esc_attr( $type ) . '" class="regular-text" id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( self::all()[ $key ] ) . '">';
 		}
@@ -308,6 +316,7 @@ class WK_Settings {
 		}
 		wp_enqueue_style( 'wp-color-picker' );
 		wp_enqueue_script( 'wp-color-picker' );
+		wp_enqueue_media();
 		$days = array( 1 => __( 'Monday', 'wulf-kit' ), 2 => __( 'Tuesday', 'wulf-kit' ), 3 => __( 'Wednesday', 'wulf-kit' ), 4 => __( 'Thursday', 'wulf-kit' ), 5 => __( 'Friday', 'wulf-kit' ), 6 => __( 'Saturday', 'wulf-kit' ), 0 => __( 'Sunday', 'wulf-kit' ) );
 		$h    = self::get( 'hours' );
 		?>
@@ -415,6 +424,15 @@ class WK_Settings {
 					?>
 				</table>
 
+				<h2 id="wk-films"><?php esc_html_e( 'Brand films', 'wulf-kit' ); ?></h2>
+				<p class="description" style="max-width: 820px;"><?php esc_html_e( 'The short silent parts of your two films come with the kit and play in the "Brand film" and "Film chapters" sections. The full films with sound play when a visitor clicks "Watch the film": upload them once in Media › Add New, then choose them here. Until a film is chosen, its "Watch the film" buttons stay hidden.', 'wulf-kit' ); ?></p>
+				<table class="form-table" role="presentation">
+					<?php
+					self::field( 'film_motion', __( 'Wulf Diamond Jewelers (1:15)', 'wulf-kit' ), 'video', __( 'The brand film: shapes, ring styles, fine jewelry, the ring builder and custom design. An MP4 file.', 'wulf-kit' ) );
+					self::field( 'film_suitcase', __( 'The Suitcase (0:39)', 'wulf-kit' ), 'video', __( 'Your story since 1971. An MP4 file.', 'wulf-kit' ) );
+					?>
+				</table>
+
 				<h2><?php esc_html_e( 'OM catalog media', 'wulf-kit' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<?php self::field( 'om_media', __( 'OM media address', 'wulf-kit' ), 'url', __( 'Product widgets set to "OM style number" load photos and 360° videos from here.', 'wulf-kit' ) ); ?>
@@ -422,7 +440,25 @@ class WK_Settings {
 				<?php submit_button(); ?>
 			</form>
 		</div>
-		<script>jQuery(function($){ $('.wk-color').wpColorPicker(); });</script>
+		<script>
+		jQuery( function ( $ ) {
+			$( '.wk-color' ).wpColorPicker();
+			// Brand films: pick (or upload) a video in the Media Library and keep its address.
+			$( '.wk-media-pick' ).on( 'click', function ( e ) {
+				e.preventDefault();
+				var btn = $( this ), input = $( '#' + btn.data( 'for' ) );
+				if ( ! window.wp || ! wp.media ) { input.trigger( 'focus' ); return; }
+				var frame = wp.media( { title: btn.data( 'title' ), library: { type: 'video' }, button: { text: <?php echo wp_json_encode( __( 'Use this video', 'wulf-kit' ) ); ?> }, multiple: false } );
+				frame.on( 'select', function () {
+					var file = frame.state().get( 'selection' ).first().toJSON();
+					input.val( file.url ).trigger( 'change' );
+				} );
+				frame.open();
+			} );
+			$( '.wk-media-clear' ).on( 'click', function () { $( '#' + $( this ).data( 'for' ) ).val( '' ).trigger( 'change' ); } );
+			$( '.wk-media-row input' ).on( 'change input', function () { $( this ).siblings( '.wk-media-clear' ).prop( 'hidden', ! this.value ); } );
+		} );
+		</script>
 		<?php
 	}
 }

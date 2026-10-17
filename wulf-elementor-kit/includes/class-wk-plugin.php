@@ -42,6 +42,8 @@ class WK_Plugin {
 		'bookbar'  => 'WK_Bookbar_Widget',
 		'quiz'     => 'WK_Quiz_Widget',
 		'film'     => 'WK_Film_Widget',
+		'reel'     => 'WK_Reel_Widget',
+		'filmtabs' => 'WK_Filmtabs_Widget',
 	);
 
 	public static function instance() {
@@ -119,6 +121,8 @@ class WK_Plugin {
 		wp_register_script( 'wulf-kit-film', WK_URL . 'assets/js/wulf-film.js', array(), WK_VERSION, array( 'in_footer' => true, 'strategy' => 'defer' ) );
 		// Contact shadows: a small add-on the film fetches itself, only on computers that run its best quality.
 		wp_add_inline_script( 'wulf-kit-film', 'window.wkFilm=' . wp_json_encode( array( 'ao' => add_query_arg( 'ver', WK_VERSION, WK_URL . 'assets/js/wulf-film-ao.js' ), 'v' => WK_VERSION ) ) . ';', 'before' );
+		// The brand films (video): only on pages that use their widgets.
+		wp_register_style( 'wulf-kit-reel', WK_URL . 'assets/css/wulf-reel.css', array( 'wulf-kit' ), WK_VERSION );
 		if ( $s['header_tpl'] || $s['footer_tpl'] || $s['actbar'] || $s['book_pill'] ) {
 			// Site-wide pieces need the kit on every page.
 			wp_enqueue_style( 'wulf-kit' );
@@ -274,6 +278,7 @@ class WK_Plugin {
 				'bkDone'     => __( 'Done', 'wulf-kit' ),
 				'bkCalTitle' => __( 'Visit to %s (we\'ll confirm the time)', 'wulf-kit' ),
 				'bkFlexDay'  => __( 'a day that suits you', 'wulf-kit' ),
+				'filmParts'  => __( 'Parts of the film', 'wulf-kit' ),
 			),
 		);
 	}
