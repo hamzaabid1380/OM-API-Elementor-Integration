@@ -728,11 +728,15 @@ Catalog > Inquiries > Inquiry form or booking calendar**:
 - **With both**: the names of the two tabs and which one is open first.
   The ring builder's form tab is called "Send the request".
 - **Line above the calendar**: one short line (empty for none).
+- **On product pages** (1.45.1): the form or calendar box sits **right
+  under the buttons** (such as "Call us"), before the metal and size
+  choices, or **at the end of the product details** (where it was before
+  1.45.1).
 
 An **OM Single Product** widget can choose for its own page: **Ring Builder
-& Inquiry > Show visitors** (form, calendar or both; "As in Settings ›
-Inquiries" follows the settings). The kit's **Visit** widget has the same
-choice under **Booking form**.
+& Inquiry > Show visitors** (form, calendar or both) and **Where on the
+page** ("As in Settings › Inquiries" follows the settings). The kit's
+**Visit** widget has the same calendar choice under **Booking form**.
 
 Good to know:
 
@@ -740,9 +744,13 @@ Good to know:
   address, colours and calendar layout), read and checked. The pasted text
   is never printed on the site. The calendar always shows in the page, even
   if the code was for SimplyBook's button or pop-up widget.
-- **Speed**: SimplyBook's script loads only when a calendar comes into view
-  (or a tab, pop-up or panel with one opens), so other pages and visitors
-  load nothing extra.
+- **Speed**: the calendar itself (SimplyBook's booking page) loads only
+  when it comes into view or its box, tab, pop-up or panel opens, so pages
+  without one load nothing extra. On pages with a calendar, the connections
+  to SimplyBook open while the page loads, and SimplyBook's script is
+  fetched once the page has finished loading (or as soon as a visitor
+  points at or taps a "Book" toggle, tab or link). Opening the calendar
+  then only waits for SimplyBook's own page.
 - **If it can't load** (a blocker, a slow connection, SimplyBook down), the
   box offers **Open the booking page** instead, and every calendar has
   "Calendar not showing? Book on our booking page" under it. Without
@@ -1330,6 +1338,18 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.45.1
+- **Product pages: the booking box moved up**, right under the buttons
+  (such as "Call us"), before the metal and size choices. Settings > OM
+  Catalog > Inquiries > **On product pages** puts it back at the end of
+  the details; an OM Single Product widget can choose too (**Where on the
+  page**).
+- **The calendar opens faster**: the connections to SimplyBook open while
+  the page loads, and its script is fetched once the page has loaded (or
+  when a visitor reaches for a "Book" toggle, tab or link), so opening a
+  calendar only waits for SimplyBook's own page. In tests with realistic
+  delays it was ready about 0.8 seconds sooner.
 
 ### 1.45.0
 - **Inquiry form or booking calendar**: every place that offers to get in

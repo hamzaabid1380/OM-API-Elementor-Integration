@@ -736,6 +736,21 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'inquiry_position',
+			array(
+				'label'     => __( 'Where on the page', 'om-catalog' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '',
+				'options'   => array(
+					''        => __( 'As in Settings › Inquiries', 'om-catalog' ),
+					'buttons' => __( 'Right under the buttons', 'om-catalog' ),
+					'end'     => __( 'At the end of the details', 'om-catalog' ),
+				),
+				'condition' => array( 'show_inquiry' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
 			'inquiry_source',
 			array(
 				'label'     => __( 'Form', 'om-catalog' ),
@@ -2129,6 +2144,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		$args['show_inquiry']     = 'yes' === ( $settings['show_inquiry'] ?? 'yes' );
 		$args['inquiry_heading']  = (string) ( $settings['inquiry_heading'] ?? '' );
 		$args['inquiry_open']     = 'yes' === ( $settings['inquiry_open'] ?? '' );
+		$args['inquiry_position'] = (string) ( $settings['inquiry_position'] ?? '' );
 		$inquiry                  = array();
 		if ( 'custom' === ( $settings['inquiry_fields_source'] ?? 'global' ) && ! empty( $settings['inquiry_fields'] ) ) {
 			$inquiry['fields'] = (array) $settings['inquiry_fields'];

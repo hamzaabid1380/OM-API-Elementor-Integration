@@ -99,6 +99,7 @@ class OM_Settings {
 			register_setting( 'om_catalog_settings', $booking_label, array( 'sanitize_callback' => static function ( $v ) { return mb_substr( sanitize_text_field( (string) $v ), 0, 40 ); } ) );
 		}
 		register_setting( 'om_catalog_settings', 'om_booking_intro', array( 'sanitize_callback' => static function ( $v ) { return mb_substr( sanitize_text_field( (string) $v ), 0, 200 ); } ) );
+		register_setting( 'om_catalog_settings', 'om_product_inquiry_position', array( 'sanitize_callback' => static function ( $v ) { return 'end' === $v ? 'end' : 'buttons'; } ) );
 
 		// Brand colors / fonts.
 		register_setting( 'om_catalog_settings', 'om_style_source', array( 'sanitize_callback' => array( $this, 'sanitize_style_source' ) ) );
@@ -410,6 +411,17 @@ class OM_Settings {
 						</tbody>
 					</table>
 					<p class="description"><?php esc_html_e( 'The ring builder and the assistant send you what the customer designed or asked. The calendar alone can’t, so “Both” suits them best. An OM Single Product widget can also choose for its own page.', 'om-catalog' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th><?php esc_html_e( 'On product pages', 'om-catalog' ); ?></th>
+				<td>
+					<fieldset>
+						<legend class="screen-reader-text"><?php esc_html_e( 'Where the form or calendar goes on product pages', 'om-catalog' ); ?></legend>
+						<label><input type="radio" name="om_product_inquiry_position" value="buttons" <?php checked( OM_Booking::product_position(), 'buttons' ); ?> /> <?php esc_html_e( 'Right under the buttons (such as “Call us”)', 'om-catalog' ); ?></label><br />
+						<label><input type="radio" name="om_product_inquiry_position" value="end" <?php checked( OM_Booking::product_position(), 'end' ); ?> /> <?php esc_html_e( 'At the end of the product details', 'om-catalog' ); ?></label>
+					</fieldset>
+					<p class="description"><?php esc_html_e( 'Where the form or calendar box sits. An OM Single Product widget can also choose (Ring Builder & Inquiry › Where on the page).', 'om-catalog' ); ?></p>
 				</td>
 			</tr>
 			<tr>

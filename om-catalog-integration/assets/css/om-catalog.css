@@ -3426,6 +3426,13 @@ details.om-acc[open] > .om-acc-title::after {
 	border-top: 0;
 }
 
+/* Right under the buttons (Settings > OM Catalog > Inquiries): a row of
+   its own between the buttons and the options. */
+.om-product-inquiry--top .om-inquiry {
+	margin: calc(18px * var(--om-space, 1)) 0 calc(32px * var(--om-space, 1));
+	border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 /* ---------- Size guide dialog ---------- */
 
 .om-size-guide,
@@ -5646,6 +5653,10 @@ details.om-acc[open] > .om-acc-title::after {
 
 .om-design-modern .om-product-inquiry .om-inquiry-body {
 	padding-bottom: 20px;
+}
+
+.om-design-modern .om-product-inquiry--top .om-inquiry {
+	margin: calc(16px * var(--om-space, 1)) 0 calc(24px * var(--om-space, 1));
 }
 
 /* Copy the style number (both designs). */

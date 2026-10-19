@@ -59,10 +59,13 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			// Where it sits: 'price' (the first thing under the price) or
 			// 'after_options'. The chosen metal/colour go with it either way.
 			'builder_position'    => 'price',
-			// "Inquire about this piece" form at the end of the details.
+			// "Inquire about this piece" form (or the booking calendar).
 			'show_inquiry'        => true,
 			'inquiry_heading'     => '',
 			'inquiry_open'        => false,
+			// Where it sits: 'buttons' (right under the buttons), 'end'
+			// (after the details) or '' (Settings > OM Catalog > Inquiries).
+			'inquiry_position'    => '',
 			// Extra OM_Inquiry::render_form() options (intro, button, field
 			// toggles, labels, custom_form...).
 			'inquiry_options'     => array(),
@@ -200,6 +203,28 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 		);
 	}
 
+	// The inquiry form or booking calendar: right under the buttons (where
+	// visitors decide to get in touch) or after the details.
+	$inquiry_html = '';
+	$inquiry_top  = false;
+	if ( $args['show_inquiry'] && ! $args['compact'] ) {
+		$inquiry_top  = 'buttons' === OM_Booking::product_position( (string) $args['inquiry_position'] );
+		$inquiry_html = '<div id="om-inquiry" class="om-product-inquiry' . ( $inquiry_top ? ' om-product-inquiry--top' : '' ) . '">'
+			. OM_Inquiry::render_form(
+				(array) $args['inquiry_options'] + array(
+					'title'   => $title,
+					'style'   => $style_number,
+					'line'    => $product_line,
+					'url'     => om_product_url( $product_line, $style_number ),
+					'price'   => $price_text,
+					'heading' => '' !== trim( (string) $args['inquiry_heading'] ) ? $args['inquiry_heading'] : __( 'Inquire about this piece', 'om-catalog' ),
+					'open'    => (bool) $args['inquiry_open'],
+					'place'   => 'product',
+				)
+			)
+			. '</div>';
+	}
+
 	ob_start();
 	if ( $args['back_link'] ) {
 		printf(
@@ -308,6 +333,10 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			}
 			// No buttons on this page: the hint line follows the price.
 			echo $hint_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in OM_Hint::button().
+			if ( $inquiry_top && ( 'price' === $buttons_position || '' === $buttons_html ) ) {
+				echo $inquiry_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+				$inquiry_html = '';
+			}
 			?>
 
 			<?php
@@ -393,6 +422,10 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			}
 			if ( 'after_options' === $buttons_position ) {
 				echo $buttons_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in om_render_action_buttons().
+				if ( $inquiry_top ) {
+					echo $inquiry_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+					$inquiry_html = '';
+				}
 			}
 			?>
 
@@ -464,22 +497,8 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			<?php endif; ?>
 
 			<?php
-			if ( $args['show_inquiry'] && ! $args['compact'] ) {
-				echo '<div id="om-inquiry" class="om-product-inquiry">';
-				echo OM_Inquiry::render_form( // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
-					(array) $args['inquiry_options'] + array(
-						'title'   => $title,
-						'style'   => $style_number,
-						'line'    => $product_line,
-						'url'     => om_product_url( $product_line, $style_number ),
-						'price'   => $price_text,
-						'heading' => '' !== trim( (string) $args['inquiry_heading'] ) ? $args['inquiry_heading'] : __( 'Inquire about this piece', 'om-catalog' ),
-						'open'    => (bool) $args['inquiry_open'],
-						'place'   => 'product',
-					)
-				);
-				echo '</div>';
-			}
+			// At the end of the details (or the buttons came last).
+			echo $inquiry_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 			?>
 
 			<?php if ( $args['sticky_bar'] && ! $args['compact'] ) : ?>

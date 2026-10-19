@@ -7,6 +7,11 @@
  * a calendar. Boxes added later (pop-ups, the assistant, results loaded in
  * place, the Wulf kit's booking panel) are picked up as they appear.
  *
+ * To open faster, the connections to SimplyBook are made early and its
+ * script is fetched once the page has loaded (or as soon as a visitor
+ * reaches for a "Book" button), so opening a calendar only waits for
+ * SimplyBook's own page.
+ *
  * window.omBooking.show(el, 'book' | 'form') switches the tabs in or
  * around el; omBooking.scan(root) looks for new calendars in root.
  * A calendar that has loaded fires "om-booking:shown" (it bubbles).
@@ -15,8 +20,72 @@
 	'use strict';
 
 	var scripts = {};
+	var hinted = {};
 	// One calendar at a time: SimplyBook's script keeps some state of its own.
 	var queue = Promise.resolve();
+
+	function settings(box) {
+		try { return JSON.parse(box.getAttribute('data-om-booking') || 'null'); } catch (err) { return null; }
+	}
+
+	/* ---------- Getting ready before a calendar opens ---------- */
+
+	// Open a connection to SimplyBook ahead of time (once per address).
+	function preconnect(url) {
+		var origin = '';
+		try { origin = new URL(url, window.location.href).origin; } catch (err) { return; }
+		if (!origin || origin === 'null' || origin === window.location.origin || hinted[origin]) { return; }
+		hinted[origin] = true;
+		if (document.querySelector('link[rel="preconnect"][href="' + origin + '"]')) { return; } // The page has it.
+		var link = document.createElement('link');
+		link.rel = 'preconnect';
+		link.href = origin;
+		document.head.appendChild(link);
+	}
+
+	function warm(box) {
+		var config = settings(box);
+		preconnect(box.getAttribute('data-om-booking-src'));
+		if (config && config.url) { preconnect(config.url); }
+	}
+
+	// Fetch SimplyBook's script now, so opening the calendar doesn't wait for it.
+	function preload(box) {
+		var src = box && box.getAttribute('data-om-booking-src');
+		if (!src) { return; }
+		warm(box);
+		load(src).catch(function () { /* Tried again when a calendar opens. */ });
+	}
+
+	// The Wulf kit's booking panel builds its calendar when it opens; its
+	// settings are in the kit's page data until then.
+	function kitBox() {
+		var cal = window.wkConfig && window.wkConfig.bk && window.wkConfig.bk.cal;
+		var t = document.createElement('template');
+		if (!cal || !cal.html || !t.content) { return null; }
+		t.innerHTML = cal.html; // Inert: nothing in a template loads or runs.
+		return t.content.querySelector('.om-booking');
+	}
+
+	// Once per page, for the page's calendar or the kit panel's.
+	var preloaded = false;
+	function preloadPage() {
+		if (preloaded) { return; }
+		var box = document.querySelector('.om-booking') || kitBox();
+		if (box) {
+			preloaded = true;
+			preload(box);
+		}
+	}
+
+	// A visitor heading for a calendar: a "Book" toggle, tab or link.
+	var INTENT = 'summary, [data-om-ask-tab="book"], .om-sticky-cta, a[href*="#om-inquiry"], [data-om-hint-book], a[href*="#visit"], a[href$="#book"], [data-wk-book]';
+	function intent(e) {
+		if (preloaded) { return; }
+		var el = e.target && e.target.closest ? e.target.closest(INTENT) : null;
+		if (!el || (el.matches('summary') && !el.parentNode.querySelector('.om-booking'))) { return; }
+		preloadPage();
+	}
 
 	function load(src) {
 		if (!scripts[src]) {
@@ -46,8 +115,7 @@
 
 	function fill(box) {
 		var frame = box.querySelector('.om-booking-frame');
-		var config = null;
-		try { config = JSON.parse(box.getAttribute('data-om-booking') || 'null'); } catch (err) { config = null; }
+		var config = settings(box);
 		if (!frame || !config || !config.url) { failed(box); return null; }
 		if (!frame.id) { frame.id = 'om-sb-' + Math.random().toString(36).slice(2, 9); }
 		return load(box.getAttribute('data-om-booking-src')).then(function () {
@@ -149,6 +217,7 @@
 		boxes.forEach(function (box) {
 			if (box.omBookingSeen) { return; }
 			box.omBookingSeen = true;
+			warm(box);
 			if (io) { io.observe(box); } else { mount(box); }
 		});
 	}
@@ -210,9 +279,22 @@
 		}
 	});
 
+	['pointerover', 'touchstart', 'focusin'].forEach(function (type) {
+		document.addEventListener(type, intent, { capture: true, passive: true });
+	});
+
+	// Once the page itself has loaded: SimplyBook's script, when the page
+	// has a calendar (open or not) or the kit's booking panel has one.
+	function idle() {
+		if ('requestIdleCallback' in window) { window.requestIdleCallback(preloadPage, { timeout: 4000 }); } else { window.setTimeout(preloadPage, 1500); }
+	}
+
 	function start() {
 		scan(document);
 		if (mo && document.body) { mo.observe(document.body, { childList: true, subtree: true }); }
+		var kit = !document.querySelector('.om-booking') && kitBox();
+		if (kit) { warm(kit); }
+		if (document.readyState === 'complete') { idle(); } else { window.addEventListener('load', idle); }
 	}
 	if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', start); } else { start(); }
 

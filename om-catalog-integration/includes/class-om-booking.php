@@ -11,8 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * each place that offers to get in touch: the inquiry form, the booking
  * calendar, or both as two tabs. Only the widget's settings are taken from
  * the pasted code (read as JSON, checked and cleaned); the pasted text is
- * never printed on the site. SimplyBook's script loads when a calendar
- * first comes into view (assets/js/om-booking.js).
+ * never printed on the site. A calendar fills in when it first comes into
+ * view; the connections to SimplyBook and its script are readied ahead,
+ * once the page has loaded (assets/js/om-booking.js).
  */
 class OM_Booking {
 
@@ -146,6 +147,17 @@ CODE;
 	/** Which tab is open first when both show: 'booking' or 'form'. */
 	public static function first() {
 		return 'form' === get_option( 'om_booking_first', 'booking' ) ? 'form' : 'booking';
+	}
+
+	/**
+	 * Where the form or calendar sits on product pages: 'buttons' (right
+	 * under the buttons, e.g. "Call us") or 'end' (after the details).
+	 *
+	 * @param string $override A widget's own choice ('' = Settings).
+	 */
+	public static function product_position( $override = '' ) {
+		$position = in_array( $override, array( 'buttons', 'end' ), true ) ? $override : (string) get_option( 'om_product_inquiry_position', 'buttons' );
+		return 'end' === $position ? 'end' : 'buttons';
 	}
 
 	/* ---------------------------------------------------------------
@@ -369,6 +381,9 @@ CODE;
 		}
 
 		$html = '<div class="om-booking" data-om-booking="' . esc_attr( wp_json_encode( $setup['config'] ) ) . '" data-om-booking-src="' . esc_url( $setup['script'] ) . '" data-om-booking-title="' . esc_attr__( 'Booking calendar', 'om-catalog' ) . '"' . ( '' !== $style ? ' data-om-style="' . esc_attr( $style ) . '"' : '' ) . '>';
+		if ( $enqueue ) {
+			$html .= self::preconnect( $setup );
+		}
 		if ( '' !== $intro ) {
 			$html .= '<p class="om-booking-intro">' . esc_html( $intro ) . '</p>';
 		}
@@ -382,6 +397,33 @@ CODE;
 			. '</div>'
 			. '<p class="om-booking-alt"><a href="' . esc_url( $setup['page'] ) . '" target="_blank" rel="noopener">' . esc_html__( 'Calendar not showing? Book on our booking page', 'om-catalog' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'om-catalog' ) . '</span></a></p>'
 			. '</div>';
+		return $html;
+	}
+
+	/**
+	 * Hints that open the connections to SimplyBook (its script and the
+	 * booking page) while the page loads, once per page. A calendar then
+	 * starts sooner when it's opened.
+	 *
+	 * @param array $setup See setup().
+	 * @return string <link> tags ('' once printed).
+	 */
+	private static function preconnect( $setup ) {
+		static $done = array();
+		$site = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		$html = '';
+		foreach ( array( $setup['script'], $setup['page'] ) as $url ) {
+			$parts = wp_parse_url( (string) $url );
+			$host  = strtolower( (string) ( $parts['host'] ?? '' ) );
+			if ( '' === $host || $host === $site ) {
+				continue;
+			}
+			$origin = ( 'http' === ( $parts['scheme'] ?? '' ) ? 'http' : 'https' ) . '://' . $host . ( ! empty( $parts['port'] ) ? ':' . (int) $parts['port'] : '' );
+			if ( ! isset( $done[ $origin ] ) ) {
+				$done[ $origin ] = true;
+				$html           .= '<link rel="preconnect" href="' . esc_url( $origin ) . '">';
+			}
+		}
 		return $html;
 	}
 
