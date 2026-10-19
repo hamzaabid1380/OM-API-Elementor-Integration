@@ -1359,6 +1359,27 @@ body.wk-calm .wk.wk .split .eyebrow { color: var(--sub); }
 	.wk.wk .bk.pop .bk-nav { margin: 0 -30px -22px; padding: 14px 30px 22px; bottom: -22px; }
 	.wk.wk .bk.pop .bk-done { padding: 12px 30px 34px; }
 }
+/* The SimplyBook calendar (OM Catalog › Inquiries) in the booking panel and the visit form: the kit's
+   colours and type on OM Catalog's calendar and tabs. Both sit on white, so the light palette is used. */
+.wk.wk .om-ask, .wk.wk .om-booking { --om-color-primary: var(--ink-l); --om-color-text: var(--text-l); --om-gold: var(--gold-deep); --om-line: var(--line-l); --om-soft: var(--ivory); --om-muted: var(--sub-l); --om-font-body: var(--sans); --om-r: 999px; --om-r-lg: var(--r); }
+.wk.wk .om-booking .om-booking-intro { margin: 0 0 12px; font-size: 15px; line-height: 1.5; color: var(--sub-l); }
+.wk.wk .om-booking .om-booking-alt { margin-top: 10px; font-size: 13px; }
+.wk.wk .bk-ask, .wk.wk .bk-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.wk.wk .bk-pane[hidden] { display: none; }
+.wk.wk .bk-ask > .om-ask-tabs { flex: none; margin: 2px 24px 6px; }
+.wk.wk .bk-cal { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 24px calc(20px + env(safe-area-inset-bottom, 0px)); }
+.wk.wk .bk-cal .om-booking-frame { min-height: 440px; }
+.wk.wk .book .om-ask-tabs { margin: 6px 0 18px; }
+.wk.wk .book .om-booking { margin-top: 6px; }
+@media (min-width: 900px) {
+	.wk.wk .bk.pop .bk-ask > .om-ask-tabs { margin: 2px 30px 6px; }
+	.wk.wk .bk.pop .bk-cal { padding: 14px 30px 26px; }
+}
+@media (max-width: 600px) {
+	.wk.wk .bk-ask > .om-ask-tabs { margin: 0 18px 4px; }
+	.wk.wk .bk-cal { padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
+}
+
 @media (max-width: 600px) {
 	/* Phones: a floating card near the bottom, where the thumb is */
 	.wk.wk .bk.pop { place-items: end center; padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }

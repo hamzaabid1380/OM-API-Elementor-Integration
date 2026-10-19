@@ -529,6 +529,7 @@ class OM_Diamonds {
 								'url'     => $atts['_page_url'] ?? '',
 								'heading' => __( 'Ask about this diamond', 'om-catalog' ),
 								'intro'   => '',
+								'place'   => 'diamonds',
 							)
 						);
 					}

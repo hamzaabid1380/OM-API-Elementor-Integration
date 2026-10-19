@@ -719,6 +719,23 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'inquiry_booking',
+			array(
+				'label'       => __( 'Show visitors', 'om-catalog' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => '',
+				'options'     => array(
+					''        => __( 'As in Settings › Inquiries', 'om-catalog' ),
+					'form'    => __( 'Inquiry form', 'om-catalog' ),
+					'booking' => __( 'Booking calendar (SimplyBook)', 'om-catalog' ),
+					'both'    => __( 'Both, as two tabs', 'om-catalog' ),
+				),
+				'description' => __( 'The booking calendar is set up under Settings > OM Catalog > Inquiries. Without one, the form shows.', 'om-catalog' ),
+				'condition'   => array( 'show_inquiry' => 'yes' ),
+			)
+		);
+
+		$this->add_control(
 			'inquiry_source',
 			array(
 				'label'     => __( 'Form', 'om-catalog' ),
@@ -2136,6 +2153,7 @@ class OM_Elementor_Product_Widget extends Widget_Base {
 		if ( 'custom' === ( $settings['inquiry_source'] ?? 'builtin' ) ) {
 			$inquiry['custom_form'] = (string) ( $settings['inquiry_shortcode'] ?? '' );
 		}
+		$inquiry['booking']      = (string) ( $settings['inquiry_booking'] ?? '' );
 		$args['inquiry_options'] = $inquiry;
 
 		// The extra class neutralizes the container geometry of

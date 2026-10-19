@@ -318,11 +318,13 @@ class OM_Inquiry {
 	}
 
 	/**
-	 * Render the form.
+	 * Render the form, or the booking calendar in its place, or both as two
+	 * tabs: whatever Settings > OM Catalog > Inquiries says for the place.
 	 *
 	 * @param array $context title, style, line, url, price, diamond (lot),
 	 *                       summary (free text), heading, button, open (bool),
-	 *                       collapsible (bool).
+	 *                       collapsible (bool), place (OM_Booking::places()),
+	 *                       booking (a widget's own form / booking / both).
 	 */
 	public static function render_form( $context = array() ) {
 		$context = wp_parse_args(
@@ -370,10 +372,19 @@ class OM_Inquiry {
 				'subject_field'  => null,
 				'subject'        => '',
 				'subject_tpl'    => null,
+				// Where this form is (OM_Booking::places()), and a widget's
+				// own choice of form / booking / both ('' = Settings).
+				'place'          => '',
+				'booking'        => '',
+				// The form's tab name when both show ('' = Settings), and the
+				// heading when only the calendar shows ('' = its tab name).
+				'form_tab'       => '',
+				'book_heading'   => '',
 			)
 		);
 		$custom_fields = self::normalize_fields( $context['fields'] );
 		$fields        = $custom_fields ? $custom_fields : self::global_fields();
+		$mode          = OM_Booking::mode( (string) $context['place'], (string) $context['booking'] );
 
 		wp_enqueue_style( 'om-catalog-css' );
 		wp_enqueue_script( 'om-catalog-js' );
@@ -381,14 +392,41 @@ class OM_Inquiry {
 		$id   = 'om-inq-' . wp_rand( 1000, 9999 );
 		$sent = isset( $_GET['om_inquiry'] ) && 'sent' === $_GET['om_inquiry']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
 
+		// Only the calendar: its own heading (a form in a pop-up keeps none).
+		$heading = (string) $context['heading'];
+		if ( 'booking' === $mode && '' !== trim( $heading ) ) {
+			$heading = '' !== trim( (string) $context['book_heading'] ) ? (string) $context['book_heading'] : OM_Booking::label( 'book' );
+		}
+		$class = 'form' === $mode ? '' : ' om-inquiry--' . $mode;
+
 		ob_start();
 		if ( $context['collapsible'] ) {
-			echo '<details class="om-inquiry"' . ( $context['open'] || $sent ? ' open' : '' ) . '><summary class="om-inquiry-toggle">' . esc_html( $context['heading'] ) . '</summary>';
+			echo '<details class="om-inquiry' . esc_attr( $class ) . '"' . ( $context['open'] || $sent ? ' open' : '' ) . '><summary class="om-inquiry-toggle">' . esc_html( $heading ) . '</summary>';
 		} else {
-			echo '<div class="om-inquiry om-inquiry--open">' . ( '' !== trim( (string) $context['heading'] ) ? '<h3 class="om-inquiry-heading">' . esc_html( $context['heading'] ) . '</h3>' : '' );
+			echo '<div class="om-inquiry om-inquiry--open' . esc_attr( $class ) . '">' . ( '' !== trim( $heading ) ? '<h3 class="om-inquiry-heading">' . esc_html( $heading ) . '</h3>' : '' );
 		}
+		echo '<div class="om-inquiry-body">';
+		if ( 'form' === $mode ) {
+			echo self::form_part( $context, $id, $sent, $fields, $custom_fields ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in form_part().
+		} else {
+			$calendar = OM_Booking::calendar(
+				array(
+					'style'   => $context['style'],
+					'diamond' => $context['diamond'],
+				)
+			);
+			// After a no-script send, the form (with its thank-you) is open.
+			echo 'booking' === $mode ? $calendar : OM_Booking::tabs( $id, $calendar, self::form_part( $context, $id, $sent, $fields, $custom_fields ), (string) $context['form_tab'], $sent ? 'form' : '' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the builders.
+		}
+		echo '</div>';
+		echo $context['collapsible'] ? '</details>' : '</div>';
+		return ob_get_clean();
+	}
+
+	/** The form itself: the thank-you after a send, the intro and the fields (or the site's own form). */
+	private static function form_part( $context, $id, $sent, $fields, $custom_fields ) {
+		ob_start();
 		?>
-		<div class="om-inquiry-body">
 			<?php if ( $sent ) : ?>
 				<p class="om-inquiry-status is-success" role="status"><?php echo esc_html( self::success_message() ); ?></p>
 			<?php endif; ?>
@@ -461,9 +499,7 @@ class OM_Inquiry {
 				<?php endif; ?>
 			</form>
 			<?php endif; ?>
-		</div>
 		<?php
-		echo $context['collapsible'] ? '</details>' : '</div>';
 		return ob_get_clean();
 	}
 

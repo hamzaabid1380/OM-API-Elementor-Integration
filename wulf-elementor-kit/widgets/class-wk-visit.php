@@ -46,6 +46,22 @@ class WK_Visit_Widget extends WK_Widget {
 
 		$this->start_controls_section( 'c_form', array( 'label' => __( 'Booking form', 'wulf-kit' ) ) );
 		$this->add_control( 'form_on', array( 'label' => __( 'Show the form', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ) );
+		$this->add_control(
+			'booking',
+			array(
+				'label'       => __( 'Show visitors', 'wulf-kit' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => '',
+				'options'     => array(
+					''        => __( 'As in OM Catalog › Inquiries', 'wulf-kit' ),
+					'form'    => __( 'This booking form', 'wulf-kit' ),
+					'booking' => __( 'Booking calendar (SimplyBook)', 'wulf-kit' ),
+					'both'    => __( 'Both, as two tabs', 'wulf-kit' ),
+				),
+				'description' => __( 'The SimplyBook calendar is set up in the OM Catalog plugin (Settings › OM Catalog › Inquiries). Without it, this form shows.', 'wulf-kit' ),
+				'condition'   => array( 'form_on' => 'yes' ),
+			)
+		);
 		$this->add_control( 'f_short', array( 'label' => __( 'Short form', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Only name, mobile, topics, day and time. Hides email, "best way to reach you" and the notes box.', 'wulf-kit' ), 'condition' => array( 'form_on' => 'yes' ) ) );
 		$this->add_control( 'f_title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Book your free consultation', 'wulf-kit' ) ) );
 		$this->add_control( 'f_sub', array( 'label' => __( 'Under the title', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Free, no obligation. We\'ll confirm by call or text.', 'wulf-kit' ), 'label_block' => true ) );
@@ -178,7 +194,11 @@ class WK_Visit_Widget extends WK_Widget {
 
 		if ( 'yes' === $s['form_on'] ) {
 			$times = array_filter( array_map( 'trim', explode( ',', (string) $s['times'] ) ) );
-			echo '<div class="box book" id="' . esc_attr( $uid ) . '-book"><h3 class="h3">' . esc_html( $s['f_title'] ) . '</h3>' . ( $s['f_sub'] ? '<p class="sub">' . esc_html( $s['f_sub'] ) . '</p>' : '' );
+			// The SimplyBook calendar (OM Catalog › Inquiries), in place of the form or beside it as two tabs.
+			$cal = WK_Plugin::booking_calendar( (string) ( $s['booking'] ?? '' ) );
+			echo '<div class="box book" id="' . esc_attr( $uid ) . '-book"><h3 class="h3">' . esc_html( $s['f_title'] ) . '</h3>';
+			ob_start();
+			echo $s['f_sub'] ? '<p class="sub">' . esc_html( $s['f_sub'] ) . '</p>' : '';
 			echo '<form novalidate data-book-form><div style="display:grid;gap:18px">';
 			echo '<div class="tray-card" data-tray-card hidden><b data-tray-title></b><div class="thumbs tray-thumbs" data-tray-thumbs></div><p>' . esc_html__( 'We\'ll bring these in for your visit, usually within a few business days.', 'wulf-kit' ) . '</p></div>';
 			if ( $bring ) {
@@ -214,7 +234,17 @@ class WK_Visit_Widget extends WK_Widget {
 			if ( $s['f_fine'] ) {
 				echo '<p class="fine" style="text-align:center">' . esc_html( $s['f_fine'] ) . '</p>';
 			}
-			echo '</div></form><div class="done" data-done hidden tabindex="-1"></div></div>';
+			echo '</div></form><div class="done" data-done hidden tabindex="-1"></div>';
+			$form = ob_get_clean();
+			if ( ! $cal ) {
+				echo $form; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
+			} elseif ( 'booking' === $cal['mode'] ) {
+				OM_Booking::enqueue();
+				echo $cal['html']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by OM Catalog.
+			} else {
+				echo OM_Booking::tabs( $uid . '-ask', $cal['html'], $form, $cal['form'], $cal['first'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above and by OM Catalog.
+			}
+			echo '</div>';
 		}
 		echo '</div>';
 		if ( $s['after_title'] && $s['after'] ) {

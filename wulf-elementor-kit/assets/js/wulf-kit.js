@@ -571,7 +571,7 @@
 		var first = $('.bk-step[data-step="' + n + '"] input, .bk-step[data-step="' + n + '"] button', bk);
 		if (first && bk.classList.contains('open')) first.focus({ preventScroll: true });
 		$('.bk-form', bk).scrollTop = 0;
-		track('booking_step', { step: n, cta_location: bkS.source || 'page' });
+		if (bkStepsShown()) track('booking_step', { step: n, cta_location: bkS.source || 'page' });
 	}
 	// The last step repeats what was chosen before it (in the panel or in a booking bar), with a way back to change it.
 	function bkSum() {
@@ -644,6 +644,21 @@
 			err.textContent = (er && er.message) || T.error || 'Sorry, that didn\'t send. Please call us instead.'; err.hidden = false;
 		});
 	}
+	// The SimplyBook calendar (OM Catalog › Inquiries): on its own, or beside the steps as two tabs.
+	var CAL = BK.cal || null;
+	function bkCalParts(steps) {
+		var cal = '<div class="bk-cal">' + CAL.html + '</div>';
+		if (CAL.mode !== 'both') return '<div class="bk-pane">' + cal + '</div><div class="bk-pane" hidden>' + steps + '</div>';
+		var parts = { book: [CAL.book, icon('calendar'), cal], form: [CAL.form, icon('clock'), steps] };
+		var order = CAL.first === 'form' ? ['form', 'book'] : ['book', 'form'];
+		return '<div class="om-ask bk-ask" data-om-ask><div class="om-ask-tabs" role="tablist" aria-label="' + esc(BK.title || 'Book') + '">' + order.map(function (k, i) {
+			return '<button type="button" class="om-ask-tab" role="tab" id="wk-bk-t-' + k + '" aria-controls="wk-bk-p-' + k + '" aria-selected="' + (i ? 'false' : 'true') + '"' + (i ? ' tabindex="-1"' : '') + ' data-om-ask-tab="' + k + '">' + parts[k][1] + '<span>' + esc(parts[k][0]) + '</span></button>';
+		}).join('') + '</div>' + order.map(function (k, i) {
+			return '<div class="bk-pane" role="tabpanel" id="wk-bk-p-' + k + '" aria-labelledby="wk-bk-t-' + k + '" data-om-ask-panel="' + k + '"' + (i ? ' hidden' : '') + '>' + parts[k][2] + '</div>';
+		}).join('') + '</div>';
+	}
+	// The steps are on screen (not behind the calendar's tab).
+	function bkStepsShown() { var f = bk && $('.bk-form', bk); return !!f && !f.closest('.bk-pane[hidden]'); }
 	function bkBuild() {
 		bk = document.createElement('div');
 		var pop = BK.style !== 'drawer';
@@ -655,9 +670,8 @@
 			(BK.name ? '<p class="bk-aside-n">' + esc(BK.name) + '</p>' : '') + (BK.addr ? '<p class="bk-aside-a">' + icon('pin') + esc(BK.addr) + '</p>' : '') +
 			'<p class="bk-aside-s" data-wk-status><i></i><span data-status-text></span></p>' +
 			((BK.points || []).length ? '<ul class="bk-pts">' + BK.points.map(function (x) { return '<li>' + icon('check') + esc(x) + '</li>'; }).join('') + '</ul>' : '') + '</div></aside>' : '';
-		bk.innerHTML = '<div class="bk-panel">' + aside + '<div class="bk-main">' +
-			'<div class="bk-head"><div><p class="bk-eye">' + esc(T.bkEyebrow || 'Free consultation') + '</p><h2 class="h3" id="wk-bk-h">' + esc(BK.title || 'Book your free consultation') + '</h2>' + (BK.sub ? '<p class="bk-sub">' + esc(BK.sub) + '</p>' : '') + '</div><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div>' +
-			'<div class="bk-prog" aria-hidden="true"><span></span></div>' +
+		var head = '<div class="bk-head"><div><p class="bk-eye">' + esc(T.bkEyebrow || 'Free consultation') + '</p><h2 class="h3" id="wk-bk-h">' + esc(BK.title || 'Book your free consultation') + '</h2>' + (BK.sub ? '<p class="bk-sub">' + esc(BK.sub) + '</p>' : '') + '</div><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div>';
+		var steps = '<div class="bk-prog" aria-hidden="true"><span></span></div>' +
 			'<form class="bk-form" novalidate>' +
 			'<p class="bk-count" data-bk-count aria-live="polite"></p>' +
 			'<div class="bk-ctx" data-bk-ctx hidden></div>' +
@@ -678,7 +692,8 @@
 			'<p class="err" data-bk-err role="alert" hidden></p>' +
 			(tel ? '<p class="bk-call">' + fmt(esc(T.bkOrCall || 'Prefer to talk? Call %s'), tel) + '</p>' : '') +
 			'<div class="bk-nav"><button class="btn btn-line" type="button" data-bk-back>' + icon('left') + '<span>' + esc(T.bkBack || 'Back') + '</span></button><button class="btn btn-gold" type="submit" data-bk-next></button></div>' +
-			'</form><div class="bk-done" data-bk-done hidden tabindex="-1"></div></div></div>';
+			'</form><div class="bk-done" data-bk-done hidden tabindex="-1"></div>';
+		bk.innerHTML = '<div class="bk-panel">' + aside + '<div class="bk-main">' + head + (CAL ? bkCalParts(steps) : steps) + '</div></div>';
 		ensurePortal().appendChild(bk);
 		if (pop) applyHours(bk);
 		var form = $('.bk-form', bk);
@@ -754,10 +769,13 @@
 		document.body.classList.add('wk-modal-open');
 		document.dispatchEvent(new CustomEvent('wk:panel'));
 		track('booking_open', { cta_location: bkS.source || 'page', topic: known ? opts.topic : '' }, ['trackCustom', 'BookingOpen']);
+		// Both: a day already picked (the booking bar) opens the steps, otherwise the tab set first.
+		if (CAL && CAL.mode === 'both' && window.omBooking) window.omBooking.show(bk, bkS.day ? 'form' : (CAL.first === 'form' ? 'form' : 'book'));
 		bkGo(known ? (bkS.day ? 3 : 2) : 1);
 		requestAnimationFrame(function () { requestAnimationFrame(function () {
 			bk.classList.add('open');
-			var first = $('.bk-step:not([hidden]) button, .bk-step:not([hidden]) input', bk); if (first) first.focus({ preventScroll: true });
+			var first = bkStepsShown() ? $('.bk-step:not([hidden]) button, .bk-step:not([hidden]) input', bk) : ($('.bk-ask [aria-selected="true"]', bk) || $('.bk-head [data-close]', bk));
+			if (first) first.focus({ preventScroll: true });
 		}); });
 	}
 	function bookClose() {
@@ -769,6 +787,13 @@
 		if (bkFrom && bkFrom.focus && document.contains(bkFrom)) bkFrom.focus({ preventScroll: true });
 	}
 	window.wkBook = bookOpen;
+	document.addEventListener('om-ask:change', function (e) {
+		if (bk && bk.contains(e.target) && e.detail && e.detail.tab === 'form' && bkS) track('booking_step', { step: bkS.step, cta_location: bkS.source || 'page' });
+	});
+	document.addEventListener('om-booking:shown', function (e) {
+		var inPanel = bk && bk.contains(e.target);
+		if (inPanel || e.target.closest('.wk')) track('booking_calendar_view', { cta_location: inPanel ? (bkS && bkS.source) || 'page' : 'visit_form' });
+	});
 
 	/* ================= 360° videos turn at a relaxed pace (Wulf Kit › Settings) ================= */
 	var TURN = +CFG.turn || 0.6;

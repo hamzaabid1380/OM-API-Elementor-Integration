@@ -712,6 +712,7 @@ class OM_Shortcodes {
 						// The listing they were on (with its filters), for the email.
 						'url'         => 0 === strpos( $page_url, '/' ) ? preg_replace( '#^(https?://[^/]+).*$#', '$1', home_url() ) . $page_url : $page_url,
 						'button'      => __( 'Send', 'om-catalog' ),
+						'place'       => 'questions',
 					)
 				)
 				. '</div></dialog>';

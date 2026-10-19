@@ -475,6 +475,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 						'price'   => $price_text,
 						'heading' => '' !== trim( (string) $args['inquiry_heading'] ) ? $args['inquiry_heading'] : __( 'Inquire about this piece', 'om-catalog' ),
 						'open'    => (bool) $args['inquiry_open'],
+						'place'   => 'product',
 					)
 				);
 				echo '</div>';
@@ -487,7 +488,8 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 						<span class="om-sticky-title"><?php echo esc_html( $title ); ?></span>
 						<span class="om-sticky-price"><?php echo esc_html( $has_price ? $price_text : '' ); ?></span>
 					</div>
-					<button type="button" class="om-sticky-cta"><?php echo esc_html( $builder_url ? ( '' !== trim( (string) $args['builder_text'] ) ? $args['builder_text'] : __( 'Select this setting', 'om-catalog' ) ) : __( 'Inquire', 'om-catalog' ) ); ?></button>
+					<?php $calendar_only = $args['show_inquiry'] && 'booking' === OM_Booking::mode( 'product', (string) ( ( (array) $args['inquiry_options'] )['booking'] ?? '' ) ); ?>
+					<button type="button" class="om-sticky-cta"><?php echo esc_html( $builder_url ? ( '' !== trim( (string) $args['builder_text'] ) ? $args['builder_text'] : __( 'Select this setting', 'om-catalog' ) ) : ( $calendar_only ? __( 'Book now', 'om-catalog' ) : __( 'Inquire', 'om-catalog' ) ) ); ?></button>
 				</div>
 			<?php endif; ?>
 

@@ -694,6 +694,81 @@ the IDs/names `om_product`, `om_style`, `om_price`, `om_options`, `om_url`
 are filled with the piece being viewed. Those
 leads then land wherever that form sends them (e.g. Elementor > Submissions).
 
+## Booking calendar: SimplyBook (1.45)
+
+Wherever the site offers to get in touch, visitors can see the inquiry form
+(as before), your SimplyBook.me booking calendar, or **both as two tabs**
+("Book an appointment" and "Send a message"). Choose in **Settings > OM
+Catalog > Inquiries > Inquiry form or booking calendar**:
+
+- **Show visitors**: the choice for every place. It starts on **Inquiry
+  form**, so nothing changes until you pick something else.
+- **Place by place**: a place can have its own choice, or follow the one
+  above ("Same as above"):
+
+| Place | What it covers |
+| --- | --- |
+| Product pages | the inquiry box on every product page (its sticky button says "Book now" when only the calendar shows) |
+| Ring builder: the last step | "Request this ring" on the review step |
+| "Ask us" pop-ups | the ring builder's questions, and "Haven't found the one?" after the last design in a listing |
+| Diamond search | "Ask about this diamond" |
+| Hint pages | what the person who got the hint sees ("Book a viewing" opens the calendar tab) |
+| AI assistant | "Talk to our team". Starts on the form, so the chat so far goes with the message |
+| Wulf kit | the kit's "Book a free consultation" panel and its visit form (listed when the Wulf Elementor Kit is active) |
+
+- **SimplyBook calendar**: the calendar from the old site
+  (aalanddiamond.simplybook.me) is already set up. To change it, open
+  **Change the calendar** and paste the widget code SimplyBook gives for its
+  calendar (iframe) widget, or just your SimplyBook address
+  (`https://yourname.simplybook.me`). The page shows which calendar is set
+  up rather than the code, so an empty box keeps it; **Remove the calendar**
+  sends every place back to the form. Anything that isn't a SimplyBook
+  widget code or address is refused with a note, and the calendar stays as
+  it was.
+- **With both**: the names of the two tabs and which one is open first.
+  The ring builder's form tab is called "Send the request".
+- **Line above the calendar**: one short line (empty for none).
+
+An **OM Single Product** widget can choose for its own page: **Ring Builder
+& Inquiry > Show visitors** (form, calendar or both; "As in Settings ›
+Inquiries" follows the settings). The kit's **Visit** widget has the same
+choice under **Booking form**.
+
+Good to know:
+
+- **What is used from the code**: only the widget's settings (your
+  address, colours and calendar layout), read and checked. The pasted text
+  is never printed on the site. The calendar always shows in the page, even
+  if the code was for SimplyBook's button or pop-up widget.
+- **Speed**: SimplyBook's script loads only when a calendar comes into view
+  (or a tab, pop-up or panel with one opens), so other pages and visitors
+  load nothing extra.
+- **If it can't load** (a blocker, a slow connection, SimplyBook down), the
+  box offers **Open the booking page** instead, and every calendar has
+  "Calendar not showing? Book on our booking page" under it. Without
+  JavaScript both parts show, one above the other.
+- **Colours**: the calendar is SimplyBook's own page shown in a frame, so
+  your site's styles can't reach inside it. Its colours come from the
+  `theme_settings` in the widget code or SimplyBook's design settings. A
+  `<style>` that came with the old embed (like `.sb-available-date`) isn't
+  needed.
+- **Bookings live in SimplyBook**, not under Inquiries, and SimplyBook sends
+  its own confirmations. The calendar can't carry the piece being looked
+  at, so on product pages and diamonds a line above it says "Coming in to
+  see this piece? Mention style 85121-2 when you book." Where the details
+  matter most (the ring builder, the assistant), "Both" keeps the form one
+  tap away.
+- **Links**: `#om-inquiry?tab=book` opens the calendar tab and
+  `#om-inquiry?tab=form` the form tab, e.g.
+  `#om-inquiry?subject=Book%20a%20viewing&tab=book`. A subject about
+  booking, a viewing, an appointment or a visit opens the calendar tab by
+  itself.
+- **Anywhere else**: `[om_booking_calendar]` puts the calendar on any page
+  (optional `heading="…"` and `intro="…"`).
+- **Analytics** (with measuring on): `booking_calendar_view` when a
+  calendar has loaded, with `form_location` (product_page, ring_builder,
+  diamond, hint_page, assistant, quick_view or page) and the style number.
+
 ## Related & recently viewed products
 
 The **OM Related Products** widget (or `[om_related source="related|recent|picked"]`)
@@ -1255,6 +1330,24 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.45.0
+- **Inquiry form or booking calendar**: every place that offers to get in
+  touch can show the inquiry form, your SimplyBook.me calendar, or both as
+  two tabs ("Book an appointment" and "Send a message"). One choice for
+  the whole site, and place by place: product pages, the ring builder's
+  last step, the "Ask us" pop-ups, diamond search, hint pages, the AI
+  assistant and the Wulf kit's booking panel and visit form. Everything
+  starts on the form, so nothing changes until you switch.
+- The calendar from the old site's code is set up already; paste new
+  widget code, or just a SimplyBook address, to change it. Only its
+  settings are used, never the pasted text, and saving never resends the
+  code (some firewalls block that).
+- The calendar loads only when it comes into view, and offers the booking
+  page if it can't load. The tabs work with a keyboard and screen readers,
+  and links can open a tab (`#om-inquiry?tab=book`).
+- An OM Single Product widget can choose for its own page; new shortcode
+  `[om_booking_calendar]`; new event `booking_calendar_view`.
 
 ### 1.44.1
 - **Updating keeps everything**: replacing the plugin with a new version

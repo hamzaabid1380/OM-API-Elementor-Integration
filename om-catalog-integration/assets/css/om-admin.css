@@ -399,3 +399,19 @@ dialog.om-email-preview iframe { display: block; width: 100%; height: calc(100% 
 .om-admin-savebar.is-saving .om-admin-savebar-text { color: #5c6670; }
 .om-admin-savebar.is-failed .om-admin-savebar-text { color: #b32d2e; }
 .om-admin-savebar input[type=submit]:disabled { opacity: 0.6; cursor: progress; }
+
+/* Inquiry form or booking calendar */
+.om-booking-settings .om-booking-mode { display: inline-block; margin: 2px 0 6px; }
+.om-booking-settings .om-booking-mode .description { margin-left: 4px; }
+.om-booking-settings .om-booking-places { max-width: 760px; border-radius: 10px; overflow: hidden; }
+.om-booking-settings .om-booking-places td { padding: 10px 14px; vertical-align: middle; }
+.om-booking-settings .om-booking-places td:last-child { width: 220px; text-align: right; }
+.om-booking-settings .om-booking-places select { width: 100%; max-width: 210px; }
+.om-booking-status { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+.om-booking-status.is-ok .om-admin-dot { background: var(--oa-ok); }
+.om-booking-change > summary { cursor: pointer; color: var(--oa-accent, #2271b1); margin: 0 0 8px; }
+.om-booking-change textarea { margin: 4px 0 6px; font-size: 12px; }
+@media (max-width: 782px) {
+	.om-booking-settings .om-booking-places td { display: block; width: auto !important; text-align: left !important; }
+	.om-booking-settings .om-booking-places td:first-child { padding-bottom: 2px; }
+}

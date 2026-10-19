@@ -883,6 +883,11 @@
 		}
 		var details = $box.is('details') ? $box[0] : $box.find('details.om-inquiry')[0];
 		if (details) { details.open = true; }
+		// Calendar and form as two tabs: ?tab=book|form, or a booking subject
+		// ("Book a viewing") shows the calendar and any other the form.
+		var tab = /[?&]tab=(book|form)\b/.exec(hash);
+		var want = tab ? tab[1] : (subject ? (/book|viewing|appointment|consult|visit/i.test(subject) ? 'book' : 'form') : '');
+		if (want && window.omBooking) { window.omBooking.show($box[0], want); }
 		if (subject) {
 			var $radio = $box.find('input[name="om_subject"]').filter(function () { return this.value.toLowerCase() === subject.toLowerCase(); });
 			if ($radio.length) { $radio.prop('checked', true); } else {
@@ -891,10 +896,22 @@
 			}
 		}
 		$box[0].scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-		var first = $box.find('.om-fields input:not([type=hidden]):not([type=radio]), .om-fields textarea').first()[0];
+		var first = $box.find('.om-fields input:not([type=hidden]):not([type=radio]), .om-fields textarea').filter(':visible').first()[0];
 		if (first) { setTimeout(function () { first.focus({ preventScroll: true }); }, 450); }
 		return true;
 	}
+
+	// Where a form or calendar sits, for analytics.
+	function formLocation($el) {
+		return $el.closest('.om-ai').length ? 'assistant' : $el.closest('.om-builder').length ? 'ring_builder' : ($el.closest('.om-quick-view').length ? 'quick_view' : ($el.closest('.om-diamonds').length ? 'diamond' : ($el.closest('.om-product-wrap').length ? 'product_page' : ($el.closest('.om-hint-page').length ? 'hint_page' : 'page'))));
+	}
+
+	// The SimplyBook calendar shown (om-booking.js).
+	document.addEventListener('om-booking:shown', function (e) {
+		var $box = $(e.target);
+		if ($box.closest('.wk').length) { return; } // The Wulf kit's booking panel / visit form count their own.
+		track('booking_calendar_view', { form_location: formLocation($box), item_id: $box.attr('data-om-style') || '' });
+	});
 
 	function setPair($box, value, title) {
 		var $input = $box.find('.om-inquiry-pair');
@@ -991,7 +1008,7 @@
 				if (ok) {
 					var subject = $.trim($form.find('[name="om_subject"]:checked, input.om-subject-hidden').first().val() || '');
 					var leadItem = $form.find('[name="om_ctx_style"]').val();
-					var from = $form.closest('.om-ai').length ? 'assistant' : $form.closest('.om-builder').length ? 'ring_builder' : ($form.closest('.om-quick-view').length ? 'quick_view' : ($form.closest('.om-diamonds').length ? 'diamond' : ($form.closest('.om-product-wrap').length ? 'product_page' : ($form.closest('.om-hint-page').length ? 'hint_page' : 'page'))));
+					var from = formLocation($form);
 					var leadPrice = priceNumber($form.find('[name="om_ctx_price"]').val());
 					track('generate_lead', $.extend({ form_type: 'inquiry', form_location: from, subject: subject, item_id: leadItem || '' }, leadPrice ? { value: leadPrice, currency: cfg.currency || 'USD' } : {}), ['track', 'Lead', { content_name: $form.find('[name="om_ctx_title"]').val() || subject, content_category: from }]);
 					if (/viewing|appointment/i.test(subject) && cfg.track && cfg.trackMeta && typeof window.fbq === 'function' && !trackOff()) { try { window.fbq('track', 'Schedule'); } catch (err) { /* ignore */ } }
@@ -1973,7 +1990,7 @@
 			var details = inquiry.querySelector('details');
 			if (details) { details.open = true; }
 			inquiry.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			var first = inquiry.querySelector('input:not([type=hidden]), textarea, select');
+			var first = $(inquiry).find('input:not([type=hidden]), textarea, select').filter(':visible')[0];
 			if (first) { setTimeout(function () { first.focus({ preventScroll: true }); }, 450); }
 		} else if ($visibleBtn.length) {
 			$visibleBtn[0].click();
@@ -3068,7 +3085,9 @@
 		$(page).on('click', '[data-om-hint-book]', function (e) {
 			track('hint_cta', { cta: 'book', viewer: who });
 			var kit = window.wkBook && window.wkConfig && window.wkConfig.panel;
-			if (!kit) { return; } // The inquiry form below, with "Book a viewing" chosen.
+			// The inquiry form below, with "Book a viewing" chosen, or the
+			// booking calendar there when the page shows one.
+			if (!kit || page.querySelector('.om-hp-inquiry .om-booking')) { return; }
 			e.preventDefault();
 			e.stopPropagation();
 			window.wkBook({

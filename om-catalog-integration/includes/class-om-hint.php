@@ -634,8 +634,8 @@ class OM_Hint {
 			echo '</div>';
 		}
 
-		$book = '<a class="om-btn om-btn--solid om-hp-book" href="#om-inquiry?subject=' . rawurlencode( __( 'Book a viewing', 'om-catalog' ) ) . '" data-om-hint-book>' . esc_html__( 'Book a viewing', 'om-catalog' ) . '</a>';
-		$ask  = '<a class="om-btn om-btn--outline om-hp-ask" href="#om-inquiry" data-om-hint-ask>' . esc_html__( 'Ask us about it', 'om-catalog' ) . '</a>';
+		$book = '<a class="om-btn om-btn--solid om-hp-book" href="#om-inquiry?subject=' . rawurlencode( __( 'Book a viewing', 'om-catalog' ) ) . '&tab=book" data-om-hint-book>' . esc_html__( 'Book a viewing', 'om-catalog' ) . '</a>';
+		$ask  = '<a class="om-btn om-btn--outline om-hp-ask" href="#om-inquiry?tab=form" data-om-hint-ask>' . esc_html__( 'Ask us about it', 'om-catalog' ) . '</a>';
 		$ctas = '<div class="om-hp-ctas">' . $book . $ask . '</div>' . ( '' !== self::promise() ? '<p class="om-hp-promise">' . esc_html( self::promise() ) . '</p>' : '' );
 
 		echo '<div class="om-hp-designs om-hp-designs--' . ( $one ? 'one' : 'many' ) . '">';
@@ -672,6 +672,7 @@ class OM_Hint {
 				'collapsible' => true,
 				'open'        => false,
 				'subject'     => __( 'Book a viewing', 'om-catalog' ),
+				'place'       => 'hint',
 			)
 		);
 		echo '</div>';

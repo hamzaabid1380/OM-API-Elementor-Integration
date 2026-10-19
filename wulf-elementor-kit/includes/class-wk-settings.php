@@ -393,6 +393,15 @@ class WK_Settings {
 
 				<h2><?php esc_html_e( 'Booking & conversions', 'wulf-kit' ); ?></h2>
 				<p><?php esc_html_e( 'Every "Book" button on the site can open one short booking panel: what it\'s about, a day and time, then name and phone. Requests arrive by email (and in your CRM when that is on), with the piece the visitor was looking at.', 'wulf-kit' ); ?></p>
+				<?php if ( class_exists( 'OM_Booking' ) ) : ?>
+					<p>
+						<?php
+						$cal = WK_Plugin::booking_calendar();
+						echo esc_html( $cal ? ( 'both' === $cal['mode'] ? __( 'Your SimplyBook calendar is on: the panel and the visit form show it beside this booking form, as two tabs.', 'wulf-kit' ) : __( 'Your SimplyBook calendar is on: the panel and the visit form show it instead of this booking form.', 'wulf-kit' ) ) : __( 'To show your SimplyBook booking calendar instead of this form, or beside it as two tabs, choose it in the OM Catalog settings.', 'wulf-kit' ) );
+						?>
+						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=om-catalog-settings#inquiries' ) ); ?>"><?php esc_html_e( 'Settings › OM Catalog › Inquiries', 'wulf-kit' ); ?></a>
+					</p>
+				<?php endif; ?>
 				<table class="form-table" role="presentation">
 					<?php
 					self::field( 'book_panel', __( 'Booking panel', 'wulf-kit' ), 'check', __( '"Book" buttons open the booking panel on the same page (recommended). Untick to jump to the visit form instead.', 'wulf-kit' ) );

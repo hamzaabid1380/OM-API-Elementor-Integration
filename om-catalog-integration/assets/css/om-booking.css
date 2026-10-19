@@ -1,0 +1,271 @@
+/*
+ * OM Catalog: the SimplyBook booking calendar and the Book / Message tabs
+ * (Settings > OM Catalog > Inquiries). Loaded with the catalog's styles when
+ * a place shows the calendar, and by the Wulf kit's booking panel.
+ * Selectors carry two classes (and "html body" on the buttons) so the
+ * site's global paragraph and button styles don't reach them.
+ */
+
+.om-booking,
+.om-ask {
+	--omb-ink: var(--om-color-primary, #00111c);
+	--omb-line: var(--om-line, rgba(0, 17, 28, 0.12));
+	--omb-soft: var(--om-soft, #faf9f7);
+	--omb-muted: var(--om-muted, #6e6e6e);
+	--omb-gold: var(--om-gold, #b8925a);
+	--omb-radius: var(--om-r-lg, 12px);
+}
+
+/* ---------- The calendar ---------- */
+
+.om-booking {
+	position: relative;
+	font-family: var(--om-font-body, inherit);
+}
+
+.om-booking .om-booking-intro {
+	margin: 0 0 14px;
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--om-color-text, inherit);
+}
+
+.om-booking .om-booking-note {
+	margin: 0 0 14px;
+	padding: 10px 12px;
+	border-left: 2px solid var(--omb-gold);
+	background: var(--omb-soft);
+	color: var(--omb-muted);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.om-booking .om-booking-frame {
+	position: relative;
+	min-height: 520px;
+	border: 1px solid var(--omb-line);
+	border-radius: var(--omb-radius);
+	background: #fff;
+	overflow: hidden;
+}
+
+.om-booking.is-ready .om-booking-frame,
+.om-booking.is-failed .om-booking-frame {
+	min-height: 0;
+}
+
+.om-booking .om-booking-frame iframe {
+	display: block;
+	width: 100% !important;
+	max-width: 100%;
+	min-height: 600px;
+	margin: 0;
+	border: 0;
+}
+
+.om-booking .om-booking-wait {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	background: #fff;
+	color: var(--omb-muted);
+	font-size: 13px;
+	letter-spacing: 0.02em;
+}
+
+.om-booking .om-booking-wait[hidden],
+.om-booking .om-booking-failed[hidden] {
+	display: none;
+}
+
+.om-booking .om-booking-spin {
+	width: 28px;
+	height: 28px;
+	border: 2px solid var(--omb-line);
+	border-top-color: var(--omb-gold);
+	border-radius: 50%;
+	animation: om-booking-spin 0.9s linear infinite;
+}
+
+@keyframes om-booking-spin {
+	to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.om-booking .om-booking-spin { animation-duration: 2.4s; }
+}
+
+.om-booking .om-booking-failed {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	padding: 40px 20px;
+	text-align: center;
+	color: var(--omb-muted);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.om-booking .om-booking-failed p {
+	margin: 0;
+}
+
+html body .om-booking .om-booking-open {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	padding: 0 22px;
+	border-radius: var(--om-r, 999px);
+	background: var(--omb-ink);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	text-decoration: none;
+}
+
+.om-booking .om-booking-alt {
+	margin: 10px 0 0;
+	font-size: 12.5px;
+	line-height: 1.5;
+	color: var(--omb-muted);
+}
+
+.om-booking.is-failed .om-booking-alt {
+	display: none;
+}
+
+html body .om-booking .om-booking-alt a {
+	color: inherit;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+html body .om-booking .om-booking-alt a:hover,
+html body .om-booking .om-booking-alt a:focus-visible {
+	color: var(--omb-ink);
+}
+
+.om-booking .screen-reader-text {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(1px, 1px, 1px, 1px);
+	white-space: nowrap;
+}
+
+/* [om_booking_calendar] on its own */
+
+.om-booking-block .om-booking-heading {
+	margin: 0 0 10px;
+	font-family: var(--om-font-heading, inherit);
+	font-size: 26px;
+	font-weight: 400;
+	line-height: 1.2;
+	color: var(--om-color-primary, inherit);
+}
+
+.om-booking-admin-note {
+	padding: 12px 14px;
+	border: 1px dashed rgba(0, 0, 0, 0.25);
+	font-size: 13px;
+}
+
+/* ---------- Two tabs: the calendar and the form ---------- */
+
+.om-ask .om-ask-tabs {
+	display: flex;
+	gap: 4px;
+	margin: 0 0 18px;
+	padding: 4px;
+	border: 1px solid var(--omb-line);
+	border-radius: var(--om-r, 999px);
+	background: var(--omb-soft);
+}
+
+html body .om-ask .om-ask-tab {
+	flex: 1 1 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-width: 0;
+	min-height: 44px;
+	margin: 0;
+	padding: 6px 14px;
+	border: 0;
+	border-radius: var(--om-r, 999px);
+	background: transparent;
+	box-shadow: none;
+	color: var(--omb-ink);
+	font-family: var(--om-font-body, inherit);
+	font-size: 13.5px;
+	font-weight: 500;
+	line-height: 1.25;
+	letter-spacing: 0.01em;
+	text-align: center;
+	text-transform: none;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+html body .om-ask .om-ask-tab:hover {
+	background: rgba(0, 17, 28, 0.06);
+	color: var(--omb-ink);
+}
+
+html body .om-ask .om-ask-tab[aria-selected="true"] {
+	background: var(--omb-ink);
+	color: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
+html body .om-ask .om-ask-tab:focus-visible {
+	outline: 2px solid var(--omb-gold);
+	outline-offset: 2px;
+}
+
+.om-ask .om-ask-tab svg {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.6;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.om-ask .om-ask-tab span {
+	min-width: 0;
+}
+
+.om-ask .om-ask-panel[hidden] {
+	display: none;
+}
+
+@media (max-width: 420px) {
+	html body .om-ask .om-ask-tab {
+		gap: 6px;
+		padding: 6px 10px;
+		font-size: 13px;
+		letter-spacing: 0;
+	}
+
+	.om-ask .om-ask-tab svg {
+		display: none;
+	}
+
+	.om-booking .om-booking-frame iframe {
+		min-height: 640px;
+	}
+}

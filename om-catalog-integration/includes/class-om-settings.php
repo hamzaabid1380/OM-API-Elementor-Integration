@@ -90,6 +90,16 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_inquiry_autoreply', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_inquiry_autoreply_text', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 
+		// Inquiry form or booking calendar (SimplyBook.me).
+		register_setting( 'om_catalog_settings', 'om_booking_default', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, OM_Booking::MODES, true ) ? $v : 'form'; } ) );
+		register_setting( 'om_catalog_settings', 'om_booking_places', array( 'sanitize_callback' => array( 'OM_Booking', 'sanitize_places' ) ) );
+		register_setting( 'om_catalog_settings', 'om_booking_code', array( 'sanitize_callback' => array( $this, 'sanitize_booking_code' ) ) );
+		register_setting( 'om_catalog_settings', 'om_booking_first', array( 'sanitize_callback' => static function ( $v ) { return 'form' === $v ? 'form' : 'booking'; } ) );
+		foreach ( array( 'om_booking_tab_book', 'om_booking_tab_form' ) as $booking_label ) {
+			register_setting( 'om_catalog_settings', $booking_label, array( 'sanitize_callback' => static function ( $v ) { return mb_substr( sanitize_text_field( (string) $v ), 0, 40 ); } ) );
+		}
+		register_setting( 'om_catalog_settings', 'om_booking_intro', array( 'sanitize_callback' => static function ( $v ) { return mb_substr( sanitize_text_field( (string) $v ), 0, 200 ); } ) );
+
 		// Brand colors / fonts.
 		register_setting( 'om_catalog_settings', 'om_style_source', array( 'sanitize_callback' => array( $this, 'sanitize_style_source' ) ) );
 		register_setting( 'om_catalog_settings', 'om_color_primary', array( 'sanitize_callback' => 'sanitize_hex_color' ) );
@@ -178,6 +188,29 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_popular_searches', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'om_catalog_settings', 'om_track_searches', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_search_results_page', array( 'sanitize_callback' => 'absint' ) );
+	}
+
+	/**
+	 * The SimplyBook widget code. The page shows the calendar that is set up
+	 * rather than the code (so saving never resends script tags, which some
+	 * firewalls block): an empty box keeps the current one, "Remove" clears
+	 * it, and code that isn't a SimplyBook widget is refused.
+	 */
+	public function sanitize_booking_code( $value ) {
+		$current = (string) get_option( 'om_booking_code', OM_Booking::DEFAULT_CODE );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php has checked the settings nonce.
+		if ( ! empty( $_POST['om_booking_code_remove'] ) ) {
+			return '';
+		}
+		$value = mb_substr( trim( str_replace( "\0", '', (string) $value ) ), 0, 8000 );
+		if ( '' === $value ) {
+			return $current;
+		}
+		if ( ! OM_Booking::parse( $value ) ) {
+			add_settings_error( 'om_booking_code', 'om_booking_code', __( 'That isn’t a SimplyBook widget code or address, so the booking calendar was left as it was. Paste the code SimplyBook gives for its calendar widget, or just your SimplyBook address (https://yourname.simplybook.me).', 'om-catalog' ) );
+			return $current;
+		}
+		return $value;
 	}
 
 	/**
@@ -332,6 +365,97 @@ class OM_Settings {
 		return $items;
 	}
 
+	/** Settings > OM Catalog > Inquiries: the inquiry form, the SimplyBook calendar, or both. */
+	private function render_booking_section() {
+		$setup   = OM_Booking::setup();
+		$default = OM_Booking::default_mode();
+		$places  = OM_Booking::place_modes();
+		$modes   = array(
+			'form'    => array( __( 'Inquiry form', 'om-catalog' ), __( 'The form you have now. It sends you the piece they were looking at, and saves it under Inquiries.', 'om-catalog' ) ),
+			'booking' => array( __( 'Booking calendar', 'om-catalog' ), __( 'Your SimplyBook.me calendar, so they pick a day and time themselves.', 'om-catalog' ) ),
+			'both'    => array( __( 'Both, as two tabs', 'om-catalog' ), __( '“Book an appointment” and “Send a message”, side by side.', 'om-catalog' ) ),
+		);
+		$host    = $setup ? (string) wp_parse_url( $setup['page'], PHP_URL_HOST ) : '';
+		?>
+		<p class="description"><?php esc_html_e( 'What visitors see wherever the site offers to get in touch. Every place can follow the choice below or have its own. Without a calendar set up, every place shows the inquiry form.', 'om-catalog' ); ?></p>
+		<table class="form-table om-booking-settings">
+			<tr>
+				<th><?php esc_html_e( 'Show visitors', 'om-catalog' ); ?></th>
+				<td>
+					<fieldset>
+						<?php foreach ( $modes as $key => $mode ) : ?>
+							<label class="om-booking-mode"><input type="radio" name="om_booking_default" value="<?php echo esc_attr( $key ); ?>" <?php checked( $default, $key ); ?> /> <strong><?php echo esc_html( $mode[0] ); ?></strong> <span class="description"><?php echo esc_html( $mode[1] ); ?></span></label><br />
+						<?php endforeach; ?>
+					</fieldset>
+				</td>
+			</tr>
+			<tr>
+				<th><?php esc_html_e( 'Place by place', 'om-catalog' ); ?></th>
+				<td>
+					<table class="widefat striped om-booking-places">
+						<tbody>
+							<?php foreach ( OM_Booking::places() as $place => $label ) : ?>
+								<tr>
+									<td><label for="om-booking-place-<?php echo esc_attr( $place ); ?>"><?php echo esc_html( $label ); ?></label></td>
+									<td>
+										<select id="om-booking-place-<?php echo esc_attr( $place ); ?>" name="om_booking_places[<?php echo esc_attr( $place ); ?>]">
+											<option value="" <?php selected( $places[ $place ], '' ); ?>><?php esc_html_e( 'Same as above', 'om-catalog' ); ?></option>
+											<?php foreach ( $modes as $key => $mode ) : ?>
+												<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $places[ $place ], $key ); ?>><?php echo esc_html( $mode[0] ); ?></option>
+											<?php endforeach; ?>
+										</select>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+					<p class="description"><?php esc_html_e( 'The ring builder and the assistant send you what the customer designed or asked. The calendar alone can’t, so “Both” suits them best. An OM Single Product widget can also choose for its own page.', 'om-catalog' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="om_booking_code"><?php esc_html_e( 'SimplyBook calendar', 'om-catalog' ); ?></label></th>
+				<td><div data-om-live="booking-calendar">
+					<?php if ( $setup ) : ?>
+						<p class="om-booking-status is-ok"><span class="om-admin-dot" aria-hidden="true"></span>
+							<?php
+							/* translators: %s: SimplyBook address, e.g. yourname.simplybook.me. */
+							echo esc_html( sprintf( __( 'Calendar set up: %s', 'om-catalog' ), $host ) );
+							?>
+							· <a href="<?php echo esc_url( $setup['page'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Open the booking page', 'om-catalog' ); ?></a></p>
+					<?php else : ?>
+						<p class="om-booking-status is-off"><span class="om-admin-dot" aria-hidden="true"></span><?php esc_html_e( 'No calendar yet: every place shows the inquiry form.', 'om-catalog' ); ?></p>
+					<?php endif; ?>
+					<details class="om-booking-change"<?php echo $setup ? '' : ' open'; ?>>
+						<summary><?php echo $setup ? esc_html__( 'Change the calendar', 'om-catalog' ) : esc_html__( 'Add a calendar', 'om-catalog' ); ?></summary>
+						<textarea id="om_booking_code" name="om_booking_code" rows="5" class="large-text code" placeholder="<?php esc_attr_e( 'Paste the widget code from SimplyBook, or just your SimplyBook address, e.g. https://yourname.simplybook.me', 'om-catalog' ); ?>"></textarea>
+						<p class="description"><?php esc_html_e( 'In SimplyBook, open the widgets for your booking website and copy the code of the calendar (iframe) widget. Only its settings are used: your address, colours and calendar layout. The calendar loads from SimplyBook when it comes into view. Leave the box empty to keep the current calendar.', 'om-catalog' ); ?></p>
+						<?php if ( $setup ) : ?>
+							<label><input type="checkbox" name="om_booking_code_remove" value="1" /> <?php esc_html_e( 'Remove the calendar (every place goes back to the inquiry form)', 'om-catalog' ); ?></label>
+						<?php endif; ?>
+					</details>
+				</div></td>
+			</tr>
+			<tr>
+				<th><?php esc_html_e( 'With both', 'om-catalog' ); ?></th>
+				<td>
+					<p><label><?php esc_html_e( 'Calendar tab', 'om-catalog' ); ?> <input type="text" name="om_booking_tab_book" value="<?php echo esc_attr( get_option( 'om_booking_tab_book', '' ) ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Book an appointment', 'om-catalog' ); ?>" /></label></p>
+					<p><label><?php esc_html_e( 'Form tab', 'om-catalog' ); ?> <input type="text" name="om_booking_tab_form" value="<?php echo esc_attr( get_option( 'om_booking_tab_form', '' ) ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Send a message', 'om-catalog' ); ?>" /></label></p>
+					<fieldset><legend class="screen-reader-text"><?php esc_html_e( 'Open first', 'om-catalog' ); ?></legend>
+						<?php esc_html_e( 'Open first:', 'om-catalog' ); ?>
+						<label><input type="radio" name="om_booking_first" value="booking" <?php checked( OM_Booking::first(), 'booking' ); ?> /> <?php esc_html_e( 'the calendar', 'om-catalog' ); ?></label>
+						<label><input type="radio" name="om_booking_first" value="form" <?php checked( OM_Booking::first(), 'form' ); ?> /> <?php esc_html_e( 'the form', 'om-catalog' ); ?></label>
+					</fieldset>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="om_booking_intro"><?php esc_html_e( 'Line above the calendar', 'om-catalog' ); ?></label></th>
+				<td><input type="text" id="om_booking_intro" name="om_booking_intro" value="<?php echo esc_attr( OM_Booking::intro() ); ?>" class="large-text" />
+				<p class="description"><?php esc_html_e( 'Empty: no line. Under it, product pages add the style number to mention when booking. The calendar can also go on any page with the shortcode [om_booking_calendar].', 'om-catalog' ); ?></p></td>
+			</tr>
+		</table>
+		<?php
+	}
+
 	public function render_settings_page() {
 		?>
 		<div class="wrap om-admin">
@@ -448,6 +572,9 @@ class OM_Settings {
 						</td>
 					</tr>
 				</table>
+
+				<h2 class="om-sec" data-om-tab="inquiries">Inquiry form or booking calendar</h2>
+				<?php $this->render_booking_section(); ?>
 
 				<h2 class="om-sec" data-om-tab="inquiries">Inquiries</h2>
 				<table class="form-table">

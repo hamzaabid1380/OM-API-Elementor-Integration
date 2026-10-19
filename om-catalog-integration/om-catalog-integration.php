@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.44.1
+ * Version: 1.45.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.44.1' );
+define( 'OM_CATALOG_VERSION', '1.45.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -30,6 +30,7 @@ require_once OM_CATALOG_DIR . 'includes/class-om-hint.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-assistant.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-emails.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-crm.php';
+require_once OM_CATALOG_DIR . 'includes/class-om-booking.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-inquiry.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamonds.php';
 require_once OM_CATALOG_DIR . 'includes/class-om-diamond-guide.php';
@@ -66,6 +67,7 @@ function om_catalog_init() {
 		}
 		update_option( 'om_migrated_133', '1' );
 	}
+	OM_Booking::instance();
 	OM_Inquiry::instance();
 	OM_Diamonds::instance();
 	OM_Ring_Builder::instance();
@@ -90,7 +92,13 @@ add_action( 'plugins_loaded', 'om_catalog_init' );
  * template, ...), and the Elementor widgets declare them as dependencies.
  */
 function om_catalog_enqueue_assets() {
-	wp_register_style( 'om-catalog-css', OM_CATALOG_URL . 'assets/css/om-catalog.build.css', array(), OM_CATALOG_VERSION );
+	// The SimplyBook calendar (Settings > OM Catalog > Inquiries): its loader
+	// and styles, also used by the Wulf kit's booking panel. They come with
+	// the catalog's own files whenever some place shows the calendar.
+	$booking = OM_Booking::in_use();
+	wp_register_style( 'om-booking-css', OM_CATALOG_URL . 'assets/css/om-booking.css', array(), OM_CATALOG_VERSION );
+	wp_register_script( 'om-booking', OM_CATALOG_URL . 'assets/js/om-booking.js', array(), OM_CATALOG_VERSION, true );
+	wp_register_style( 'om-catalog-css', OM_CATALOG_URL . 'assets/css/om-catalog.build.css', $booking ? array( 'om-booking-css' ) : array(), OM_CATALOG_VERSION );
 	$tokens = om_catalog_style_tokens();
 	// Our own Arapey / Inter load unless the fonts come from elsewhere: the
 	// Elementor kit (Google or self-hosted, as the kit is configured) or a
@@ -107,7 +115,7 @@ function om_catalog_enqueue_assets() {
 			null
 		);
 	}
-	wp_register_script( 'om-catalog-js', OM_CATALOG_URL . 'assets/js/om-product.js', array( 'jquery' ), OM_CATALOG_VERSION, true );
+	wp_register_script( 'om-catalog-js', OM_CATALOG_URL . 'assets/js/om-product.js', $booking ? array( 'jquery', 'om-booking' ) : array( 'jquery' ), OM_CATALOG_VERSION, true );
 
 	wp_localize_script(
 		'om-catalog-js',

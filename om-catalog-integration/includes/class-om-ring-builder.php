@@ -968,6 +968,7 @@ class OM_Ring_Builder {
 					'guide'       => $guide,
 					'note'        => self::guide_note( $guide ),
 					'button'      => __( 'Send', 'om-catalog' ),
+					'place'       => 'questions',
 				)
 			)
 			. '</div></dialog>';
@@ -1210,6 +1211,8 @@ class OM_Ring_Builder {
 						'reassure'    => (string) $atts['reassure'],
 						'collapsible' => false,
 						'fields'      => $fields,
+						'place'       => 'builder',
+						'form_tab'    => __( 'Send the request', 'om-catalog' ),
 					) + $subject_args
 				);
 				$this->render_done( $atts, $title, null !== $total ? om_format_price( $total ) : '', $setting_img );

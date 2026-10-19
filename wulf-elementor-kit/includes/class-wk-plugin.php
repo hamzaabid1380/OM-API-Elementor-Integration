@@ -112,9 +112,11 @@ class WK_Plugin {
 			wp_register_style( 'wulf-kit-fonts', 'https://fonts.googleapis.com/css2?' . implode( '&', $fam ) . '&display=swap', array(), null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
 			$deps[] = 'wulf-kit-fonts';
 		}
-		wp_register_style( 'wulf-kit', WK_URL . 'assets/css/wulf-kit.css', $deps, WK_VERSION );
+		// The SimplyBook calendar in the booking panel (OM Catalog's loader and styles).
+		$cal = self::booking_calendar();
+		wp_register_style( 'wulf-kit', WK_URL . 'assets/css/wulf-kit.css', $cal ? array_merge( $deps, array( 'om-booking-css' ) ) : $deps, WK_VERSION );
 		wp_add_inline_style( 'wulf-kit', self::brand_css() );
-		wp_register_script( 'wulf-kit', WK_URL . 'assets/js/wulf-kit.js', array(), WK_VERSION, true );
+		wp_register_script( 'wulf-kit', WK_URL . 'assets/js/wulf-kit.js', $cal ? array( 'om-booking' ) : array(), WK_VERSION, true );
 		wp_localize_script( 'wulf-kit', 'wkConfig', self::js_config() );
 		// The cinematic film (3D): only loaded on pages that use its widget. Deferred, so it never holds up the page.
 		wp_register_style( 'wulf-kit-film', WK_URL . 'assets/css/wulf-film.css', array( 'wulf-kit' ), WK_VERSION );
@@ -180,6 +182,33 @@ class WK_Plugin {
 		return '.wk{' . $css . '}';
 	}
 
+	/**
+	 * The SimplyBook calendar for "Book" buttons and the visit form, when the
+	 * OM Catalog plugin has one (Settings > OM Catalog > Inquiries) and the
+	 * kit's place there isn't set to the form: mode (booking = the calendar
+	 * only, both = calendar and booking form as two tabs), the calendar's
+	 * markup, the tab names and which opens first. False otherwise.
+	 *
+	 * @param string $override A widget's own choice ('' = OM Catalog's settings).
+	 * @return array|false
+	 */
+	public static function booking_calendar( $override = '' ) {
+		if ( ! class_exists( 'OM_Booking' ) || ! method_exists( 'OM_Booking', 'mode' ) ) {
+			return false;
+		}
+		$mode = OM_Booking::mode( 'kit', $override );
+		if ( 'form' === $mode ) {
+			return false;
+		}
+		return array(
+			'mode'  => $mode,
+			'html'  => OM_Booking::calendar( array(), false ),
+			'book'  => OM_Booking::label( 'book' ),
+			'form'  => __( 'Request a visit', 'wulf-kit' ),
+			'first' => OM_Booking::first(),
+		);
+	}
+
 	public static function js_config() {
 		$s = WK_Settings::all();
 		return array(
@@ -208,6 +237,7 @@ class WK_Plugin {
 				'style'  => $s['book_style'],
 				'img'    => $s['book_img'] ? $s['book_img'] : WK_URL . 'assets/media/showroom-tall.webp',
 				'points' => array_values( array_filter( array_map( 'trim', preg_split( '/\r\n|\r|\n/', (string) $s['book_points'] ) ) ) ),
+				'cal'    => self::booking_calendar(),
 			),
 			'icons'    => WK_Icons::for_js(),
 			'i18n'     => array(

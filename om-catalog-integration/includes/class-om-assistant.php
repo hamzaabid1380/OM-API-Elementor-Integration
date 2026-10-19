@@ -228,6 +228,7 @@ class OM_Assistant {
 				// The page it's sent from: filled in by the script.
 				'url'         => '',
 				'button'      => __( 'Send to our team', 'om-catalog' ),
+				'place'       => 'assistant',
 			)
 		);
 		echo '</template>';

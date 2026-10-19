@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.14.0
+Stable tag: 1.15.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -106,6 +106,14 @@ directions. Set the title, topics (with what to bring) and thank-you message in 
 Booking & conversions; untick "Booking panel" to go back to jumping to the visit form.
 
 Links can open it too: add ?book=1 (and &topic=Repair) to any page address, e.g. in an ad or email.
+
+Booking calendar (SimplyBook): with the OM Catalog plugin, the panel and the "Book a visit" form
+can show your SimplyBook.me calendar instead of the booking form, or both as two tabs ("Book an
+appointment" and "Request a visit"). Choose it in Settings > OM Catalog > Inquiries, on the
+"Wulf kit" row; a Visit widget can also choose for itself (Booking form > Show visitors). With
+both, a day picked in the booking bar opens the form tab. The calendar loads only when the panel
+or form opens or comes into view, and offers the booking page if it can't load. Measured:
+booking_calendar_view when the calendar has loaded.
 
 On computers a slim booking bar stays at the bottom of the screen after the first screen (open now,
 "Book a free consultation", the phone number). It steps aside near the booking form and the footer,
@@ -279,6 +287,13 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.15.0 =
+* Booking calendar: the booking panel and the "Book a visit" form can show your SimplyBook
+  calendar instead of the booking form, or both as two tabs. Set in Settings > OM Catalog >
+  Inquiries (needs OM Catalog 1.45.0); the Visit widget can choose for itself.
+* Wulf Kit > Settings > Booking & conversions says whether the calendar is on, with a link to
+  the setting.
 
 = 1.14.0 =
 * Brand films: your two films on the site. New widgets "Brand film" (first screen, or beside a
