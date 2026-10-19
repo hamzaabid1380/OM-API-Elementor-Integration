@@ -214,6 +214,9 @@ html body .om-ask .om-ask-tab {
 	text-align: center;
 	text-transform: none;
 	text-decoration: none;
+	/* Themes such as Hello Elementor keep button text on one line; a long
+	   tab name wraps inside its pill instead of running past it. */
+	white-space: normal;
 	cursor: pointer;
 	transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -247,6 +250,7 @@ html body .om-ask .om-ask-tab:focus-visible {
 
 .om-ask .om-ask-tab span {
 	min-width: 0;
+	text-wrap: balance;
 }
 
 .om-ask .om-ask-panel[hidden] {
