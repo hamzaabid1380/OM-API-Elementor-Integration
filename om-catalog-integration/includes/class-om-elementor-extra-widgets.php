@@ -1410,6 +1410,17 @@ class OM_Elementor_Reels_Widget extends Widget_Base {
 		);
 
 		$this->add_control(
+			'label_above',
+			array(
+				'label'       => __( 'Label above the stories', 'om-catalog' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => __( 'Video highlights · Tap to watch', 'om-catalog' ),
+				'label_block' => true,
+				'description' => __( 'Tells visitors what the circles are. Leave empty for none.', 'om-catalog' ),
+			)
+		);
+
+		$this->add_control(
 			'bubble',
 			array(
 				'label'   => __( 'Bubble shape', 'om-catalog' ),
@@ -1460,6 +1471,10 @@ class OM_Elementor_Reels_Widget extends Widget_Base {
 					'flex-start' => array( 'title' => __( 'Left', 'om-catalog' ), 'icon' => 'eicon-text-align-left' ),
 					'center'     => array( 'title' => __( 'Center', 'om-catalog' ), 'icon' => 'eicon-text-align-center' ),
 				),
+				// "safe": a row wider than the screen starts at the left
+				// (so the first stories can be scrolled to) instead of
+				// spilling off both sides.
+				'selectors_dictionary' => array( 'center' => 'safe center' ),
 				'selectors' => array( '{{WRAPPER}} .om-reels' => '--om-reels-justify: {{VALUE}};' ),
 			)
 		);
@@ -1662,6 +1677,7 @@ class OM_Elementor_Reels_Widget extends Widget_Base {
 				'label'       => (string) ( $s['label'] ?? 'title' ),
 				'show_on'     => (string) ( $s['show_on'] ?? 'all' ),
 				'heading'     => (string) ( $s['heading'] ?? '' ),
+				'label_above' => (string) ( $s['label_above'] ?? '' ),
 				'show_price'  => 'yes' === ( $s['show_price'] ?? 'yes' ) ? 'yes' : '',
 				'show_style'  => 'yes' === ( $s['show_style'] ?? 'yes' ) ? 'yes' : '',
 				'button_text' => (string) ( $s['button_text'] ?? '' ),

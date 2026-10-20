@@ -11966,6 +11966,8 @@ html body .om-intro-reels-play::after {
 }
 html p.om-intro-reels-title { margin: 0 0 14px; }
 .om-intro-reels .om-reels-heading { display: none; }
+/* The same label on an OM Story Reels row: lines up with the bubbles. */
+.om-reels .om-reels-title { justify-content: var(--om-reels-justify, flex-start); }
 
 /* =========================================================
    1.35 Assistant: branded, and answers from the website

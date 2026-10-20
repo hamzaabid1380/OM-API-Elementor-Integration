@@ -1174,11 +1174,19 @@ style number, auto-advance, start with sound, longest play time, embed
 length; styles for size, spacing, ring colours (and watched), ring
 thickness, label and heading, and the player's backdrop and button.
 
+**Label above the stories** (1.45.2): a small line with a play icon over
+the bubbles, "Video highlights · Tap to watch" unless changed (empty for
+none), so visitors know what the circles are. It's the same label the OM
+Catalog widget's heading has, and it follows the row's alignment. The
+Wulf kit's shop pages use this widget for their stories, so they show it
+too.
+
 Shortcode: `[om_reels source="line|popular|picked" line="engagement-rings"
 style="" shape="" styles="" count="8" bubble="circle|card"
 label="title|shape|variant|none" show_on="all|mobile|desktop" heading=""
-show_price="yes" show_style="yes" button_text="" duration="8"
-max_length="15" sound="" auto_next="yes"]`
+label_above="" show_price="yes" show_style="yes" button_text=""
+duration="8" max_length="15" sound="" auto_next="yes"]` (the shortcode
+shows no label above unless `label_above` is given).
 
 ## Browsing polish (1.19)
 
@@ -1338,6 +1346,16 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.45.2
+- **OM Story Reels widget: "Label above the stories"**, the same small
+  "Video highlights · Tap to watch" line the catalog heading has. The
+  Wulf kit's shop pages put their stories in this widget (not the catalog
+  heading), which is why the label didn't show there; it now shows by
+  default. Change or clear it under Bubbles › Label above the stories.
+- Story Reels set to **Center**: on phones, where the row is wider than
+  the screen, it now starts at the first story instead of cutting the
+  first ones off.
 
 ### 1.45.1
 - **Product pages: the booking box moved up**, right under the buttons

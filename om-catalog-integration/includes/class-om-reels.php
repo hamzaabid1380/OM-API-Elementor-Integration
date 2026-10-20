@@ -46,11 +46,13 @@ class OM_Reels {
 			'count'       => 8,
 			// Row: circle bubbles or tall "card" thumbnails; label under
 			// each (title, shape, variant, none); devices (all, mobile,
-			// desktop); optional heading.
+			// desktop); optional heading, and a small label above the
+			// bubbles ("Video highlights · Tap to watch") saying what they are.
 			'bubble'      => 'circle',
 			'label'       => 'title',
 			'show_on'     => 'all',
 			'heading'     => '',
+			'label_above' => '',
 			// Player.
 			'show_price'  => 'yes',
 			'show_style'  => 'yes',
@@ -121,6 +123,9 @@ class OM_Reels {
 		);
 		if ( '' !== trim( (string) $atts['heading'] ) ) {
 			echo '<h2 class="om-reels-heading">' . esc_html( $atts['heading'] ) . '</h2>';
+		}
+		if ( '' !== trim( (string) $atts['label_above'] ) ) {
+			echo '<p class="om-intro-reels-title om-reels-title"><span class="om-intro-reels-play" aria-hidden="true"></span>' . esc_html( trim( (string) $atts['label_above'] ) ) . '</p>';
 		}
 		echo '<ul class="om-reels-row" role="list">';
 		foreach ( $items as $i => $item ) {
