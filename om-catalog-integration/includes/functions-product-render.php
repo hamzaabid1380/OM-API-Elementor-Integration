@@ -201,6 +201,9 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			esc_url( $builder_url ),
 			esc_html( '' !== trim( (string) $args['builder_text'] ) ? $args['builder_text'] : __( 'Select this setting', 'om-catalog' ) )
 		);
+	} elseif ( $args['show_builder'] && ! $args['compact'] && in_array( $product_line, om_builder_lines(), true ) && (int) get_option( 'om_builder_page', 0 ) >= 0 && current_user_can( 'manage_options' ) ) {
+		// No page has the ring builder: tell admins, where the button would be.
+		$builder_html = '<p class="om-admin-note"><strong>' . esc_html__( 'Only admins see this:', 'om-catalog' ) . '</strong> ' . esc_html__( '"Select this setting" is hidden because no published page has the ring builder. Add the OM Ring Builder widget to a page, or choose one under Settings > OM Catalog > Ring builder.', 'om-catalog' ) . '</p>';
 	}
 
 	// The inquiry form or booking calendar: right under the buttons (where

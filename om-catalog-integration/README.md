@@ -191,9 +191,15 @@ falling back to the jewelry markup.
 ## Ring builder
 
 1. Create a page (e.g. "Design Your Ring") with the **OM Ring Builder**
-   widget or `[om_ring_builder]`.
-2. Choose it under **Settings > OM Catalog > Ring Builder** (and which
-   product lines count as settings — engagement rings by default).
+   widget or `[om_ring_builder]`. The Wulf kit's "Ring Builder" page
+   template already has it.
+2. **Settings > OM Catalog > Ring Builder > Builder page** starts on
+   **Find it automatically** (1.45.3): the published page with the builder
+   on it is used (one at /ring-builder/ first), and the line under the menu
+   says which. Choose a page to pin it, or **Off** for no builder buttons.
+   A chosen page that's no longer published (a rebuilt or copied site)
+   falls back to finding one. Also set which product lines count as
+   settings (engagement rings by default).
 
 Customers pick a setting and a diamond in either order, then see both with
 the total price and a "Request this ring" form. The design lives in the page
@@ -1346,6 +1352,17 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.45.3
+- **"Select this setting" on rebuilt sites**: the button (and "Select this
+  diamond") only showed once Settings › Ring Builder › Builder page named a
+  published page, so the Wulf kit redesign, whose "Ring Builder" page is
+  new, had none. The setting now starts on **Find it automatically** and
+  uses the published page with the ring builder on it (/ring-builder/
+  first); a chosen page that isn't published any more falls back the same
+  way. **Off** turns the builder buttons off on purpose.
+- Admins see a short note where the button would be when no published page
+  has the ring builder.
 
 ### 1.45.2
 - **OM Story Reels widget: "Label above the stories"**, the same small

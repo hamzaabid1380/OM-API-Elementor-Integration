@@ -36,6 +36,23 @@ class OM_Ring_Builder {
 		add_action( 'wp_ajax_om_builder_email', array( $this, 'handle_email' ) );
 		add_action( 'wp_ajax_nopriv_om_builder_email', array( $this, 'handle_email' ) );
 		add_action( 'om_design_followup', array( $this, 'send_followup' ), 10, 4 );
+		// The builder page found by itself (om_builder_page_id()) is looked
+		// up again whenever a page, or its Elementor content, changes.
+		add_action( 'save_post_page', array( __CLASS__, 'forget_page' ) );
+		add_action( 'deleted_post', array( __CLASS__, 'forget_page' ) );
+		add_action( 'trashed_post', array( __CLASS__, 'forget_page' ) );
+		add_action( 'added_post_meta', array( __CLASS__, 'forget_page_meta' ), 10, 3 );
+		add_action( 'updated_post_meta', array( __CLASS__, 'forget_page_meta' ), 10, 3 );
+	}
+
+	public static function forget_page() {
+		delete_transient( 'om_builder_page_found' );
+	}
+
+	public static function forget_page_meta( $meta_id, $post_id, $key ) {
+		if ( '_elementor_data' === $key ) {
+			self::forget_page();
+		}
 	}
 
 	public function shortcode( $atts ) {

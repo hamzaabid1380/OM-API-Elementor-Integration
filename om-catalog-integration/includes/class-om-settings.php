@@ -75,7 +75,8 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_diamond_markup_value', array( 'sanitize_callback' => array( $this, 'sanitize_float' ) ) );
 
 		// Ring builder.
-		register_setting( 'om_catalog_settings', 'om_builder_page', array( 'sanitize_callback' => 'absint' ) );
+		// A page ID; 0 = find the page with the builder on it; -1 = builder off.
+		register_setting( 'om_catalog_settings', 'om_builder_page', array( 'sanitize_callback' => static function ( $v ) { return (int) $v < 0 ? -1 : absint( $v ); } ) );
 		register_setting( 'om_catalog_settings', 'om_true_size', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_true_size_check', array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		register_setting( 'om_catalog_settings', 'om_builder_lines', array( 'sanitize_callback' => array( $this, 'sanitize_lines' ) ) );
@@ -345,8 +346,8 @@ class OM_Settings {
 		}
 		$priced  = function_exists( 'om_markup_is_configured' ) && om_markup_is_configured();
 		$items[] = $priced ? array( 'ok', __( 'Prices', 'om-catalog' ), __( 'Shown with your markup', 'om-catalog' ), '#pricing' ) : array( 'off', __( 'Prices', 'om-catalog' ), __( 'Hidden — "call for pricing"', 'om-catalog' ), '#pricing' );
-		$builder = (int) get_option( 'om_builder_page', 0 );
-		$items[] = $builder ? array( 'ok', __( 'Ring builder', 'om-catalog' ), get_the_title( $builder ), '#builder' ) : array( 'off', __( 'Ring builder', 'om-catalog' ), __( 'No page chosen', 'om-catalog' ), '#builder' );
+		$builder = om_builder_page_id();
+		$items[] = $builder ? array( 'ok', __( 'Ring builder', 'om-catalog' ), get_the_title( $builder ), '#builder' ) : array( 'off', __( 'Ring builder', 'om-catalog' ), (int) get_option( 'om_builder_page', 0 ) < 0 ? __( 'Turned off', 'om-catalog' ) : __( 'No builder page yet', 'om-catalog' ), '#builder' );
 		$week    = new WP_Query(
 			array(
 				'post_type'      => 'om_inquiry',
@@ -561,11 +562,28 @@ class OM_Settings {
 					<tr>
 						<th><label for="om_builder_page">Builder page</label></th>
 						<td>
+							<?php
+							$builder_chosen = (int) get_option( 'om_builder_page', 0 );
+							$builder_found  = $builder_chosen < 0 ? 0 : om_builder_page_id();
+							?>
 							<select id="om_builder_page" name="om_builder_page">
-								<option value="0">&mdash; None (builder off) &mdash;</option>
-								<?php $this->page_options( 'om_builder_page', get_option( 'om_builder_page', 0 ) ); ?>
+								<option value="0" <?php selected( $builder_chosen, 0 ); ?>><?php esc_html_e( 'Find it automatically', 'om-catalog' ); ?></option>
+								<option value="-1" <?php selected( $builder_chosen < 0 ); ?>><?php esc_html_e( 'Off (no builder buttons)', 'om-catalog' ); ?></option>
+								<?php $this->page_options( 'om_builder_page', $builder_chosen ); ?>
 							</select>
-							<p class="description">A page containing the <strong>OM Ring Builder</strong> widget or <code>[om_ring_builder]</code>. Once set, product pages of the lines below show a "Select this setting" button and the diamond search a "Select this diamond" button.</p>
+							<p class="description">A page containing the <strong>OM Ring Builder</strong> widget or <code>[om_ring_builder]</code>. Product pages of the lines below then show a "Select this setting" button and the diamond search a "Select this diamond" button. "Find it automatically" uses the published page that has the builder on it (one at /ring-builder/ first), so a rebuilt or copied site keeps the buttons.</p>
+							<?php if ( $builder_chosen >= 0 ) : ?>
+								<p class="description">
+									<?php
+									if ( $builder_found ) {
+										/* translators: %s: page title. */
+										echo esc_html( sprintf( __( 'In use: “%s”.', 'om-catalog' ), get_the_title( $builder_found ) ) ) . ' <a href="' . esc_url( get_permalink( $builder_found ) ) . '" target="_blank" rel="noopener">' . esc_html__( 'View', 'om-catalog' ) . '</a>';
+									} else {
+										esc_html_e( 'No published page has the ring builder yet, so the builder buttons are hidden.', 'om-catalog' );
+									}
+									?>
+								</p>
+							<?php endif; ?>
 						</td>
 					</tr>
 					<tr>

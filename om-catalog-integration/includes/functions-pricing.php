@@ -149,14 +149,70 @@ function om_format_price_short( $price ) {
 }
 
 /**
- * URL of the ring builder page with builder state merged in, or '' when no
- * builder page is configured.
+ * The ring builder page: the one chosen in Settings > OM Catalog > Ring
+ * builder or, when none is chosen (or the chosen page isn't published, as
+ * on a rebuilt or copied site), a published page holding the OM Ring
+ * Builder widget or [om_ring_builder]. 0 when there is none or the
+ * builder is turned off (-1 in Settings).
+ */
+function om_builder_page_id() {
+	$chosen = (int) get_option( 'om_builder_page', 0 );
+	if ( $chosen < 0 ) {
+		return 0;
+	}
+	if ( $chosen && 'publish' === get_post_status( $chosen ) ) {
+		return $chosen;
+	}
+	$found = get_transient( 'om_builder_page_found' );
+	if ( false === $found ) {
+		$found = om_find_builder_page();
+		set_transient( 'om_builder_page_found', $found, DAY_IN_SECONDS );
+	}
+	$found = (int) $found;
+	return $found && 'publish' === get_post_status( $found ) ? $found : 0;
+}
+
+/**
+ * A published page with the ring builder on it (one at /ring-builder/
+ * first, then the most recently edited), or 0.
+ */
+function om_find_builder_page() {
+	global $wpdb;
+	$shortcode = '%' . $wpdb->esc_like( '[om_ring_builder' ) . '%';
+	// phpcs:disable WordPress.DB.DirectDatabaseQuery -- a one-off lookup, cached in a transient.
+	$id = (int) $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT p.ID FROM {$wpdb->posts} p INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_elementor_data'
+			WHERE p.post_type = 'page' AND p.post_status = 'publish' AND ( m.meta_value LIKE %s OR m.meta_value LIKE %s )
+			ORDER BY ( p.post_name = %s ) DESC, p.post_modified DESC LIMIT 1",
+			'%' . $wpdb->esc_like( '"widgetType":"om_builder_widget"' ) . '%',
+			$shortcode,
+			'ring-builder'
+		)
+	);
+	if ( ! $id ) {
+		$id = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'page' AND post_status = 'publish' AND post_content LIKE %s
+				ORDER BY ( post_name = %s ) DESC, post_modified DESC LIMIT 1",
+				$shortcode,
+				'ring-builder'
+			)
+		);
+	}
+	// phpcs:enable
+	return $id;
+}
+
+/**
+ * URL of the ring builder page with builder state merged in, or '' when
+ * there is no builder page (see om_builder_page_id()).
  *
  * @param array $state rb_setting, rb_metal, rb_color, rb_diamond, rb_start ...
  */
 function om_builder_url( $state = array() ) {
-	$page_id = (int) get_option( 'om_builder_page', 0 );
-	if ( ! $page_id || 'publish' !== get_post_status( $page_id ) ) {
+	$page_id = om_builder_page_id();
+	if ( ! $page_id ) {
 		return '';
 	}
 	$args = array();
