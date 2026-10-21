@@ -323,7 +323,12 @@ class WK_Header_Widget extends WK_Widget {
 			echo '<button class="icon-btn s" type="button" data-wk-search aria-label="' . esc_attr__( 'Search', 'wulf-kit' ) . '">' . WK_Icons::svg( 'search' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 		if ( 'yes' === $s['show_tray'] && WK_Settings::get( 'tray' ) ) {
-			echo '<button class="icon-btn h" type="button" data-wk-tray aria-label="' . esc_attr__( 'Your tray', 'wulf-kit' ) . '" aria-haspopup="dialog" aria-expanded="false">' . WK_Icons::svg( 'tray' ) . '<span class="count" data-count hidden>0</span></button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			if ( WK_Plugin::om_saved() ) {
+				// OM Catalog's saved list: its Saved panel opens from here (and its own floating button stays away).
+				echo '<button class="icon-btn h" type="button" data-wk-tray data-om-saved-open aria-label="' . esc_attr__( 'Saved designs', 'wulf-kit' ) . '" aria-haspopup="dialog">' . WK_Icons::svg( 'heart' ) . '<span class="count" data-count hidden>0</span></button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			} else {
+				echo '<button class="icon-btn h" type="button" data-wk-tray aria-label="' . esc_attr__( 'Your tray', 'wulf-kit' ) . '" aria-haspopup="dialog" aria-expanded="false">' . WK_Icons::svg( 'tray' ) . '<span class="count" data-count hidden>0</span></button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
 		}
 		if ( 'yes' === $s['show_phone'] && $phone ) {
 			/* translators: %s: phone */

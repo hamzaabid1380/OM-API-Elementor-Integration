@@ -343,6 +343,23 @@ can hide the heart on its cards (Quick View, Compare & Save section), and
 the product widget has a **"Save" (heart) button** switch under Sections.
 Insights shows the **most saved** designs and how many became inquiries.
 
+### One list with the Wulf kit (1.46)
+
+With the Wulf Elementor Kit 1.16 or later, the kit's hearts (product row,
+Spotlight, ring designer) and its quiz save into this same list, so a
+visitor has one list across the homepage and the catalog. The kit's header
+button opens the Saved panel and shows the count, and the floating Saved
+button stays away. The panel then also has **Book to see them in person**,
+which opens the kit's booking window with the saved designs. Designs saved
+from the kit keep the **gold colour** that was on screen ("Yellow gold ·
+Style 51157-E-6X4"), in the panel, in "Email me my list" (and your copy)
+and in "Drop a hint".
+
+For developers: `window.omSaved` offers `enabled()`, `list()`, `key(item)`,
+`toggle({ l, s, t, i, u, c })` (saves or unsaves one design, with the usual
+message), `add(items)` (adds without a message) and `open()`. An `om:saved`
+event fires on `document` whenever the list changes.
+
 ## Drop a hint (1.39)
 
 A small **Drop a hint** link (with an envelope) lets a visitor send a
@@ -1352,6 +1369,21 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.46.0
+- **One saved list for the whole site**: the Wulf kit's hearts and quiz now
+  save into the catalog's Saved designs (needs kit 1.16). Its header button
+  opens the Saved panel; the floating Saved button stays away when a page
+  has a button like that.
+- **Book to see them in person** in the Saved panel when the Wulf kit's
+  booking window is on the site.
+- Designs saved from the kit keep their **gold colour**, shown in the panel,
+  "Email me my list", your copy of it, and "Drop a hint". Your copy also
+  lists each design's size or carat when it has one.
+- **"Ask our jeweller"** shows only on the pages set under AI assistant >
+  Show on. Pages that load the catalog's script for another plugin (the kit
+  loads it on every page for the saved list) don't count as catalog pages.
+- `window.omSaved` and the `om:saved` event, for other plugins.
 
 ### 1.45.3
 - **"Select this setting" on rebuilt sites**: the button (and "Select this

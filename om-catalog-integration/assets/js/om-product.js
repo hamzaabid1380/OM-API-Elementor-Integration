@@ -2629,15 +2629,16 @@
 			$(this).attr('aria-label', base + (list.length ? ' (' + list.length + ')' : ''));
 		});
 		if (savedDialog && savedDialog[0].open) { renderSaved(); }
+		document.dispatchEvent(new CustomEvent('om:saved', { detail: { count: list.length } }));
 	}
 
 	// A floating "Saved" button, only while something is saved and the page
-	// has no Saved button of its own (header widget, shortcode or a
-	// #om-saved menu link that is visible).
+	// has no Saved button of its own (header widget, shortcode, a #om-saved
+	// menu link or another plugin's [data-om-saved-open] button that is visible).
 	var savedFloat = null;
 	function syncSavedFloat(list) {
 		if (!cfg.savedFloat) { return; }
-		var own = $('.om-saved-open, a[href$="#om-saved"]').filter(function () { return this.getClientRects().length > 0; }).length > 0;
+		var own = $('.om-saved-open, [data-om-saved-open]:not(.om-saved-float), a[href$="#om-saved"]').filter(function () { return this.getClientRects().length > 0; }).length > 0;
 		// The ring builder's bar holds the bottom of the screen: no float there.
 		if (!list.length || own || $('.om-rb-bar').length) {
 			if (savedFloat) { savedFloat.prop('hidden', true); }
@@ -2651,10 +2652,9 @@
 		savedFloat.attr('aria-label', t('savedTitle', 'Saved designs') + ' (' + list.length + ')').prop('hidden', false);
 	}
 
-	$(document).on('click', '.om-save-toggle', function (e) {
-		e.preventDefault();
-		var item;
-		try { item = JSON.parse(this.getAttribute('data-om-save')); } catch (err) { return; }
+	// Save a design, or unsave it when it is on the list: true when it is saved
+	// now, false when removed, null when the list is full.
+	function savedToggle(item) {
 		var before = readSaved();
 		var list = before.slice();
 		var at = list.map(savedKey).indexOf(savedKey(item));
@@ -2662,18 +2662,27 @@
 			list.splice(at, 1);
 			writeSaved(list);
 			showToast(t('savedRemoved', 'Removed from saved'), function () { writeSaved(before); });
-			return;
+			return false;
 		}
-		if (list.length >= SAVED_MAX) { showToast(t('savedFull', 'Your list is full (24). Remove one to save another.')); return; }
+		if (list.length >= SAVED_MAX) { showToast(t('savedFull', 'Your list is full (24). Remove one to save another.')); return null; }
 		list.unshift(item);
 		writeSaved(list);
-		var btn = this;
-		$(btn).removeClass('is-pop');
-		void btn.offsetWidth;
-		$(btn).addClass('is-pop');
 		showToast(t('savedAdded', 'Saved') + ' (' + list.length + ')', openSaved, t('savedView', 'View saved'));
 		if (cfg.ajaxUrl) { $.post(cfg.ajaxUrl, { action: 'om_saved_stat', line: item.l, style: item.s }); }
 		track('add_to_wishlist', { currency: cfg.currency || 'USD', items: [trackItem(item)] }, ['track', 'AddToWishlist', { content_ids: [String(item.s)], content_name: item.t, content_type: 'product' }]);
+		return true;
+	}
+
+	$(document).on('click', '.om-save-toggle', function (e) {
+		e.preventDefault();
+		var item;
+		try { item = JSON.parse(this.getAttribute('data-om-save')); } catch (err) { return; }
+		if (savedToggle(item)) {
+			var btn = this;
+			$(btn).removeClass('is-pop');
+			void btn.offsetWidth;
+			$(btn).addClass('is-pop');
+		}
 	});
 
 	function openSaved() {
@@ -2706,13 +2715,19 @@
 				$('<a class="om-saved-photo" tabindex="-1" aria-hidden="true"></a>').attr('href', url).append(x.i ? $('<img alt="" loading="lazy" />').attr('src', x.i) : $('<span class="om-compare-noimg"></span>')),
 				$('<div class="om-saved-info"></div>').append(
 					$('<a class="om-saved-name"></a>').attr('href', url).text(x.t || x.s),
-					$('<span class="om-saved-style"></span>').text((x.v ? x.v + ' · ' : '') + t('styleN', 'Style %s').replace('%s', x.s))
+					$('<span class="om-saved-style"></span>').text((x.v ? x.v + ' · ' : '') + (x.c ? t('hintGold', '%s gold').replace('%s', x.c) + ' · ' : '') + t('styleN', 'Style %s').replace('%s', x.s))
 				),
 				$('<button type="button" class="om-saved-drop">&times;</button>').attr({ 'data-om-key': savedKey(x), 'aria-label': t('savedRemove', 'Remove %s').replace('%s', x.t || x.s) })
 			));
 		});
 		$body.append($ul);
 
+		if (savedBookReady()) {
+			$foot.append($('<div class="om-saved-book-wrap"></div>').append(
+				$('<button type="button" class="om-saved-btn om-saved-book"></button>').text(t('savedBook', 'Book to see them in person')),
+				$('<p class="om-saved-book-note"></p>').text(t('savedBookNote', 'We will have them ready for your visit.'))
+			));
+		}
 		var $actions = $('<div class="om-saved-actions"></div>');
 		if (list.length > 1) {
 			$actions.append($('<button type="button" class="om-saved-btn om-saved-btn--line om-saved-compare"></button>').text(list.length > 4 ? t('savedCompareHint', 'Compare the first 4') : t('savedCompare', 'Compare')));
@@ -2791,7 +2806,7 @@
 			email: email,
 			name: $.trim($form.find('[name=name]').val()),
 			website: $form.find('[name=website]').val(),
-			items: readSaved().map(function (x) { return { line: x.l, style: x.s }; })
+			items: readSaved().map(function (x) { return { line: x.l, style: x.s, color: x.c || '' }; })
 		}).done(function (r) {
 			var msg = (r && r.data && r.data.message) || t('error', 'Something went wrong. Please try again.');
 			$status.toggleClass('is-error', !(r && r.success)).text(msg);
@@ -2812,7 +2827,7 @@
 			var found = {};
 			writeSaved(readSaved().map(function (x) {
 				var got = info[savedKey(x)];
-				if (got) { found[savedKey(x)] = true; return $.extend({}, got, { t: x.t || got.t, i: x.i || got.i, u: x.u || got.u }); }
+				if (got) { found[savedKey(x)] = true; return $.extend({}, got, { t: x.t || got.t, i: x.i || got.i, u: x.u || got.u }, x.c ? { c: x.c } : {}); }
 				return x;
 			}).filter(function (x) { return x.t || found[savedKey(x)]; }));
 		});
@@ -2851,6 +2866,46 @@
 	});
 
 	window.addEventListener('storage', function (e) { if (e.key === SAVED_KEY) { syncSaved(); } });
+
+	// The site's booking window (the Wulf kit's), for "Book to see them in person".
+	function savedBookReady() { return !!(window.wkBook && window.wkConfig && window.wkConfig.panel); }
+	$(document).on('click', '.om-saved-book', function () {
+		if (savedDialog) { savedDialog[0].close(); }
+		if (savedBookReady()) { window.wkBook({ source: 'saved_list' }); }
+	});
+
+	/* One list for the whole site: other plugins (e.g. the Wulf kit's homepage
+	   hearts and header button) save into it too.
+	   window.omSaved.toggle({ l, s, t, i, u, c }) saves or unsaves a design
+	   (c: the gold colour shown, e.g. 'Yellow'), add(items) adds without a
+	   message, open() shows the panel, and 'om:saved' fires on document
+	   whenever the list changes. */
+	function savedClean(x) {
+		var out = {};
+		['l', 's', 't', 'i', 'u', 'v', 'c'].forEach(function (k) { if (x[k]) { out[k] = String(x[k]); } });
+		return out;
+	}
+	window.omSaved = {
+		enabled: function () { return !!cfg.saved; },
+		list: readSaved,
+		key: savedKey,
+		toggle: function (item) { return cfg.saved && item && item.l && item.s ? savedToggle(savedClean(item)) : null; },
+		add: function (items) {
+			if (!cfg.saved) { return 0; }
+			var list = readSaved();
+			var keys = list.map(savedKey);
+			var fresh = [];
+			[].concat(items || []).forEach(function (x) {
+				if (x && x.l && x.s && list.length + fresh.length < SAVED_MAX && keys.indexOf(savedKey(x)) === -1) {
+					fresh.push(savedClean(x));
+					keys.push(savedKey(x));
+				}
+			});
+			if (fresh.length) { writeSaved(fresh.concat(list)); }
+			return fresh.length;
+		},
+		open: openSaved
+	};
 
 	/* ---------- Drop a hint ----------
 	   A design (or the Saved list) sent to someone special: their name and
@@ -3052,7 +3107,7 @@
 
 	// The Saved panel: the whole list (up to six designs).
 	$(document).on('click', '.om-saved-hint', function () {
-		hintOpen({ items: readSaved().slice(0, 6).map(function (x) { return { l: x.l, s: x.s, t: x.t, i: x.i }; }), from: 'saved_list' }, this);
+		hintOpen({ items: readSaved().slice(0, 6).map(function (x) { return { l: x.l, s: x.s, t: x.t, i: x.i, c: x.c || '' }; }), from: 'saved_list' }, this);
 	});
 
 	window.omHint = {
@@ -4459,6 +4514,9 @@
 
 	$(function () {
 		if (!AI || !cfg.ajaxUrl || trackOff() || !document.body) { return; }
+		// Only on pages where the chat belongs (AI assistant › Show on): those print its contact
+		// form. This script also loads elsewhere, e.g. for the Wulf kit's saved list.
+		if (!document.getElementById('om-ai-team-form')) { return; }
 		aiBuild();
 		aiDock();
 		aiMini();

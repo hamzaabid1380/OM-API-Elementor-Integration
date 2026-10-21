@@ -72,6 +72,7 @@ class WK_Plugin {
 		add_action( 'elementor/editor/after_enqueue_styles', array( $this, 'editor_styles' ) );
 		add_action( 'wp_body_open', array( $this, 'site_header' ), 5 );
 		add_action( 'wp_footer', array( $this, 'site_footer' ), 5 );
+		add_action( 'wp_footer', array( $this, 'om_saved_css' ), 6 );
 		add_filter( 'hello_elementor_header_footer', array( $this, 'hide_theme_parts' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		// "Ask our jeweller" (OM Catalog plugin) on the homepage and its library versions.
@@ -116,7 +117,9 @@ class WK_Plugin {
 		$cal = self::booking_calendar();
 		wp_register_style( 'wulf-kit', WK_URL . 'assets/css/wulf-kit.css', $cal ? array_merge( $deps, array( 'om-booking-css' ) ) : $deps, WK_VERSION );
 		wp_add_inline_style( 'wulf-kit', self::brand_css() );
-		wp_register_script( 'wulf-kit', WK_URL . 'assets/js/wulf-kit.js', $cal ? array( 'om-booking' ) : array(), WK_VERSION, true );
+		// Saves go to OM Catalog's list, so its script (the list and its Saved panel) comes first.
+		$js_deps = array_merge( $cal ? array( 'om-booking' ) : array(), self::om_saved() ? array( 'om-catalog-js' ) : array() );
+		wp_register_script( 'wulf-kit', WK_URL . 'assets/js/wulf-kit.js', $js_deps, WK_VERSION, true );
 		wp_localize_script( 'wulf-kit', 'wkConfig', self::js_config() );
 		// The cinematic film (3D): only loaded on pages that use its widget. Deferred, so it never holds up the page.
 		wp_register_style( 'wulf-kit-film', WK_URL . 'assets/css/wulf-film.css', array( 'wulf-kit' ), WK_VERSION );
@@ -129,6 +132,25 @@ class WK_Plugin {
 			// Site-wide pieces need the kit on every page.
 			wp_enqueue_style( 'wulf-kit' );
 			wp_enqueue_script( 'wulf-kit' );
+		}
+	}
+
+	/**
+	 * One saved list for the whole site: with the OM Catalog plugin's "Saved designs" on, the kit's
+	 * hearts save into its list and the header button opens its Saved panel (catalog pages included).
+	 * Otherwise the kit keeps its own tray.
+	 */
+	public static function om_saved() {
+		return (bool) WK_Settings::get( 'tray' ) && class_exists( 'OM_Saved' ) && OM_Saved::enabled();
+	}
+
+	/**
+	 * OM Catalog's styles for its Saved panel and messages, on kit pages that don't load them already.
+	 * In the footer: nothing needs them until a visitor saves a piece or opens the list.
+	 */
+	public function om_saved_css() {
+		if ( self::om_saved() && wp_script_is( 'wulf-kit', 'enqueued' ) && ! wp_style_is( 'om-catalog-css', 'enqueued' ) ) {
+			wp_enqueue_style( 'om-catalog-css' );
 		}
 	}
 
@@ -222,8 +244,10 @@ class WK_Plugin {
 			'maps'     => $s['maps_url'],
 			'book'     => $s['book_url'] ? $s['book_url'] : '#visit',
 			'tray'     => (bool) $s['tray'],
-			// "Email me my tray" goes out as OM Catalog's saved-designs email, so it follows that switch (Settings > OM Catalog > Look & feel).
-			'trayMail' => (bool) $s['tray'] && class_exists( 'OM_Saved' ) && '0' !== get_option( 'om_saved_email', '1' ),
+			// Saves go to OM Catalog's list (see om_saved()); otherwise the kit's own tray.
+			'omSaved'  => self::om_saved(),
+			// The kit's own tray can email itself as OM Catalog's saved-designs email, following that switch (Settings > OM Catalog > Look & feel).
+			'trayMail' => (bool) $s['tray'] && ! self::om_saved() && class_exists( 'OM_Saved' ) && '0' !== get_option( 'om_saved_email', '1' ),
 			'actbar'   => (bool) $s['actbar'],
 			'pill'     => (bool) $s['book_pill'],
 			'act'      => array( $s['act_call'], $s['act_book'], $s['act_dir'] ),
@@ -270,6 +294,16 @@ class WK_Plugin {
 				'piecesN'    => __( 'Your tray · %d pieces', 'wulf-kit' ),
 				'onTray'     => __( 'On your tray', 'wulf-kit' ),
 				'addTray'    => __( 'Add to my tray', 'wulf-kit' ),
+				// Saving into OM Catalog's list.
+				'savedOne'   => __( 'Your saved designs · %d design', 'wulf-kit' ),
+				'savedMany'  => __( 'Your saved designs · %d designs', 'wulf-kit' ),
+				/* translators: %s: design name. */
+				'saveOne'    => __( 'Save %s', 'wulf-kit' ),
+				/* translators: %s: design name. */
+				'unsaveOne'  => __( 'Remove %s from saved', 'wulf-kit' ),
+				'savedIt'    => __( 'Saved', 'wulf-kit' ),
+				/* translators: %s: style number. */
+				'styleN'     => __( 'style %s', 'wulf-kit' ),
 				'sending'    => __( 'Sending…', 'wulf-kit' ),
 				'error'      => __( 'Sorry, that didn\'t send. Please call us instead.', 'wulf-kit' ),
 				'badEmail'   => __( 'Please enter a valid email address.', 'wulf-kit' ),

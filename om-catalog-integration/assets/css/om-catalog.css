@@ -11110,6 +11110,17 @@ html body .om-ts p.om-ts-check-text { margin: 10px 0; font-size: 13px; line-heig
 	gap: 8px 16px;
 }
 
+/* "Book to see them in person" (with the Wulf kit's booking window): the panel's main button. */
+.om-saved-book-wrap {
+	margin-bottom: 12px;
+	padding-bottom: 14px;
+	border-bottom: 1px solid var(--om-hair, #e6e0d6);
+	text-align: center;
+}
+
+.om-saved-dialog .om-saved-btn.om-saved-book { width: 100%; min-height: 50px; }
+.om-saved-dialog .om-saved-book-note { margin: 8px 0 0; font-size: 12px; color: #6e6e6e; }
+
 .om-saved-dialog .om-saved-btn.om-saved-btn {
 	display: inline-flex;
 	align-items: center;

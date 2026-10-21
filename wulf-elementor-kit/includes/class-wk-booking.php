@@ -73,7 +73,7 @@ class WK_Booking {
 			__( 'Preferred day', 'wulf-kit' )    => trim( $d['day'] . ( $d['time'] ? ' (' . $d['time'] . ')' : '' ) ),
 			__( 'Talk about', 'wulf-kit' )       => implode( ', ', $d['topics'] ),
 			__( 'Looking at', 'wulf-kit' )       => $d['piece'],
-			__( 'Pieces on their tray', 'wulf-kit' ) => implode( '; ', $d['tray'] ),
+			__( 'Pieces they saved', 'wulf-kit' ) => implode( '; ', $d['tray'] ),
 			( 'hint' === $d['source'] ? __( 'From a hint', 'wulf-kit' ) : __( 'Ring style quiz', 'wulf-kit' ) ) => $d['quiz'],
 			__( 'Notes', 'wulf-kit' )            => $d['note'],
 			__( 'Page', 'wulf-kit' )             => $d['page'],

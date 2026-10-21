@@ -179,7 +179,10 @@ class OM_Assistant {
 			return false;
 		}
 		$where = get_option( 'om_ai_show', 'catalog' );
-		$show  = 'all' === $where || wp_script_is( 'om-catalog-js', 'enqueued' ) || ( function_exists( 'om_catalog_page_needs_assets' ) && om_catalog_page_needs_assets() );
+		// A catalog page asks for the catalog's script itself. Another plugin's script that only needs
+		// it (the Wulf kit's, for the saved list on every page) doesn't make a page a catalog page.
+		$catalog = in_array( 'om-catalog-js', (array) wp_scripts()->queue, true );
+		$show    = 'all' === $where || $catalog || ( function_exists( 'om_catalog_page_needs_assets' ) && om_catalog_page_needs_assets() );
 		if ( ! $show && 'home' === $where && self::is_home_page() ) {
 			$show = true;
 		}

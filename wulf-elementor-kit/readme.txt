@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.15.1
+Stable tag: 1.16.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -142,19 +142,28 @@ quiz_email_open to the Google Analytics, Tag Manager or Meta pixel
 already on the site (nothing is added). Mark generate_lead as a key event in GA4 to count bookings as
 conversions. Add ?wk_debug_events=1 to a page address to watch them in the browser console.
 
-== Your tray ==
+== Saved pieces: one list ==
 
-The heart on the product row and the Spotlight, and the ring designer's "Add to my tray", save a
-piece to the visitor's tray (kept on their device, no account). The tray button in the header opens
-it: the pieces, "Book to see them in person" (the booking request lists them) and "Email me my tray".
+The heart on the product row and the Spotlight, the ring designer's save button and the quiz's
+"Book to try these on" save pieces for the visitor (kept on their device, no account).
 
-"Email me my tray" (with the OM Catalog plugin): the visitor types their email and gets the same
-"Your saved designs" email as the catalog's Saved list, with each piece's photo, name, style number
-and catalog link. You get a copy, it is saved under Inquiries, and it goes to your CRM when that is
-on. It follows Settings > OM Catalog > Look & feel > Saved designs > "Email me my list" (untick it
-to hide it here too); the wording of both emails is under Settings > OM Catalog > Emails. Only
-pieces with a catalog page are sent, so a product row piece linked to another page is left out.
-Measured: generate_lead with form_type tray_email.
+With the OM Catalog plugin (1.46 or later) and its Saved designs on (Settings > OM Catalog > Look &
+feel), they all save into the catalog's own list, so there is one list for the whole site: the
+homepage, the catalog and product pages. The header's heart button shows the count and opens the
+catalog's Saved panel: the designs in the gold colour they were saved in, "Book to see them in
+person" (opens the booking window with them), Compare, Share list, Drop a hint and "Email me my
+list" (you get a copy under Inquiries and in your CRM when that is on). The catalog's floating Saved
+button stays away. Only pieces with a catalog page can be saved there, so a product row piece
+linked to another page shows no heart. Pieces already on a visitor's tray from before move into the
+list by themselves.
+
+Without OM Catalog, or with its Saved designs off, the kit keeps its own tray: the header's tray
+button opens it, with "Book to see them in person" and, when OM Catalog is active, "Email me my
+tray" (OM Catalog's saved-designs email, following its "Email me my list" switch). Measured:
+generate_lead with form_type tray_email.
+
+Either way, the booking request lists the saved pieces. Turn saving off altogether with Wulf Kit >
+Settings > "Saved pieces tray".
 
 == Drop a hint ==
 
@@ -301,6 +310,16 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.16.0 =
+* One saved list for the whole site: with OM Catalog 1.46 and its Saved designs on, the hearts,
+  the ring designer and the quiz save into the catalog's list, the same one as on catalog and
+  product pages. The header button (now a heart) opens the catalog's Saved panel, which has "Book
+  to see them in person"; the second, floating Saved button is gone.
+* Saved pieces keep the gold colour on screen; the booking request and the Saved panel show it.
+* Pieces already on a visitor's tray move into that list by themselves.
+* The ring designer's button reads "Save this design" (while it has the default words).
+* Without OM Catalog, or with its Saved designs off, the kit's own tray works as before.
 
 = 1.15.1 =
 * "Email me my tray": the tray can email the visitor their pieces with photos and catalog links

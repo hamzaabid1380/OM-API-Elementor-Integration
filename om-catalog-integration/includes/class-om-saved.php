@@ -101,8 +101,9 @@ class OM_Saved {
 	}
 
 	/**
-	 * Designs from the request (items[] of line/style), looked up at
-	 * Overnight Mountings: [ l, s, t, i, u ] each, at most MAX.
+	 * Designs from the request (items[] of line/style, and the gold colour
+	 * they were saved in), looked up at Overnight Mountings: [ l, s, t, i,
+	 * u, v, c ] each, at most MAX.
 	 */
 	private static function lookup( $raw ) {
 		require_once OM_CATALOG_DIR . 'includes/functions-product-render.php';
@@ -121,6 +122,7 @@ class OM_Saved {
 			}
 			$seen[ $key ] = true;
 			$number       = (string) ( $product['style_number'] ?? $style );
+			$color        = ucfirst( strtolower( sanitize_key( (string) ( $item['color'] ?? '' ) ) ) );
 			$out[]        = array(
 				'l' => $line,
 				's' => $number,
@@ -128,6 +130,7 @@ class OM_Saved {
 				'i' => (string) om_card_images( $product )[0],
 				'u' => om_product_url( $line, $number ),
 				'v' => (string) ( $product['variant_name'] ?? '' ),
+				'c' => in_array( $color, array( 'White', 'Yellow', 'Rose' ), true ) ? $color : '',
 			);
 		}
 		return $out;
@@ -267,7 +270,7 @@ class OM_Saved {
 		$subject = sprintf( _n( 'Saved designs: %1$d design — %2$s', 'Saved designs: %1$d designs — %2$s', count( $items ), 'om-catalog' ), count( $items ), $who );
 		$lines   = array_map(
 			static function ( $x ) {
-				return '- ' . $x['t'] . ' (' . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $x['s'] ) . ') ' . $x['u'];
+				return '- ' . $x['t'] . ' (' . self::detail( $x ) . ') ' . $x['u'];
 			},
 			$items
 		);
@@ -307,6 +310,21 @@ class OM_Saved {
 		wp_send_json_success( array( 'message' => $ok ) );
 	}
 
+	/** "1 ct · Yellow gold · Style 51157-E-6X4": variant, gold colour and style. */
+	private static function detail( $x ) {
+		$parts = array();
+		if ( '' !== (string) ( $x['v'] ?? '' ) ) {
+			$parts[] = $x['v'];
+		}
+		if ( '' !== (string) ( $x['c'] ?? '' ) ) {
+			/* translators: %s: gold colour, e.g. Yellow. */
+			$parts[] = sprintf( __( '%s gold', 'om-catalog' ), $x['c'] );
+		}
+		/* translators: %s: style number. */
+		$parts[] = sprintf( __( 'Style %s', 'om-catalog' ), $x['s'] );
+		return implode( ' · ', $parts );
+	}
+
 	/**
 	 * The designs for the emails' automatic block: two per row, photo,
 	 * name and style, each linking to its page. Tables and inline styles.
@@ -323,7 +341,7 @@ class OM_Saved {
 					. '<a href="' . esc_url( $x['u'] ) . '" style="text-decoration:none;color:' . esc_attr( $primary ) . ';">'
 					. ( '' !== $x['i'] ? '<img src="' . esc_url( $x['i'] ) . '" width="250" alt="' . esc_attr( $x['t'] ) . '" style="display:block;width:100%;max-width:250px;height:auto;border:0;background:#fafafa;border-radius:8px;">' : '' )
 					. '<span style="display:block;font-family:Georgia,serif;font-size:16px;line-height:1.3;margin:10px 0 2px;">' . esc_html( $x['t'] ) . '</span></a>'
-					. '<span style="display:block;font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#6e6e6e;">' . esc_html( trim( $x['v'] . ( '' !== $x['v'] ? ' · ' : '' ) . sprintf( /* translators: %s: style number. */ __( 'Style %s', 'om-catalog' ), $x['s'] ) ) ) . '</span></td>';
+					. '<span style="display:block;font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#6e6e6e;">' . esc_html( self::detail( $x ) ) . '</span></td>';
 			}
 			if ( 1 === count( $pair ) ) {
 				$rows .= '<td width="50%"></td>';

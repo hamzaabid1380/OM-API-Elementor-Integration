@@ -168,6 +168,8 @@ class WK_Studio_Widget extends WK_Widget {
 		$carats  = array_values( array_filter( array_map( 'floatval', explode( ',', (string) $s['carats'] ) ) ) );
 		$carats  = $carats ? $carats : array( .5, .75, 1, 1.5, 2, 3 );
 		$c0      = array_search( (float) $s['carat_start'], $carats, true );
+		// Saving into OM Catalog's list (see WK_Plugin::om_saved()): the default words say so.
+		$save    = WK_Plugin::om_saved() && __( 'Add to my tray', 'wulf-kit' ) === $s['save_text'] ? __( 'Save this design', 'wulf-kit' ) : $s['save_text'];
 		$cfg     = array(
 			'rings'  => $rings,
 			'start'  => max( 0, min( count( $rings ) - 1, (int) $s['start'] - 1 ) ),
@@ -177,7 +179,7 @@ class WK_Studio_Widget extends WK_Widget {
 			'note'   => $s['size_note'],
 			'see'    => $s['see_link'],
 			'go'     => $s['go_url'],
-			'save'   => $s['save_text'],
+			'save'   => $save,
 		);
 		$names   = self::shape_names();
 		$card = 'card' === ( $s['phone_mode'] ?? 'full' );
@@ -229,7 +231,7 @@ class WK_Studio_Widget extends WK_Widget {
 		$arr       = ' ' . WK_Icons::svg( 'arr', 'arr' );
 		$go        = $s['go_text'] ? '<a class="btn ' . ( $main_book ? 'btn-line' : 'btn-ink' ) . '" href="#" data-go>' . esc_html( $s['go_text'] ) . ( $main_book ? '' : $arr ) . '</a>' : '';
 		$book      = $s['book_text'] ? '<a class="btn ' . ( $main_book ? 'btn-gold' : 'btn-line' ) . '"' . self::link_attrs( array( 'url' => '#visit' ) ) . ' data-book data-topic="Engagement ring">' . esc_html( $s['book_text'] ) . ( $main_book ? $arr : '' ) . '</a>' : '';
-		$save      = $s['save_text'] && WK_Settings::get( 'tray' ) ? '<button class="btn btn-line studio-save" type="button" data-save aria-pressed="false">' . esc_html( $s['save_text'] ) . '</button>' : '';
+		$save      = $save && WK_Settings::get( 'tray' ) ? '<button class="btn btn-line studio-save" type="button" data-save aria-pressed="false">' . esc_html( $save ) . '</button>' : '';
 		echo '<div class="studio-go">' . ( $main_book ? $book : $go ) . '<div class="row2">' . $save . ( $main_book ? $go : $book ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		if ( $s['note'] ) {
 			echo '<p>' . preg_replace( '/\*([^*]+)\*/', '<b>$1</b>', esc_html( $s['note'] ) ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
