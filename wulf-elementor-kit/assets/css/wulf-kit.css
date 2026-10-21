@@ -2048,3 +2048,28 @@ body.wk-modal-open .om-ai .om-ai-launch.om-ai-launch, body.wk-modal-open .om-ai 
 .wk.wk .qz-more button.wk-hint svg { width: 16px; height: 16px; }
 .wk.wk .qz-fine + .qz-more { margin-top: 6px; }
 @media (max-width: 600px) { .wk.wk .spot-cta button.wk-hint { align-self: center; } }
+
+/* ================= "Email me my tray" (OM Catalog's saved-designs email), under the tray's pieces ================= */
+.wk.wk .dr-mail { margin: 18px 28px 22px; border-radius: 14px; background-color: var(--ivory); scroll-margin: 18px 0 22px; }
+.wk.wk .dr-mail-open { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 14px 16px; border: 0; border-radius: 14px; background: none; text-align: left; color: var(--ink); cursor: pointer; }
+.wk.wk .dr-mail-open:focus-visible { outline-offset: -2px; border-radius: 14px; }
+.wk.wk .dr-mail-open > span { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.wk.wk .dr-mail-open b { font: 600 15.5px/1.3 var(--sans); }
+.wk.wk .dr-mail-open:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.wk.wk .dr-mail-open small { font-size: 13.5px; line-height: 1.4; color: var(--sub); }
+.wk.wk .dr-mail-ic { flex: none; width: 22px; height: 22px; }
+.wk.wk .dr-mail-open .chev { flex: none; width: 18px; height: 18px; transition: transform .2s; }
+.wk.wk .dr-mail-open[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.wk.wk .dr-mail-form { display: grid; gap: 8px; padding: 2px 16px 16px; }
+.wk.wk .dr-mail-form label { font: 700 14px/1.2 var(--sans); color: var(--ink); }
+.wk.wk .dr-mail-row { display: flex; gap: 8px; }
+.wk.wk .dr-mail-row input { flex: 1; min-width: 0; height: 48px; padding: 0 14px; border: 1.5px solid var(--field); border-radius: 10px; background-color: #fff; font-size: 16px; color: var(--ink); }
+.wk.wk .dr-mail-row input:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+.wk.wk .dr-mail-row input[aria-invalid="true"] { border-color: #b3261e; }
+.wk.wk .dr-mail-row .btn { min-height: 48px; padding: 0 22px; font-size: 14.5px; white-space: nowrap; }
+.wk.wk .dr-mail-form .err { margin: 0; }
+.wk.wk .dr-sent { display: flex; align-items: center; gap: 8px; margin: 0; padding: 18px 16px; font: 600 14.5px/1.4 var(--sans); color: var(--ink); overflow-wrap: anywhere; }
+.wk.wk .dr-sent:focus { outline: none; }
+.wk.wk .dr-sent svg { flex: none; width: 18px; height: 18px; color: #2e7d4f; }
+@media (max-width: 600px) { .wk.wk .dr-mail { margin-inline: 20px; } }
+@media (prefers-reduced-motion: reduce) { .wk.wk .dr-mail-open .chev { transition: none; } }

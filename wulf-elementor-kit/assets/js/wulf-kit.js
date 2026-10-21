@@ -334,8 +334,13 @@
 		portal = document.createElement('div');
 		portal.className = 'wk wk-portal';
 		var a = CFG.act || ['Call', 'Book a free consultation', 'Directions'];
+		// "Email me my tray": the pieces go out as OM Catalog's saved-designs email (photos, links, a copy for the shop).
+		var mail = CFG.trayMail ? '<div class="dr-mail" hidden><button class="dr-mail-open" type="button" aria-expanded="false" aria-controls="wk-dr-mail">' + icon('mail', 'dr-mail-ic') + '<span><b>' + esc(T.trayMail || 'Email me my tray') + '</b><small>' + esc(T.mailSub || '') + '</small></span>' + icon('chev', 'chev') + '</button>' +
+			'<form class="dr-mail-form" id="wk-dr-mail" novalidate hidden><label for="wk-dr-email">' + esc(T.mailEmail || 'Your email') + '</label><div class="dr-mail-row"><input id="wk-dr-email" type="email" name="email" autocomplete="email" inputmode="email" required><button class="btn btn-ink" type="submit">' + esc(T.mailSend || 'Send') + '</button></div>' +
+			'<input type="text" name="website" tabindex="-1" autocomplete="off" class="sr" aria-hidden="true"><p class="err" role="alert" hidden></p></form>' +
+			'<p class="dr-sent" tabindex="-1" hidden></p></div>' : '';
 		portal.innerHTML = '<div class="toast" role="status" hidden></div>' +
-			(CFG.tray ? '<aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="wk-drawer-h" hidden><div class="dr-panel"><div class="dr-head"><h2 class="h3" id="wk-drawer-h">' + esc(T.trayTitle || 'Your tray') + '<span class="dr-count"></span></h2><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div><p class="dr-sub">' + esc(T.traySub || '') + '</p><div class="dr-body"><ul class="dr-list"></ul><div class="dr-empty"><p>' + esc(T.trayEmpty || '') + '</p></div></div><div class="dr-foot" hidden><a class="btn btn-ink" href="' + esc(CFG.book || '#visit') + '" data-dr-book>' + esc(T.trayBook || 'Book to see them in person') + ' ' + icon('arr', 'arr') + '</a><button class="btn btn-line" type="button" data-dr-keep>' + esc(T.trayKeep || 'Keep browsing') + '</button><p class="fine">' + esc(T.trayNote || '') + '</p></div></div></aside>' : '') +
+			(CFG.tray ? '<div class="drawer" role="dialog" aria-modal="true" aria-labelledby="wk-drawer-h" hidden><div class="dr-panel"><div class="dr-head"><h2 class="h3" id="wk-drawer-h">' + esc(T.trayTitle || 'Your tray') + '<span class="dr-count"></span></h2><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div><p class="dr-sub">' + esc(T.traySub || '') + '</p><div class="dr-body"><ul class="dr-list"></ul>' + mail + '<div class="dr-empty"><p>' + esc(T.trayEmpty || '') + '</p></div></div><div class="dr-foot" hidden><a class="btn btn-ink" href="' + esc(CFG.book || '#visit') + '" data-dr-book>' + esc(T.trayBook || 'Book to see them in person') + ' ' + icon('arr', 'arr') + '</a><button class="btn btn-line" type="button" data-dr-keep>' + esc(T.trayKeep || 'Keep browsing') + '</button><p class="fine">' + esc(T.trayNote || '') + '</p></div></div></div>' : '') +
 			// Call and Directions as round icons either side, so the booking button has room for its full words.
 			(CFG.actbar ? '<nav class="actbar" aria-label="Quick actions" data-om-ai-lift>' + (CFG.tel ? '<a class="ab-ic" href="' + esc(CFG.tel) + '" title="' + esc(a[0]) + '">' + icon('phone') + '<span class="sr">' + esc(a[0]) + '</span></a>' : '') + '<a class="main" href="' + esc(CFG.book || '#visit') + '">' + esc(a[1]) + '<span class="count" data-count hidden>0</span></a>' + (CFG.maps ? '<a class="ab-ic" href="' + esc(CFG.maps) + '" target="_blank" rel="noopener" title="' + esc(a[2]) + '">' + icon('dir') + '<span class="sr">' + esc(a[2]) + '</span></a>' : '') + '</nav>' : '') +
 			// Computers: a slim booking bar that stays on screen after the first screen.
@@ -389,6 +394,24 @@
 	try { tray = JSON.parse(localStorage.getItem('wkTray') || '[]') || []; } catch (e) { tray = []; }
 	var saveTray = function () { try { localStorage.setItem('wkTray', JSON.stringify(tray)); } catch (e) {} };
 	var inTray = function (key) { return tray.some(function (t) { return t.key === key; }); };
+	// A catalog link's product line and style number ("/catalog/engagement-rings/51157-E-6X4/"), or null.
+	function catalogOf(u) {
+		var m = /\/catalog\/([a-z0-9-]+)\/([^\/?#]+)/.exec(u || '');
+		if (!m) return null;
+		var s; try { s = decodeURIComponent(m[2]); } catch (e) { s = m[2]; }
+		return { l: m[1], s: s.replace(/~/g, '/') };
+	}
+	var trayPiece = function (t) { return catalogOf(t.url); };
+	// Pieces saved before they kept their catalog link get it from a section on the page that shows them.
+	function trayLinks(list) {
+		var fixed = false;
+		tray.forEach(function (t) {
+			if (t.url !== undefined) return;
+			var id = String(t.key).replace(/^(p|sp|s)-/, '').replace(/-(white|yellow|rose)$/, '');
+			list.forEach(function (p) { if (p.u && (p.id || p.n) === id) { t.url = p.u; fixed = true; } });
+		});
+		if (fixed) { saveTray(); renderTray(); }
+	}
 	function renderTray() {
 		var n = tray.length;
 		$$('[data-count]').forEach(function (c) { c.textContent = n; c.hidden = !n; });
@@ -404,6 +427,13 @@
 			$('.dr-empty', drawer).hidden = !!n;
 			$('.dr-foot', drawer).hidden = !n;
 			$('.dr-count', drawer).textContent = n ? ' · ' + n : '';
+			var dm = $('.dr-mail', drawer);
+			if (dm) {
+				dm.hidden = !tray.some(trayPiece);
+				// Sent, then the tray changed: offer the email again.
+				var sent = $('.dr-sent', dm);
+				if (!sent.hidden) { sent.hidden = true; $('.dr-mail-open', dm).hidden = false; }
+			}
 		}
 		document.dispatchEvent(new CustomEvent('wk:tray'));
 	}
@@ -472,10 +502,40 @@
 		drawer.querySelector('[data-close]').addEventListener('click', function () { closeDrawer(true); });
 		drawer.querySelector('[data-dr-keep]').addEventListener('click', function () { closeDrawer(true); });
 		drawer.querySelector('[data-dr-book]').addEventListener('click', function () { closeDrawer(false); if (!CFG.panel) pickTopic('Engagement ring', true); });
+		var mf = $('.dr-mail-form', drawer);
+		if (mf) {
+			var mOpen = $('.dr-mail-open', drawer), sent = $('.dr-sent', drawer);
+			mOpen.addEventListener('click', function () {
+				var open = mf.hidden;
+				mf.hidden = !open; mOpen.setAttribute('aria-expanded', String(open));
+				if (open) { mf.elements.email.focus({ preventScroll: true }); mf.parentNode.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); }
+			});
+			mf.addEventListener('submit', function (e) {
+				e.preventDefault();
+				var i = mf.elements.email, err = $('.err', mf), btn = mf.querySelector('[type=submit]'), lbl = btn.innerHTML, em = i.value.trim();
+				if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { err.textContent = T.badEmail || 'Please enter a valid email address.'; err.hidden = false; i.setAttribute('aria-invalid', 'true'); i.focus(); return; }
+				i.removeAttribute('aria-invalid'); err.hidden = true;
+				btn.disabled = true; btn.textContent = T.sending || 'Sending…';
+				var pieces = tray.map(trayPiece).filter(Boolean), fd = new FormData();
+				fd.append('action', 'om_saved_email'); fd.append('email', em); fd.append('website', mf.elements.website.value);
+				pieces.forEach(function (p, n) { fd.append('items[' + n + '][line]', p.l); fd.append('items[' + n + '][style]', p.s); });
+				fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (res) {
+					if (!res || !res.success) throw new Error((res && res.data && res.data.message) || '');
+					track('generate_lead', { form_type: 'tray_email', cta_location: 'tray', designs: pieces.length }, ['track', 'Lead']);
+					mf.hidden = true; mOpen.hidden = true; mOpen.setAttribute('aria-expanded', 'false');
+					sent.innerHTML = icon('check') + '<span>' + esc(fmt(T.mailSent || 'Sent to %s. Check your inbox.', em)) + '</span>';
+					sent.hidden = false; sent.focus();
+					btn.disabled = false; btn.innerHTML = lbl;
+				}).catch(function (er) {
+					btn.disabled = false; btn.innerHTML = lbl;
+					err.textContent = (er && er.message) || T.error || 'Sorry, that didn\'t send. Please call us instead.'; err.hidden = false;
+				});
+			});
+		}
 		drawer.addEventListener('keydown', function (e) {
 			if (e.key === 'Escape') return closeDrawer(true);
 			if (e.key !== 'Tab') return;
-			var f = $$('a[href], button', drawer).filter(function (x) { return x.offsetParent !== null; }), first = f[0], last = f[f.length - 1];
+			var f = $$('a[href], button, input:not([tabindex="-1"])', drawer).filter(function (x) { return x.offsetParent !== null; }), first = f[0], last = f[f.length - 1];
 			if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
 			else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 		});
@@ -512,11 +572,10 @@
 	// "Drop a hint" (OM Catalog): a piece from its catalog link, in the metal on screen.
 	var hintReady = function () { return !!(window.omHint && window.omHint.enabled && window.omHint.enabled()); };
 	function hintItem(r, metal) {
-		var m = /\/catalog\/([a-z0-9-]+)\/([^\/?#]+)/.exec(r && r.u || '');
-		if (!m) return null;
+		var c = catalogOf(r && r.u);
+		if (!c) return null;
 		var x = (r.media || {})[metal] || {};
-		var s; try { s = decodeURIComponent(m[2]); } catch (e) { s = m[2]; }
-		return { l: m[1], s: s.replace(/~/g, '/'), t: r.n, i: x.poster || r.img, c: { white: 'White', yellow: 'Yellow', rose: 'Rose' }[metal] || '' };
+		return { l: c.l, s: c.s, t: r.n, i: x.poster || r.img, c: { white: 'White', yellow: 'Yellow', rose: 'Rose' }[metal] || '' };
 	}
 
 	// Phones: "See all hours" opens the week under today's row.
@@ -956,9 +1015,10 @@
 
 	INIT.products = function (el, c) {
 		var items = c.items || [], row = $('.prow', el), cards = $$('.card', el);
+		trayLinks(items);
 		var cur = items.map(function (p) { return p.m; });
 		var key = function (i) { return 'p-' + (items[i].id || items[i].n) ; };
-		var item = function (i) { var p = items[i], m = cur[i], md = p.media[m] || {}; return { key: key(i), name: p.n, sub: (MCOL[m] || '') + (p.id ? ' · style ' + p.id : '') + (p.p ? ' · from ' + p.p : ''), img: md.poster || p.img }; };
+		var item = function (i) { var p = items[i], m = cur[i], md = p.media[m] || {}; return { key: key(i), name: p.n, sub: (MCOL[m] || '') + (p.id ? ' · style ' + p.id : '') + (p.p ? ' · from ' + p.p : ''), img: md.poster || p.img, url: p.u || '' }; };
 		var sync = function () {
 			$$('.save', el).forEach(function (b) {
 				var i = +b.dataset.i, on = inTray(key(i));
@@ -1051,6 +1111,7 @@
 	INIT.spotlight = function (el, c) {
 		var items = c.items || [], names = c.names || {}, ring = $('[data-spot-ring]', el), mBox = $('[data-spot-metals]', el), cap = $('[data-spot-cap]', el), pick = $('[data-spot-pick]', el);
 		if (!items.length) return;
+		trayLinks(items);
 		var cur = 0, metal = items[0].m;
 		var media = function (it, m) { var x = it.media[m] || it.media[Object.keys(it.media)[0]]; return x.v ? '<video muted loop playsinline autoplay preload="auto" poster="' + esc(x.poster) + '" src="' + esc(x.v) + '" aria-label="' + esc(it.n) + '"></video>' : '<img src="' + esc(x.poster) + '" alt="' + esc(it.n) + '">'; };
 		var show = function () {
@@ -1080,7 +1141,7 @@
 		// Heart: save the ring on screen, in the metal shown, to the tray.
 		var saveBtn = $('[data-spot-save]', el);
 		var sKey = function () { var it = items[cur]; return 'sp-' + (it.id || it.n) + '-' + metal; };
-		var sItem = function () { var it = items[cur], x = it.media[metal] || {}; return { key: sKey(), name: it.n, sub: (names[metal] || '') + (it.id ? ' · style ' + it.id : '') + (it.p ? ' · from ' + it.p : ''), img: x.poster || it.img }; };
+		var sItem = function () { var it = items[cur], x = it.media[metal] || {}; return { key: sKey(), name: it.n, sub: (names[metal] || '') + (it.id ? ' · style ' + it.id : '') + (it.p ? ' · from ' + it.p : ''), img: x.poster || it.img, url: it.u || '' }; };
 		function syncSave() {
 			if (!saveBtn) return;
 			var on = inTray(sKey());
@@ -1112,6 +1173,7 @@
 	INIT.studio = function (el, c) {
 		var rings = c.rings || [], carats = c.carats || [0.5, 0.75, 1, 1.5, 2, 3];
 		if (!rings.length) return;
+		trayLinks(rings);
 		var start = rings[c.start || 0] || rings[0];
 		var st = { setting: start.style, metal: c.metal || 'white', shape: start.shape, carat: c.carat || 0, pid: 0 };
 		st.pid = rings.indexOf(start);
@@ -1216,7 +1278,7 @@
 		caratEl.addEventListener('input', function () { st.carat = +caratEl.value; draw(); });
 		// Shape links in the header menu set the studio's shape.
 		document.addEventListener('click', function (e) { var a = e.target.closest('a[data-shape]'); if (a && hasShape(a.dataset.shape)) choose('shape', a.dataset.shape); });
-		var item = function () { var r = rings[st.pid], md = media(r); return { key: key(), name: r.n, sub: (MCOL[st.metal] || '') + (r.id ? ' · style ' + r.id : '') + (r.p ? ' · from ' + r.p : ''), img: md.poster || r.img }; };
+		var item = function () { var r = rings[st.pid], md = media(r); return { key: key(), name: r.n, sub: (MCOL[st.metal] || '') + (r.id ? ' · style ' + r.id : '') + (r.p ? ' · from ' + r.p : ''), img: md.poster || r.img, url: r.u || '' }; };
 		if (saveBtn) saveBtn.addEventListener('click', function () { if (inTray(key())) return removeTray(key()); var m = $$(':scope > video, :scope > img', main); addTray(item(), m[m.length - 1]); });
 		var book = $('[data-book]', el);
 		if (book) book.addEventListener('click', function () { if (CFG.tray && !inTray(key())) { tray.push(item()); saveTray(); renderTray(); } });
@@ -1422,6 +1484,7 @@
 		var rings = c.rings || [], styles = c.styles || [], budgets = c.budgets || [], t = c.t || {}, names = c.names || {}, shapeN = c.shapes || {};
 		var card = $('[data-qz-card]', el);
 		if (!rings.length || !card) return;
+		trayLinks(rings);
 		var art = $('[data-qz-art]', el), picksEl = $('[data-qz-picks]', el), res = $('[data-qz-res]', el), wait = $('[data-qz-wait]', el);
 		var steps = $$('.qz-step', el), count = $('[data-qz-count]', el), bar = $('.qz-prog span', el), back = $('[data-qz-back]', el), top = $('.qz-top', el);
 		var ORDER = ['shape', 'style', 'metal', 'budget'], A = {}, step = 1, started = false, matches = [], cur = 0, timer = 0;
@@ -1577,7 +1640,7 @@
 			var v = art.lastElementChild; if (v && v.play) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); }
 			if (user) { flash(art); var rr = art.getBoundingClientRect(); if (rr.bottom < 80) art.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }); }
 		}
-		function trayItem(r) { var m = metalOf(r), md = mediaOf(r); return { key: 'sp-' + (r.id || r.n) + '-' + m, name: r.n, sub: (names[m] || '') + (r.id ? ' · style ' + r.id : '') + (r.p ? ' · from ' + r.p : ''), img: md.poster || r.img }; }
+		function trayItem(r) { var m = metalOf(r), md = mediaOf(r); return { key: 'sp-' + (r.id || r.n) + '-' + m, name: r.n, sub: (names[m] || '') + (r.id ? ' · style ' + r.id : '') + (r.p ? ' · from ' + r.p : ''), img: md.poster || r.img, url: r.u || '' }; }
 		// "Drop a hint": the three matches, each in the gold shown.
 		var hintBtn = $('[data-wk-hint]', el);
 		var hintList = function () { return matches.map(function (x) { return hintItem(x.r, metalOf(x.r)); }).filter(Boolean); };

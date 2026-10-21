@@ -222,6 +222,8 @@ class WK_Plugin {
 			'maps'     => $s['maps_url'],
 			'book'     => $s['book_url'] ? $s['book_url'] : '#visit',
 			'tray'     => (bool) $s['tray'],
+			// "Email me my tray" goes out as OM Catalog's saved-designs email, so it follows that switch (Settings > OM Catalog > Look & feel).
+			'trayMail' => (bool) $s['tray'] && class_exists( 'OM_Saved' ) && '0' !== get_option( 'om_saved_email', '1' ),
 			'actbar'   => (bool) $s['actbar'],
 			'pill'     => (bool) $s['book_pill'],
 			'act'      => array( $s['act_call'], $s['act_book'], $s['act_dir'] ),
@@ -256,6 +258,12 @@ class WK_Plugin {
 				'trayBook'   => __( 'Book to see them in person', 'wulf-kit' ),
 				'trayKeep'   => __( 'Keep browsing', 'wulf-kit' ),
 				'trayNote'   => __( 'We\'ll bring them in for your visit, usually within a few business days.', 'wulf-kit' ),
+				'trayMail'   => __( 'Email me my tray', 'wulf-kit' ),
+				'mailSub'    => __( 'Photos and links to every piece, in your inbox.', 'wulf-kit' ),
+				'mailEmail'  => __( 'Your email', 'wulf-kit' ),
+				'mailSend'   => __( 'Send', 'wulf-kit' ),
+				/* translators: %s: the visitor's email address. */
+				'mailSent'   => __( 'Sent to %s. Check your inbox.', 'wulf-kit' ),
 				'remove'     => __( 'Remove', 'wulf-kit' ),
 				'close'      => __( 'Close', 'wulf-kit' ),
 				'pieces'     => __( 'Your tray · %d piece', 'wulf-kit' ),

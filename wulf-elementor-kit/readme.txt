@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.15.0
+Stable tag: 1.15.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -141,6 +141,20 @@ booking_step, booking_request, generate_lead, quiz_start, quiz_step, quiz_comple
 quiz_email_open to the Google Analytics, Tag Manager or Meta pixel
 already on the site (nothing is added). Mark generate_lead as a key event in GA4 to count bookings as
 conversions. Add ?wk_debug_events=1 to a page address to watch them in the browser console.
+
+== Your tray ==
+
+The heart on the product row and the Spotlight, and the ring designer's "Add to my tray", save a
+piece to the visitor's tray (kept on their device, no account). The tray button in the header opens
+it: the pieces, "Book to see them in person" (the booking request lists them) and "Email me my tray".
+
+"Email me my tray" (with the OM Catalog plugin): the visitor types their email and gets the same
+"Your saved designs" email as the catalog's Saved list, with each piece's photo, name, style number
+and catalog link. You get a copy, it is saved under Inquiries, and it goes to your CRM when that is
+on. It follows Settings > OM Catalog > Look & feel > Saved designs > "Email me my list" (untick it
+to hide it here too); the wording of both emails is under Settings > OM Catalog > Emails. Only
+pieces with a catalog page are sent, so a product row piece linked to another page is left out.
+Measured: generate_lead with form_type tray_email.
 
 == Drop a hint ==
 
@@ -287,6 +301,14 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.15.1 =
+* "Email me my tray": the tray can email the visitor their pieces with photos and catalog links
+  (the same email the catalog's Saved list sends). You get a copy, saved under Inquiries and sent
+  to your CRM when that is on. Needs the OM Catalog plugin, and follows its "Email me my list"
+  setting.
+* Pieces already on a visitor's tray pick up their catalog link the next time a section that
+  shows them is on the page, so they can be emailed too.
 
 = 1.15.0 =
 * Booking calendar: the booking panel and the "Book a visit" form can show your SimplyBook
