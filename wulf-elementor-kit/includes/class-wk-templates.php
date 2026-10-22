@@ -336,6 +336,10 @@ class WK_Templates {
 		<div class="wrap wk-setup">
 			<h1><?php esc_html_e( 'Pages & templates', 'wulf-kit' ); ?></h1>
 			<p class="wk-intro"><?php esc_html_e( 'Every page of wulfdiamondjewelers.com is here as a ready-made design, with your wording already in. Tick the ones you want and click Build. Each page is made of Wulf sections you can change in Elementor: text, pictures, colors, hover colors, fonts and spacing.', 'wulf-kit' ); ?></p>
+			<p class="wk-intro">
+				<?php esc_html_e( 'Switching the whole site between Night and Daylight, with its homepage?', 'wulf-kit' ); ?>
+				<a href="<?php echo esc_url( add_query_arg( array( 'page' => 'wulf-kit-sets' ), admin_url( 'admin.php' ) ) ); ?>"><?php esc_html_e( 'Design sets does it in one go', 'wulf-kit' ); ?></a>.
+			</p>
 
 			<?php if ( $report ) : ?>
 				<div class="notice notice-success"><p>

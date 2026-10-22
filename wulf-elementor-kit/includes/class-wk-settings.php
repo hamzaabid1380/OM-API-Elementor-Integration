@@ -198,6 +198,13 @@ class WK_Settings {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register' ) );
 		add_action( 'init', array( __CLASS__, 'upgrade' ), 5 );
+		add_action( 'add_option_' . self::OPTION, array( __CLASS__, 'flush' ) );
+		add_action( 'update_option_' . self::OPTION, array( __CLASS__, 'flush' ) );
+	}
+
+	/** Forget the settings read so far (they were just saved). */
+	public static function flush() {
+		self::$cache = null;
 	}
 
 	/** One-time updates of saved settings when an old default wording was kept. */
@@ -376,8 +383,8 @@ class WK_Settings {
 					self::field( 'font_sans', __( 'Body font', 'wulf-kit' ) );
 					self::field( 'google_fonts', __( 'Load from Google Fonts', 'wulf-kit' ), 'check', __( 'Turn off if your theme or Elementor already loads these fonts.', 'wulf-kit' ) );
 					self::field( 'calm_all', __( 'Calmer look everywhere', 'wulf-kit' ), 'check', __( 'Use the quieter style of "Home (simpler)" on every page: fewer boxes and small labels, gold italics only in the hero, slightly larger text.', 'wulf-kit' ) );
-					self::field( 'look', __( 'Look', 'wulf-kit' ), 'select', __( 'Daylight: warm paper and white instead of the dark header, hero and footer, ink buttons, gold kept for small accents, a hallmark stamp in the hero and a fine line in white, yellow and rose gold under the big headlines. One page can choose its own look in Elementor (Page settings › Wulf look); "Home (daylight)" in the page library uses Daylight.', 'wulf-kit' ), array( 'night' => __( 'Night (dark header, hero and footer)', 'wulf-kit' ), 'day' => __( 'Daylight', 'wulf-kit' ) ) );
-					self::field( 'corners', __( 'Corners', 'wulf-kit' ), 'select', __( 'The shape of buttons, cards, fields and frames. Cut corners are cut away like a step-cut diamond and go with the Daylight look (on Night pages they show square); dots, metal swatches and faces stay round either way. Automatic: rounded with the Night look, square with Daylight.', 'wulf-kit' ), array( 'auto' => __( 'Automatic', 'wulf-kit' ), 'round' => __( 'Rounded', 'wulf-kit' ), 'square' => __( 'Square', 'wulf-kit' ), 'cut' => __( 'Cut, like a step-cut diamond', 'wulf-kit' ) ) );
+					self::field( 'look', __( 'Look', 'wulf-kit' ), 'select', __( 'Daylight: warm paper and white instead of the dark header, hero and footer, ink buttons, gold kept for small accents, a hallmark stamp in the hero and a fine line in white, yellow and rose gold under the big headlines. One page can choose its own look in Elementor (Page settings › Wulf look); "Home (daylight)" in the page library uses Daylight. To switch the whole site with its homepage in one go, use Wulf Kit › Design sets.', 'wulf-kit' ), array( 'night' => __( 'Night (dark header, hero and footer)', 'wulf-kit' ), 'day' => __( 'Daylight', 'wulf-kit' ) ) );
+					self::field( 'corners', __( 'Corners', 'wulf-kit' ), 'select', __( 'The shape of buttons, cards, fields and frames. Cut corners are cut away like a step-cut diamond and go with the Daylight look (on Night pages they show square); dots, metal swatches and faces stay round either way. Automatic: rounded with the Night look, square with Daylight. Square and cut corners also reach the shop (OM Catalog): its buttons, fields and cards turn square, and with cut corners its product pictures and main buttons are cut too.', 'wulf-kit' ), array( 'auto' => __( 'Automatic', 'wulf-kit' ), 'round' => __( 'Rounded', 'wulf-kit' ), 'square' => __( 'Square', 'wulf-kit' ), 'cut' => __( 'Cut, like a step-cut diamond', 'wulf-kit' ) ) );
 					self::field( 'mark', __( 'Hallmark stamp', 'wulf-kit' ), 'text', __( 'The small stamp before the hero\'s label in the Daylight look, like the mark inside a ring. Leave empty for none.', 'wulf-kit' ) );
 					self::field( 'turn_speed', __( '360° videos turn', 'wulf-kit' ), 'speed', __( 'How fast the turning ring videos play everywhere on the site.', 'wulf-kit' ) );
 					self::field( 'radius', __( 'Corner radius (px)', 'wulf-kit' ), 'number' );

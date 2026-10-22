@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.17.0
+Stable tag: 1.18.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -88,17 +88,56 @@ The header and footer are saved under Templates > Saved Templates as "Wulf · He
 "Wulf · Footer", and appear on every page. Change which templates are used (or turn them off)
 in Wulf Kit > Settings. The menu is a normal WordPress menu under Appearance > Menus.
 
+== Design sets ==
+
+Wulf Kit > Design sets switches the whole site in one go. A set is a homepage plus the look that
+every other page, the header, the footer and the shop follow:
+
+* Night: Home (conversion) as the homepage; the dark header, hero and footer, gold buttons and
+  rounded corners. Every other page keeps its own design.
+* Daylight: Home (daylight) as the homepage; warm paper and white, ink buttons, square corners, and
+  every other page in Daylight too.
+* Daylight, cut corners: the same, with the corners of buttons, cards, fields and photos cut away
+  like a step-cut diamond.
+
+"Preview on your site" shows a set on the real site, on every page, to you only (you need to be
+logged in as an administrator); a small bar at the bottom switches between the sets, makes the one
+you're looking at live, or stops the preview. Visitors keep seeing the live set meanwhile. The admin
+bar on the site has the same choices under "Design".
+
+Choose a set, then "Make this set live":
+
+* Pages: keep every page as it is (they change to the new look by themselves and your edits stay),
+  or also build the pages that aren't built yet and put every library page live, or rebuild every
+  page fresh from the library (your current copies go to the trash). A page from your old site at the
+  same address goes to the trash when the library page takes its place.
+* Your other homepage versions (the homepage being replaced, and any other homepage from the library
+  that's published): unpublish them and keep them as drafts (so you can switch back in one click),
+  move them to the trash, or leave them as they are.
+
+The set's homepage is built first if it isn't yet, and the Wulf header and footer are set up if they
+aren't. Look and Corners in Wulf Kit > Settings change to match the set. After the switch, "Switch
+back" makes the previous set live again. Nothing is deleted for good: Pages > Trash keeps pages for
+30 days. Page caches from WP Rocket, LiteSpeed, W3 Total Cache, WP Super Cache, SiteGround, WP Fastest
+Cache and Breeze are cleared for you; clear any other cache yourself.
+
 == Daylight look and corners ==
 
 Wulf Kit > Settings > Look: Night (the dark header, hero and footer) or Daylight: warm paper and white
 instead of night, ink buttons, gold kept for small accents, a hallmark stamp before the hero's label
 (Settings > Hallmark stamp, "WULF ◆ 1971" to start with, empty for none) and a fine line in white,
 yellow and rose gold under the big headlines. Cards lose their outlines: white on paper sections,
-paper on white ones. Sections set to Dark read as paper.
+paper on white ones. Sections designed dark (page banners, calls to action, the 4Cs) read as paper:
+page banners like the homepage hero, the rest a deeper paper so the backgrounds still alternate. A
+section given a dark colour of its own in Style > Section stays dark, with light text. The brand
+films and the 4Cs diamond play in a dark display case with a fine edge of white, yellow and rose gold.
 
 Settings > Corners: Rounded, Square, or Cut (the corners cut away like a step-cut diamond) for
 buttons, cards, fields and frames. Automatic: rounded at night, square by day. Cut corners go with the
-Daylight look; on a Night page they show square. Dots, metal swatches and faces stay round.
+Daylight look; on a Night page they show square. Dots, metal swatches and faces stay round. Square and
+cut corners reach the shop too (OM Catalog: catalog, product pages, ring builder, quick view, saved
+list): its buttons, fields, chips and cards turn square, and with cut corners its product pictures and
+main buttons are cut as well. Rounded corners leave the shop's own design.
 
 One page can choose its own look and corners in Elementor: Page settings > Wulf look. Save, then
 reload to see the change.
@@ -332,6 +371,16 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.18.0 =
+* Design sets (Wulf Kit > Design sets): Night with Home (conversion), Daylight, and Daylight with cut
+  corners. Preview any set on your real site (only you see it), then make it live in one go, keeping
+  your pages or building and rebuilding them, and unpublishing or trashing the homepage it replaces.
+  After a switch, "Switch back" makes the previous set live again.
+* Daylight on every page: page banners, calls to action, the 4Cs, lists, reviews, services, steps,
+  the brand films (in a dark display case with a fine metal edge) and their chapters.
+* Square and cut corners reach the shop (OM Catalog) too.
+* Daylight: a section given a dark colour of its own keeps it, with light text.
 
 = 1.17.0 =
 * Daylight look: warm paper and white instead of the dark header, hero and footer, ink buttons, gold

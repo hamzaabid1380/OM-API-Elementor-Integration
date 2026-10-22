@@ -57,6 +57,7 @@ class WK_Plugin {
 		WK_Settings::init();
 		WK_Booking::init();
 		WK_Templates::init();
+		WK_Sets::init();
 		add_action( 'plugins_loaded', array( $this, 'boot' ), 20 );
 	}
 
@@ -441,7 +442,8 @@ class WK_Plugin {
 
 	/**
 	 * A page's look (night or day) and corner shape (round, square or cut): its own choice in Elementor's
-	 * page settings, else Wulf Kit › Settings. "Automatic" corners: rounded at night, square by day.
+	 * page settings, else Wulf Kit › Settings (or the design set an admin is previewing). "Automatic"
+	 * corners: rounded at night, square by day.
 	 *
 	 * @param int $id Page ID, 0 for the site settings alone.
 	 * @return array look, corners
@@ -449,9 +451,10 @@ class WK_Plugin {
 	public static function look( $id = 0 ) {
 		$ps      = $id ? get_post_meta( $id, '_elementor_page_settings', true ) : array();
 		$ps      = is_array( $ps ) ? $ps : array();
-		$look    = ! empty( $ps['wk_look'] ) ? (string) $ps['wk_look'] : (string) WK_Settings::get( 'look' );
+		$site    = WK_Sets::site_look();
+		$look    = ! empty( $ps['wk_look'] ) ? (string) $ps['wk_look'] : $site['look'];
 		$look    = 'day' === $look ? 'day' : 'night';
-		$corners = ! empty( $ps['wk_corners'] ) ? (string) $ps['wk_corners'] : (string) WK_Settings::get( 'corners' );
+		$corners = ! empty( $ps['wk_corners'] ) ? (string) $ps['wk_corners'] : $site['corners'];
 		if ( ! in_array( $corners, array( 'round', 'square', 'cut' ), true ) ) {
 			$corners = 'day' === $look ? 'square' : 'round';
 		}
@@ -459,6 +462,20 @@ class WK_Plugin {
 			$corners = 'square'; // Cut corners go with Daylight's cards without outlines; Night's outlines would break at the cuts.
 		}
 		return array( 'look' => $look, 'corners' => $corners );
+	}
+
+	/**
+	 * Is the page being shown (or edited) in the Daylight look? Sections designed dark then print as
+	 * "designed dark, on a light background".
+	 */
+	public static function is_day() {
+		static $day = array();
+		$id = did_action( 'wp' ) ? ( is_singular() ? (int) get_queried_object_id() : 0 ) : (int) get_the_ID();
+		if ( ! isset( $day[ $id ] ) ) {
+			$l          = self::look( $id );
+			$day[ $id ] = 'day' === $l['look'];
+		}
+		return $day[ $id ];
 	}
 
 	/** Elementor › page settings: this page's own look and corners (the rest of the site keeps the kit's settings). */

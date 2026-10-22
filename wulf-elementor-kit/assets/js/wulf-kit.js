@@ -2065,7 +2065,8 @@
 		}
 		$$(':scope > section, :scope > .sec', el).forEach(function (s) {
 			if (s.classList.contains('txt-light') || s.classList.contains('txt-dark')) return;
-			if (s.dataset.tone === undefined) s.dataset.tone = s.classList.contains('dark') ? 'dark' : '';
+			// Designed dark: printed dark, or (Daylight look) "designed dark, on a light background".
+			if (s.dataset.tone === undefined) s.dataset.tone = s.classList.contains('dark') || s.classList.contains('is-light') ? 'dark' : '';
 			// Judge the background without our own dark styling in the way.
 			s.classList.remove('dark'); s.style.backgroundColor = '';
 			var b = bgBehind(s);

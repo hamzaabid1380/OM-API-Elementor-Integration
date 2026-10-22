@@ -510,7 +510,7 @@ abstract class WK_Widget extends Widget_Base {
 		if ( 'ivory' === ( $s['tone'] ?? '' ) ) {
 			$c[] = 'ivory';
 		} elseif ( 'dark' === ( $s['tone'] ?? '' ) ) {
-			$c[] = 'dark';
+			$c[] = WK_Plugin::is_day() ? 'is-light' : 'dark'; // Daylight: a deeper paper instead of night.
 		}
 		if ( 'yes' === ( $s['rule'] ?? '' ) ) {
 			$c[] = 'rule';

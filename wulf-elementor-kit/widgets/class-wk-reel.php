@@ -334,7 +334,7 @@ class WK_Reel_Widget extends WK_Widget {
 		}
 
 		$this->open( $s, '', array( 'auto' => 'yes' === ( $s['autoplay'] ?? '' ), 'hero' => $hero, 'safe' => $d['safe'], 'film' => $win ) );
-		$cls = 'reel l-' . ( $hero ? 'hero' : 'split side-' . $side ) . ' fit-' . $fit . ' dark txt-light' . ( 'yes' === ( $s['join'] ?? '' ) ? ' join' : '' ) . ( $cues ? ' has-cues' : '' );
+		$cls = 'reel l-' . ( $hero ? 'hero' : 'split side-' . $side ) . ' fit-' . $fit . ( WK_Plugin::is_day() ? ' is-light txt-dark' : ' dark txt-light' ) . ( 'yes' === ( $s['join'] ?? '' ) ? ' join' : '' ) . ( $cues ? ' has-cues' : '' );
 		echo '<section class="' . esc_attr( $cls ) . '"' . $this->anchor_attr( $s ) . ( '' !== trim( (string) $s['title'] ) ? ' aria-labelledby="' . esc_attr( $hid ) . '"' : '' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<div class="' . ( $hero ? '' : 'wrap ' ) . 'reel-grid">';
 

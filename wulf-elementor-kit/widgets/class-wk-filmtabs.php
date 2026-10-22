@@ -205,7 +205,7 @@ class WK_Filmtabs_Widget extends WK_Widget {
 		$side = 'right' === ( $s['side'] ?? '' ) ? 'right' : 'left';
 
 		$this->open( $s, '', array( 'auto' => 'yes' === ( $s['autoplay'] ?? '' ), 'film' => $win ) );
-		echo '<section class="reel l-tabs side-' . esc_attr( $side ) . ' dark txt-light' . ( 'yes' === ( $s['join'] ?? '' ) ? ' join' : '' ) . '"' . $this->anchor_attr( $s ) . ( '' !== trim( (string) $s['title'] ) ? ' aria-labelledby="' . esc_attr( $id ) . '-h"' : '' ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<section class="reel l-tabs side-' . esc_attr( $side ) . ( WK_Plugin::is_day() ? ' is-light txt-dark' : ' dark txt-light' ) . ( 'yes' === ( $s['join'] ?? '' ) ? ' join' : '' ) . '"' . $this->anchor_attr( $s ) . ( '' !== trim( (string) $s['title'] ) ? ' aria-labelledby="' . esc_attr( $id ) . '-h"' : '' ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<div class="reel-head">';
 		$this->head( $s, WK_Films::watch( $win, (string) ( $s['watch_text'] ?? '' ), 'reel-watch-link' ) . WK_Films::watch_note( 'yes' === ( $s['watch'] ?? '' ) && ! $win ), $id . '-h' );
 		echo '</div>';
