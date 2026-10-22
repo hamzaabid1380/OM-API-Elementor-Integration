@@ -1024,7 +1024,7 @@
 		if (reduce && vids[0]) { vids[0].removeAttribute('autoplay'); vids[0].pause(); }
 		var cur = 0, timer = 0, paused = false;
 		var caption = function (p) {
-			var s = '<span><b>' + esc(p.n) + '</b>' + (c.price ? ' · ' + esc(MCOL[p.m] || '') + (p.p ? ' · From ' + esc(p.p) : '') : '') + '</span>';
+			var s = '<span><b>' + esc(p.n) + '</b>' + (c.price ? '<span class="sc-meta"><span class="sc-sep"> · </span>' + esc(MCOL[p.m] || '') + (p.p ? ' · From ' + esc(p.p) : '') + '</span>' : '') + '</span>';
 			if (p.u && p.cta) s += '<a href="' + esc(p.u) + '"' + (p.ext ? ' target="_blank" rel="noopener"' : '') + '>' + esc(p.cta) + ' ' + icon('arr') + '</a>';
 			return s;
 		};

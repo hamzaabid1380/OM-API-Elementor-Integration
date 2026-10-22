@@ -757,6 +757,9 @@ body.wk-has-actbar { padding-bottom: 76px; }
 .wk { display: block; }
 .wk.wk-portal { display: contents; }
 
+/* Phone menu: a top-level link's arrow keeps the size of the open/close arrows. */
+.wk.wk .sheet nav > a svg { width: 20px; height: 20px; flex: none; }
+
 /* Header search overlay. */
 .wk.wk .hd > .wrap { position: relative; }
 .wk.wk .hd-search { position: absolute; inset: 0 var(--gut); display: flex; align-items: center; gap: 10px; background: inherit; z-index: 3; }
@@ -2073,3 +2076,208 @@ body.wk-modal-open .om-ai .om-ai-launch.om-ai-launch, body.wk-modal-open .om-ai 
 .wk.wk .dr-sent svg { flex: none; width: 18px; height: 18px; color: #2e7d4f; }
 @media (max-width: 600px) { .wk.wk .dr-mail { margin-inline: 20px; } }
 @media (prefers-reduced-motion: reduce) { .wk.wk .dr-mail-open .chev { transition: none; } }
+
+/* ================= Hero, centred: the words above, the piece in a wide display case below =================
+   Hero › Layout › "Centred, with a display case". The case shows the turning piece on the left and
+   its name, price and the other pieces on the right; phones show the case first, then the words. */
+.wk.wk .hero.lay-center .hero-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; min-height: 0; padding: clamp(40px, 4.4vw, 64px) var(--gut) clamp(40px, 4.6vw, 64px); text-align: center; }
+.wk.wk .hero.lay-center .hero-copy { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 1000px; padding: 0; }
+.wk.wk .hero.lay-center .h1 { font-size: clamp(40px, 5vw, 74px); }
+.wk.wk .hero.lay-center .lead { max-width: 72ch; margin-inline: auto; text-wrap: balance; }
+.wk.wk .hero.lay-center .hero-call { display: none; }
+.wk.wk .hero.lay-center :is(.hero-cta, .hero-note) { justify-content: center; }
+.wk.wk .hero.lay-center .hero-media.slot { position: relative; display: block; width: min(100%, 1100px); height: clamp(320px, 29vw, 390px); margin-top: clamp(32px, 3.4vw, 48px); padding: 0; overflow: hidden; }
+.wk.wk .hero.lay-center .hero-media .sc-stage { inset: 18px auto 18px 4%; width: 48%; }
+.wk.wk .hero.lay-center .hero-media .sc-foot { inset: 0 6% 0 56%; flex-direction: column; align-items: flex-start; justify-content: center; gap: 20px; text-align: left; }
+.wk.wk .hero.lay-center .sc-lab { margin: 0 0 -8px; font: 700 11px/1.2 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--gold-ink); }
+.wk.wk .hero.lay-center .sc-cap { gap: 12px; font-size: 15px; }
+.wk.wk .hero.lay-center .sc-cap b { display: block; font: 400 clamp(24px, 2.3vw, 32px)/1.12 var(--serif); letter-spacing: -.01em; }
+.wk.wk .hero.lay-center .sc-meta { display: block; margin-top: 6px; }
+.wk.wk .hero.lay-center .sc-sep { display: none; }
+.wk.wk .hero.lay-center .hero-media .sc-thumbs button { width: 60px; height: 60px; }
+.wk.wk .hero.lay-center .trust { justify-content: center; margin-top: clamp(24px, 2.6vw, 34px); padding-top: 0; border-top: 0; }
+@media (max-width: 860px) {
+	.wk.wk .hero.lay-center .hero-grid { padding: 16px var(--gut) 36px; }
+	.wk.wk .hero.lay-center .hero-media.slot { order: -1; height: clamp(236px, 64vw, 320px); min-height: 0; max-height: none; margin: 0 0 26px; }
+	.wk.wk .hero.lay-center .hero-media .sc-stage { inset: 10px 10px 72px; width: auto; }
+	.wk.wk .hero.lay-center .hero-media .sc-foot { inset: auto 12px 12px; flex-direction: row; justify-content: center; gap: 0; }
+	.wk.wk .hero.lay-center :is(.sc-cap, .sc-lab) { display: none; }
+	.wk.wk .hero.lay-center .hero-media .sc-thumbs button { width: 48px; height: 48px; }
+	.wk.wk .hero.lay-center .trust { gap: 8px 18px; margin-top: 22px; }
+}
+@media (max-width: 600px) {
+	.wk.wk .hero.lay-center .lead-d { display: none; }
+	.wk.wk .hero.lay-center .lead-m { display: block; margin-top: 16px; }
+	.wk.wk .hero.lay-center .trust li { font-size: 13.5px; }
+}
+
+/* ================= Daylight look =================
+   Wulf Kit › Settings › Look, or one page's own choice (the "Home (daylight)" template uses it): warm paper
+   and white instead of night, ink buttons, gold kept for small accents, a hallmark stamp in the hero and the
+   three golds under the big headlines. Cards lose their hairlines: white on paper sections, paper on white. */
+body.wk-day .wk { --paper: #f6f3ee; --paper-2: #eee9e1; --line: #e4ded4; --tint: rgba(122, 91, 36, .075); --tint-2: rgba(122, 91, 36, .14); --wg: #c6cbd2; --yg: #c9a45f; --rg: #d29a83; }
+body.wk-day .wk.wk :focus-visible { outline-color: var(--ink); }
+body.wk-day .wk.wk .gold-em, body.wk-day .wk.wk .hero .gold-em { font-style: normal; color: inherit; }
+body.wk-day .wk.wk .sec.ivory { background-color: var(--paper); }
+
+/* Sections designed dark read as paper. */
+body.wk-day .wk.wk .dark { --ink: var(--ink-l); --text: var(--text-l); --sub: var(--sub-l); --line: var(--line-l); --field: var(--field-l); --gold-ink: var(--gold-ink-l); background-color: var(--paper); color: var(--text); }
+body.wk-day .wk.wk .dark :is(.h1, .h2, .h3, .link) { color: var(--ink); }
+body.wk-day .wk.wk .dark :is(.eyebrow, .lead) { color: var(--sub); }
+body.wk-day .wk.wk .dark .btn-ink { background-color: var(--ink); color: #fff; }
+body.wk-day .wk.wk .dark .qz-pts { color: var(--sub); }
+body.wk-day .wk.wk .dark .qz-pts svg { color: var(--gold-deep); }
+body.wk-day .wk.wk .dark :is(.spot-cap, .vs-list p) { color: var(--sub); }
+body.wk-day .wk.wk .dark :is(.spot-cap b, .spot-cap a) { color: var(--ink); }
+
+/* Top bar and header: light, with a hairline. */
+body.wk-day .wk.wk .announce { background-color: var(--paper-2); color: var(--text); border-bottom-color: var(--line); }
+body.wk-day .wk.wk .announce a { color: var(--ink); }
+body.wk-day .wk.wk .hd.hd { background-color: #fff; color: var(--ink); box-shadow: 0 1px 0 var(--line); }
+body.wk-day .wk.wk .hd .logo svg { color: var(--gold-deep); }
+body.wk-day .wk.wk .hd .lg-solid { display: block; }
+body.wk-day .wk.wk .hd .lg-solid + .lg-top, body.wk-day .wk.wk .hd .lg-top:has(+ .lg-solid) { display: none; }
+body.wk-day .wk.wk .hd.hd .btn-book.btn-book { background-color: var(--ink); color: #fff; }
+body.wk-day .wk.wk .hd.hd .btn-book.btn-book:hover { background-color: #2a313c; }
+
+/* Buttons: ink first, a soft paper tint second, gold only as an accent. */
+body.wk-day .wk.wk .btn-gold { border-color: var(--ink); background-color: var(--ink); color: #fff; }
+body.wk-day .wk.wk .btn-gold:hover { border-color: #2a313c; background-color: #2a313c; color: #fff; }
+body.wk-day .wk.wk :is(.btn-line, .btn-ghost) { border-color: transparent; background-color: var(--tint); color: var(--ink); }
+body.wk-day .wk.wk :is(.btn-line, .btn-ghost):hover { border-color: var(--ink); background-color: var(--ink); color: #fff; }
+body.wk-day .wk.wk .btn { font-weight: 650; letter-spacing: .005em; }
+
+/* Hero */
+body.wk-day .wk.wk .hero { background: linear-gradient(180deg, #fbfaf8 0%, var(--paper) 100%); color: var(--ink); }
+body.wk-day .wk.wk .hero .h1 { color: var(--ink); letter-spacing: -.02em; }
+body.wk-day .wk.wk .hero-copy .lead { color: var(--sub); }
+body.wk-day .wk.wk .hero .kicker { display: block; margin-bottom: 22px; font: 600 14px/1.4 var(--sans); letter-spacing: .01em; text-transform: none; color: var(--text); }
+body.wk-day .wk.wk .hero .kicker::before { content: var(--mark, "WULF \25C6  1971"); display: var(--mark-d, inline-block); margin: 0 10px 0 0; padding: 6px 9px 5px; border: 1px solid currentColor; border-radius: 2px; font: 700 10px/1 var(--sans); letter-spacing: .2em; vertical-align: 1px; color: var(--gold-ink); }
+body.wk-day .wk.wk :is(.hero .h1, .shead .h2)::after { content: ""; display: block; width: 84px; height: 2px; margin-top: 24px; background: linear-gradient(90deg, var(--wg) 0 33.3%, var(--yg) 33.3% 66.6%, var(--rg) 66.6%); }
+body.wk-day .wk.wk :is(.hero.lay-center .h1, .shead.center .h2)::after { margin-inline: auto; }
+body.wk-day .wk.wk .hero-note { color: var(--sub); }
+body.wk-day .wk.wk .hero-note svg { color: var(--gold-deep); }
+body.wk-day .wk.wk .hero-call { color: var(--sub); }
+body.wk-day .wk.wk .hero-call a { color: var(--ink); }
+body.wk-day .wk.wk .hero .trust { border-top-color: var(--line); }
+body.wk-day .wk.wk .hero .trust li { color: var(--text); }
+body.wk-day .wk.wk .hero .trust svg { color: var(--gold-ink); }
+body.wk-day .wk.wk .hero-cta .btn-ghost { min-height: 0; padding: 6px 0; border: 0; background: none; box-shadow: inset 0 -1.5px 0 var(--gold-deep); color: var(--ink); }
+body.wk-day .wk.wk .hero-cta .btn-ghost:hover { background: none; color: var(--gold-ink); }
+body.wk-day .wk.wk .hero-cta .btn-ghost::after { content: "\2192"; margin-left: 2px; }
+@media (min-width: 861px) { body.wk-day .wk.wk .hero-cta { align-items: center; gap: 28px; } }
+@media (max-width: 600px) {
+	body.wk-day .wk.wk .hero-cta .btn-ghost { min-height: 52px; padding: 0 26px; background-color: var(--tint); box-shadow: none; }
+	body.wk-day .wk.wk .hero-cta .btn-ghost::after { content: none; }
+	body.wk-day .wk.wk .hero .kicker::before { display: var(--mark-d, table); margin: 0 auto 12px; }
+	body.wk-day .wk.wk .hero:not(.lay-center) .kicker::before { margin-left: 0; }
+}
+body.wk-day .wk.wk .hero-media.slot { background-color: #fff; }
+body.wk-day .wk.wk .hero-media .sc-thumbs button { border-color: transparent; background-color: var(--paper); }
+body.wk-day .wk.wk .hero-media .sc-thumbs button[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--ink); }
+
+/* Booking bar: a white bar resting on the hero's paper. */
+body.wk-day .wk.wk .bkbar-sec { padding-bottom: clamp(44px, 5vw, 72px); background-color: var(--paper); }
+body.wk-day .wk.wk .bkbar { border-color: transparent; box-shadow: none; }
+body.wk-day .wk.wk :is(.bkbar select, .field input, .field select, .field textarea, .qz-mail input[type="email"], .dr-mail-row input, .sheet-search input, .hd-search input) { border: 0; border-bottom: 1.5px solid var(--field); border-radius: 0; background-color: var(--paper); }
+body.wk-day .wk.wk :is(.bkbar select, .field input, .field select, .field textarea):hover { border-bottom-color: var(--ink); }
+
+/* Cards and panels: the fill does the work. */
+body.wk-day .wk.wk :is(.path, .sc .path, .spot-cards button, .faq-help, .tray-card, .studio-card, .st-tease, .qz-card, .after, .box) { border-color: transparent; box-shadow: none; }
+body.wk-day .wk.wk :is(.path, .sc .path, .spot-cards button):hover { box-shadow: none; }
+body.wk-day .wk.wk .sec:not(.ivory):not(.dark) :is(.path, .sc .path, .sc .feat .path, .spot-cards button, .faq-help, .tray-card, .st-tease, .after, .box) { background-color: var(--paper); }
+body.wk-day .wk.wk .sec:not(.ivory):not(.dark) :is(.spc-img, .st-tease-img) { background-color: transparent; }
+body.wk-day .wk.wk .sec:not(.ivory):not(.dark) .spot-ring { background-color: var(--paper); box-shadow: none; }
+body.wk-day .wk.wk .sec:not(.ivory):not(.dark) .spot-ring > :is(video, img) { mix-blend-mode: multiply; }
+body.wk-day .wk.wk :is(.sec.ivory, .sec.dark) :is(.path, .sc .path, .spot-cards button, .faq-help, .tray-card, .st-tease, .after, .box, .studio-card, .qz-card, .spot-ring) { background-color: #fff; }
+body.wk-day .wk.wk .spot-media::before { display: none; }
+body.wk-day .wk.wk .spot-ring { box-shadow: none; }
+
+/* Choices: a soft tint, ink when chosen. */
+body.wk-day .wk.wk :is(.opt, .spot-metals button, .qz-picks button) { border-color: transparent; background-color: var(--tint); color: var(--ink); }
+body.wk-day .wk.wk :is(.opt, .spot-metals button, .qz-picks button):hover { border-color: transparent; background-color: var(--tint-2); }
+body.wk-day .wk.wk :is(.opt[aria-checked="true"], .opt[aria-pressed="true"], .spot-metals button[aria-checked="true"]) { border-color: var(--ink); background-color: var(--ink); color: #fff; }
+body.wk-day .wk.wk .qz-opt { border-color: transparent; background-color: var(--tint); }
+body.wk-day .wk.wk .qz-opt:hover { border-color: transparent; background-color: var(--tint-2); }
+body.wk-day .wk.wk .qz-opt[aria-pressed="true"] { border-color: transparent; box-shadow: inset 0 0 0 1.5px var(--ink); }
+body.wk-day .wk.wk .qz-ph .qz-pic { background-color: transparent; }
+body.wk-day .wk.wk .spot-cards button[aria-pressed="true"] { border-color: transparent; box-shadow: inset 0 0 0 1.5px var(--ink); }
+body.wk-day .wk.wk :is(.alts button, .spot-pick button, .sc-arr) { border-color: transparent; background-color: var(--tint); }
+body.wk-day .wk.wk .alts button[aria-pressed="true"], body.wk-day .wk.wk .spot-pick button[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--ink); }
+body.wk-day .wk.wk .sc-tag { border-color: transparent; background-color: #fff; }
+body.wk-day .wk.wk .sc .feat .sc-arr { border-color: var(--gold); background-color: var(--gold); }
+body.wk-day .wk.wk .sc .wide .path-go { border-color: transparent; background-color: var(--tint); }
+body.wk-day .wk.wk .sc .wide .sc-arr { border-color: var(--ink); }
+body.wk-day .wk.wk .ctl-head b span { border-color: transparent; background-color: var(--tint); }
+body.wk-day .wk.wk :is(.path-ic, .vs-list .v-ic) { background-color: var(--tint); }
+
+/* Ring designer: a white card on paper, no shadow. */
+body.wk-day .wk.wk :is(.preview, .preview .main) { background-color: #fff; }
+
+/* Values: the photo framed in the three golds, an ink "since" tag. */
+body.wk-day .wk.wk .vs-media::before { border-color: var(--yg); }
+
+/* Steps: the three golds along the line, small hallmark tags on the photos. */
+body.wk-day .wk.wk .steps.tl::before { background: linear-gradient(90deg, var(--wg), var(--yg) 50%, var(--rg)); }
+body.wk-day .wk.wk .steps.tl li:nth-child(3n+1) .tl-dot { background-color: var(--wg); box-shadow: 0 0 0 5px rgba(198, 203, 210, .3); }
+body.wk-day .wk.wk .steps.tl li:nth-child(3n+2) .tl-dot { background-color: var(--yg); box-shadow: 0 0 0 5px rgba(201, 164, 95, .24); }
+body.wk-day .wk.wk .steps.tl li:nth-child(3n) .tl-dot { background-color: var(--rg); box-shadow: 0 0 0 5px rgba(210, 154, 131, .24); }
+body.wk-day .wk.wk .tl-img .tl-n { left: 16px; bottom: 16px; padding: 7px 10px 6px; border-radius: 2px; background-color: rgba(15, 18, 23, .72); font: 700 11px/1 var(--sans); letter-spacing: .18em; text-shadow: none; }
+body.wk-day .wk.wk .tl-img::after { background: linear-gradient(180deg, rgba(11, 14, 20, 0) 60%, rgba(11, 14, 20, .35)); }
+@media (max-width: 1023px) { body.wk-day .wk.wk .steps.tl::before { background: linear-gradient(180deg, var(--wg), var(--yg) 50%, var(--rg)); } }
+
+/* Questions */
+body.wk-day .wk.wk .fh-img { box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--yg); }
+
+/* Footer: paper-2 instead of night. */
+body.wk-day .wk.wk .ft { background-color: var(--paper-2); color: var(--sub); }
+body.wk-day .wk.wk .ft .logo { color: var(--ink); }
+body.wk-day .wk.wk .ft .logo svg { color: var(--gold-deep); }
+body.wk-day .wk.wk .news { border-bottom-color: var(--line); }
+body.wk-day .wk.wk .news .h3 { color: var(--ink); }
+body.wk-day .wk.wk .news input { border: 0; border-bottom: 1.5px solid var(--field); border-radius: 0; background-color: #fff; color: var(--ink); }
+body.wk-day .wk.wk .news input::placeholder { color: #737982; }
+body.wk-day .wk.wk .news input:focus { border-color: var(--ink); }
+body.wk-day .wk.wk .cols h4 { color: var(--ink); }
+body.wk-day .wk.wk .cols a { color: var(--sub); }
+body.wk-day .wk.wk .cols a:hover { color: var(--ink); }
+body.wk-day .wk.wk .legal { border-top-color: var(--line); color: var(--sub); }
+
+/* ================= Corner style (Settings › Corners, or one page's own choice) =================
+   Square: crisp corners on buttons, cards, fields and frames. Cut: the corners cut away like a step-cut
+   stone. Dots, metal swatches and faces stay round either way. */
+body.wk-square .wk.wk :is(.btn, .opt, .seg, .seg button, .bkpill, .status, .sc-tag, .map-tag, .pgh-cap, .qz-picks button, .qz-back, .qz-why li, .qz-opt, .qz-alts button, .qz-mail, .qz-card, .qz-ph .qz-pic, .qz-alt-img, .spot-metals button, .spot-cards button, .spc-img, .spot-ring, .spot-save, .save, .spot-pick button, .spot-pick img, .path, .sc .path, .sc-arr, .sc .feat .path-go, .sc .wide .path-go, .path-ic, .v-ic, .bkbar, .bkbar select, .field input, .field select, .field textarea, .news input, .hd-search input, .sheet-search input, .dr-mail, .dr-mail-open, .dr-mail-row input, .qz-mail input, .studio-card, .preview, .preview .main, .alts button, .alts button img, .shape-opts .opt, .ctl-head b span, .tile, .card .slot, .card .badge, .svc, .svc-ph, .vals li, .rev, .tip, .viz, .box, .after, .tray-card, .tray-card .thumbs div, .tl-img, .vs-media img, .vs-badge, .faq-help, .st-tease, .st-tease-img, .hero-media.slot, .hero-media .sc-thumbs button, .hero-media .sc-thumbs img, .om-ask-tabs, .om-ask-tab, .faq-list .pm, .mega-feature, .mega-shapes a, .post .slot, .pgh-media, .split-media, .st-photo, .cr-frame, .cta-media, .cta-card .cta-box, .lists.boxed > div, .bk-panel, .bk.pop .bk-panel, .bk-day, .bk-ctx, .bk-ctx img, .bk .bk-topics .opt, .bk-sum, .bk-sum-v li, .toast, .actbar a:not(.ab-ic)) { border-radius: 2px !important; }
+body.wk-square .wk.wk .vs-media::before { border-radius: 2px !important; }
+body.wk-square .wk.wk .steps.tl .tl-dot { border-radius: 1px; }
+
+body.wk-cut .wk.wk :where(.btn, .opt, .seg, .seg button, .bkpill, .status, .sc-tag, .map-tag, .pgh-cap, .qz-picks button, .qz-back, .qz-why li, .qz-opt, .qz-alts button, .qz-mail, .qz-card, .qz-ph .qz-pic, .qz-alt-img, .spot-metals button, .spot-cards button, .spc-img, .spot-ring, .spot-save, .save, .spot-pick button, .path, .sc .path, .sc-arr, .sc .feat .path-go, .sc .wide .path-go, .path-ic, .v-ic, .bkbar, .bkbar select, .field input, .field select, .field textarea, .news input, .hd-search input, .sheet-search input, .dr-mail, .dr-mail-open, .dr-mail-row input, .qz-mail input, .studio-card, .preview .main, .alts button, .shape-opts .opt, .ctl-head b span, .tile, .card .slot, .card .badge, .svc, .vals li, .rev, .tip, .viz, .box, .after, .tray-card, .tray-card .thumbs div, .tl-img, .vs-media img, .vs-badge, .faq-help, .st-tease, .st-tease-img, .hero.lay-center .hero-media.slot, .hero-media .sc-thumbs button, .om-ask-tabs, .om-ask-tab, .faq-list .pm, .mega-feature, .mega-shapes a, .post .slot, .pgh-media, .split-media, .st-photo, .cr-frame, .cta-media, .cta-card .cta-box, .lists.boxed > div, .bk.pop .bk-panel, .bk-day, .bk-ctx, .bk .bk-topics .opt, .bk-sum, .bk-sum-v li, .toast, .actbar a:not(.ab-ic)) {
+	--c: 10px; border-radius: 0 !important;
+	clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c));
+}
+body.wk-cut .wk.wk :where(.alts button, .spot-pick button, .hero-media .sc-thumbs button, .spc-img) img { border-radius: 0 !important; }
+body.wk-cut .wk.wk :where(.btn, .opt, .qz-opt, .spot-metals button, .spot-cards button, .qz-picks button, .path, .alts button, .spot-pick button, .hero-media .sc-thumbs button, .bkbar select, .field input, .field select, .field textarea, .news input, .save, .spot-save, .sc-arr):focus-visible { outline-offset: -4px; }
+/* Sizes: small tags and chips, buttons, cards, the large frames. */
+body.wk-cut .wk.wk :is(.sc-tag, .status, .map-tag, .pgh-cap, .qz-why li, .bk-sum-v li, .ctl-head b span, .card .badge) { --c: 5px; }
+body.wk-cut .wk.wk :is(.opt, .seg, .seg button, .om-ask-tabs, .om-ask-tab, .faq-list .pm, .qz-picks button, .qz-back, .spot-metals button, .sc-arr, .save, .spot-save, .alts button, .spot-pick button, .hero-media .sc-thumbs button, .qz-ph .qz-pic, .qz-alt-img, .spc-img, .tray-card .thumbs div, .bkbar select, .field input, .field select, .field textarea, .qz-mail input, .dr-mail-row input, .hd-search input, .sheet-search input) { --c: 7px; }
+body.wk-cut .wk.wk :is(.btn, .bkpill, .actbar a:not(.ab-ic), .news input, .sc .feat .path-go, .sc .wide .path-go, .path-ic, .v-ic, .qz-opt, .shape-opts .opt, .bk .bk-topics .opt, .bk-day) { --c: 10px; }
+body.wk-cut .wk.wk .btn.btn-sm { --c: 8px; }
+body.wk-cut .wk.wk :is(.spot-cards button, .vs-badge, .tray-card, .dr-mail, .dr-mail-open, .toast, .qz-alts button, .qz-mail, .bk-ctx, .bk-sum, .mega-shapes a, .card .slot, .st-tease-img) { --c: 12px; }
+body.wk-cut .wk.wk :is(.path, .sc .path, .bkbar, .faq-help, .box, .after, .tl-img, .st-tease, .tile, .svc, .vals li, .rev, .tip, .viz, .post .slot, .lists.boxed > div, .mega-feature, .preview .main) { --c: 16px; }
+body.wk-cut .wk.wk :is(.qz-card, .studio-card, .spot-ring, .vs-media img, .split-media, .pgh-media, .st-photo, .cr-frame, .cta-media, .cta-card .cta-box, .bk.pop .bk-panel) { --c: 24px; }
+body.wk-cut .wk.wk .sc .feat .path { --c: 22px; }
+body.wk-cut .wk.wk .hero.lay-center .hero-media.slot { --c: 28px; }
+/* The display case and the values photo: a fine metal edge that follows the cut. */
+body.wk-cut .wk.wk .hero.lay-center .hero-media.slot { background: linear-gradient(135deg, var(--wg), var(--yg) 50%, var(--rg)); }
+body.wk-cut .wk.wk .hero.lay-center .hero-media.slot::before { --c: 27.1px; content: ""; position: absolute; inset: 1.5px; z-index: 0; background-color: #fff;
+	clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c)); }
+body.wk-cut .wk.wk .hero.lay-center .hero-media :is(.sc-stage, .sc-foot) { z-index: 1; }
+body.wk-cut .wk.wk .vs-media::before { --c: 24px; inset: 16px -16px -16px 16px; border: 0; border-radius: 0; background: linear-gradient(135deg, var(--wg), var(--yg) 50%, var(--rg));
+	clip-path: polygon(evenodd, var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c), var(--c) 0, calc(var(--c) + .5px) 1.2px, 1.2px calc(var(--c) + .5px), 1.2px calc(100% - var(--c) - .5px), calc(var(--c) + .5px) calc(100% - 1.2px), calc(100% - var(--c) - .5px) calc(100% - 1.2px), calc(100% - 1.2px) calc(100% - var(--c) - .5px), calc(100% - 1.2px) calc(var(--c) + .5px), calc(100% - var(--c) - .5px) 1.2px, calc(var(--c) + .5px) 1.2px); }
+/* Chosen tiles: an ink bar along the bottom (an outline would break at the cut corners). */
+body.wk-cut .wk.wk :is(.spot-cards button[aria-pressed="true"], .qz-opt[aria-pressed="true"], .alts button[aria-pressed="true"], .spot-pick button[aria-pressed="true"], .hero-media .sc-thumbs button[aria-pressed="true"]) { box-shadow: inset 0 -2.5px 0 var(--ink); }
+/* The steps' dots become small diamonds. */
+body.wk-cut .wk.wk .steps.tl .tl-dot { border-radius: 1px; transform: rotate(45deg) scale(.86); }
+body.wk-cut .wk.wk .steps.tl li.wk-rv:not(.in) .tl-dot { transform: rotate(45deg) scale(0); }
+/* Square edges: the display case still gets its fine metal edge. */
+body.wk-square .wk.wk .hero.lay-center .hero-media.slot { border: 1.5px solid transparent; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, var(--wg), var(--yg) 50%, var(--rg)) border-box; }
+body.wk-square .wk.wk .vs-media::before { border-color: var(--yg); }

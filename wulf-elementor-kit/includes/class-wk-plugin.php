@@ -75,6 +75,8 @@ class WK_Plugin {
 		add_action( 'wp_footer', array( $this, 'om_saved_css' ), 6 );
 		add_filter( 'hello_elementor_header_footer', array( $this, 'hide_theme_parts' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
+		// Elementor › page settings (the cog): a page's own look and corners.
+		add_action( 'elementor/documents/register_controls', array( $this, 'page_look_controls' ) );
 		// "Ask our jeweller" (OM Catalog plugin) on the homepage and its library versions.
 		add_filter( 'om_assistant_is_home', array( $this, 'assistant_is_home' ) );
 		add_filter( 'om_assistant_show_here', array( $this, 'assistant_show_here' ) );
@@ -201,6 +203,9 @@ class WK_Plugin {
 		}
 		$css .= '--r:' . max( 0, (int) $s['radius'] ) . 'px;';
 		$css .= '--max:' . max( 600, (int) $s['max_width'] ) . 'px;';
+		// The hallmark stamp (Daylight look) as a CSS string.
+		$mark = trim( (string) ( $s['mark'] ?? '' ) );
+		$css .= '' === $mark ? '--mark-d:none;' : '--mark:"' . addcslashes( str_replace( array( "\n", "\r" ), ' ', $mark ), '"\\' ) . '";';
 		return '.wk{' . $css . '}';
 	}
 
@@ -424,7 +429,58 @@ class WK_Plugin {
 		if ( WK_Settings::get( 'calm_all' ) || ( is_singular() && 'calm' === get_post_meta( get_queried_object_id(), '_wk_style', true ) ) ) {
 			$classes[] = 'wk-calm';
 		}
+		$l = self::look( is_singular() ? (int) get_queried_object_id() : 0 );
+		if ( 'day' === $l['look'] ) {
+			$classes[] = 'wk-day';
+		}
+		if ( 'round' !== $l['corners'] ) {
+			$classes[] = 'wk-' . $l['corners'];
+		}
 		return $classes;
+	}
+
+	/**
+	 * A page's look (night or day) and corner shape (round, square or cut): its own choice in Elementor's
+	 * page settings, else Wulf Kit › Settings. "Automatic" corners: rounded at night, square by day.
+	 *
+	 * @param int $id Page ID, 0 for the site settings alone.
+	 * @return array look, corners
+	 */
+	public static function look( $id = 0 ) {
+		$ps      = $id ? get_post_meta( $id, '_elementor_page_settings', true ) : array();
+		$ps      = is_array( $ps ) ? $ps : array();
+		$look    = ! empty( $ps['wk_look'] ) ? (string) $ps['wk_look'] : (string) WK_Settings::get( 'look' );
+		$look    = 'day' === $look ? 'day' : 'night';
+		$corners = ! empty( $ps['wk_corners'] ) ? (string) $ps['wk_corners'] : (string) WK_Settings::get( 'corners' );
+		if ( ! in_array( $corners, array( 'round', 'square', 'cut' ), true ) ) {
+			$corners = 'day' === $look ? 'square' : 'round';
+		}
+		if ( 'cut' === $corners && 'day' !== $look ) {
+			$corners = 'square'; // Cut corners go with Daylight's cards without outlines; Night's outlines would break at the cuts.
+		}
+		return array( 'look' => $look, 'corners' => $corners );
+	}
+
+	/** Elementor › page settings: this page's own look and corners (the rest of the site keeps the kit's settings). */
+	public function page_look_controls( $document ) {
+		if ( ! $document instanceof \Elementor\Core\DocumentTypes\PageBase ) {
+			return;
+		}
+		$document->start_controls_section( 'wk_look_section', array( 'label' => __( 'Wulf look', 'wulf-kit' ), 'tab' => \Elementor\Controls_Manager::TAB_SETTINGS ) );
+		$document->add_control( 'wk_look', array(
+			'label'   => __( 'Look', 'wulf-kit' ),
+			'type'    => \Elementor\Controls_Manager::SELECT,
+			'default' => '',
+			'options' => array( '' => __( 'As in Wulf Kit settings', 'wulf-kit' ), 'night' => __( 'Night', 'wulf-kit' ), 'day' => __( 'Daylight', 'wulf-kit' ) ),
+		) );
+		$document->add_control( 'wk_corners', array(
+			'label'       => __( 'Corners', 'wulf-kit' ),
+			'type'        => \Elementor\Controls_Manager::SELECT,
+			'default'     => '',
+			'options'     => array( '' => __( 'As in Wulf Kit settings', 'wulf-kit' ), 'round' => __( 'Rounded', 'wulf-kit' ), 'square' => __( 'Square', 'wulf-kit' ), 'cut' => __( 'Cut, like a step-cut diamond', 'wulf-kit' ) ),
+			'description' => __( 'For this page only, header and footer included. Cut corners go with the Daylight look; on a Night page they show square. Save, then reload the page to see a change.', 'wulf-kit' ),
+		) );
+		$document->end_controls_section();
 	}
 
 	public function site_header() {

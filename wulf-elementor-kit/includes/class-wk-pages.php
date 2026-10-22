@@ -35,6 +35,7 @@ class WK_Pages {
 		return array(
 			'home'                        => array( __( 'Home', 'wulf-kit' ), 'home', 'main', __( 'The full homepage: showcase, categories, ring studio, story, 4Cs, services, visit.', 'wulf-kit' ) ),
 			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, a booking bar right under it, "What brings you in?" choices that each lead somewhere, a ring style quiz that ends in three matching rings, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, common questions, and booking. Each section is a showcase with one clear next step, and every "Book" button opens the booking popup.', 'wulf-kit' ) ),
+			'home-daylight'               => array( __( 'Home (daylight)', 'wulf-kit' ), 'home-daylight', 'main', __( 'The conversion homepage in the Daylight look: warm paper and white instead of the dark header, hero and footer, ink buttons and gold kept for small accents. The headline is centred above a wide display case with the turning pieces, and the sections are the same (booking bar, "What brings you in?", the ring style quiz, favorites, why Wulf, how a visit works, the ring designer, questions and booking), their backgrounds alternating paper and white. Square corners, or cut ones like a step-cut diamond: Wulf Kit › Settings › Corners, or this page\'s own setting in Elementor (the cog › Wulf look).', 'wulf-kit' ) ),
 			'home-cinematic'              => array( __( 'Home (cinematic)', 'wulf-kit' ), 'home-cinematic', 'main', __( 'The conversion homepage told as a 3D film: a ring and a real-looking diamond, drawn live in the browser, build themselves as visitors scroll. The film comes in three parts between the conversion sections (the opening with the booking buttons, the shapes and metals, the hidden details and your story since 1971), with the booking bar, "What brings you in?", the ring style quiz, favorites, why Wulf, how a visit works, the ring designer, questions and booking in between. Phones get a lighter version, and a still picture shows wherever 3D cannot run.', 'wulf-kit' ) ),
 			'home-film'                   => array( __( 'Home (brand film)', 'wulf-kit' ), 'home-film', 'main', __( 'The homepage told with your two films. The first screen plays the brand film\'s highlights beside the headline, with "Watch our film" (with sound). Then the booking bar, "What brings you in?", the film in five chapters (shapes, ring styles, the ring builder, custom design and fine jewelry, each with its next step), the 360° favorites, The Suitcase beside your story since 1971 with its years lighting up as it plays, why Wulf, questions and booking.', 'wulf-kit' ) ),
 			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer homepage with a few big moments: the 360° spotlight, the ring that builds itself, the ring designer and the 4Cs. Fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
@@ -69,7 +70,7 @@ class WK_Pages {
 
 	/** Homepage variants: "Go live" makes them the site's front page. */
 	public static function is_home( $key ) {
-		return in_array( $key, array( 'home', 'home-simple', 'home-conversion', 'home-cinematic', 'home-film' ), true );
+		return in_array( $key, array( 'home', 'home-simple', 'home-conversion', 'home-daylight', 'home-cinematic', 'home-film' ), true );
 	}
 
 	/** The page being shown is the front page, or a homepage version from the library (e.g. still being tried). */
@@ -82,7 +83,12 @@ class WK_Pages {
 
 	/** Extra page meta a template sets (e.g. the calmer look). */
 	public static function meta( $key ) {
-		return in_array( $key, array( 'home-simple', 'home-conversion', 'home-cinematic', 'home-film' ), true ) ? array( '_wk_style' => 'calm' ) : array();
+		$m = in_array( $key, array( 'home-simple', 'home-conversion', 'home-daylight', 'home-cinematic', 'home-film' ), true ) ? array( '_wk_style' => 'calm' ) : array();
+		if ( 'home-daylight' === $key ) {
+			// Daylight for this page only; Elementor › page settings › Wulf look shows it and can change it.
+			$m['_elementor_page_settings'] = array( 'wk_look' => 'day' );
+		}
+		return $m;
 	}
 
 	/** Which library pages already exist on this site: key => post ID. */
@@ -342,6 +348,23 @@ class WK_Pages {
 					self::faq( __( 'Before you visit.', 'wulf-kit' ), self::visit_questions(), array( 'tone' => 'ivory' ) ),
 					array( 'visit', array( 'f_short' => 'yes', 'after' => array(), 'f_title' => __( 'Book your free consultation', 'wulf-kit' ), 'tone' => 'white' ) ),
 				);
+
+			case 'home-daylight':
+				// The conversion page in the Daylight look: the centred hero with its display case (the "Or call"
+				// line is already in the top bar), then the same sections, alternating paper and white.
+				$tones = array( 'paths' => 'white', 'quiz' => 'ivory', 'spotlight' => 'white', 'values' => 'ivory', 'steps' => 'white', 'studio' => 'ivory', 'faq' => 'white', 'visit' => 'ivory' );
+				$b     = array();
+				foreach ( self::blocks( 'home-conversion' ) as $block ) {
+					if ( 'hero' === $block[0] ) {
+						$block[1]['layout']    = 'center';
+						$block[1]['call_line'] = '';
+						unset( $block[1]['m_first'], $block[1]['m_mini'] );
+					} elseif ( isset( $tones[ $block[0] ] ) ) {
+						$block[1]['tone'] = $tones[ $block[0] ];
+					}
+					$b[] = $block;
+				}
+				return $b;
 
 			case 'home-cinematic':
 				// The conversion page told as a film, and shorter: the film's opening is the first screen,

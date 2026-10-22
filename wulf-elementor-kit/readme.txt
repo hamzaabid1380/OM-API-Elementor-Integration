@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.16.0
+Stable tag: 1.17.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -52,11 +52,12 @@ and every page of wulfdiamondjewelers.com as a ready-made template you can pick 
 * Film chapters: the brand film as tabs (shapes, ring styles, the ring builder, custom design, fine
   jewelry); each chapter plays beside its own words and next step, then the next one follows
 
-31 page templates: one for every page on the live site, plus "Home (simpler)", "Home (conversion)",
-"Home (cinematic)" and "Home (brand film)", with the wording from that page and the same web address:
+32 page templates: one for every page on the live site, plus "Home (simpler)", "Home (conversion)",
+"Home (daylight)", "Home (cinematic)" and "Home (brand film)", with the wording from that page and the
+same web address:
 
-* Main: Home, Home (simpler), Home (conversion), Home (cinematic), Home (brand film), About, Free
-  Consultation, Blog, Thank You, Page not found
+* Main: Home, Home (simpler), Home (conversion), Home (daylight), Home (cinematic), Home (brand film),
+  About, Free Consultation, Blog, Thank You, Page not found
 * Shop (with the OM Catalog plugin): Engagement Rings, Ring Builder, Wedding Bands, Fashion Rings,
   Earrings, Necklaces, Pendants, Bracelets, Catalogue, Single Product layout
 * Diamonds & gems: Diamond Jewelry, Where to Buy Engagement Rings, Gems
@@ -86,6 +87,27 @@ in Settings > OM Catalog > Product Page Layout.
 The header and footer are saved under Templates > Saved Templates as "Wulf · Header" and
 "Wulf · Footer", and appear on every page. Change which templates are used (or turn them off)
 in Wulf Kit > Settings. The menu is a normal WordPress menu under Appearance > Menus.
+
+== Daylight look and corners ==
+
+Wulf Kit > Settings > Look: Night (the dark header, hero and footer) or Daylight: warm paper and white
+instead of night, ink buttons, gold kept for small accents, a hallmark stamp before the hero's label
+(Settings > Hallmark stamp, "WULF ◆ 1971" to start with, empty for none) and a fine line in white,
+yellow and rose gold under the big headlines. Cards lose their outlines: white on paper sections,
+paper on white ones. Sections set to Dark read as paper.
+
+Settings > Corners: Rounded, Square, or Cut (the corners cut away like a step-cut diamond) for
+buttons, cards, fields and frames. Automatic: rounded at night, square by day. Cut corners go with the
+Daylight look; on a Night page they show square. Dots, metal swatches and faces stay round.
+
+One page can choose its own look and corners in Elementor: Page settings > Wulf look. Save, then
+reload to see the change.
+
+"Home (daylight)" in the page library is the conversion homepage in Daylight. Its hero is centred:
+the words above, then a wide display case with the turning piece, its name, metal and price and the
+other pieces (Hero > Layout > "Centred"; phones show the case first). The sections are the same as
+the conversion page, their backgrounds alternating paper and white. Build it next to your homepage,
+compare, and "Go live" with the one you like.
 
 == Products ==
 
@@ -310,6 +332,17 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.17.0 =
+* Daylight look: warm paper and white instead of the dark header, hero and footer, ink buttons, gold
+  for small accents, a hallmark stamp in the hero and a three-gold line under the big headlines.
+  Settings > Look for the whole site, or one page's own choice in Elementor (page settings > Wulf
+  look). Night stays the default; nothing changes until you choose it.
+* Corners: Rounded, Square or Cut like a step-cut diamond (Settings > Corners, or per page).
+  Automatic keeps rounded corners at night and goes square by day.
+* Hero: a "Centred" layout with the turning pieces in a wide display case under the words.
+* New page template "Home (daylight)": the conversion homepage in the Daylight look.
+* Phone menu: the arrow beside a top-level link such as "Wedding bands" no longer fills the screen.
 
 = 1.16.0 =
 * One saved list for the whole site: with OM Catalog 1.46 and its Saved designs on, the hearts,
