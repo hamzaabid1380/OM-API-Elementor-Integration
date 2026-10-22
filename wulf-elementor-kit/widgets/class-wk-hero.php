@@ -29,8 +29,8 @@ class WK_Hero_Widget extends WK_Widget {
 			'label'       => __( 'Layout', 'wulf-kit' ),
 			'type'        => Controls_Manager::SELECT,
 			'default'     => 'split',
-			'options'     => array( 'split' => __( 'Words on the left, the showcase on the right', 'wulf-kit' ), 'center' => __( 'Centred, the pieces in a display case below', 'wulf-kit' ) ),
-			'description' => __( 'Centred suits the Daylight look (Wulf Kit › Settings › Look): the words above, then a wide case with the turning piece on one side and its name, price and the other pieces on the other. Phones show the case first.', 'wulf-kit' ),
+			'options'     => array( 'split' => __( 'Words on the left, the showcase on the right', 'wulf-kit' ), 'center' => __( 'Centred, the pieces in a display case below', 'wulf-kit' ), 'vitrine' => __( 'Display case: the headline above, the piece large in the middle', 'wulf-kit' ) ),
+			'description' => __( 'Centred and Display case suit the Daylight look (Wulf Kit › Settings › Look). Display case: the headline across the top, the turning piece large in a white case in the middle, the words and buttons on its left and the piece\'s name, price and the other pieces on its right, all on the first screen. In the Daylight look the case gets fine gold corner marks (square corners) or step-cut lines around it (cut corners). Phones show the headline, the case, then the words.', 'wulf-kit' ),
 		) );
 		$this->add_control( 'anchor', array( 'label' => __( 'Anchor', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => 'hero' ) );
 		$this->add_control( 'kicker', array( 'label' => __( 'Small label above', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Visit our new Crown Point showroom', 'wulf-kit' ), 'label_block' => true ) );
@@ -44,16 +44,16 @@ class WK_Hero_Widget extends WK_Widget {
 			'default'     => 'media',
 			'options'     => array( 'media' => __( 'The showcase, then the words', 'wulf-kit' ), 'words' => __( 'The words and buttons, then the showcase', 'wulf-kit' ) ),
 			'description' => __( '"Words first" keeps the buttons on the first screen of a phone.', 'wulf-kit' ),
-			'condition'   => array( 'layout!' => 'center' ),
+			'condition'   => array( 'layout' => 'split' ),
 		) );
-		$this->add_control( 'm_mini', array( 'label' => __( 'Phones: small turning ring beside the headline', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Keeps a phone\'s first screen short: the first piece turns in a small circle of light next to the headline, and the large showcase is left out on phones.', 'wulf-kit' ), 'condition' => array( 'layout!' => 'center' ) ) );
+		$this->add_control( 'm_mini', array( 'label' => __( 'Phones: small turning ring beside the headline', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Keeps a phone\'s first screen short: the first piece turns in a small circle of light next to the headline, and the large showcase is left out on phones.', 'wulf-kit' ), 'condition' => array( 'layout' => 'split' ) ) );
 		$this->add_control( 'lead_m', array(
 			'label'       => __( 'Shorter text for phones (optional)', 'wulf-kit' ),
 			'type'        => Controls_Manager::TEXTAREA,
 			'rows'        => 2,
 			'default'     => '',
 			'description' => __( 'Shown instead of the text above on phones.', 'wulf-kit' ),
-			'conditions'  => array( 'relation' => 'or', 'terms' => array( array( 'name' => 'm_mini', 'value' => 'yes' ), array( 'name' => 'layout', 'value' => 'center' ) ) ),
+			'conditions'  => array( 'relation' => 'or', 'terms' => array( array( 'name' => 'm_mini', 'value' => 'yes' ), array( 'name' => 'layout', 'operator' => 'in', 'value' => array( 'center', 'vitrine' ) ) ) ),
 		) );
 		$this->add_control( 'b_note', array( 'label' => __( 'Reassurance under the buttons', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'label_block' => true, 'description' => __( 'Optional, e.g. "Free and no obligation". Separate several with |', 'wulf-kit' ) ) );
 		$this->add_control( 'call_line', array( 'label' => __( '"Or call…" line with open status', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ) );
@@ -101,7 +101,7 @@ class WK_Hero_Widget extends WK_Widget {
 		) );
 		$this->add_control( 'interval', array( 'label' => __( 'Next piece every (seconds)', 'wulf-kit' ), 'type' => Controls_Manager::NUMBER, 'default' => 8, 'min' => 0, 'max' => 60, 'description' => __( '0 = only when a round button is clicked.', 'wulf-kit' ), 'condition' => array( 'media' => 'products' ) ) );
 		$this->add_control( 'show_price', array( 'label' => __( 'Show metal and price', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'condition' => array( 'media' => 'products' ) ) );
-		$this->add_control( 'case_label', array( 'label' => __( 'Small label above the name', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Featured piece', 'wulf-kit' ), 'condition' => array( 'media' => 'products', 'layout' => 'center' ) ) );
+		$this->add_control( 'case_label', array( 'label' => __( 'Small label above the name', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Featured piece', 'wulf-kit' ), 'condition' => array( 'media' => 'products', 'layout' => array( 'center', 'vitrine' ) ) ) );
 		$this->add_control( 'image', array( 'label' => __( 'Image', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'condition' => array( 'media' => 'image' ) ) );
 		$this->add_control( 'video', array( 'label' => __( 'Video', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'media_types' => array( 'video' ), 'condition' => array( 'media' => 'video' ) ) );
 		$this->add_control( 'fit', array(
@@ -190,6 +190,10 @@ class WK_Hero_Widget extends WK_Widget {
 			'price'    => 'yes' === $s['show_price'],
 			'items'    => $items,
 		);
+		if ( 'vitrine' === ( $s['layout'] ?? 'split' ) ) {
+			$this->render_vitrine( $s, $items, $cfg );
+			return;
+		}
 		// Centred: the words above, the pieces in a wide display case below (phones: the case first).
 		$center = 'center' === ( $s['layout'] ?? 'split' );
 		$mini   = ! $center && 'yes' === ( $s['m_mini'] ?? '' ) && $items;
@@ -225,22 +229,7 @@ class WK_Hero_Widget extends WK_Widget {
 		if ( 'yes' === $s['call_line'] && $phone ) {
 			echo '<p class="hero-call">' . esc_html( $s['call_text'] ) . ' <a href="' . esc_attr( WK_Settings::tel() ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>';
 		}
-		$g = 'yes' === ( $s['g_rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
-		ob_start();
-		if ( $s['trust'] || $g ) {
-			echo '<ul class="trust">';
-			if ( $g && $g['count'] ) {
-				/* translators: 1: rating like 4.9, 2: number of reviews */
-				$txt = sprintf( _n( '%1$s · %2$s Google review', '%1$s · %2$s Google reviews', $g['count'], 'wulf-kit' ), number_format_i18n( $g['rating'], 1 ), number_format_i18n( $g['count'] ) );
-				$url = $g['url'] ? $g['url'] : (string) WK_Settings::get( 'maps_url' );
-				echo '<li class="t-rating">' . ( $url ? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' : '' ) . WK_Icons::svg( 'star' ) . esc_html( $txt ) . ( $url ? '</a>' : '' ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			}
-			foreach ( (array) $s['trust'] as $t ) {
-				echo '<li>' . WK_Icons::svg( $t['icon'] ) . esc_html( $t['text'] ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			}
-			echo '</ul>';
-		}
-		$trust = ob_get_clean();
+		$trust = $this->trust_list( $s );
 		// Split: the trust line closes the words. Centred: it sits under the display case.
 		echo $center ? '</div>' : $trust . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
@@ -279,6 +268,116 @@ class WK_Hero_Widget extends WK_Widget {
 			echo '<div class="sc-stage"><figure class="sc-item is-on"><img src="' . esc_url( $this->img_url( $s['image'] ) ) . '" alt=""></figure></div>';
 		}
 		echo '</div>' . ( $center ? $trust : '' ) . '</div></section>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$this->close();
+	}
+
+	/** The trust points, with the live Google rating first once reviews are set up. */
+	private function trust_list( $s ) {
+		$g = 'yes' === ( $s['g_rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
+		if ( ! $s['trust'] && ! $g ) {
+			return '';
+		}
+		$out = '<ul class="trust">';
+		if ( $g && $g['count'] ) {
+			/* translators: 1: rating like 4.9, 2: number of reviews */
+			$txt  = sprintf( _n( '%1$s · %2$s Google review', '%1$s · %2$s Google reviews', $g['count'], 'wulf-kit' ), number_format_i18n( $g['rating'], 1 ), number_format_i18n( $g['count'] ) );
+			$url  = $g['url'] ? $g['url'] : (string) WK_Settings::get( 'maps_url' );
+			$out .= '<li class="t-rating">' . ( $url ? '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' : '' ) . WK_Icons::svg( 'star' ) . esc_html( $txt ) . ( $url ? '</a>' : '' ) . '</li>';
+		}
+		foreach ( (array) $s['trust'] as $t ) {
+			$out .= '<li>' . WK_Icons::svg( $t['icon'] ) . esc_html( $t['text'] ) . '</li>';
+		}
+		return $out . '</ul>';
+	}
+
+	/**
+	 * Display case: the headline across the top; below it the words and buttons, the piece turning large
+	 * in a white case, and the piece's name, price and the other pieces. The case carries the look's mark:
+	 * fine corner marks, or step-cut lines drawn around it by the script.
+	 */
+	private function render_vitrine( $s, $items, $cfg ) {
+		$phone  = WK_Settings::get( 'phone' );
+		$lead_m = trim( (string) ( $s['lead_m'] ?? '' ) );
+		$n      = count( $items );
+		$this->open( $s, '', $cfg );
+		echo '<section class="hero lay-vitrine"' . $this->anchor_attr( $s ) . '><div class="hero-grid">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<div class="vt-top"><h1 class="h1">' . ( $s['kicker'] ? '<span class="kicker">' . esc_html( $s['kicker'] ) . '</span>' : '' ) . self::rich( $s['title'] ) . '</h1></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
+		// Left: the words and the buttons.
+		echo '<div class="vt-l">';
+		if ( $s['lead'] ) {
+			echo '<p class="lead' . ( $lead_m ? ' lead-d' : '' ) . '">' . esc_html( $s['lead'] ) . '</p>';
+		}
+		if ( $lead_m ) {
+			echo '<p class="lead lead-m">' . esc_html( $lead_m ) . '</p>';
+		}
+		$b = $this->button( $s, 'b1', 'btn btn-gold', true ) . $this->button( $s, 'b2', 'btn btn-ghost' );
+		if ( $b ) {
+			echo '<div class="hero-cta">' . $b . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		$notes = array_filter( array_map( 'trim', explode( '|', (string) ( $s['b_note'] ?? '' ) ) ) );
+		if ( $notes ) {
+			echo '<ul class="hero-note">';
+			foreach ( $notes as $note ) {
+				echo '<li>' . WK_Icons::svg( 'check' ) . esc_html( $note ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			echo '</ul>';
+		}
+		if ( 'yes' === $s['call_line'] && $phone ) {
+			echo '<p class="hero-call">' . esc_html( $s['call_text'] ) . ' <a href="' . esc_attr( WK_Settings::tel() ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>';
+		}
+		echo '</div>';
+
+		// Middle: the case. The step-cut lines (cut corners) sit outside it, so they are not clipped by its cut.
+		echo '<div class="vt-case"><span class="steprows" data-steprows aria-hidden="true"></span><div class="hero-media slot">';
+		if ( 'products' === $s['media'] && $items ) {
+			echo '<div class="sc-stage">';
+			foreach ( $items as $i => $p ) {
+				$m = $p['media'][ $p['m'] ];
+				if ( $m['v'] ) {
+					$src = 0 === $i ? ' src="' . esc_url( $m['v'] ) . '" autoplay preload="auto"' : ' data-src="' . esc_url( $m['v'] ) . '" preload="none"';
+					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><video muted loop playsinline' . $src . ( $m['poster'] ? ' poster="' . esc_url( $m['poster'] ) . '"' : '' ) . ' aria-label="' . esc_attr( $p['n'] ) . '"></video></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				} else {
+					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><img src="' . esc_url( $m['poster'] ? $m['poster'] : $p['img'] ) . '" alt="' . esc_attr( $p['n'] ) . '"></figure>';
+				}
+			}
+			echo '</div>';
+		} elseif ( 'video' === $s['media'] && ! empty( $s['video']['url'] ) ) {
+			echo '<div class="sc-stage"><figure class="sc-item is-on"><video muted loop playsinline autoplay src="' . esc_url( $s['video']['url'] ) . '"></video></figure></div>';
+		} elseif ( ! empty( $s['image']['url'] ) ) {
+			echo '<div class="sc-stage"><figure class="sc-item is-on"><img src="' . esc_url( $this->img_url( $s['image'] ) ) . '" alt=""></figure></div>';
+		}
+		echo '<span class="glow" aria-hidden="true"></span>' . ( 'yes' === $s['sweep'] ? '<span class="sweep" aria-hidden="true"></span>' : '' );
+		echo '<span class="vt-shelf" aria-hidden="true"></span>';
+		if ( $n ) {
+			echo '<span class="vt-no" aria-hidden="true"><i>' . esc_html_x( 'N°', 'number sign on the display case', 'wulf-kit' ) . '</i> <b data-vt-no>01</b></span>';
+		}
+		if ( $n && 'products' === $s['media'] ) {
+			echo '<span class="vt-turn" aria-hidden="true">' . WK_Icons::svg( 'turn' ) . '360°</span>';
+		}
+		echo '<span class="vt-mk tl" aria-hidden="true"></span><span class="vt-mk tr" aria-hidden="true"></span><span class="vt-mk bl" aria-hidden="true"></span><span class="vt-mk br" aria-hidden="true"></span>';
+		echo '</div></div>';
+
+		// Right: the piece's name and price, the other pieces, the trust points.
+		echo '<div class="vt-r">';
+		if ( 'products' === $s['media'] && $items ) {
+			$lab = trim( (string) ( $s['case_label'] ?? '' ) );
+			if ( $lab || $n > 1 ) {
+				echo '<p class="sc-lab">' . esc_html( $lab ) . ( $n > 1 ? ' <span class="vt-of" data-vt-of>' . esc_html( sprintf( '01 / %02d', $n ) ) . '</span>' : '' ) . '</p>';
+			}
+			echo '<p class="sc-cap" aria-live="polite">' . self::caption( $items[0], 'yes' === $s['show_price'] ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			if ( $n > 1 ) {
+				echo '<div class="sc-thumbs" role="group" aria-label="' . esc_attr__( 'Featured pieces', 'wulf-kit' ) . '" data-om-ai-lift>';
+				foreach ( $items as $i => $p ) {
+					$th = $p['media'][ $p['m'] ]['poster'] ? $p['media'][ $p['m'] ]['poster'] : $p['img'];
+					/* translators: %s: piece name */
+					echo '<button type="button" aria-pressed="' . ( $i ? 'false' : 'true' ) . '" aria-label="' . esc_attr( sprintf( __( 'Show the %s', 'wulf-kit' ), $p['n'] ) ) . '"><img src="' . esc_url( $th ) . '" alt=""></button>';
+				}
+				echo '</div>';
+			}
+		}
+		echo $this->trust_list( $s ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
+		echo '</div></div></section>';
 		$this->close();
 	}
 

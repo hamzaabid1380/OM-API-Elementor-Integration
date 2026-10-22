@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.18.0
+Stable tag: 1.19.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -142,11 +142,35 @@ main buttons are cut as well. Rounded corners leave the shop's own design.
 One page can choose its own look and corners in Elementor: Page settings > Wulf look. Save, then
 reload to see the change.
 
-"Home (daylight)" in the page library is the conversion homepage in Daylight. Its hero is centred:
-the words above, then a wide display case with the turning piece, its name, metal and price and the
-other pieces (Hero > Layout > "Centred"; phones show the case first). The sections are the same as
-the conversion page, their backgrounds alternating paper and white. Build it next to your homepage,
-compare, and "Go live" with the one you like.
+"Home (daylight)" in the page library is the conversion homepage in Daylight, built around its first
+screen: a display case (Hero > Layout > "Display case"). The headline runs across the top, the turning
+piece sits large in a white case in the middle with its number (N° 01) and a 360° mark, the words and
+buttons are on its left, and the piece's name, metal and price, the other pieces and three short
+points are on its right. With square corners the case gets fine gold corner marks; with cut corners,
+three step-cut lines ripple out around it like the facets of an emerald cut. The booking bar rests on
+the case's bottom edge as a white card (Booking bar > "Rest on the section above"); on phones it shows
+one button per topic, and a tap opens the booking window with that topic chosen ("Phones: one tap per
+topic"). Then "What brings you in?", the ring style quiz, "Since 1971", how a visit works, the ring
+designer, questions and booking, the backgrounds alternating paper and white. Build it next to your
+homepage, compare, and "Go live" with the one you like.
+
+"Since 1971" is the page's one dark chapter: The Suitcase beside your story, its years lighting up
+under it as it plays, "Watch our story" with sound, the promise "Honest advice, and never a rushed
+decision." signed by Cullen, and the only gold button on the page. It is the Brand film widget with
+Section > "In the Daylight look": "A dark chapter (stays dark)", and Content > "A promise, in large
+italics" and "Signed under the promise". In Daylight the film opens on the suitcase and "1971" rather
+than on the line drawing on black (also on About us).
+
+Daylight titles: a small chapter label with the set's mark before it (a square, or an octagon with cut
+corners), the title on the left and its intro on the right, and the words you put between *stars*
+in gold italics. The three-gold line stays under the hero headline and the story chapter only. With
+cut corners, only frames, pictures and the main buttons are cut; options, chips and tabs stay square.
+
+Page banners in Daylight hold their picture in the same case as the homepage piece (corner marks or
+step-cut lines). Engagement rings and the shop pages (wedding bands, rings, earrings, necklaces,
+pendants, bracelets) show a piece from the line, turning where there's a 360° video (Page banner >
+Picture > "Turning video"). Their "Show it in" is "The Daylight look only", so in Night the banners
+stay text only, as before.
 
 == Products ==
 
@@ -371,6 +395,38 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.19.0 =
+* Home (daylight), rebuilt around its first screen: the new "Display case" hero (Hero > Layout): the
+  headline above, the turning piece large in the middle with its number and a 360° mark, the words
+  on the left, the piece's name, the other pieces and three short points on the right. Square corners
+  add fine gold corner marks to the case; cut corners draw three step-cut lines around it.
+* Booking bar: "Rest on the section above" (a white card on the hero's edge) and "Phones: one tap
+  per topic" (topic buttons that open the booking window on that topic).
+* "Since 1971" on Home (daylight), in place of "Why Wulf": The Suitcase beside your story, the promise
+  signed by Cullen, and the page's one gold button, as a dark chapter. Brand film widget: Section >
+  "In the Daylight look" (a dark chapter that stays dark), a promise and a signature.
+* Daylight titles: a chapter label with the set's mark, the title on the left and its intro on the
+  right, words between *stars* in gold italics; the three-gold line only under the hero headline and
+  the story chapter; a little more room between sections.
+* Cut corners only on frames, pictures and main buttons; options, chips and tabs stay square.
+* Daylight fixes: phone steps keep a small photo beside the words (Steps > "Step photos on phones" >
+  "Small, beside the words"); a slim "Sell gold & diamonds" strip; "Choose a diamond" in the ring
+  designer; the visit boxes end together; no favorites row on Home (daylight), where the hero, the
+  quiz and the ring designer already show the rings.
+* Page banners in Daylight: the picture sits in the same case as the homepage piece; Engagement rings
+  and the shop pages show a piece from the line, turning where there's a 360° video (new "Turning
+  video" and "Show it in" fields). Night keeps its text-only banners.
+* The Suitcase opens on the suitcase and "1971" in Daylight (About us and "Since 1971").
+* Best diamonds, Repairs and Custom jewelry close with their own words instead of the shared "Speak
+  to a jewelry expert today." This is page text, so every set gets it once those pages are rebuilt.
+* Why Wulf: the rating line stays hidden from visitors while it still reads "[4.9]" or "[N]"; the
+  editor still shows it as a reminder. Type your real rating (or set up Google reviews) to show it.
+  This applies in every set.
+* Night looks exactly as before.
+* Already built Home (daylight) or the banner pages? Wulf Kit > Pages & templates: tick them, choose
+  "Build a fresh copy", build, then "Go live". Or Design sets > Daylight > "Make this set live" with
+  "rebuild every page fresh".
 
 = 1.18.0 =
 * Design sets (Wulf Kit > Design sets): Night with Home (conversion), Daylight, and Daylight with cut

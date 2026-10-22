@@ -19,6 +19,9 @@ class WK_Reel_Widget extends WK_Widget {
 
 	protected $key = 'reel';
 
+	/** Its heading sits in a column, not across the section. */
+	protected $head_wide = false;
+
 	public function get_title() {
 		return __( 'Wulf · Brand film', 'wulf-kit' );
 	}
@@ -107,6 +110,18 @@ class WK_Reel_Widget extends WK_Widget {
 
 		$this->start_controls_section( 'c_text', array( 'label' => __( 'Text & buttons', 'wulf-kit' ) ) );
 		$this->add_control( 'text', array( 'label' => __( 'More text (optional)', 'wulf-kit' ), 'type' => Controls_Manager::WYSIWYG, 'default' => '' ) );
+		$this->add_control( 'promise', array(
+			'label'       => __( 'A promise, in large italics (optional)', 'wulf-kit' ),
+			'type'        => Controls_Manager::TEXTAREA,
+			'rows'        => 2,
+			'default'     => '',
+			'condition'   => array( 'layout' => 'split' ),
+			'description' => __( 'e.g. Honest advice, and never a rushed decision. Shown in quotation marks.', 'wulf-kit' ),
+		) );
+		$this->add_control( 'sig_on', array( 'label' => __( 'Signed under the promise', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'condition' => array( 'layout' => 'split' ) ) );
+		$this->add_control( 'sig_face', array( 'label' => __( 'Photo', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'default' => array( 'url' => WK_URL . 'assets/media/cullen-face.webp' ), 'condition' => array( 'layout' => 'split', 'sig_on' => 'yes' ) ) );
+		$this->add_control( 'sig_name', array( 'label' => __( 'Name', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => 'Cullen Wulf', 'condition' => array( 'layout' => 'split', 'sig_on' => 'yes' ) ) );
+		$this->add_control( 'sig_role', array( 'label' => __( 'Role', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Owner · GIA-certified jeweler', 'wulf-kit' ), 'condition' => array( 'layout' => 'split', 'sig_on' => 'yes' ) ) );
 		$this->add_control( 'lead_m', array(
 			'label'       => __( 'Shorter intro for phones', 'wulf-kit' ),
 			'type'        => Controls_Manager::TEXTAREA,
@@ -198,6 +213,17 @@ class WK_Reel_Widget extends WK_Widget {
 		$this->start_controls_section( 'wk_section', array( 'label' => __( 'Section', 'wulf-kit' ) ) );
 		$this->add_control( 'anchor', array( 'label' => __( 'Anchor (for menu links)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'description' => __( 'Links to #this-name jump here. Letters, numbers and dashes only.', 'wulf-kit' ) ) );
 		$this->add_control( 'join', array( 'label' => __( 'Tuck under the section above', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'description' => __( 'Removes the space on top, for a dark section above.', 'wulf-kit' ) ) );
+		$this->add_control( 'day_tone', array(
+			'label'       => __( 'In the Daylight look', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'paper',
+			'options'     => array(
+				'paper' => __( 'Words on paper, the film in a dark case', 'wulf-kit' ),
+				'dark'  => __( 'A dark chapter (stays dark)', 'wulf-kit' ),
+			),
+			'condition'   => array( 'layout' => 'split' ),
+			'description' => __( 'A dark chapter is the one night-coloured moment on a light page, like stepping into the jewel box: gold words and buttons, the film\'s moments under the film, fine lines in the background (a grid with square corners, step-cut lines with cut corners).', 'wulf-kit' ),
+		) );
 		$this->end_controls_section();
 
 		// Style.
@@ -292,6 +318,24 @@ class WK_Reel_Widget extends WK_Widget {
 		return $out;
 	}
 
+	/** The promise in large italics, signed with a photo, the signature and a name. */
+	private function promise( $s ) {
+		$q = trim( (string) ( $s['promise'] ?? '' ) );
+		if ( '' === $q ) {
+			return '';
+		}
+		$out = '<figure class="reel-promise"><blockquote>' . esc_html( $q ) . '</blockquote>';
+		if ( 'yes' === ( $s['sig_on'] ?? '' ) ) {
+			$face = $this->img_url( (array) ( $s['sig_face'] ?? array() ) );
+			$svg  = file_get_contents( WK_DIR . 'assets/media/cullen-signature.svg' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			$name = trim( (string) ( $s['sig_name'] ?? '' ) );
+			$out .= '<figcaption>' . ( $face ? '<img class="rp-face" src="' . esc_url( $face ) . '" alt="" loading="lazy" decoding="async">' : '' )
+				. ( $svg && 'Cullen Wulf' === $name ? $svg : '' )
+				. '<span><b>' . esc_html( $name ) . '</b>' . esc_html( (string) ( $s['sig_role'] ?? '' ) ) . '</span></figcaption>';
+		}
+		return $out . '</figure>';
+	}
+
 	/** The moments to list: the film's own, the editor's, or none. */
 	private function moments( $s, $d ) {
 		$src = $s['cues_src'] ?? 'film';
@@ -334,7 +378,9 @@ class WK_Reel_Widget extends WK_Widget {
 		}
 
 		$this->open( $s, '', array( 'auto' => 'yes' === ( $s['autoplay'] ?? '' ), 'hero' => $hero, 'safe' => $d['safe'], 'film' => $win ) );
-		$cls = 'reel l-' . ( $hero ? 'hero' : 'split side-' . $side ) . ' fit-' . $fit . ( WK_Plugin::is_day() ? ' is-light txt-dark' : ' dark txt-light' ) . ( 'yes' === ( $s['join'] ?? '' ) ? ' join' : '' ) . ( $cues ? ' has-cues' : '' );
+		// A dark chapter in the Daylight look: night colours, the moments under the film, "Watch" on the film.
+		$chapter = ! $hero && WK_Plugin::is_day() && 'dark' === ( $s['day_tone'] ?? 'paper' );
+		$cls     = 'reel l-' . ( $hero ? 'hero' : 'split side-' . $side ) . ' fit-' . $fit . ( WK_Plugin::is_day() && ! $chapter ? ' is-light txt-dark' : ' dark txt-light' ) . ( $chapter ? ' reel-chapter' : '' ) . ( 'yes' === ( $s['join'] ?? '' ) ? ' join' : '' ) . ( $cues ? ' has-cues' : '' );
 		echo '<section class="' . esc_attr( $cls ) . '"' . $this->anchor_attr( $s ) . ( '' !== trim( (string) $s['title'] ) ? ' aria-labelledby="' . esc_attr( $hid ) . '"' : '' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<div class="' . ( $hero ? '' : 'wrap ' ) . 'reel-grid">';
 
@@ -364,12 +410,15 @@ class WK_Reel_Widget extends WK_Widget {
 			echo '<div class="reel-text">' . wp_kses_post( wpautop( $s['text'] ) ) . '</div>';
 		}
 		if ( ! $hero ) {
+			echo $this->promise( $s ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
+		}
+		if ( ! $hero && ! $chapter ) {
 			echo WK_Films::cues( $cues, $style ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside.
 		}
-		$btns = $this->button( $s, 'b1', 'btn btn-gold', true ) . $this->button( $s, 'b2', 'btn btn-ghost' );
+		$btns = $this->button( $s, 'b1', 'btn btn-gold', true ) . $this->button( $s, 'b2', $chapter ? 'link reel-more' : 'btn btn-ghost', $chapter );
 		$wtxt = (string) ( $s['watch_text'] ?? '' );
-		// First screen: "Watch the film" sits on the film itself; beside text, it follows the buttons.
-		$link = $hero ? '' : WK_Films::watch( $win, $wtxt, 'reel-watch-link' );
+		// First screen and dark chapter: "Watch the film" sits on the film itself; beside text, it follows the buttons.
+		$link = $hero || $chapter ? '' : WK_Films::watch( $win, $wtxt, 'reel-watch-link' );
 		$link .= WK_Films::watch_note( 'yes' === ( $s['watch'] ?? '' ) && '' !== $wkey && ! $win );
 		if ( '' !== $btns . $link ) {
 			echo '<div class="reel-cta' . ( $hero ? ' hero-cta' : '' ) . '">' . $btns . $link . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
@@ -379,17 +428,23 @@ class WK_Reel_Widget extends WK_Widget {
 		}
 		echo '</div>';
 
-		// The film.
+		// The film (in a dark chapter: in a column with its moments under it).
+		if ( $chapter ) {
+			echo '<div class="reel-col">';
+		}
 		echo '<figure class="reel-stage">';
 		echo WK_Films::media( $d, array( 'eager' => $hero, 'sizes' => $hero ? '(max-width: 900px) 100vw, 60vw' : '(max-width: 900px) 100vw, 56vw' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside.
 		echo WK_Films::pause_button(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside.
-		if ( $hero ) {
+		if ( $hero || $chapter ) {
 			echo WK_Films::watch( $win, $wtxt, 'reel-watch-stage' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside.
 		}
 		if ( '' !== $d['alt'] ) {
 			echo '<figcaption class="sr">' . esc_html( $d['alt'] ) . '</figcaption>';
 		}
 		echo '</figure>';
+		if ( $chapter ) {
+			echo WK_Films::cues( $cues, $style ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside.
+		}
 		if ( $hero && $cues ) {
 			echo '<div class="reel-hero-cues">' . WK_Films::cues( $cues, $style ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside.
 		}

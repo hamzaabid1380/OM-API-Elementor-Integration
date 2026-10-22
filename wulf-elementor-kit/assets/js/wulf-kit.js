@@ -1022,7 +1022,8 @@
 		if (!stage || items.length < 2) { if (c.sweep) setTimeout(function () { sweepRun(sweep); }, 650); return; }
 		var figs = $$('.sc-item', stage), btns = $$('.sc-thumbs button', el), vids = figs.map(function (f) { return f.querySelector('video'); });
 		if (reduce && vids[0]) { vids[0].removeAttribute('autoplay'); vids[0].pause(); }
-		var cur = 0, timer = 0, paused = false;
+		var cur = 0, timer = 0, paused = false, no = $('[data-vt-no]', el), of = $('[data-vt-of]', el);
+		var two = function (n) { return (n < 10 ? '0' : '') + n; };
 		var caption = function (p) {
 			var s = '<span><b>' + esc(p.n) + '</b>' + (c.price ? '<span class="sc-meta"><span class="sc-sep"> · </span>' + esc(MCOL[p.m] || '') + (p.p ? ' · From ' + esc(p.p) : '') + '</span>' : '') + '</span>';
 			if (p.u && p.cta) s += '<a href="' + esc(p.u) + '"' + (p.ext ? ' target="_blank" rel="noopener"' : '') + '>' + esc(p.cta) + ' ' + icon('arr') + '</a>';
@@ -1037,6 +1038,8 @@
 			if (v) { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (!reduce) { v.currentTime = 0; var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } }
 			btns.forEach(function (b, j) { b.setAttribute('aria-pressed', String(j === i)); });
 			if (cap) cap.innerHTML = caption(items[i]);
+			if (no) no.textContent = two(i + 1);
+			if (of) of.textContent = two(i + 1) + ' / ' + two(items.length);
 			cur = i;
 			if (c.sweep) sweepRun(sweep);
 		}
@@ -1834,6 +1837,8 @@
 			S.v = v || null;
 			if (v && !v.__reel) {
 				v.__reel = 1;
+				// Loops whose first seconds are nearly empty (fine lines on black) open where the picture is.
+				if (+v.dataset.start > 0) v.addEventListener('loadedmetadata', function () { var st = +v.dataset.start; if (v.currentTime < st && st < (v.duration || Infinity)) v.currentTime = st; }, { once: true });
 				v.addEventListener('playing', function () { if (v.parentNode) v.parentNode.classList.add('is-on'); if (v === S.v) { sync(); if (!S.raf) S.raf = requestAnimationFrame(tick); } });
 				v.addEventListener('pause', function () { if (v === S.v) sync(); });
 				v.addEventListener('seeked', function () { if (v === S.v && S.onTime) S.onTime(v.currentTime, v.duration || 0); });
@@ -2029,7 +2034,8 @@
 			contrast(el);
 			applyHours(el);
 			$$('.pv[data-autoplay]', el).forEach(function (box) { new IntersectionObserver(function (es) { playIn(box, es[0].isIntersecting); }, { threshold: 0.35 }).observe(box); });
-			$$('video[data-lazy]', el).forEach(function (v) { new IntersectionObserver(function (es) { if (es[0].isIntersecting) { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (!reduce) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } } else v.pause(); }, { rootMargin: '250px 0px' }).observe(v); });
+			$$('[data-steprows]', el).forEach(stepRows);
+			$$('video[data-lazy]', el).forEach(function (v) { v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true }); new IntersectionObserver(function (es) { if (es[0].isIntersecting) { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (!reduce) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } } else v.pause(); }, { rootMargin: '250px 0px' }).observe(v); });
 			var fn = INIT[el.dataset.wk];
 			if (fn) { try { fn(el, cfgOf(el)); } catch (e) { if (window.console) console.error('[wulf-kit]', el.dataset.wk, e); } }
 		});
@@ -2040,6 +2046,37 @@
 			var qt0 = ''; try { qt0 = new URLSearchParams(location.search).get('topic') || ''; } catch (e) {}
 			bookOpen({ topic: qt0, source: 'link' });
 		}
+	}
+
+	/* ================= Step-cut lines around a frame (Daylight with cut corners) =================
+	   Three fine rows ripple out from the frame and join at its corners, the way the facets of an emerald
+	   cut step down to its table. Drawn to the frame's real size and cut, so they stay crisp at any width. */
+	function stepRows(sr) {
+		var frame = sr.parentNode && sr.parentNode.querySelector(':scope > .hero-media, :scope > .pgh-media');
+		if (!frame || sr.__sr) return;
+		sr.__sr = 1;
+		var NS = 'http://www.w3.org/2000/svg';
+		function draw() {
+			if (!sr.getClientRects().length) { sr.textContent = ''; return; } // only shown with cut corners
+			var pad = parseFloat(getComputedStyle(sr).getPropertyValue('--sr')) || 50, W = frame.offsetWidth, H = frame.offsetHeight;
+			var c = parseFloat(getComputedStyle(frame).getPropertyValue('--c')) || 24;
+			if (!W || !H) return;
+			var oct = function (d) { var x = pad - d, y = pad - d, w = W + 2 * d, h = H + 2 * d, k = c + d * (2 - Math.SQRT2); return [[x + k, y], [x + w - k, y], [x + w, y + k], [x + w, y + h - k], [x + w - k, y + h], [x + k, y + h], [x, y + h - k], [x, y + k]]; };
+			var rows = [[pad * 0.28, 0.55], [pad * 0.6, 0.34], [pad, 0.18]], out = '';
+			rows.forEach(function (r) { out += '<polygon opacity="' + r[1] + '" points="' + oct(r[0]).map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '"/>'; });
+			var a = oct(0), b = oct(pad);
+			a.forEach(function (p, i) { out += '<line opacity=".3" x1="' + p[0].toFixed(1) + '" y1="' + p[1].toFixed(1) + '" x2="' + b[i][0].toFixed(1) + '" y2="' + b[i][1].toFixed(1) + '"/>'; });
+			var svg = document.createElementNS(NS, 'svg');
+			svg.setAttribute('viewBox', '0 0 ' + (W + 2 * pad) + ' ' + (H + 2 * pad));
+			svg.setAttribute('aria-hidden', 'true');
+			svg.setAttribute('focusable', 'false');
+			svg.innerHTML = out;
+			sr.textContent = '';
+			sr.appendChild(svg);
+		}
+		draw();
+		if ('ResizeObserver' in window) new ResizeObserver(draw).observe(frame);
+		else window.addEventListener('resize', draw);
 	}
 
 	/* ================= Readable text on any section background ================= */

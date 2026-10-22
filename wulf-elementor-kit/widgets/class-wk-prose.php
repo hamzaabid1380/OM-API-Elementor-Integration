@@ -13,6 +13,9 @@ class WK_Prose_Widget extends WK_Widget {
 
 	protected $key = 'prose';
 
+	/** Its heading sits in a column, not across the section. */
+	protected $head_wide = false;
+
 	public function get_title() {
 		return __( 'Wulf · Text', 'wulf-kit' );
 	}

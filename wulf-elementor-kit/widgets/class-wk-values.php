@@ -109,6 +109,11 @@ class WK_Values_Widget extends WK_Widget {
 		$rating = $g ? number_format_i18n( $g['rating'], 1 ) : (string) $s['rating'];
 		$label  = (string) $s['rating_label'];
 		$label  = $g ? str_replace( array( '{count}', '[N]' ), number_format_i18n( $g['count'] ), $label ) : str_replace( '{count}', '[N]', $label );
+		// A "[4.9]" or "[N]" still waiting to be filled in shows in the editor as a reminder, never to visitors.
+		$editor = class_exists( '\Elementor\Plugin' ) && \Elementor\Plugin::$instance->editor->is_edit_mode();
+		if ( ! $editor && preg_match( '/\[[^\]]*\]/', $rating . ' ' . $label ) ) {
+			return '';
+		}
 		$stars  = str_repeat( WK_Icons::svg( 'star' ), 5 );
 		return '<a class="v-rating"' . self::link_attrs( $s['rating_link'] ) . '><span class="stars" aria-hidden="true">' . $stars . '</span><b>' . esc_html( $rating ) . '</b> <span class="v-lab">' . esc_html( $label ) . ' ' . WK_Icons::svg( 'arr' ) . '</span></a>';
 	}
@@ -144,7 +149,7 @@ class WK_Values_Widget extends WK_Widget {
 		}
 		echo '<div class="vs-copy">';
 		$s['head_align'] = 'left';
-		$this->head( $s );
+		$this->head( $s, '', '', false );
 		echo $this->rating_line( $s ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<ol class="vs-list">';
 		foreach ( array_values( (array) $s['items'] ) as $i => $it ) {

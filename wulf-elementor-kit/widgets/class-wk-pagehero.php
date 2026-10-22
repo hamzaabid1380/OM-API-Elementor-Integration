@@ -59,6 +59,14 @@ class WK_Pagehero_Widget extends WK_Widget {
 			'default' => 'image',
 			'options' => array( 'none' => __( 'No picture (text only)', 'wulf-kit' ), 'image' => __( 'My picture', 'wulf-kit' ), 'om' => __( 'OM product by style number', 'wulf-kit' ) ),
 		) );
+		$this->add_control( 'media_look', array(
+			'label'       => __( 'Show it in', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'all',
+			'options'     => array( 'all' => __( 'Every look', 'wulf-kit' ), 'day' => __( 'The Daylight look only', 'wulf-kit' ) ),
+			'condition'   => array( 'media!' => 'none' ),
+			'description' => __( 'With "The Daylight look only", the banner is text only in the Night look.', 'wulf-kit' ),
+		) );
 		$this->add_control( 'image', array( 'label' => __( 'Picture', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'condition' => array( 'media' => 'image' ) ) );
 		$this->add_control( 'style_no', array( 'label' => __( 'Style number', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'condition' => array( 'media' => 'om' ), 'description' => __( 'e.g. 85121. The OM photo on white is used.', 'wulf-kit' ) ) );
 		$this->add_control( 'fit', array(
@@ -67,6 +75,13 @@ class WK_Pagehero_Widget extends WK_Widget {
 			'default'   => 'contain',
 			'options'   => array( 'contain' => __( 'Product on white', 'wulf-kit' ), 'cover' => __( 'Fill the frame', 'wulf-kit' ) ),
 			'condition' => array( 'media' => 'image' ),
+		) );
+		$this->add_control( 'video', array(
+			'label'       => __( 'Turning video (optional)', 'wulf-kit' ),
+			'type'        => Controls_Manager::MEDIA,
+			'media_types' => array( 'video' ),
+			'condition'   => array( 'media!' => 'none' ),
+			'description' => __( 'A 360° video of a piece on white. It plays silently on a loop over the picture (the picture shows until it starts, and instead of it for visitors who ask for less motion).', 'wulf-kit' ),
 		) );
 		$this->add_control( 'cap', array( 'label' => __( 'Caption (optional)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'condition' => array( 'media!' => 'none' ) ) );
 		$this->add_control( 'cap_link', array( 'label' => __( 'Caption link', 'wulf-kit' ), 'type' => Controls_Manager::URL, 'condition' => array( 'media!' => 'none' ) ) );
@@ -130,6 +145,9 @@ class WK_Pagehero_Widget extends WK_Widget {
 		} elseif ( 'om' === $s['media'] && trim( (string) $s['style_no'] ) ) {
 			$img = trailingslashit( WK_Settings::get( 'om_media' ) ) . rawurlencode( trim( $s['style_no'] ) ) . '.jpg';
 		}
+		if ( 'day' === ( $s['media_look'] ?? 'all' ) && ! WK_Plugin::is_day() ) {
+			$img = '';
+		}
 		$dark  = 'dark' === ( $s['tone'] ?? '' );
 		$class = $this->sec_class( $s, 'pgh' ) . ( $img ? ' has-media' : ' no-media' ) . ( ! $img && 'center' === $s['align'] ? ' center' : '' );
 		$this->open( $s );
@@ -171,12 +189,24 @@ class WK_Pagehero_Widget extends WK_Widget {
 		echo '</div>';
 		if ( $img ) {
 			$fit = 'image' === $s['media'] && 'cover' === $s['fit'] ? ' fit-cover' : '';
-			echo '<figure class="pgh-media' . esc_attr( $fit ) . '"><img src="' . esc_url( $img ) . '" alt="' . esc_attr( wp_strip_all_tags( $s['cap'] ? $s['cap'] : str_replace( '*', '', $s['title'] ) ) ) . '" decoding="async" fetchpriority="high">';
+			$vid = (string) ( $s['video']['url'] ?? '' );
+			// Daylight: the picture sits in the same case as the homepage's piece (corner marks or step-cut lines).
+			$day = WK_Plugin::is_day();
+			if ( $day ) {
+				echo '<div class="pgh-case"><span class="steprows" data-steprows aria-hidden="true"></span>';
+			}
+			echo '<figure class="pgh-media' . esc_attr( $fit ) . ( $vid ? ' has-video' : '' ) . '"><img src="' . esc_url( $img ) . '" alt="' . esc_attr( wp_strip_all_tags( $s['cap'] ? $s['cap'] : str_replace( '*', '', $s['title'] ) ) ) . '" decoding="async" fetchpriority="high">';
+			if ( $vid ) {
+				echo '<video class="pgh-v" muted loop playsinline preload="none" data-lazy data-src="' . esc_url( $vid ) . '" aria-hidden="true"></video>';
+			}
 			if ( $s['cap'] ) {
 				$cap = esc_html( $s['cap'] );
 				echo '<figcaption class="pgh-cap">' . ( ! empty( $s['cap_link']['url'] ) ? '<a' . self::link_attrs( $s['cap_link'] ) . '>' . $cap . ' ' . WK_Icons::svg( 'arr' ) . '</a>' : $cap ) . '</figcaption>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
-			echo '</figure>';
+			if ( $day ) {
+				echo '<span class="vt-mk tl" aria-hidden="true"></span><span class="vt-mk tr" aria-hidden="true"></span><span class="vt-mk bl" aria-hidden="true"></span><span class="vt-mk br" aria-hidden="true"></span>';
+			}
+			echo '</figure>' . ( $day ? '</div>' : '' );
 		}
 		echo '</div></section>';
 		$this->close();

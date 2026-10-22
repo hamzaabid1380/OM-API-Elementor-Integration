@@ -33,6 +33,21 @@ class WK_Bookbar_Widget extends WK_Widget {
 		$this->add_control( 'btn', array( 'label' => __( 'Button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Continue', 'wulf-kit' ) ) );
 		$this->add_control( 'note', array( 'label' => __( 'Small print', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Free, no obligation. We confirm by call or text.', 'wulf-kit' ), 'label_block' => true ) );
 		$this->add_control( 'topics_note', array( 'type' => Controls_Manager::RAW_HTML, 'raw' => __( 'Topics and opening days come from Wulf Kit › Settings.', 'wulf-kit' ), 'content_classes' => 'elementor-descriptor' ) );
+		$this->add_control( 'dock', array(
+			'label'       => __( 'Rest on the section above', 'wulf-kit' ),
+			'type'        => Controls_Manager::SWITCHER,
+			'default'     => '',
+			'return_value' => 'yes',
+			'separator'   => 'before',
+			'description' => __( 'Computers and tablets: the bar becomes a white card resting on the bottom edge of the hero, so it reads as part of the first screen and takes less room.', 'wulf-kit' ),
+		) );
+		$this->add_control( 'chips_m', array(
+			'label'        => __( 'Phones: one tap per topic', 'wulf-kit' ),
+			'type'         => Controls_Manager::SWITCHER,
+			'default'      => '',
+			'return_value' => 'yes',
+			'description'  => __( 'Phones show the topics as buttons instead of the two lists. A tap opens the booking window with that topic chosen.', 'wulf-kit' ),
+		) );
 		$this->add_control( 'anchor', array( 'label' => __( 'Anchor (for menu links)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => 'book-now', 'separator' => 'before' ) );
 		$this->end_controls_section();
 
@@ -58,12 +73,13 @@ class WK_Bookbar_Widget extends WK_Widget {
 		$uid    = 'wk-bb-' . $this->get_id();
 		$anchor = preg_replace( '/[^A-Za-z0-9_-]/', '', (string) ( $s['anchor'] ?? '' ) );
 		$this->open( $s, '', array( 'flex' => __( 'I\'m flexible', 'wulf-kit' ) ) );
-		echo '<section class="sec bkbar-sec"' . ( $anchor ? ' id="' . esc_attr( $anchor ) . '"' : '' ) . '><div class="wrap">';
+		$chips = 'yes' === ( $s['chips_m'] ?? '' );
+		echo '<section class="sec bkbar-sec' . ( 'yes' === ( $s['dock'] ?? '' ) ? ' dock-up' : '' ) . '"' . ( $anchor ? ' id="' . esc_attr( $anchor ) . '"' : '' ) . '><div class="wrap">';
 		$back = WK_Settings::get( 'book_url', '#visit' );
 		if ( '#visit' === $back && class_exists( 'WK_Pages' ) ) {
 			$back = WK_Pages::url( 'contact-us', '#visit' );
 		}
-		echo '<form class="bkbar" data-bkbar novalidate data-fallback="' . esc_url( $back ) . '">';
+		echo '<form class="bkbar' . ( $chips ? ' has-chips' : '' ) . '" data-bkbar novalidate data-fallback="' . esc_url( $back ) . '">';
 		echo '<div class="bkbar-head"><p class="bkbar-t">' . esc_html( $s['title'] ) . '</p>' . ( $s['sub'] ? '<p class="bkbar-s">' . esc_html( $s['sub'] ) . '</p>' : '' ) . '</div>';
 		echo '<label class="bkbar-f" for="' . esc_attr( $uid ) . '-t"><span>' . esc_html( $s['topic_label'] ) . '</span><select id="' . esc_attr( $uid ) . '-t" name="topic"><option value="">' . esc_html( $s['topic_ph'] ) . '</option>';
 		foreach ( WK_Settings::book_topics() as $t ) {
@@ -74,6 +90,14 @@ class WK_Bookbar_Widget extends WK_Widget {
 		echo '<button class="btn btn-gold" type="submit">' . esc_html( $s['btn'] ) . ' ' . WK_Icons::svg( 'arr', 'arr' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		if ( $s['note'] ) {
 			echo '<p class="bkbar-n">' . WK_Icons::svg( 'check' ) . esc_html( $s['note'] ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		if ( $chips ) {
+			// Phones: each topic is a link to the visit form, which the booking window takes over (topic chosen).
+			echo '<div class="bkbar-chips" role="group" aria-label="' . esc_attr( $s['topic_label'] ) . '">';
+			foreach ( WK_Settings::book_topics() as $t ) {
+				echo '<a class="bkbar-chip" href="' . esc_url( $back ) . '" data-topic="' . esc_attr( $t[0] ) . '">' . esc_html( $t[0] ) . '</a>';
+			}
+			echo '</div>';
 		}
 		echo '</form></div></section>';
 		$this->close();

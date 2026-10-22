@@ -21,6 +21,12 @@ abstract class WK_Widget extends Widget_Base {
 	/** Short key, e.g. "hero"; the widget is "wk-hero". */
 	protected $key = '';
 
+	/**
+	 * The heading spans the section (not a column beside something else). In the Daylight look a wide
+	 * heading puts its title on the left and its intro and link on the right.
+	 */
+	protected $head_wide = true;
+
 	public function get_name() {
 		return 'wk-' . $this->key;
 	}
@@ -543,23 +549,28 @@ abstract class WK_Widget extends Widget_Base {
 		return nl2br( $t );
 	}
 
-	/** Small label + title + intro, using the Heading controls. */
-	protected function head( $s, $extra = '', $id = '' ) {
+	/**
+	 * Small label + title + intro, using the Heading controls. In the Daylight look a heading across the
+	 * section starts on the left with its title (a chapter label above it), and its intro and link sit on
+	 * the right, level with the title.
+	 *
+	 * @param bool|null $wide Null uses the widget's own $head_wide.
+	 */
+	protected function head( $s, $extra = '', $id = '', $wide = null ) {
 		if ( '' === trim( $s['eyebrow'] . $s['title'] . $s['lead'] ) && ! $extra ) {
 			return;
 		}
-		$tag = in_array( $s['title_tag'] ?? 'h2', array( 'h1', 'h2', 'h3', 'div' ), true ) ? $s['title_tag'] : 'h2';
-		echo '<div class="shead' . ( 'center' === ( $s['head_align'] ?? '' ) ? ' center' : '' ) . '"><div>';
-		if ( $s['eyebrow'] ) {
-			echo '<p class="eyebrow">' . esc_html( $s['eyebrow'] ) . '</p>';
+		$tag   = in_array( $s['title_tag'] ?? 'h2', array( 'h1', 'h2', 'h3', 'div' ), true ) ? $s['title_tag'] : 'h2';
+		$day   = WK_Plugin::is_day() && ( null === $wide ? $this->head_wide : $wide );
+		$split = $day && ( $s['lead'] || $extra );
+		$title = ( $s['eyebrow'] ? '<p class="eyebrow">' . esc_html( $s['eyebrow'] ) . '</p>' : '' )
+			. ( $s['title'] ? '<' . $tag . ' class="h2"' . ( $id ? ' id="' . esc_attr( $id ) . '"' : '' ) . '>' . self::rich( $s['title'] ) . '</' . $tag . '>' : '' );
+		$lead  = $s['lead'] ? '<p class="lead">' . esc_html( $s['lead'] ) . '</p>' : '';
+		if ( $split ) {
+			echo '<div class="shead sh-split"><div class="sh-main">' . $title . '</div><div class="sh-side">' . $lead . $extra . '</div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
+			return;
 		}
-		if ( $s['title'] ) {
-			echo '<' . $tag . ' class="h2"' . ( $id ? ' id="' . esc_attr( $id ) . '"' : '' ) . '>' . self::rich( $s['title'] ) . '</' . $tag . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		}
-		if ( $s['lead'] ) {
-			echo '<p class="lead">' . esc_html( $s['lead'] ) . '</p>';
-		}
-		echo '</div>' . $extra . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<div class="shead' . ( 'center' === ( $s['head_align'] ?? '' ) && ! $day ? ' center' : '' ) . '"><div>' . $title . $lead . '</div>' . $extra . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
 	}
 
 	/**

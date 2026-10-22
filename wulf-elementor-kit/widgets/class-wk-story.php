@@ -15,6 +15,9 @@ class WK_Story_Widget extends WK_Widget {
 
 	protected $key = 'story';
 
+	/** Its heading sits in a column, not across the section. */
+	protected $head_wide = false;
+
 	public function get_title() {
 		return __( 'Wulf · Our story', 'wulf-kit' );
 	}

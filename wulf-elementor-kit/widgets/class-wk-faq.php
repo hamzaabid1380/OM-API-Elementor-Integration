@@ -14,6 +14,9 @@ class WK_Faq_Widget extends WK_Widget {
 
 	protected $key = 'faq';
 
+	/** Its heading sits in a column, not across the section. */
+	protected $head_wide = false;
+
 	public function get_title() {
 		return __( 'Wulf · Questions (FAQ)', 'wulf-kit' );
 	}

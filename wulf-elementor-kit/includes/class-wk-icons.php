@@ -43,6 +43,8 @@ class WK_Icons {
 		// Film controls (play, pause): filled, so they read at small sizes.
 		'play'   => array( '0 0 24 24', '<path d="M8.5 5.6v12.8c0 .6.6.9 1.1.6l10-6.4a.7.7 0 0 0 0-1.2l-10-6.4c-.5-.3-1.1 0-1.1.6Z" fill="currentColor"/>' ),
 		'pause'  => array( '0 0 24 24', '<path d="M7.5 5.5h3v13h-3zm6 0h3v13h-3z" fill="currentColor"/>' ),
+		// A piece turning in 360°.
+		'turn'   => array( '0 0 24 24', '<path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' ),
 		'none'   => array( '0 0 24 24', '' ),
 	);
 

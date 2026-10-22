@@ -16,6 +16,9 @@ class WK_Filmtabs_Widget extends WK_Widget {
 
 	protected $key = 'filmtabs';
 
+	/** Its heading sits in a column, not across the section. */
+	protected $head_wide = false;
+
 	public function get_title() {
 		return __( 'Wulf · Film chapters', 'wulf-kit' );
 	}

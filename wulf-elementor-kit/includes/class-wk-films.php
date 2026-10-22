@@ -165,6 +165,7 @@ class WK_Films {
 				'file'  => 'reel-story',
 				'film'  => 'suitcase',
 				'from'  => 0,
+				'start' => 5.6, // Daylight: the first seconds are a fine line drawing on black, so open on the suitcase and "1971"
 				'w'     => 1440,
 				'dur'   => 35.2,
 				'safe'  => array( 0, 1 ),
@@ -238,6 +239,7 @@ class WK_Films {
 				'w'      => 1920,
 				'film'   => '',
 				'from'   => 0,
+				'start'  => 0,
 				'dur'    => 0,
 				'safe'   => array( 0, 1 ),
 				'alt'    => '',
@@ -260,6 +262,7 @@ class WK_Films {
 			'w'      => $c['w'],
 			'film'   => $c['film'],
 			'from'   => $c['from'],
+			'start'  => (float) ( $c['start'] ?? 0 ),
 			'dur'    => $c['dur'],
 			'safe'   => $c['safe'],
 			'alt'    => $c['alt'],
@@ -286,7 +289,7 @@ class WK_Films {
 			$out .= '<img class="reel-poster" src="' . esc_url( $d['poster'] ) . '"' . ( '' !== $d['set'] ? ' srcset="' . $d['set'] . '" sizes="' . esc_attr( $o['sizes'] ) . '"' : '' ) . ' alt="" width="1920" height="1080" decoding="async"' . ( $o['eager'] ? ' fetchpriority="high"' : ' loading="lazy"' ) . '>'; // set: built from esc_url() in loop_data().
 		}
 		if ( '' !== $d['src'] ) {
-			$out .= '<video class="reel-v" muted playsinline' . ( $o['loop'] ? ' loop' : '' ) . ' preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1" data-src="' . esc_url( $d['src'] ) . '"' . ( '' !== $d['av1'] ? ' data-av1="' . esc_url( $d['av1'] ) . '"' : '' ) . '></video>';
+			$out .= '<video class="reel-v" muted playsinline' . ( $o['loop'] ? ' loop' : '' ) . ' preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1" data-src="' . esc_url( $d['src'] ) . '"' . ( '' !== $d['av1'] ? ' data-av1="' . esc_url( $d['av1'] ) . '"' : '' ) . ( ! empty( $d['start'] ) && WK_Plugin::is_day() ? ' data-start="' . esc_attr( (string) $d['start'] ) . '"' : '' ) . '></video>';
 		}
 		return $out;
 	}
