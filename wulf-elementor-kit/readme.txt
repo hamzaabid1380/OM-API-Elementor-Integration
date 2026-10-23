@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.19.0
+Stable tag: 1.19.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -87,6 +87,12 @@ in Settings > OM Catalog > Product Page Layout.
 The header and footer are saved under Templates > Saved Templates as "Wulf · Header" and
 "Wulf · Footer", and appear on every page. Change which templates are used (or turn them off)
 in Wulf Kit > Settings. The menu is a normal WordPress menu under Appearance > Menus.
+
+Your own logo picture: in the header (Logo > Logo: Image) and the footer (Logo & about > Logo:
+Image), "Size the logo by" Height or Width, then set it for computers, and with the device icon
+for tablets and phones. Phones keep a smaller header logo of their own (40px high, or 140px wide)
+until you change it there. A logo taller than the header bar makes the bar grow with it; the bar's
+own height is in Style > Header bar. The footer logo never gets wider than its column.
 
 == Design sets ==
 
@@ -395,6 +401,13 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.19.1 =
+* Logo pictures in the header and footer can be sized: "Size the logo by" Height or Width, for
+  computers, tablets and phones each (Header > Logo, Footer > Logo & about). The header logo is no
+  longer held to 46px, and the header bar grows with a taller logo; phones keep a smaller logo of
+  their own. The footer logo was fixed at 44px high; it now starts there and never gets wider than
+  its column.
 
 = 1.19.0 =
 * Home (daylight), rebuilt around its first screen: the new "Display case" hero (Hero > Layout): the

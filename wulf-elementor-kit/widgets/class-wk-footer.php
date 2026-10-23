@@ -38,6 +38,31 @@ class WK_Footer_Widget extends WK_Widget {
 		$this->add_control( 'logo_word', array( 'label' => __( 'Name', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => 'WULF', 'condition' => array( 'logo_type' => 'mark' ) ) );
 		$this->add_control( 'logo_sub', array( 'label' => __( 'Second line', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => 'DIAMOND JEWELERS', 'condition' => array( 'logo_type' => 'mark' ) ) );
 		$this->add_control( 'logo_img', array( 'label' => __( 'Logo image', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'condition' => array( 'logo_type' => 'image' ) ) );
+		$this->add_control( 'logo_by', array(
+			'label'     => __( 'Size the logo by', 'wulf-kit' ),
+			'type'      => Controls_Manager::SELECT,
+			'default'   => 'height',
+			'options'   => array( 'height' => __( 'Height', 'wulf-kit' ), 'width' => __( 'Width', 'wulf-kit' ) ),
+			'condition' => array( 'logo_type' => 'image' ),
+		) );
+		$this->add_responsive_control( 'logo_h', array(
+			'label'       => __( 'Logo height', 'wulf-kit' ),
+			'type'        => Controls_Manager::SLIDER,
+			'range'       => array( 'px' => array( 'min' => 16, 'max' => 240 ) ),
+			'default'     => array( 'unit' => 'px', 'size' => 44 ),
+			'selectors'   => array( '{{WRAPPER}} .wk .ft .logo img' => 'height: {{SIZE}}{{UNIT}}; width: auto; max-height: none; max-width: 100%; object-fit: contain; object-position: left center;' ),
+			'condition'   => array( 'logo_type' => 'image', 'logo_by' => 'height' ),
+			'description' => __( 'Use the device icon to give phones their own size. The logo never gets wider than its column.', 'wulf-kit' ),
+		) );
+		$this->add_responsive_control( 'logo_w', array(
+			'label'       => __( 'Logo width', 'wulf-kit' ),
+			'type'        => Controls_Manager::SLIDER,
+			'range'       => array( 'px' => array( 'min' => 40, 'max' => 480 ) ),
+			'default'     => array( 'unit' => 'px', 'size' => 220 ),
+			'selectors'   => array( '{{WRAPPER}} .wk .ft .logo img' => 'width: {{SIZE}}{{UNIT}}; height: auto; max-height: none; max-width: 100%;' ),
+			'condition'   => array( 'logo_type' => 'image', 'logo_by' => 'width' ),
+			'description' => __( 'Use the device icon to give phones their own size. The logo never gets wider than its column.', 'wulf-kit' ),
+		) );
 		$this->add_control( 'about', array( 'label' => __( 'About line', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => __( 'Independent jewelers since 1971. Formerly AaLand Diamond Jewelers, now in Crown Point.', 'wulf-kit' ) ) );
 		$this->end_controls_section();
 
@@ -119,7 +144,7 @@ class WK_Footer_Widget extends WK_Widget {
 		}
 		echo '<div class="cols"><div>';
 		if ( 'image' === $s['logo_type'] && ! empty( $s['logo_img']['url'] ) ) {
-			echo '<a class="logo" href="' . esc_url( home_url( '/' ) ) . '"><img src="' . esc_url( $s['logo_img']['url'] ) . '" alt="' . esc_attr( $set['name'] ) . '" style="height:44px;width:auto"></a>';
+			echo '<a class="logo" href="' . esc_url( home_url( '/' ) ) . '"><img src="' . esc_url( $s['logo_img']['url'] ) . '" alt="' . esc_attr( $set['name'] ) . '"></a>';
 		} else {
 			echo '<a class="logo" href="' . esc_url( home_url( '/' ) ) . '">' . WK_Icons::svg( 'mono' ) . '<span class="t"><span class="w">' . esc_html( $s['logo_word'] ) . '</span><span class="d">' . esc_html( $s['logo_sub'] ) . '</span></span></a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}

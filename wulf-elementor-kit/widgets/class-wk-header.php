@@ -50,13 +50,32 @@ class WK_Header_Widget extends WK_Widget {
 		$this->add_control( 'logo_sub', array( 'label' => __( 'Second line', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => 'DIAMOND JEWELERS', 'condition' => array( 'logo_type' => 'mark' ) ) );
 		$this->add_control( 'logo_img', array( 'label' => __( 'Logo for the dark header', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'condition' => array( 'logo_type' => 'image' ) ) );
 		$this->add_control( 'logo_img2', array( 'label' => __( 'Logo for the white header (optional)', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'condition' => array( 'logo_type' => 'image' ) ) );
-		$this->add_responsive_control( 'logo_h', array(
-			'label'     => __( 'Logo height', 'wulf-kit' ),
-			'type'      => Controls_Manager::SLIDER,
-			'range'     => array( 'px' => array( 'min' => 16, 'max' => 90 ) ),
-			'default'   => array( 'unit' => 'px', 'size' => 40 ),
-			'selectors' => array( '{{WRAPPER}} .wk .logo img' => 'height: {{SIZE}}{{UNIT}}; width: auto;' ),
+		$this->add_control( 'logo_by', array(
+			'label'     => __( 'Size the logo by', 'wulf-kit' ),
+			'type'      => Controls_Manager::SELECT,
+			'default'   => 'height',
+			'options'   => array( 'height' => __( 'Height', 'wulf-kit' ), 'width' => __( 'Width', 'wulf-kit' ) ),
 			'condition' => array( 'logo_type' => 'image' ),
+		) );
+		$this->add_responsive_control( 'logo_h', array(
+			'label'          => __( 'Logo height', 'wulf-kit' ),
+			'type'           => Controls_Manager::SLIDER,
+			'range'          => array( 'px' => array( 'min' => 16, 'max' => 200 ) ),
+			'default'        => array( 'unit' => 'px', 'size' => 40 ),
+			'mobile_default' => array( 'unit' => 'px', 'size' => 40 ),
+			'selectors'      => array( '{{WRAPPER}} .wk .logo img' => 'height: {{SIZE}}{{UNIT}}; width: auto; max-height: none; max-width: none;' ),
+			'condition'      => array( 'logo_type' => 'image', 'logo_by' => 'height' ),
+			'description'    => __( 'Phones keep a smaller logo of their own: switch to the phone icon to change it. A logo taller than the bar makes the bar grow with it (the bar\'s own height: Style › Header bar).', 'wulf-kit' ),
+		) );
+		$this->add_responsive_control( 'logo_w', array(
+			'label'          => __( 'Logo width', 'wulf-kit' ),
+			'type'           => Controls_Manager::SLIDER,
+			'range'          => array( 'px' => array( 'min' => 40, 'max' => 480 ) ),
+			'default'        => array( 'unit' => 'px', 'size' => 180 ),
+			'mobile_default' => array( 'unit' => 'px', 'size' => 140 ),
+			'selectors'      => array( '{{WRAPPER}} .wk .logo img' => 'width: {{SIZE}}{{UNIT}}; height: auto; max-height: none; max-width: none;' ),
+			'condition'      => array( 'logo_type' => 'image', 'logo_by' => 'width' ),
+			'description'    => __( 'Phones keep a smaller logo of their own: switch to the phone icon to change it. A logo taller than the bar makes the bar grow with it (the bar\'s own height: Style › Header bar).', 'wulf-kit' ),
 		) );
 		$this->add_control( 'logo_link', array( 'label' => __( 'Logo link', 'wulf-kit' ), 'type' => Controls_Manager::URL, 'default' => array( 'url' => home_url( '/' ) ) ) );
 		$this->end_controls_section();

@@ -23,6 +23,12 @@
 .wk .hd.solid .lg-solid, .wk .hd.mega-on .lg-solid, .wk .hd.searching .lg-solid { display: block; }
 .wk .hd.solid .lg-solid + .lg-top, .wk .hd.solid .lg-top:has(+ .lg-solid), .wk .hd.mega-on .lg-top:has(+ .lg-solid) { display: none; }
 .wk .logo img { max-height: 46px; width: auto; }
+/* Image logos: Header and Footer › Logo height / width set the size (and lift the 46px cap). The footer
+   logo starts at 44px and never gets wider than its column; the header bar grows with a taller logo. */
+.wk .ft .logo { max-width: 100%; }
+.wk .ft .logo img { height: 44px; }
+.wk .hd:has(.logo img) { height: auto; min-height: var(--hd); }
+.wk .hd:has(.logo img) > .wrap { min-height: var(--hd); }
 .wk .mega-grid { grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); }
 .wk .mega-grid > .mega-feature { grid-column: span 1; }
 
