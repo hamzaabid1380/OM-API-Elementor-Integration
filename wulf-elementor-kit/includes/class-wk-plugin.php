@@ -56,6 +56,7 @@ class WK_Plugin {
 	private function __construct() {
 		WK_Settings::init();
 		WK_Booking::init();
+		WK_Schema::init();
 		WK_Templates::init();
 		WK_Sets::init();
 		add_action( 'plugins_loaded', array( $this, 'boot' ), 20 );
@@ -75,6 +76,7 @@ class WK_Plugin {
 		add_action( 'wp_footer', array( $this, 'site_footer' ), 5 );
 		add_action( 'wp_footer', array( $this, 'om_saved_css' ), 6 );
 		add_filter( 'hello_elementor_header_footer', array( $this, 'hide_theme_parts' ) );
+		add_filter( 'hello_elementor_enable_skip_link', array( $this, 'theme_skip_link' ), 20 );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		// Elementor › page settings (the cog): a page's own look and corners.
 		add_action( 'elementor/documents/register_controls', array( $this, 'page_look_controls' ) );
@@ -84,6 +86,40 @@ class WK_Plugin {
 		// The OM Catalog plugin (its pages, pop-ups and hint page) wears the kit's ink and fonts.
 		add_filter( 'om_catalog_style_tokens', array( $this, 'om_brand' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'om_fonts' ), 30 );
+		// A "main" landmark around the content of Elementor full-width and canvas pages: screen readers
+		// jump to it, and Hello Elementor's "Skip to content" link lands on it.
+		foreach ( array( 'header-footer', 'canvas' ) as $tpl ) {
+			add_action( 'elementor/page_templates/' . $tpl . '/before_content', array( $this, 'main_open' ) );
+			add_action( 'elementor/page_templates/' . $tpl . '/after_content', array( $this, 'main_close' ) );
+		}
+		// After an update, Elementor rebuilds its saved CSS once, so changed widget styles apply at once.
+		add_action( 'init', array( $this, 'after_update' ) );
+	}
+
+	/** @var bool */
+	private $main = false;
+
+	public function main_open() {
+		if ( $this->main || ! apply_filters( 'wk_main_landmark', true ) ) {
+			return;
+		}
+		$this->main = true;
+		echo '<main' . ( 'hello-elementor' === get_template() ? ' id="content"' : '' ) . ' class="wk-main">';
+	}
+
+	public function main_close() {
+		if ( $this->main ) {
+			$this->main = false;
+			echo '</main>';
+		}
+	}
+
+	public function after_update() {
+		if ( WK_VERSION === get_option( 'wk_css_version' ) ) {
+			return;
+		}
+		update_option( 'wk_css_version', WK_VERSION );
+		\Elementor\Plugin::$instance->files_manager->clear_cache();
 	}
 
 	public function need_elementor() {
@@ -375,6 +411,21 @@ class WK_Plugin {
 		return ( $this->template_on( 'header_tpl' ) || $this->template_on( 'footer_tpl' ) ) ? false : $show;
 	}
 
+	/** @var bool */
+	private $skip = false;
+
+	/**
+	 * Hello Elementor prints "Skip to content" after wp_body_open, so after the kit's header and its whole
+	 * menu. With the kit's header on, the kit prints that link first instead (site_header()).
+	 */
+	public function theme_skip_link( $show ) {
+		if ( $show && 'hello-elementor' === get_template() && $this->template_on( 'header_tpl' ) && apply_filters( 'wk_skip_link_first', true ) ) {
+			$this->skip = true;
+			return false;
+		}
+		return $show;
+	}
+
 	public function assistant_is_home( $is ) {
 		return $is || ( class_exists( 'WK_Pages' ) && WK_Pages::current_is_home() );
 	}
@@ -503,6 +554,9 @@ class WK_Plugin {
 	public function site_header() {
 		$id = $this->template_on( 'header_tpl' );
 		if ( $id && class_exists( '\Elementor\Plugin' ) ) {
+			if ( $this->skip ) {
+				echo '<a class="skip-link screen-reader-text" href="' . esc_url( apply_filters( 'hello_elementor_skip_link_url', '#content' ) ) . '">' . esc_html__( 'Skip to content', 'wulf-kit' ) . '</a>';
+			}
 			echo '<div class="wk-site-header">' . \Elementor\Plugin::$instance->frontend->get_builder_content_for_display( $id ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 	}

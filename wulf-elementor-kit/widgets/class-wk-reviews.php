@@ -129,10 +129,11 @@ class WK_Reviews_Widget extends WK_Widget {
 		if ( $s['g_text'] && ! empty( $link['url'] ) ) {
 			echo '<a class="link"' . self::link_attrs( $link ) . '>' . esc_html( $s['g_text'] ) . ' ' . WK_Icons::svg( 'arr' ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
-		echo '</div><div class="rev-list">';
+		// A phone scrolls the reviews sideways: the strip takes keyboard focus so arrow keys can scroll it too.
+		echo '</div><div class="rev-list" role="region" aria-label="' . esc_attr__( 'Reviews', 'wulf-kit' ) . '" tabindex="0">';
 		foreach ( $items as $r ) {
 			/* translators: %d: stars */
-			echo '<figure class="rev"><span class="qm" aria-hidden="true">“</span><blockquote>' . esc_html( $r['quote'] ) . '</blockquote><figcaption><b>' . esc_html( $r['name'] ) . '</b>' . esc_html( $r['what'] ) . '</figcaption><div class="stars" aria-label="' . esc_attr( sprintf( __( '%d out of 5 stars', 'wulf-kit' ), (int) $r['stars'] ) ) . '">' . self::stars( $r['stars'] ) . '</div></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo '<figure class="rev"><span class="qm" aria-hidden="true">“</span><blockquote>' . esc_html( $r['quote'] ) . '</blockquote><figcaption><b>' . esc_html( $r['name'] ) . '</b>' . esc_html( $r['what'] ) . '</figcaption><div class="stars" role="img" aria-label="' . esc_attr( sprintf( __( '%d out of 5 stars', 'wulf-kit' ), (int) $r['stars'] ) ) . '">' . self::stars( $r['stars'] ) . '</div></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 		echo '</div></div></section>';
 		$this->close();

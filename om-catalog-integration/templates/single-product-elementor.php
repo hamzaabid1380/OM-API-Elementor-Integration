@@ -15,6 +15,7 @@ $product   = $rewrites->get_current_product();
 $layout_id = (int) get_option( 'om_product_layout_page', 0 );
 
 get_header();
+echo om_main_landmark(); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup.
 ?>
 
 <div class="om-single-product om-single-product--layout">
@@ -34,4 +35,7 @@ get_header();
 
 </div>
 
-<?php get_footer(); ?>
+<?php
+echo om_main_landmark( false ); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup.
+get_footer();
+

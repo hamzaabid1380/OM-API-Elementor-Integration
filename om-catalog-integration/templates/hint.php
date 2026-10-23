@@ -8,5 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 get_header();
+echo om_main_landmark(); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup.
 echo OM_Hint::instance()->render_page(); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
+echo om_main_landmark( false ); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup.
 get_footer();

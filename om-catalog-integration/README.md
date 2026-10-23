@@ -1370,6 +1370,18 @@ webhook or both; emails and the Inquiries list carry on as before.
 
 ## Changelog
 
+### 1.46.1
+- **Accessibility**: product pages and the "Drop a hint" page now have a
+  "main" region around their content, so screen readers can jump to it and
+  "Skip to content" lands on it (the `om_main_landmark` filter turns it off
+  for a theme that adds its own).
+- Product page detail headings (Description, Stone details, Specifications)
+  are one level higher, so headings no longer skip a level. They look the
+  same in all three designs.
+- The row of pictures and videos on a product page is a labelled group.
+- Catalog pages have a hidden "Designs" heading before the results, for
+  screen readers; the grid doesn't move.
+
 ### 1.46.0
 - **One saved list for the whole site**: the Wulf kit's hearts and quiz now
   save into the catalog's Saved designs (needs kit 1.16). Its header button

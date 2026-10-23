@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.46.0
+ * Version: 1.46.1
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.46.0' );
+define( 'OM_CATALOG_VERSION', '1.46.1' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -456,6 +456,21 @@ function om_catalog_style_tokens() {
 function om_design() {
 	$design = (string) get_option( 'om_design', 'refined' );
 	return in_array( $design, array( 'refined', 'modern', 'classic' ), true ) ? $design : 'refined';
+}
+
+/**
+ * Opens or closes the "main" landmark around a catalog page's content, so screen readers can jump
+ * to it (and Hello Elementor's "Skip to content" link lands on it). Off with the om_main_landmark
+ * filter for a theme that already wraps the page in its own <main>.
+ */
+function om_main_landmark( $open = true ) {
+	if ( ! apply_filters( 'om_main_landmark', true ) ) {
+		return '';
+	}
+	if ( ! $open ) {
+		return '</main>';
+	}
+	return '<main' . ( 'hello-elementor' === get_template() ? ' id="content"' : '' ) . ' class="om-main">';
 }
 
 /** " om-refined" when the site uses the Refined design (for rows and pop-ups). */

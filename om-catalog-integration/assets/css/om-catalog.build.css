@@ -1130,7 +1130,8 @@ html body .om-active-filters {
 	text-underline-offset: 4px;
 }
 
-.om-catalog-toolbar + .om-catalog-grid {
+.om-catalog-toolbar + .om-catalog-grid,
+.om-catalog-toolbar + .screen-reader-text + .om-catalog-grid {
 	margin-top: 20px;
 }
 

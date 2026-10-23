@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.19.1
+Stable tag: 1.20.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -293,6 +293,32 @@ featurable.com if anything changes there.
 Or with your own Google key: a Google Places API key and Place ID (needs a Google Cloud billing
 account; Google shares up to 5 reviews and picks them). When both are filled in, Featurable is used.
 
+== Business details for Google ==
+
+The homepage tells Google, in a way visitors don't see, that the site belongs to a jewelry store:
+its name, address, main phone, opening hours and directions link, all taken from Wulf Kit > Settings
+(a "JewelryStore" entry in the page's structured data). Google uses it to match the site with the
+shop in search and on Maps. It is on by default. Wulf Kit > Settings > Business details for Google
+can turn it off and adds a few optional extras:
+
+* Map pin: latitude and longitude, like 41.41672, -87.36543. In Google Maps, right-click the shop's
+  pin: the numbers at the top of the menu copy them.
+* Price range: like $$$ or $500 to $25,000.
+* Your profiles elsewhere: one link per line (Google Business Profile, Facebook, Instagram, Yelp,
+  The Knot and so on).
+* Store photo: a link to a photo of the showroom or storefront. Empty uses the showroom photo that
+  comes with the kit.
+
+Type the address as street, town, state and ZIP with commas between them (10460 Broadway, Crown
+Point, IN 46307) so Google gets each part. "What Google gets" shows the exact entry; once the site is
+live, Google's Rich Results Test checks it the way Google reads it. The email for visit requests is
+never included. Star ratings are left out on purpose: Google doesn't show stars for reviews a business
+publishes about itself. If Yoast Local SEO or Rank Math's Local SEO module already publishes your
+business details, the kit leaves its entry out, so Google never gets two versions.
+
+For developers: the `wk_store_schema` filter turns the entry on or off, `wk_store_schema_data`
+changes it.
+
 == Cinematic film (3D) ==
 
 "Home (cinematic)" is the conversion homepage told as a short film. It opens on a diamond turning
@@ -401,6 +427,28 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.20.0 =
+* The homepage no longer shifts while it loads. The hero's light sweep moved the page's layout on
+  every pass, which Google counts as layout shift (CLS): 0.2 on computers before, 0.001 now. It looks
+  the same.
+* Business details for Google: the homepage now gives Google the shop's name, address, phone,
+  opening hours and directions link as structured data, from Wulf Kit > Settings. New settings
+  section "Business details for Google" with a map pin, price range, profiles elsewhere, a store
+  photo and a preview of what Google gets (see "Business details for Google" above).
+* Accessibility:
+  - "Skip to content" is now the first thing the Tab key reaches, and it jumps past the top bar and
+    the menu to the page's content (it came after the whole menu, and on Elementor pages it led
+    nowhere).
+  - Elementor pages have a "main" region around their content, so screen readers can jump to it.
+    The top bar (hours and contact) is a labelled side region of its own.
+  - Footer column headings are one level higher (they skipped a level). They look the same.
+  - Review stars are read out as "5 out of 5 stars", and the review strip that scrolls sideways on
+    phones can be scrolled with the keyboard.
+  - Gold words in titles on light sections and light page banners use the deeper gold, which is
+    easier to read on white. In the Night look this slightly deepens the gold word on light banners.
+* After an update, Elementor rebuilds its saved styles once by itself, so changed widget styles show
+  straight away.
 
 = 1.19.1 =
 * Logo pictures in the header and footer can be sized: "Size the logo by" Height or Width, for

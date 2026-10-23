@@ -13,6 +13,7 @@ $product_line = $rewrites->get_current_line();
 $style_number = $rewrites->get_current_style();
 
 get_header();
+echo om_main_landmark(); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup.
 ?>
 
 <div class="om-single-product">
@@ -58,4 +59,7 @@ get_header();
 
 </div>
 
-<?php get_footer(); ?>
+<?php
+echo om_main_landmark( false ); // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup.
+get_footer();
+

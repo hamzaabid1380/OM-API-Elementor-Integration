@@ -24,6 +24,11 @@ class WK_Settings {
 			'address'       => '10460 Broadway, Crown Point, IN 46307',
 			'address_note'  => 'Crown Village · serving all of Lake County',
 			'maps_url'      => 'https://www.google.com/maps/search/?api=1&query=Wulf+Diamond+Jewelers+10460+Broadway+Crown+Point+IN+46307',
+			'schema'        => '1',
+			'geo'           => '',
+			'price_range'   => '',
+			'profiles'      => '',
+			'store_img'     => '',
 			'timezone'      => 'America/Chicago',
 			'hours'         => array(
 				0 => array( 'closed' => '1', 'open' => '10:00', 'close' => '16:00' ),
@@ -250,13 +255,13 @@ class WK_Settings {
 			$val = $in[ $k ] ?? '';
 			if ( 0 === strpos( $k, 'c_' ) ) {
 				$out[ $k ] = sanitize_hex_color( $val ) ? sanitize_hex_color( $val ) : $v;
-			} elseif ( in_array( $k, array( 'maps_url', 'om_media', 'book_img', 'film_motion', 'film_suitcase' ), true ) ) {
+			} elseif ( in_array( $k, array( 'maps_url', 'om_media', 'book_img', 'film_motion', 'film_suitcase', 'store_img' ), true ) ) {
 				$out[ $k ] = esc_url_raw( $val );
 			} elseif ( 'email' === $k ) {
 				$out[ $k ] = sanitize_email( $val );
 			} elseif ( 'turn_speed' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( '0.5', '0.6', '0.75', '1' ), true ) ? (string) $val : $v;
-			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'book_pill', 'assistant_home', 'to_om_leads', 'calm_all', 'book_panel', 'track' ), true ) ) {
+			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'book_pill', 'assistant_home', 'to_om_leads', 'calm_all', 'book_panel', 'track', 'schema' ), true ) ) {
 				$out[ $k ] = empty( $val ) ? '' : '1';
 			} elseif ( 'look' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( 'night', 'day' ), true ) ? (string) $val : $v;
@@ -266,6 +271,12 @@ class WK_Settings {
 				$out[ $k ] = in_array( (string) $val, array( 'popup', 'drawer' ), true ) ? (string) $val : $v;
 			} elseif ( in_array( $k, array( 'book_topics', 'book_points' ), true ) ) {
 				$out[ $k ] = sanitize_textarea_field( $val );
+			} elseif ( 'profiles' === $k ) {
+				$out[ $k ] = implode( "\n", WK_Schema::profiles( is_scalar( $val ) ? (string) $val : '' ) );
+			} elseif ( 'geo' === $k ) {
+				$out[ $k ] = WK_Schema::geo( $val ) ? preg_replace( '/\s*,\s*/', ', ', trim( (string) $val ) ) : '';
+			} elseif ( 'price_range' === $k ) {
+				$out[ $k ] = mb_substr( sanitize_text_field( $val ), 0, 100 );
 			} elseif ( 'featurable_id' === $k ) {
 				$out[ $k ] = WK_Reviews::featurable_id( is_scalar( $val ) ? (string) $val : '' ); // Also from a pasted link or embed code.
 			} else {
@@ -302,7 +313,7 @@ class WK_Settings {
 			}
 			echo '</select>';
 		} elseif ( 'textarea' === $type ) {
-			echo '<textarea class="large-text" rows="7" id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '">' . esc_textarea( self::all()[ $key ] ) . '</textarea>';
+			echo '<textarea class="large-text" rows="' . (int) ( $opts['rows'] ?? 7 ) . '" id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '">' . esc_textarea( self::all()[ $key ] ) . '</textarea>';
 		} elseif ( 'template' === $type ) {
 			$posts = get_posts( array( 'post_type' => 'elementor_library', 'numberposts' => 100, 'post_status' => 'publish' ) );
 			echo '<select id="wk-' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '"><option value="">' . esc_html__( '— Use the theme\'s own —', 'wulf-kit' ) . '</option>';
@@ -345,7 +356,7 @@ class WK_Settings {
 					self::field( 'name', __( 'Business name', 'wulf-kit' ) );
 					self::field( 'phone', __( 'Main phone', 'wulf-kit' ) );
 					self::field( 'phone2', __( 'Second phone', 'wulf-kit' ), 'text', __( 'Shown in the footer. Leave empty to hide.', 'wulf-kit' ) );
-					self::field( 'address', __( 'Address', 'wulf-kit' ) );
+					self::field( 'address', __( 'Address', 'wulf-kit' ), 'text', __( 'Street, town, state and ZIP, with commas between them (10460 Broadway, Crown Point, IN 46307): Google reads the parts in that order.', 'wulf-kit' ) );
 					self::field( 'address_note', __( 'Under the address', 'wulf-kit' ) );
 					self::field( 'maps_url', __( 'Directions link', 'wulf-kit' ), 'url' );
 					self::field( 'email', __( 'Visit requests go to', 'wulf-kit' ), 'email', __( 'Empty uses the site admin email.', 'wulf-kit' ) );
@@ -364,6 +375,34 @@ class WK_Settings {
 						</td></tr>
 					<?php endforeach; ?>
 					<?php self::field( 'timezone', __( 'Time zone', 'wulf-kit' ), 'text', __( 'For example America/Chicago.', 'wulf-kit' ) ); ?>
+				</table>
+
+				<h2 id="wk-google-business"><?php esc_html_e( 'Business details for Google', 'wulf-kit' ); ?></h2>
+				<p><?php esc_html_e( 'Google uses these to match your site to your shop in search and on Maps: the name, address, main phone and opening hours above, plus anything you add here. They go into the homepage as structured data (a JewelryStore entry) that visitors don\'t see. The email for visit requests stays private.', 'wulf-kit' ); ?></p>
+				<table class="form-table" role="presentation">
+					<?php
+					$other = WK_Schema::other();
+					self::field( 'schema', __( 'Business details', 'wulf-kit' ), 'check', __( 'Add your business details to the homepage for Google', 'wulf-kit' ) );
+					if ( $other ) {
+						/* translators: %s: an SEO plugin's name */
+						echo '<tr><th></th><td><p class="description">' . esc_html( sprintf( __( 'Left out for now: %s already publishes your business details, and Google should get only one version.', 'wulf-kit' ), $other ) ) . '</p></td></tr>';
+					}
+					self::field( 'geo', __( 'Map pin', 'wulf-kit' ), 'text', __( 'Optional. Latitude and longitude, like 41.41672, -87.36543. In Google Maps, right-click your pin: the numbers at the top of the menu copy them.', 'wulf-kit' ) );
+					self::field( 'price_range', __( 'Price range', 'wulf-kit' ), 'text', __( 'Optional, like $$$ or $500 to $25,000.', 'wulf-kit' ) );
+					self::field( 'profiles', __( 'Your profiles elsewhere', 'wulf-kit' ), 'textarea', __( 'Optional. One link per line: your Google Business Profile, Facebook, Instagram, Yelp, The Knot…', 'wulf-kit' ), array( 'rows' => 4 ) );
+					self::field( 'store_img', __( 'Store photo', 'wulf-kit' ), 'url', __( 'Optional link to a photo of the showroom or the storefront. Empty uses the showroom photo that comes with the kit.', 'wulf-kit' ) );
+					?>
+					<tr><th scope="row"><?php esc_html_e( 'What Google gets', 'wulf-kit' ); ?></th><td>
+						<details><summary><?php esc_html_e( 'Show', 'wulf-kit' ); ?></summary>
+							<pre class="wk-schema-preview"><?php echo esc_html( wp_json_encode( WK_Schema::store(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) ); ?></pre>
+						</details>
+						<p class="description">
+							<?php
+							/* translators: %s: link to Google's Rich Results Test for the homepage */
+							echo wp_kses_post( sprintf( __( 'Once the site is live, %s checks it the way Google reads it.', 'wulf-kit' ), '<a href="' . esc_url( 'https://search.google.com/test/rich-results?url=' . rawurlencode( home_url( '/' ) ) ) . '" target="_blank" rel="noopener">' . esc_html__( 'Google\'s Rich Results Test', 'wulf-kit' ) . '</a>' ) );
+							?>
+						</p>
+					</td></tr>
 				</table>
 
 				<h2><?php esc_html_e( 'Brand colors and fonts', 'wulf-kit' ); ?></h2>
@@ -466,6 +505,7 @@ class WK_Settings {
 				<?php submit_button(); ?>
 			</form>
 		</div>
+		<style>.wk-admin .wk-schema-preview { max-width: 760px; max-height: 360px; overflow: auto; margin: 8px 0 0; padding: 12px 14px; border: 1px solid #dcdcde; background: #fff; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }</style>
 		<script>
 		jQuery( function ( $ ) {
 			$( '.wk-color' ).wpColorPicker();

@@ -481,7 +481,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 								$section[1] // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 							);
 						} else {
-							printf( '<section class="om-acc om-acc--%1$s is-static"><h3 class="om-acc-title">%2$s</h3><div class="om-acc-body">%3$s</div></section>', esc_attr( $key ), esc_html( $section[0] ), $section[1] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
+							printf( '<section class="om-acc om-acc--%1$s is-static"><h2 class="om-acc-title">%2$s</h2><div class="om-acc-body">%3$s</div></section>', esc_attr( $key ), esc_html( $section[0] ), $section[1] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above.
 						}
 						$first = false;
 					}
@@ -921,12 +921,12 @@ function om_render_gallery( $product, $title, $opts = array() ) {
 		}
 		?>
 		<?php if ( count( $media['images'] ) + count( $media['videos'] ) > 1 ) : ?>
-			<div class="om-thumbs" role="list"<?php echo 'none' === $thumbs_pos ? ' hidden' : ''; ?>>
+			<div class="om-thumbs" role="group" aria-label="<?php esc_attr_e( 'Pictures and videos', 'om-catalog' ); ?>"<?php echo 'none' === $thumbs_pos ? ' hidden' : ''; ?>>
 				<?php
 				$video_thumbs = '';
 				foreach ( $media['videos'] as $entry ) {
 					$video_thumbs .= sprintf(
-						'<button type="button" role="listitem" class="om-thumb-btn om-thumb--video%1$s" data-video="%2$s"%6$s%7$s aria-label="%3$s">%4$s<span class="om-play" aria-hidden="true"></span><span class="om-thumb-label">%5$s</span></button>',
+						'<button type="button" class="om-thumb-btn om-thumb--video%1$s" data-video="%2$s"%6$s%7$s aria-label="%3$s">%4$s<span class="om-play" aria-hidden="true"></span><span class="om-thumb-label">%5$s</span></button>',
 						( $video_first && $entry['url'] === $main_video ) ? ' is-active' : '',
 						esc_attr( om_video_embed( $entry['url'], $title, true, $poster ) ),
 						esc_attr__( 'Play video', 'om-catalog' ),
@@ -944,7 +944,7 @@ function om_render_gallery( $product, $title, $opts = array() ) {
 					$n++;
 					$url = $entry['url'];
 					?>
-					<button type="button" role="listitem" class="om-thumb-btn<?php echo ( ! $video_first && $url === $main_image ) ? ' is-active' : ''; ?>" data-full="<?php echo esc_url( $url ); ?>"<?php echo '' !== $entry['color'] ? ' data-om-color="' . esc_attr( $entry['color'] ) . '"' : ''; ?><?php echo $shown( $entry ) ? '' : ' hidden'; ?> aria-label="<?php echo esc_attr( sprintf( /* translators: %d: image number. */ __( 'View image %d', 'om-catalog' ), $n ) ); ?>">
+					<button type="button" class="om-thumb-btn<?php echo ( ! $video_first && $url === $main_image ) ? ' is-active' : ''; ?>" data-full="<?php echo esc_url( $url ); ?>"<?php echo '' !== $entry['color'] ? ' data-om-color="' . esc_attr( $entry['color'] ) . '"' : ''; ?><?php echo $shown( $entry ) ? '' : ' hidden'; ?> aria-label="<?php echo esc_attr( sprintf( /* translators: %d: image number. */ __( 'View image %d', 'om-catalog' ), $n ) ); ?>">
 						<img class="om-thumb" src="<?php echo esc_url( $url ); ?>" alt="" loading="lazy" decoding="async" />
 					</button>
 					<?php

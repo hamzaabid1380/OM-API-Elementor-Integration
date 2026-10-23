@@ -1465,6 +1465,8 @@ class OM_Shortcodes {
 		$prices     = 'yes' === $atts['show_prices'] && om_markup_is_configured();
 
 		$style_attr = 'no' === $atts['inline_columns'] ? '' : ' style="--om-columns: ' . esc_attr( $columns ) . ';"';
+		// A heading for the grid (seen by screen readers only), so the product names under it follow in order.
+		echo '<h2 class="screen-reader-text">' . esc_html__( 'Designs', 'om-catalog' ) . '</h2>';
 		echo '<div class="om-catalog-grid om-layout-' . esc_attr( $layout ) . '"' . $style_attr . ( $prices ? ' data-om-prices="' . esc_attr( $active_line ) . '"' : '' ) . ( 'yes' === $atts['quick_view'] ? om_quick_view_attr( $atts ) : '' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput -- built from an int / escaped in om_quick_view_attr().
 		$card_opts = om_card_options( $atts );
 		foreach ( $products as $product ) {

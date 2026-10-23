@@ -467,7 +467,8 @@ body.wk-calm .wk .split .eyebrow { color: var(--sub); }
 }
 
 /* Sections designed dark (4Cs, call to action) placed on a light background, or set to "Dark text" */
-.wk :where(.sec:not(.dark):not(.hero)) .gold-em { color: var(--gold-ink); }
+/* Gold words on light sections and light page banners use the deep gold (the pale one is too faint on white). */
+.wk :where(.sec:not(.dark):not(.hero), .pgh:not(.dark)) .gold-em { color: var(--gold-ink); }
 .wk :is(.is-light, .txt-dark) .btn-gold { background: var(--ink); border-color: var(--ink); color: #fff; }
 .wk :is(.is-light, .txt-dark) .btn-gold:hover { background: #2a2f38; border-color: #2a2f38; color: #fff; }
 .wk :is(.is-light, .txt-dark) .btn-ghost { border-color: var(--ink); color: var(--ink); }
@@ -1586,7 +1587,7 @@ body.wk-day .wk .news .h3 { color: var(--ink); }
 body.wk-day .wk .news input { border: 0; border-bottom: 1.5px solid var(--field); border-radius: 0; background-color: #fff; color: var(--ink); }
 body.wk-day .wk .news input::placeholder { color: #737982; }
 body.wk-day .wk .news input:focus { border-color: var(--ink); }
-body.wk-day .wk .cols h4 { color: var(--ink); }
+body.wk-day .wk .cols :is(h3, h4) { color: var(--ink); }
 body.wk-day .wk .cols a { color: var(--sub); }
 body.wk-day .wk .cols a:hover { color: var(--ink); }
 body.wk-day .wk .legal { border-top-color: var(--line); color: var(--sub); }

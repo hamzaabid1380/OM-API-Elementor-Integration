@@ -60,7 +60,8 @@ class WK_Announce_Widget extends WK_Widget {
 		$s     = $this->get_settings_for_display();
 		$phone = $s['phone'] ? $s['phone'] : WK_Settings::get( 'phone' );
 		$this->open( $s );
-		echo '<div class="announce">';
+		// A labelled landmark, so screen readers can find (or skip) the bar like the header and the page.
+		echo '<aside class="announce" aria-label="' . esc_attr__( 'Opening hours and contact', 'wulf-kit' ) . '">';
 		if ( 'yes' === $s['show_status'] ) {
 			echo '<span class="ann-status" data-wk-status="dot"><span class="dot"></span><span data-status-text></span></span>';
 		}
@@ -75,7 +76,7 @@ class WK_Announce_Widget extends WK_Widget {
 				echo '<span' . $cls . '>' . esc_html( $s['message'] ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		}
-		echo '</div>';
+		echo '</aside>';
 		$this->close();
 	}
 }

@@ -93,7 +93,7 @@ class WK_Footer_Widget extends WK_Widget {
 		$this->start_controls_section( 's_ft', array( 'label' => __( 'Footer', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE ) );
 		$this->color( 'bg', __( 'Background', 'wulf-kit' ), '.ft', 'background-color' );
 		$this->color( 'c', __( 'Text', 'wulf-kit' ), '.ft' );
-		$this->color( 'head', __( 'Column headings', 'wulf-kit' ), '.ft h4' );
+		$this->color( 'head', __( 'Column headings', 'wulf-kit' ), '.ft .cols :is(h3, h4)' );
 		$this->color( 'link', __( 'Links', 'wulf-kit' ), '.ft .cols a' );
 		$this->color( 'link_h', __( 'Links on hover', 'wulf-kit' ), '.ft .cols a:hover, {{WRAPPER}} .wk .ft .legal a:hover' );
 		$this->color( 'line', __( 'Divider lines', 'wulf-kit' ), '.ft .news, {{WRAPPER}} .wk .ft .legal', 'border-color' );
@@ -153,7 +153,7 @@ class WK_Footer_Widget extends WK_Widget {
 		}
 		echo '</div>';
 		foreach ( (array) $s['cols'] as $c ) {
-			echo '<div><h4>' . esc_html( $c['title'] ) . '</h4><ul>';
+			echo '<div><h3>' . esc_html( $c['title'] ) . '</h3><ul>';
 			foreach ( self::links( $c['links'] ) as $l ) {
 				echo '<li>' . self::a( $l[0], $l[1] ) . '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
@@ -161,7 +161,7 @@ class WK_Footer_Widget extends WK_Widget {
 		}
 		if ( 'yes' === $s['visit_on'] ) {
 			$parts = array_map( 'trim', explode( ',', $set['address'], 2 ) );
-			echo '<div><h4>' . esc_html( $s['visit_title'] ) . '</h4><ul>';
+			echo '<div><h3>' . esc_html( $s['visit_title'] ) . '</h3><ul>';
 			foreach ( $parts as $p ) {
 				echo '<li><a href="' . esc_url( $set['maps_url'] ) . '" target="_blank" rel="noopener">' . esc_html( $p ) . '</a></li>';
 			}
