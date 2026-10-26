@@ -30,7 +30,7 @@ class WK_Reviews_Widget extends WK_Widget {
 			$this->add_control( 'plugin_note', array(
 				'type'            => Controls_Manager::RAW_HTML,
 				/* translators: %s: a shortcode, e.g. [trustindex no-registration=google] */
-				'raw'             => esc_html( sprintf( __( 'Wulf Kit › Settings › Google reviews has a reviews plugin: this section shows %s under its title and link. The rating and reviews below show only if that plugin shows nothing.', 'wulf-kit' ), WK_Reviews::plugin_shortcode() ) ),
+				'raw'             => esc_html( sprintf( __( 'Wulf Kit › Settings › Google reviews has a reviews plugin: this section shows %s under its title and link. Its colors and layout are set in that plugin\'s own settings; the rating and reviews below show only if it shows nothing.', 'wulf-kit' ), WK_Reviews::plugin_shortcode() ) ),
 				'content_classes' => 'elementor-panel-alert elementor-panel-alert-info',
 			) );
 		}
@@ -85,13 +85,14 @@ class WK_Reviews_Widget extends WK_Widget {
 		$this->end_controls_section();
 
 		$this->style_section();
-		$this->text_style( 'eyebrow', __( 'Small label', 'wulf-kit' ), '.rating .eyebrow' );
-		$this->text_style( 'title', __( 'Title', 'wulf-kit' ), '.rating .h2' );
+		// Label, title and link: beside the kit's own rating, or above a reviews plugin's widget (.is-plugin).
+		$this->text_style( 'eyebrow', __( 'Small label', 'wulf-kit' ), '.rating .eyebrow, {{WRAPPER}} .wk .is-plugin .shead .eyebrow' );
+		$this->text_style( 'title', __( 'Title', 'wulf-kit' ), '.rating .h2, {{WRAPPER}} .wk .is-plugin .shead .h2' );
 		$this->text_style( 'big', __( 'Rating number', 'wulf-kit' ), '.rating .big', false, true, array(
 			'small' => array( 'label' => __( 'Small text color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk .rating .big small' => 'color: {{VALUE}};' ) ),
 			'stars' => array( 'label' => __( 'Stars color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk .stars' => 'color: {{VALUE}};' ) ),
 		) );
-		$this->text_style( 'link', __( 'Link', 'wulf-kit' ), '.rating .link', true );
+		$this->text_style( 'link', __( 'Link', 'wulf-kit' ), '.rating .link, {{WRAPPER}} .wk .is-plugin .shead .link', '.rating .link:hover, {{WRAPPER}} .wk .is-plugin .shead .link:hover' );
 		$this->box_style( 'card', __( 'Review cards', 'wulf-kit' ), '.rev' );
 		$this->text_style( 'q', __( 'Review text', 'wulf-kit' ), '.rev blockquote', false, true, array(
 			'qm' => array( 'label' => __( 'Quote mark color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk .rev .qm' => 'color: {{VALUE}};' ) ),

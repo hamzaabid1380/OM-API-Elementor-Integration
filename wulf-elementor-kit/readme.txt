@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.21.0
+Stable tag: 1.21.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -281,8 +281,10 @@ A reviews plugin, on every page at once (for example Widgets for Google Reviews 
 Every Wulf Reviews section on the site then shows that plugin's reviews under its small label,
 title and "Read all reviews on Google" link, in place of the kit's rating and review cards. Nothing
 on the pages needs editing. The plugin's widget keeps its own look (the kit's styles stay out of
-it): choose its layout and colors in the plugin's settings; a light style suits the Reviews sections,
-which are light. Clear the link text in a Reviews section to hide the kit's link there. If the
+it): choose its layout and colors in the plugin's settings. Pick one of its light styles: the Reviews
+sections are light, and a style made for dark backgrounds (white names and text) can hardly be read
+on them. The section's background, label, title and link are styled in the Reviews section as usual
+(Section and Style tabs). Clear the link text in a Reviews section to hide the kit's link there. If the
 plugin is switched off, or shows nothing yet, the sections show the kit's own reviews instead. To
 use a plugin on one section only, leave the setting empty and set that section's "Reviews come from"
 to "A reviews plugin (shortcode)", with its own shortcode if it needs a different one.
@@ -444,6 +446,11 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.21.1 =
+* Reviews with a reviews plugin: the section's Style settings for the small label, title and link
+  (color, hover color, font) now also apply above the plugin's widget. The editor note says the
+  widget's own colors are set in the plugin.
 
 = 1.21.0 =
 * Reviews from a reviews plugin you already use, on every page at once: paste its shortcode (like
