@@ -24,6 +24,9 @@ class WK_Settings {
 			'address'       => '10460 Broadway, Crown Point, IN 46307',
 			'address_note'  => 'Crown Village · serving all of Lake County',
 			'maps_url'      => 'https://www.google.com/maps/search/?api=1&query=Wulf+Diamond+Jewelers+10460+Broadway+Crown+Point+IN+46307',
+			// The map in the Visit sections (a section can choose its own in Elementor).
+			'visit_map'     => 'google',
+			'map_zoom'      => '16',
 			'schema'        => '1',
 			'geo'           => '',
 			'price_range'   => '',
@@ -265,6 +268,10 @@ class WK_Settings {
 				$out[ $k ] = in_array( (string) $val, array( '0.5', '0.6', '0.75', '1' ), true ) ? (string) $val : $v;
 			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'book_pill', 'assistant_home', 'to_om_leads', 'calm_all', 'book_panel', 'track', 'schema' ), true ) ) {
 				$out[ $k ] = empty( $val ) ? '' : '1';
+			} elseif ( 'visit_map' === $k ) {
+				$out[ $k ] = in_array( (string) $val, array( 'google', 'drawn', 'none' ), true ) ? (string) $val : $v;
+			} elseif ( 'map_zoom' === $k ) {
+				$out[ $k ] = (string) max( 12, min( 19, (int) $val ? (int) $val : (int) $v ) );
 			} elseif ( 'look' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( 'night', 'day' ), true ) ? (string) $val : $v;
 			} elseif ( 'corners' === $k ) {
@@ -363,6 +370,8 @@ class WK_Settings {
 					self::field( 'address', __( 'Address', 'wulf-kit' ), 'text', __( 'Street, town, state and ZIP, with commas between them (10460 Broadway, Crown Point, IN 46307): Google reads the parts in that order.', 'wulf-kit' ) );
 					self::field( 'address_note', __( 'Under the address', 'wulf-kit' ) );
 					self::field( 'maps_url', __( 'Directions link', 'wulf-kit' ), 'url' );
+					self::field( 'visit_map', __( 'Map in the Visit sections', 'wulf-kit' ), 'select', __( 'The live Google map shows the real streets and places around the shop, with your pin; visitors can move and zoom it. The drawn map is a simple illustration that opens Google Maps. A Visit section can still choose its own in Elementor (Showroom › Map).', 'wulf-kit' ), array( 'google' => __( 'Live Google map', 'wulf-kit' ), 'drawn' => __( 'Simple drawn map', 'wulf-kit' ), 'none' => __( 'No map', 'wulf-kit' ) ) );
+					self::field( 'map_zoom', __( 'Map zoom', 'wulf-kit' ), 'number', __( 'For the live map, from 12 (more of the town) to 19 (closest). 16 shows the streets around the shop.', 'wulf-kit' ) );
 					self::field( 'email', __( 'Visit requests go to', 'wulf-kit' ), 'email', __( 'Empty uses the site admin email.', 'wulf-kit' ) );
 					self::field( 'to_om_leads', __( 'Send to your CRM', 'wulf-kit' ), 'check', __( 'Also pass visit requests and sign-ups to the OM Catalog plugin\'s lead sending (GoHighLevel / webhook), when that plugin is active.', 'wulf-kit' ) );
 					?>

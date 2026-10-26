@@ -31,13 +31,14 @@ class WK_Visit_Widget extends WK_Widget {
 		$this->start_controls_section( 'c_place', array( 'label' => __( 'Showroom', 'wulf-kit' ) ) );
 		$this->add_control( 'photo', array( 'label' => __( 'Photo', 'wulf-kit' ), 'type' => Controls_Manager::MEDIA, 'default' => array( 'url' => $m . 'showroom.webp' ) ) );
 		$this->add_control( 'map', array(
-			'label'   => __( 'Map', 'wulf-kit' ),
-			'type'    => Controls_Manager::SELECT,
-			'default' => 'drawn',
-			'options' => array( 'drawn' => __( 'Simple drawn map (links to Google Maps)', 'wulf-kit' ), 'google' => __( 'Live Google map', 'wulf-kit' ), 'none' => __( 'No map', 'wulf-kit' ) ),
+			'label'       => __( 'Map', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'site',
+			'options'     => array( 'site' => __( 'As in Wulf Kit settings', 'wulf-kit' ), 'google' => __( 'Live Google map', 'wulf-kit' ), 'drawn' => __( 'Simple drawn map (links to Google Maps)', 'wulf-kit' ), 'none' => __( 'No map', 'wulf-kit' ) ),
+			'description' => __( 'Wulf Kit › Settings › Map in the Visit sections sets it for every page, with the live map\'s zoom.', 'wulf-kit' ),
 		) );
-		$this->add_control( 'map_street', array( 'label' => __( 'Street name on the drawn map', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => 'BROADWAY', 'condition' => array( 'map' => 'drawn' ) ) );
-		$this->add_control( 'map_tag', array( 'label' => __( 'Map label', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Open in Google Maps', 'wulf-kit' ), 'condition' => array( 'map' => 'drawn' ) ) );
+		$this->add_control( 'map_street', array( 'label' => __( 'Street name on the drawn map', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => 'BROADWAY', 'condition' => array( 'map' => array( 'drawn', 'site' ) ) ) );
+		$this->add_control( 'map_tag', array( 'label' => __( 'Map label', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Open in Google Maps', 'wulf-kit' ), 'condition' => array( 'map' => array( 'drawn', 'site' ) ) ) );
 		$this->add_control( 'note_addr', array( 'type' => Controls_Manager::RAW_HTML, 'raw' => __( 'Address, phone and hours come from Wulf Kit › Settings.', 'wulf-kit' ), 'content_classes' => 'elementor-descriptor' ) );
 		$this->add_control( 'dir_text', array( 'label' => __( 'Directions button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Get directions', 'wulf-kit' ) ) );
 		$this->add_control( 'call_text', array( 'label' => __( 'Call button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Call us', 'wulf-kit' ) ) );
@@ -161,14 +162,18 @@ class WK_Visit_Widget extends WK_Widget {
 		$this->head( $s );
 		echo '<div class="visit' . ( 'yes' === $s['form_on'] ? '' : ' no-form' ) . '"><div class="box">';
 		$photo = $this->img_url( $s['photo'] );
-		if ( $photo || 'none' !== $s['map'] ) {
-			echo '<div class="visit-media' . ( $photo && 'none' !== $s['map'] ? '' : ' one' ) . '">';
+		// The section's own map, or the one in Settings (the default).
+		$map = in_array( $s['map'] ?? '', array( 'google', 'drawn', 'none' ), true ) ? $s['map'] : WK_Settings::get( 'visit_map', 'google' );
+		if ( $photo || 'none' !== $map ) {
+			echo '<div class="visit-media' . ( $photo && 'none' !== $map ? '' : ' one' ) . '">';
 			if ( $photo ) {
 				echo '<div class="slot ph"><img src="' . esc_url( $photo ) . '" alt="' . esc_attr__( 'Inside the showroom', 'wulf-kit' ) . '" loading="lazy" decoding="async"></div>';
 			}
-			if ( 'google' === $s['map'] ) {
-				echo '<div class="map"><iframe title="' . esc_attr__( 'Map', 'wulf-kit' ) . '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="' . esc_url( 'https://www.google.com/maps?q=' . rawurlencode( $set['name'] . ' ' . $set['address'] ) . '&output=embed' ) . '"></iframe></div>';
-			} elseif ( 'drawn' === $s['map'] ) {
+			if ( 'google' === $map ) {
+				$zoom = max( 12, min( 19, (int) WK_Settings::get( 'map_zoom', 16 ) ) );
+				/* translators: %s: the shop's address */
+				echo '<div class="map"><iframe title="' . esc_attr( sprintf( __( 'Map: %s', 'wulf-kit' ), $set['address'] ) ) . '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="' . esc_url( 'https://www.google.com/maps?q=' . rawurlencode( $set['name'] . ' ' . $set['address'] ) . '&z=' . $zoom . '&output=embed' ) . '"></iframe></div>';
+			} elseif ( 'drawn' === $map ) {
 				echo '<a class="map" href="' . esc_url( $maps ) . '" target="_blank" rel="noopener" aria-label="' . esc_attr__( 'Open directions in Google Maps', 'wulf-kit' ) . '"><span class="map-tag" aria-hidden="true">' . WK_Icons::svg( 'dir' ) . esc_html( $s['map_tag'] ) . '</span>' . self::drawn_map( $s['map_street'] ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 			echo '</div>';

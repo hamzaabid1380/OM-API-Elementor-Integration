@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.21.2
+Stable tag: 1.22.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -93,6 +93,13 @@ Image), "Size the logo by" Height or Width, then set it for computers, and with 
 for tablets and phones. Phones keep a smaller header logo of their own (40px high, or 140px wide)
 until you change it there. A logo taller than the header bar makes the bar grow with it; the bar's
 own height is in Style > Header bar. The footer logo never gets wider than its column.
+
+The map in the Visit sections: Wulf Kit > Settings > "Map in the Visit sections" shows the live
+Google map (the real streets and places around the shop, with your pin; visitors can move and zoom
+it), the simple drawn map (an illustration that opens Google Maps) or no map, on every page at once.
+"Map zoom" sets how close the live map starts, from 12 (more of the town) to 19 (closest); 16 shows
+the streets around the shop. A Visit section can choose its own in Elementor (Showroom > Map). On
+phones the Visit section has no map, and "Get directions" opens Google Maps.
 
 == Design sets ==
 
@@ -446,6 +453,17 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.22.0 =
+* Visit sections show the live Google map by default: the real streets and places around the shop
+  with your pin, which visitors can move and zoom. The drawn map was only an illustration, so it
+  couldn't show the surroundings. New in Wulf Kit > Settings: "Map in the Visit sections" (live
+  Google map, simple drawn map or no map) for every page at once, and "Map zoom" (16 to start). A
+  Visit section can still choose its own: Showroom > Map, now "As in Wulf Kit settings" by default.
+* The live map fits its space everywhere: a band under the photo in the Daylight look on computers,
+  and beside the photo (Night look, tablets) as tall as the photo, at least 260px, instead of running
+  over the address below it on tablets. A section with only a map gets a 220px map on tablets and
+  phones.
 
 = 1.21.2 =
 * Visit section in the Daylight look, on computers: the map now sits under the showroom photo as a

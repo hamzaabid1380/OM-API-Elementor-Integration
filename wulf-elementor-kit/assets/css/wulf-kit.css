@@ -817,7 +817,15 @@ body.wk-has-actbar { padding-bottom: 76px; }
 .wk.wk .visit-media.one { grid-template-columns: 1fr; }
 .wk.wk .visit-media .map iframe { display: block; width: 100%; height: 100%; min-height: 260px; border: 0; }
 .wk.wk .visit-media div.map { position: relative; border-left: 1px solid var(--line); background: #eef0f2; }
-@media (max-width: 860px) { .wk.wk .visit-media div.map { border-left: 0; border-top: 1px solid var(--line); height: 220px; } }
+.wk.wk .visit-media.one div.map { border-left: 0; }
+@media (max-width: 860px) { .wk.wk .visit-media.one div.map { height: 220px; } .wk.wk .visit-media.one div.map iframe { min-height: 0; } }
+/* A live map beside the photo: the row is at least 260px, the photo fills it and the map fills the whole row. */
+@media (min-width: 601px) {
+	.wk.wk .visit-media:not(.one):has(> div.map) { grid-template-rows: minmax(260px, auto); }
+	.wk.wk .visit-media:not(.one):has(> div.map) .slot { place-self: stretch; }
+	.wk.wk .visit-media:not(.one):has(> div.map) .slot img { width: 100%; height: 100%; object-fit: cover; }
+	.wk.wk .visit-media:not(.one) div.map iframe { min-height: 0; }
+}
 
 /* Shine sweep across a product photo. */
 .wk.wk .pv.flash::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .7) 50%, transparent 70%); transform: translateX(-100%); animation: wkflash .9s ease both; pointer-events: none; }
@@ -2609,7 +2617,7 @@ body.wk-day .wk.wk .reel:not(.reel-chapter) .rp-face { box-shadow: 0 0 0 2px var
 	body.wk-day .wk.wk .visit .visit-media .slot img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
 	/* The map as a band under the photo: side by side, the growing box turned both into thin strips. */
 	body.wk-day .wk.wk .visit .visit-media:not(.one) { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(clamp(240px, 22vw, 320px), 1fr) clamp(150px, 13vw, 190px); min-height: 0; }
-	body.wk-day .wk.wk .visit .visit-media:not(.one):has(> div.map) { grid-template-rows: minmax(clamp(220px, 20vw, 300px), 1fr) clamp(200px, 17vw, 240px); }
+	body.wk-day .wk.wk .visit .visit-media:not(.one):has(> div.map) { grid-template-rows: minmax(clamp(200px, 18vw, 260px), 1fr) clamp(240px, 20vw, 290px); }
 	body.wk-day .wk.wk .visit .visit-media:not(.one) .map { overflow: hidden; border-left: 0; border-top: 1px solid var(--line); }
 	body.wk-day .wk.wk .visit .visit-media:not(.one) .map iframe { min-height: 0; }
 }
