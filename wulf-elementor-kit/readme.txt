@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.21.1
+Stable tag: 1.21.2
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -446,6 +446,16 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.21.2 =
+* Visit section in the Daylight look, on computers: the map now sits under the showroom photo as a
+  wide band, instead of beside it. Side by side, once the box grew to end level with a long booking
+  form (with saved designs, say), the photo and the map became two thin strips and the map drawing
+  was cut off. A live Google map gets a slightly taller band. Tablets, phones and the Night look keep
+  their layout.
+* The drawn map is redrawn so the pin and the street name stay in view in any shape of frame (square,
+  tall or a wide band), with the pin on the shop's side of Broadway.
+* The showroom photo in that section keeps its upper part (the sign) in view when it is cropped.
 
 = 1.21.1 =
 * Reviews with a reviews plugin: the section's Style settings for the small label, title and link

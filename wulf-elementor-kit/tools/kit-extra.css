@@ -1856,7 +1856,12 @@ body.wk-day .wk .reel:not(.reel-chapter) .rp-face { box-shadow: 0 0 0 2px var(--
 	body.wk-day .wk .visit > .box:first-child { display: flex; flex-direction: column; }
 	body.wk-day .wk .visit .visit-media { flex: 1 1 auto; min-height: clamp(280px, 26vw, 380px); }
 	body.wk-day .wk .visit .visit-media .slot { height: 100%; aspect-ratio: auto; }
-	body.wk-day .wk .visit .visit-media .slot img { width: 100%; height: 100%; object-fit: cover; }
+	body.wk-day .wk .visit .visit-media .slot img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+	/* The map as a band under the photo: side by side, the growing box turned both into thin strips. */
+	body.wk-day .wk .visit .visit-media:not(.one) { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(clamp(240px, 22vw, 320px), 1fr) clamp(150px, 13vw, 190px); min-height: 0; }
+	body.wk-day .wk .visit .visit-media:not(.one):has(> div.map) { grid-template-rows: minmax(clamp(220px, 20vw, 300px), 1fr) clamp(200px, 17vw, 240px); }
+	body.wk-day .wk .visit .visit-media:not(.one) .map { overflow: hidden; border-left: 0; border-top: 1px solid var(--line); }
+	body.wk-day .wk .visit .visit-media:not(.one) .map iframe { min-height: 0; }
 }
 
 /* ---------- Page banners: the picture in the same case as the homepage's piece ---------- */

@@ -258,7 +258,11 @@ class WK_Visit_Widget extends WK_Widget {
 		$this->close();
 	}
 
+	/**
+	 * Broadway with the shop's pin beside it, drawn wider than any frame: the pin and the street name stay
+	 * near the middle, so they show whether the map is a square, a tall box or a wide band (slice).
+	 */
 	private static function drawn_map( $street ) {
-		return '<svg viewBox="0 0 300 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="300" height="200" fill="#eef0f2"/><g stroke="#fff" stroke-width="10"><path d="M0 70H300M0 150H300M70 0V200M230 0V200"/></g><path d="M150 0V200" stroke="#fff" stroke-width="18"/><path d="M150 0V200" stroke="#e3e6ea" stroke-width="1"/><rect x="164" y="88" width="56" height="48" rx="4" fill="#e3e8e0"/><text transform="translate(156 192) rotate(-90)" font-family="Manrope, sans-serif" font-size="10" font-weight="700" letter-spacing="1.2" fill="#6b7480">' . esc_html( $street ) . '</text><path d="M150 112s-13-11-13-22a13 13 0 0 1 26 0c0 11-13 22-13 22Z" fill="#0f1217"/><circle cx="150" cy="90" r="4.8" fill="#d6b97f"/></svg>';
+		return '<svg viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="600" height="300" fill="#eef0f2"/><g stroke="#fff" stroke-width="12"><path d="M0 96H600M0 228H600M170 0V300M430 0V300"/></g><path d="M280 0V300" stroke="#fff" stroke-width="24"/><path d="M280 0V300" stroke="#e3e6ea" stroke-width="1"/><rect x="302" y="146" width="72" height="54" rx="4" fill="#e3e8e0"/><text transform="translate(289 160) rotate(-90)" text-anchor="middle" font-family="Manrope, sans-serif" font-size="13" font-weight="700" letter-spacing="1.6" fill="#6b7480">' . esc_html( $street ) . '</text><g transform="translate(332 178) scale(1.3)"><path d="M0 0s-13-11-13-22a13 13 0 0 1 26 0c0 11-13 22-13 22Z" fill="#0f1217"/><circle cy="-22" r="4.8" fill="#d6b97f"/></g></svg>';
 	}
 }
