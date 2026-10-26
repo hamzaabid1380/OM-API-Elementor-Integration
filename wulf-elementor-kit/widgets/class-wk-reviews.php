@@ -1,6 +1,7 @@
 <?php
 /**
- * Reviews: rating summary and review cards, typed in or live from Google.
+ * Reviews: rating summary and review cards, typed in or live from Google; or another reviews
+ * plugin's widget (its shortcode) under the section's title.
  *
  * @package WulfKit
  */
@@ -25,12 +26,33 @@ class WK_Reviews_Widget extends WK_Widget {
 	protected function register_controls() {
 		$this->section_controls( array( 'anchor' => 'reviews' ) );
 		$this->start_controls_section( 'c_sum', array( 'label' => __( 'Rating', 'wulf-kit' ) ) );
+		if ( '' !== WK_Reviews::plugin_shortcode() ) {
+			$this->add_control( 'plugin_note', array(
+				'type'            => Controls_Manager::RAW_HTML,
+				/* translators: %s: a shortcode, e.g. [trustindex no-registration=google] */
+				'raw'             => esc_html( sprintf( __( 'Wulf Kit › Settings › Google reviews has a reviews plugin: this section shows %s under its title and link. The rating and reviews below show only if that plugin shows nothing.', 'wulf-kit' ), WK_Reviews::plugin_shortcode() ) ),
+				'content_classes' => 'elementor-panel-alert elementor-panel-alert-info',
+			) );
+		}
 		$this->add_control( 'source', array(
 			'label'       => __( 'Reviews come from', 'wulf-kit' ),
 			'type'        => Controls_Manager::SELECT,
 			'default'     => 'manual',
-			'options'     => array( 'manual' => __( 'Typed in below', 'wulf-kit' ), 'google' => __( 'Google, live', 'wulf-kit' ) ),
-			'description' => __( 'Google needs a free Featurable widget ID (or your own Google key and Place ID) in Wulf Kit › Settings › Google reviews. If none has arrived yet, the typed-in reviews show instead.', 'wulf-kit' ),
+			'options'     => array(
+				'manual' => __( 'Typed in below', 'wulf-kit' ),
+				'google' => __( 'Google, live', 'wulf-kit' ),
+				'plugin' => __( 'A reviews plugin (shortcode)', 'wulf-kit' ),
+			),
+			'description' => __( 'Google needs a free Featurable widget ID (or your own Google key and Place ID) in Wulf Kit › Settings › Google reviews. If none has arrived yet, the typed-in reviews show instead. A reviews plugin shows its own widget under the title, like Widgets for Google Reviews by Trustindex.', 'wulf-kit' ),
+		) );
+		$this->add_control( 'shortcode', array(
+			'label'       => __( 'Shortcode', 'wulf-kit' ),
+			'type'        => Controls_Manager::TEXT,
+			'default'     => '',
+			'placeholder' => '[trustindex no-registration=google]',
+			'label_block' => true,
+			'description' => __( 'Empty uses the one in Wulf Kit › Settings › Google reviews.', 'wulf-kit' ),
+			'condition'   => array( 'source' => 'plugin' ),
 		) );
 		$this->add_control( 'eyebrow', array( 'label' => __( 'Small label', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Reviews', 'wulf-kit' ) ) );
 		$this->add_control( 'title', array( 'label' => __( 'Title', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 2, 'default' => __( 'What our customers say.', 'wulf-kit' ) ) );
@@ -81,8 +103,39 @@ class WK_Reviews_Widget extends WK_Widget {
 		return str_repeat( WK_Icons::svg( 'star' ), max( 0, min( 5, (int) $n ) ) );
 	}
 
+	/**
+	 * The reviews plugin's shortcode this section shows: its own (Reviews come from › A reviews plugin)
+	 * or the one in Settings, which every Reviews section follows. '' when none, or its plugin is off.
+	 */
+	private static function plugin_code( $s ) {
+		$own  = 'plugin' === ( $s['source'] ?? '' ) ? WK_Reviews::clean_shortcode( $s['shortcode'] ?? '' ) : '';
+		$code = '' !== $own ? $own : (string) WK_Settings::get( 'reviews_shortcode' );
+		return WK_Reviews::shortcode_ready( $code ) ? $code : '';
+	}
+
+	/** The plugin's reviews under the section's title and link, in place of the cards. False when it shows nothing. */
+	private function render_plugin( $s, $code ) {
+		$html = trim( (string) do_shortcode( $code ) );
+		if ( '' === trim( (string) preg_replace( '/<!--[\s\S]*?-->/', '', $html ) ) ) {
+			return false; // Not set up yet (for visitors it prints nothing): the kit's own reviews show.
+		}
+		$link = $s['g_text'] && ! empty( $s['g_link']['url'] ) ? '<a class="link"' . self::link_attrs( $s['g_link'] ) . '>' . esc_html( $s['g_text'] ) . ' ' . WK_Icons::svg( 'arr' ) . '</a>' : '';
+		$this->open( $s );
+		echo '<section class="' . esc_attr( $this->sec_class( $s ) ) . ' rev-sec is-plugin"' . $this->anchor_attr( $s ) . '><div class="wrap">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$this->head( array( 'eyebrow' => $s['eyebrow'], 'title' => $s['title'], 'lead' => '', 'title_tag' => $s['title_tag'] ?? 'h2' ), $link );
+		// Another plugin's widget: .wk-foreign keeps the kit's base styles out of it, so it looks as its plugin made it.
+		echo '<div class="rev-plugin wk-foreign">' . $html . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the plugin's own shortcode output.
+		echo '</div></section>';
+		$this->close();
+		return true;
+	}
+
 	protected function render() {
-		$s      = $this->get_settings_for_display();
+		$s    = $this->get_settings_for_display();
+		$code = self::plugin_code( $s );
+		if ( '' !== $code && $this->render_plugin( $s, $code ) ) {
+			return;
+		}
 		$rating = $s['rating'];
 		$count  = $s['count'];
 		$link   = $s['g_link'];

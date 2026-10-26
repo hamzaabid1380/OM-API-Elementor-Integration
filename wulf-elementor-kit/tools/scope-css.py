@@ -29,6 +29,11 @@ def split_rules(css):
         i = k
 
 
+# The base element rules (img, a, p, ul, *) stay out of another plugin's widget inside a kit
+# section (.wk-foreign, e.g. a reviews plugin's shortcode), at no extra weight.
+FOREIGN = ':where(:not(.wk-foreign *))'
+
+
 def scope_sel(sel):
     sel = sel.strip()
     if not sel:
@@ -38,11 +43,13 @@ def scope_sel(sel):
     if sel == 'body':
         return '.wk'
     if sel == '*':
-        return '.wk, .wk *'
+        return '.wk, .wk *' + FOREIGN
     if sel in ('*::before', '*::after'):
-        return '.wk ' + sel
+        return '.wk *' + FOREIGN + sel[1:]
     if sel.startswith('.wk'):
         return sel
+    if re.fullmatch(r'[a-z][a-z0-9]*', sel):
+        return '.wk ' + sel + FOREIGN
     return '.wk ' + sel
 
 

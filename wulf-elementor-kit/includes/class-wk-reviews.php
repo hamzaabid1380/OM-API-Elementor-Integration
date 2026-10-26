@@ -3,7 +3,8 @@
  * Live Google rating and reviews, cached: free through Featurable (which
  * reads them from the shop's Google Business Profile), or from Google's
  * Places API (New) with the shop's own key. When a check fails, the last
- * reviews received keep showing.
+ * reviews received keep showing. Or another reviews plugin's widget, by its
+ * shortcode (plugin_shortcode()).
  *
  * @package WulfKit
  */
@@ -26,6 +27,37 @@ class WK_Reviews {
 		}
 		$raw = trim( $raw );
 		return preg_match( '/^[A-Za-z0-9_-]{1,64}$/', $raw ) ? $raw : '';
+	}
+
+	/**
+	 * A reviews plugin's shortcode from Settings (e.g. [trustindex no-registration=google] from Widgets
+	 * for Google Reviews by Trustindex), which every Reviews section then shows; '' when there is none
+	 * or its plugin isn't active.
+	 */
+	public static function plugin_shortcode() {
+		$code = (string) WK_Settings::get( 'reviews_shortcode' );
+		return self::shortcode_ready( $code ) ? $code : '';
+	}
+
+	/** Is the plugin behind this shortcode active? */
+	public static function shortcode_ready( $code ) {
+		$tag = self::shortcode_tag( $code );
+		return '' !== $tag && shortcode_exists( $tag );
+	}
+
+	/** "trustindex" from "[trustindex no-registration=google]"; '' when it isn't one shortcode. */
+	public static function shortcode_tag( $code ) {
+		return preg_match( '/^\[([^\s\[\]\/<>&="\']+)[^\[\]]*\]$/', trim( (string) $code ), $m ) ? $m[1] : '';
+	}
+
+	/** One shortcode from what was pasted (its brackets may be missing); '' when it isn't one. */
+	public static function clean_shortcode( $raw ) {
+		$raw = trim( (string) preg_replace( '/[\s\x{00A0}]+/u', ' ', wp_strip_all_tags( (string) $raw ) ) );
+		if ( '' === $raw ) {
+			return '';
+		}
+		$raw = ( '[' === $raw[0] ? '' : '[' ) . $raw . ( ']' === substr( $raw, -1 ) ? '' : ']' );
+		return '' !== self::shortcode_tag( $raw ) ? $raw : '';
 	}
 
 	/** Where reviews come from: [ 'featurable', widget ID ], [ 'places', Place ID ] or null. */

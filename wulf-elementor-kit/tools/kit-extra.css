@@ -1873,3 +1873,7 @@ body.wk-day.wk-cut .wk .pgh-case .steprows { --sr: 34px; }
 	body.wk-day.wk-cut .wk .pgh-case .steprows { --sr: 22px; }
 }
 @media (prefers-reduced-motion: reduce) { .wk .pgh-media .pgh-v { display: none; } }
+
+/* ---------- Reviews from another plugin (its shortcode): its widget under the section's title ---------- */
+/* .wk-foreign: the kit's base styles stay out (see kit-reset.css and scope-css.py); the plugin's own look applies. */
+.wk .rev-plugin { min-width: 0; }

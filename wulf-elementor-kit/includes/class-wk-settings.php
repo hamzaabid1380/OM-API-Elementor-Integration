@@ -79,6 +79,8 @@ class WK_Settings {
 			'to_om_leads'   => '1',
 			'header_tpl'    => '',
 			'footer_tpl'    => '',
+			// Another reviews plugin's shortcode: every Reviews section shows that plugin's widget.
+			'reviews_shortcode' => '',
 			'featurable_id' => '',
 			'google_key'    => '',
 			'google_place'  => '',
@@ -279,6 +281,8 @@ class WK_Settings {
 				$out[ $k ] = mb_substr( sanitize_text_field( $val ), 0, 100 );
 			} elseif ( 'featurable_id' === $k ) {
 				$out[ $k ] = WK_Reviews::featurable_id( is_scalar( $val ) ? (string) $val : '' ); // Also from a pasted link or embed code.
+			} elseif ( 'reviews_shortcode' === $k ) {
+				$out[ $k ] = WK_Reviews::clean_shortcode( is_scalar( $val ) ? (string) $val : '' );
 			} else {
 				$out[ $k ] = sanitize_text_field( $val );
 			}
@@ -473,8 +477,19 @@ class WK_Settings {
 				</table>
 
 				<h2 id="wk-google-reviews"><?php esc_html_e( 'Google reviews', 'wulf-kit' ); ?></h2>
-				<p><?php esc_html_e( 'Optional. Shows your live Google rating and reviews in the Reviews widget (set its "Reviews come from" to "Google, live") and the rating in the hero and "Why Wulf". The easiest way is free: Featurable reads the reviews from your Google Business Profile and the site shows them in its own design.', 'wulf-kit' ); ?></p>
+				<p><?php esc_html_e( 'Optional. Two ways to show your live Google reviews: a reviews plugin you already use, whose widget then appears in every Reviews section (paste its shortcode below), or the kit\'s own review cards filled from your Google Business Profile (set the Reviews widget\'s "Reviews come from" to "Google, live"). The live rating in the hero and "Why Wulf" comes from Featurable or the Google key; the easiest way is free: Featurable reads the reviews from your Business Profile.', 'wulf-kit' ); ?></p>
 				<?php
+				$wk_code = (string) self::get( 'reviews_shortcode' );
+				if ( '' !== $wk_code ) {
+					if ( WK_Reviews::shortcode_ready( $wk_code ) ) {
+						/* translators: %s: a shortcode, e.g. [trustindex no-registration=google] */
+						$wk_msg = sprintf( __( 'Every Reviews section on the site shows %s under its title, in place of the kit\'s review cards. If that plugin shows nothing yet (not connected to your Google profile), a section shows the kit\'s own reviews instead.', 'wulf-kit' ), $wk_code );
+					} else {
+						/* translators: %s: a shortcode's name, e.g. [trustindex] */
+						$wk_msg = sprintf( __( 'The plugin behind [%s] isn\'t active, so the Reviews sections show the kit\'s own reviews for now.', 'wulf-kit' ), WK_Reviews::shortcode_tag( $wk_code ) );
+					}
+					echo '<div class="notice notice-' . ( WK_Reviews::shortcode_ready( $wk_code ) ? 'success' : 'warning' ) . ' inline"><p>' . esc_html( $wk_msg ) . '</p></div>';
+				}
 				$wk_status = WK_Reviews::status();
 				if ( $wk_status ) {
 					echo '<div class="notice notice-' . ( 'ok' === $wk_status['state'] ? 'success' : 'warning' ) . ' inline"><p>' . esc_html( $wk_status['text'] ) . '</p></div>';
@@ -482,6 +497,7 @@ class WK_Settings {
 				?>
 				<table class="form-table" role="presentation">
 					<?php
+					self::field( 'reviews_shortcode', __( 'Reviews plugin shortcode', 'wulf-kit' ), 'text', __( 'Paste a reviews plugin\'s shortcode, like <code>[trustindex no-registration=google]</code> from Widgets for Google Reviews by Trustindex. Every Wulf Reviews section on the site then shows that plugin\'s reviews under its title and "Read all reviews on Google" link, in place of the kit\'s rating and review cards. Choose the layout and colors in the plugin\'s own settings (a light style suits the Reviews sections, which are light). Empty keeps the kit\'s own reviews.', 'wulf-kit' ) );
 					self::field( 'featurable_id', __( 'Featurable widget ID (free)', 'wulf-kit' ), 'text', __( 'No Google key or card needed. 1. Sign up free at <a href="https://featurable.com" target="_blank" rel="noopener">featurable.com</a> with the Google account that manages your Business Profile. 2. Create a Google reviews widget for the shop. 3. Click Embed, then API, and copy the widget ID here (pasting the whole embed code works too). Featurable checks Google for new reviews about every two days.', 'wulf-kit' ) );
 					self::field( 'google_key', __( 'Or: Google Places API key', 'wulf-kit' ), 'password', __( 'Only if you don\'t use Featurable (Featurable is used when both are filled in). Needs a Google Cloud billing account; Google shares up to 5 reviews and picks them.', 'wulf-kit' ) );
 					self::field( 'google_place', __( 'Google Place ID', 'wulf-kit' ), 'text', __( 'With the API key: find it with Google\'s Place ID Finder.', 'wulf-kit' ) );

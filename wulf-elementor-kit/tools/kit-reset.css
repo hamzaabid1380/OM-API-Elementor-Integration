@@ -1,11 +1,12 @@
 /* Wulf kit. Built by tools/build-css.sh from tools/mockup-v8.css + tools/kit-reset.css + tools/kit-extra.css. */
 
 /* Theme shield: neutralise theme / Elementor-kit link and button styles inside the kit.
-   Heavier than theme rules, lighter than every section rule below. */
-html .wk button, html .wk [type="button"], html .wk [type="submit"], html .wk [type="reset"] { background: none; border: 0; border-radius: 0; padding: 0; margin: 0; min-height: 0; width: auto; text-transform: none; font-weight: inherit; line-height: inherit; font-size: inherit; letter-spacing: inherit; white-space: normal; text-align: center; box-shadow: none; color: inherit; transition: none; }
-html .wk button:hover, html .wk button:focus, html .wk button:active { background-color: transparent; color: inherit; text-decoration: none; }
-html .wk a, html .wk a:hover, html .wk a:focus, html .wk a:active, html .wk a:visited { color: inherit; text-decoration: none; }
-html .wk input, html .wk select, html .wk textarea { border-radius: 0; margin: 0; box-shadow: none; }
-html .wk h1, html .wk h2, html .wk h3, html .wk h4, html .wk h5, html .wk h6 { margin: 0; padding: 0; font-family: inherit; font-weight: inherit; line-height: inherit; color: inherit; text-transform: none; letter-spacing: normal; }
-html .wk table, html .wk td, html .wk th { border: 0; }
+   Heavier than theme rules, lighter than every section rule below. Not inside .wk-foreign: another
+   plugin's widget in a kit section (a reviews plugin's shortcode) keeps its own look. */
+html .wk button:where(:not(.wk-foreign *)), html .wk [type="button"]:where(:not(.wk-foreign *)), html .wk [type="submit"]:where(:not(.wk-foreign *)), html .wk [type="reset"]:where(:not(.wk-foreign *)) { background: none; border: 0; border-radius: 0; padding: 0; margin: 0; min-height: 0; width: auto; text-transform: none; font-weight: inherit; line-height: inherit; font-size: inherit; letter-spacing: inherit; white-space: normal; text-align: center; box-shadow: none; color: inherit; transition: none; }
+html .wk button:hover:where(:not(.wk-foreign *)), html .wk button:focus:where(:not(.wk-foreign *)), html .wk button:active:where(:not(.wk-foreign *)) { background-color: transparent; color: inherit; text-decoration: none; }
+html .wk a:where(:not(.wk-foreign *)), html .wk a:hover:where(:not(.wk-foreign *)), html .wk a:focus:where(:not(.wk-foreign *)), html .wk a:active:where(:not(.wk-foreign *)), html .wk a:visited:where(:not(.wk-foreign *)) { color: inherit; text-decoration: none; }
+html .wk input:where(:not(.wk-foreign *)), html .wk select:where(:not(.wk-foreign *)), html .wk textarea:where(:not(.wk-foreign *)) { border-radius: 0; margin: 0; box-shadow: none; }
+html .wk h1:where(:not(.wk-foreign *)), html .wk h2:where(:not(.wk-foreign *)), html .wk h3:where(:not(.wk-foreign *)), html .wk h4:where(:not(.wk-foreign *)), html .wk h5:where(:not(.wk-foreign *)), html .wk h6:where(:not(.wk-foreign *)) { margin: 0; padding: 0; font-family: inherit; font-weight: inherit; line-height: inherit; color: inherit; text-transform: none; letter-spacing: normal; }
+html .wk table:where(:not(.wk-foreign *)), html .wk td:where(:not(.wk-foreign *)), html .wk th:where(:not(.wk-foreign *)) { border: 0; }
 

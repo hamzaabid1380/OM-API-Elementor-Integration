@@ -1,13 +1,14 @@
 /* Wulf kit. Built by tools/build-css.sh from tools/mockup-v8.css + tools/kit-reset.css + tools/kit-extra.css. */
 
 /* Theme shield: neutralise theme / Elementor-kit link and button styles inside the kit.
-   Heavier than theme rules, lighter than every section rule below. */
-html .wk button, html .wk [type="button"], html .wk [type="submit"], html .wk [type="reset"] { background: none; border: 0; border-radius: 0; padding: 0; margin: 0; min-height: 0; width: auto; text-transform: none; font-weight: inherit; line-height: inherit; font-size: inherit; letter-spacing: inherit; white-space: normal; text-align: center; box-shadow: none; color: inherit; transition: none; }
-html .wk button:hover, html .wk button:focus, html .wk button:active { background-color: transparent; color: inherit; text-decoration: none; }
-html .wk a, html .wk a:hover, html .wk a:focus, html .wk a:active, html .wk a:visited { color: inherit; text-decoration: none; }
-html .wk input, html .wk select, html .wk textarea { border-radius: 0; margin: 0; box-shadow: none; }
-html .wk h1, html .wk h2, html .wk h3, html .wk h4, html .wk h5, html .wk h6 { margin: 0; padding: 0; font-family: inherit; font-weight: inherit; line-height: inherit; color: inherit; text-transform: none; letter-spacing: normal; }
-html .wk table, html .wk td, html .wk th { border: 0; }
+   Heavier than theme rules, lighter than every section rule below. Not inside .wk-foreign: another
+   plugin's widget in a kit section (a reviews plugin's shortcode) keeps its own look. */
+html .wk button:where(:not(.wk-foreign *)), html .wk [type="button"]:where(:not(.wk-foreign *)), html .wk [type="submit"]:where(:not(.wk-foreign *)), html .wk [type="reset"]:where(:not(.wk-foreign *)) { background: none; border: 0; border-radius: 0; padding: 0; margin: 0; min-height: 0; width: auto; text-transform: none; font-weight: inherit; line-height: inherit; font-size: inherit; letter-spacing: inherit; white-space: normal; text-align: center; box-shadow: none; color: inherit; transition: none; }
+html .wk button:hover:where(:not(.wk-foreign *)), html .wk button:focus:where(:not(.wk-foreign *)), html .wk button:active:where(:not(.wk-foreign *)) { background-color: transparent; color: inherit; text-decoration: none; }
+html .wk a:where(:not(.wk-foreign *)), html .wk a:hover:where(:not(.wk-foreign *)), html .wk a:focus:where(:not(.wk-foreign *)), html .wk a:active:where(:not(.wk-foreign *)), html .wk a:visited:where(:not(.wk-foreign *)) { color: inherit; text-decoration: none; }
+html .wk input:where(:not(.wk-foreign *)), html .wk select:where(:not(.wk-foreign *)), html .wk textarea:where(:not(.wk-foreign *)) { border-radius: 0; margin: 0; box-shadow: none; }
+html .wk h1:where(:not(.wk-foreign *)), html .wk h2:where(:not(.wk-foreign *)), html .wk h3:where(:not(.wk-foreign *)), html .wk h4:where(:not(.wk-foreign *)), html .wk h5:where(:not(.wk-foreign *)), html .wk h6:where(:not(.wk-foreign *)) { margin: 0; padding: 0; font-family: inherit; font-weight: inherit; line-height: inherit; color: inherit; text-transform: none; letter-spacing: normal; }
+html .wk table:where(:not(.wk-foreign *)), html .wk td:where(:not(.wk-foreign *)), html .wk th:where(:not(.wk-foreign *)) { border: 0; }
 
 .wk {
 	--bg: #ffffff;
@@ -34,13 +35,13 @@ html .wk table, html .wk td, html .wk th { border: 0; }
 	--hd: 76px;
 	color-scheme: light;
 }
-.wk, .wk * { box-sizing: border-box; }
+.wk, .wk *:where(:not(.wk-foreign *)) { box-sizing: border-box; }
 .wk { color: var(--text); font: 400 16.5px/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
-.wk.wk img, .wk.wk svg { max-width: 100%; display: block; }
-.wk.wk a { color: inherit; }
-.wk.wk button, .wk.wk input, .wk.wk select, .wk.wk textarea { font: inherit; color: inherit; }
-.wk.wk p, .wk.wk h1, .wk.wk h2, .wk.wk h3, .wk.wk h4, .wk.wk ul, .wk.wk ol, .wk.wk figure { margin: 0; }
-.wk.wk ul, .wk.wk ol { padding: 0; list-style: none; }
+.wk.wk img:where(:not(.wk-foreign *)), .wk.wk svg:where(:not(.wk-foreign *)) { max-width: 100%; display: block; }
+.wk.wk a:where(:not(.wk-foreign *)) { color: inherit; }
+.wk.wk button:where(:not(.wk-foreign *)), .wk.wk input:where(:not(.wk-foreign *)), .wk.wk select:where(:not(.wk-foreign *)), .wk.wk textarea:where(:not(.wk-foreign *)) { font: inherit; color: inherit; }
+.wk.wk p:where(:not(.wk-foreign *)), .wk.wk h1:where(:not(.wk-foreign *)), .wk.wk h2:where(:not(.wk-foreign *)), .wk.wk h3:where(:not(.wk-foreign *)), .wk.wk h4:where(:not(.wk-foreign *)), .wk.wk ul:where(:not(.wk-foreign *)), .wk.wk ol:where(:not(.wk-foreign *)), .wk.wk figure:where(:not(.wk-foreign *)) { margin: 0; }
+.wk.wk ul:where(:not(.wk-foreign *)), .wk.wk ol:where(:not(.wk-foreign *)) { padding: 0; list-style: none; }
 .wk.wk .wrap { max-width: calc(var(--max) + 2 * var(--gut)); margin: 0 auto; padding-inline: var(--gut); }
 .wk.wk :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
 .wk.wk .dark :focus-visible, .wk.wk .hero :focus-visible, .wk.wk .ft :focus-visible { outline-color: var(--gold); }
@@ -639,7 +640,7 @@ body.wk-has-actbar { padding-bottom: 76px; }
 .wk.wk .actions { gap: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-.wk, .wk *, .wk *::before, .wk *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+.wk, .wk *:where(:not(.wk-foreign *)), .wk *:where(:not(.wk-foreign *))::before, .wk *:where(:not(.wk-foreign *))::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 .wk.wk .hero-media.slot { padding: 0; background: var(--night); overflow: hidden; }
 .wk.wk .hero-media .sc-stage { position: absolute; inset: 0; width: auto; height: auto; max-width: none; aspect-ratio: auto; transform: translate(calc(var(--rx, 0) * -14px), calc(var(--ry, 0) * -10px)) scale(1.04); transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
@@ -2622,3 +2623,7 @@ body.wk-day.wk-cut .wk.wk .pgh-case .steprows { --sr: 34px; }
 	body.wk-day.wk-cut .wk.wk .pgh-case .steprows { --sr: 22px; }
 }
 @media (prefers-reduced-motion: reduce) { .wk.wk .pgh-media .pgh-v { display: none; } }
+
+/* ---------- Reviews from another plugin (its shortcode): its widget under the section's title ---------- */
+/* .wk-foreign: the kit's base styles stay out (see kit-reset.css and scope-css.py); the plugin's own look applies. */
+.wk.wk .rev-plugin { min-width: 0; }
