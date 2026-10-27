@@ -52,7 +52,7 @@ class OM_Insights {
 		// ...and the Wulf Elementor Kit's (booking, quiz email, newsletter).
 		add_action( 'wk_booking', array( $this, 'on_booking' ) );
 		add_action( 'wk_quiz', array( $this, 'on_quiz' ) );
-		add_action( 'wk_newsletter', array( $this, 'on_newsletter' ) );
+		add_action( 'wk_newsletter', array( $this, 'on_newsletter' ), 10, 2 );
 		// "Their visit" in the shop's emails: this plugin's and the kit's.
 		add_filter( 'om_email_details', array( $this, 'email_details' ), 10, 2 );
 		add_filter( 'wk_mail_after_rows', array( $this, 'kit_mail' ) );
@@ -684,17 +684,19 @@ class OM_Insights {
 				'subject' => implode( ', ', array_map( 'strval', (array) ( $d['topics'] ?? array() ) ) ),
 				'page'    => (string) ( $d['page'] ?? '' ),
 				'name'    => (string) ( $d['name'] ?? '' ),
+				'id'      => (int) ( $d['inquiry_id'] ?? 0 ),
 			)
 		);
 	}
 
 	public function on_quiz( $d ) {
 		$d = (array) $d;
-		self::lead( 'quiz_email', array( 'page' => (string) ( $d['page'] ?? '' ), 'name' => (string) ( $d['email'] ?? '' ) ) );
+		self::lead( 'quiz_email', array( 'page' => (string) ( $d['page'] ?? '' ), 'name' => (string) ( $d['email'] ?? '' ), 'id' => (int) ( $d['inquiry_id'] ?? 0 ) ) );
 	}
 
-	public function on_newsletter( $email ) {
-		self::lead( 'newsletter', array( 'name' => (string) $email ) );
+	/** A newsletter sign-up, and the inquiry it was kept as (kit 1.29). */
+	public function on_newsletter( $email, $id = 0 ) {
+		self::lead( 'newsletter', array( 'name' => (string) $email, 'id' => (int) $id ) );
 	}
 
 	/* ---------------------------------------------------------------

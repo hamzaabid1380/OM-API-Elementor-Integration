@@ -296,7 +296,9 @@ class OM_Hint {
 		if ( $copy ) {
 			OM_Emails::send( 'hint_copy', $from_email, $vars, self::email_block( $hint, 'sender', $url ), add_query_arg( 'om_hint_view', 'sender', $url ), array( 'Reply-To: ' . $safe( $site ) . ' <' . $shop . '>' ) );
 		}
+		OM_Mail_Watch::about( (int) $post_id );
 		OM_Emails::send( 'hint_shop', $shop, $vars, self::email_block( $hint, 'shop', $url, $to_email ), add_query_arg( 'om_hint_view', 'shop', $url ), array( 'Reply-To: ' . $safe( $from_name ) . ' <' . $from_email . '>' ) );
+		OM_Mail_Watch::about( 0 );
 
 		do_action(
 			'om_lead',

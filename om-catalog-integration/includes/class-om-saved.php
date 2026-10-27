@@ -293,7 +293,9 @@ class OM_Saved {
 				OM_Stats::add( 'inquiry_subject', __( 'Saved designs', 'om-catalog' ) );
 			}
 		}
+		OM_Mail_Watch::about( $post_id && ! is_wp_error( $post_id ) ? (int) $post_id : 0 );
 		OM_Emails::send( 'saved_shop', $store, $vars, self::email_grid( $items ), $reopen, array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $name ) . ' <' . $email . '>' ) );
+		OM_Mail_Watch::about( 0 );
 		do_action(
 			'om_lead',
 			array(

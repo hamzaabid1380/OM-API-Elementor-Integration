@@ -997,10 +997,27 @@
 		}
 
 		var data = new FormData(form);
+		var retried = false;
 		$btn.prop('disabled', true).addClass('is-busy');
 		$status.prop('hidden', true).removeClass('is-success is-error');
 
-		$.ajax({ url: cfg.ajaxUrl, method: 'POST', data: data, processData: false, contentType: false })
+		// A page kept in a cache while the site's keys changed carries a stamp
+		// the site can't check: it answers with a fresh one, and the form sends
+		// again by itself, once.
+		var send = function () {
+			return $.ajax({ url: cfg.ajaxUrl, method: 'POST', data: data, processData: false, contentType: false }).then(function (response) {
+				var d = response && !response.success && response.data;
+				if (!retried && d && d.code === 'stale' && d.stamp && data.set) {
+					retried = true;
+					$form.find('[name="om_t"]').val(d.stamp);
+					data.set('om_t', d.stamp);
+					return send();
+				}
+				return response;
+			});
+		};
+
+		send()
 			.done(function (response) {
 				var ok = response && response.success;
 				$status.text((response && response.data && response.data.message) || (ok ? '' : t('error', 'Something went wrong. Please try again.')))

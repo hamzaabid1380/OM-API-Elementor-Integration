@@ -1339,20 +1339,41 @@ class OM_Ring_Builder {
 			'design'         => $title,
 		);
 		$sent = OM_Emails::send( 'design_customer', $email, $vars, '', $url, array( 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $site ) . ' <' . $store . '>' ) );
+		// Kept under Inquiries either way, so the shop can follow up even when
+		// that email didn't go, and it never lives only in an email.
+		$post_id = wp_insert_post(
+			array(
+				'post_type'    => OM_Inquiry::POST_TYPE,
+				'post_status'  => 'private',
+				/* translators: %s: email address. */
+				'post_title'   => $sent ? sprintf( __( 'Ring design emailed to %s', 'om-catalog' ), $email ) : sprintf( __( 'Ring design for %s (the email to them didn\'t send)', 'om-catalog' ), $email ),
+				'post_content' => __( 'Design', 'om-catalog' ) . ': ' . $title . "\n" . __( 'Link', 'om-catalog' ) . ': ' . $url . "\n" . __( 'Email', 'om-catalog' ) . ': ' . $email . "\n",
+			)
+		);
+		$post_id = $post_id && ! is_wp_error( $post_id ) ? (int) $post_id : 0;
+		if ( $post_id ) {
+			update_post_meta( $post_id, '_om_email', $email );
+			update_post_meta( $post_id, '_om_subject', __( 'Ring design', 'om-catalog' ) );
+			update_post_meta( $post_id, '_om_title', $title );
+			update_post_meta( $post_id, '_om_link', $url );
+		}
 		if ( ! $sent ) {
 			wp_send_json_error( array( 'message' => __( 'The email could not be sent. Please try again.', 'om-catalog' ) ) );
 		}
 		// The store's copy: someone kept this design.
+		OM_Mail_Watch::about( $post_id );
 		OM_Emails::send( 'design_shop', $store, $vars, '', $url, array( 'Reply-To: ' . $email ) );
+		OM_Mail_Watch::about( 0 );
 		self::schedule_followup( $email, $url, $title );
 		do_action(
 			'om_lead',
 			array(
-				'event'   => 'design',
-				'email'   => $email,
-				'subject' => __( 'Ring design', 'om-catalog' ),
-				'piece'   => $title,
-				'page'    => $url,
+				'event'      => 'design',
+				'email'      => $email,
+				'subject'    => __( 'Ring design', 'om-catalog' ),
+				'piece'      => $title,
+				'page'       => $url,
+				'inquiry_id' => $post_id,
 			)
 		);
 		wp_send_json_success( array( 'message' => $ok ) );

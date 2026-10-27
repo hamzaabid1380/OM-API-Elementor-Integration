@@ -1,8 +1,9 @@
 <?php
 /**
  * Visit requests and newsletter sign-ups from the kit's forms.
- * Each one is emailed to the shop and, when the OM Catalog plugin is active, handed to its
- * lead sending (GoHighLevel / webhook) through the om_lead action.
+ * Each one is kept where the shop can find it (with the OM Catalog plugin: under Inquiries in wp-admin,
+ * through the wk_save_request filter), emailed to the shop and, when the OM Catalog plugin is active,
+ * handed to its lead sending (GoHighLevel / webhook) through the om_lead action.
  *
  * @package WulfKit
  */
@@ -12,16 +13,26 @@ defined( 'ABSPATH' ) || exit;
 class WK_Booking {
 
 	public static function init() {
-		foreach ( array( 'wk_book', 'wk_news', 'wk_quiz' ) as $a ) {
+		foreach ( array( 'wk_book', 'wk_news', 'wk_quiz', 'wk_token' ) as $a ) {
 			add_action( 'wp_ajax_' . $a, array( __CLASS__, $a ) );
 			add_action( 'wp_ajax_nopriv_' . $a, array( __CLASS__, $a ) );
 		}
 	}
 
+	/**
+	 * A fresh form token. A page kept in a cache (by the host or a cache plugin) for longer than a day
+	 * carries one that has expired; the form asks here for a new one and sends again. Never cached.
+	 */
+	public static function wk_token() {
+		nocache_headers();
+		wp_send_json_success( array( 'nonce' => wp_create_nonce( 'wk_front' ) ) );
+	}
+
 	/** Basic guard: nonce, honeypot, a few requests per minute per visitor. */
 	private static function guard() {
 		if ( ! check_ajax_referer( 'wk_front', 'nonce', false ) ) {
-			wp_send_json_error( array( 'msg' => __( 'Please refresh the page and try again.', 'wulf-kit' ) ), 403 );
+			// "token": the form gets a fresh one (wk_token) and sends again by itself.
+			wp_send_json_error( array( 'msg' => __( 'Please refresh the page and try again.', 'wulf-kit' ), 'code' => 'token' ), 403 );
 		}
 		if ( ! empty( $_POST['website'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			wp_send_json_success( array( 'ok' => 1 ) );
@@ -42,6 +53,41 @@ class WK_Booking {
 	private static function shop_email() {
 		$e = WK_Settings::get( 'email' );
 		return is_email( $e ) ? $e : get_option( 'admin_email' );
+	}
+
+	/**
+	 * Keeps a request where the shop can find it, so it never lives only in an email: the OM Catalog
+	 * plugin saves it under Inquiries in wp-admin. Returns its ID, or 0 when nothing kept it.
+	 */
+	private static function keep( $kind, $subject, $rows, $who ) {
+		/**
+		 * Saves a request from the kit's forms (the OM Catalog plugin keeps it under Inquiries).
+		 *
+		 * @param int    $id      0, or what an earlier callback saved.
+		 * @param string $kind    booking, quiz or newsletter.
+		 * @param string $subject The shop's email subject, e.g. "Visit request from Emma Collins".
+		 * @param array  $rows    The details: label => value.
+		 * @param array  $who     name, email, phone, piece (what they looked at or saved) and page.
+		 */
+		return (int) apply_filters( 'wk_save_request', 0, $kind, $subject, $rows, $who );
+	}
+
+	/** Tells whoever kept the request whether the shop's email went (OM Catalog marks it "Not emailed"). */
+	private static function mailed( $id, $sent ) {
+		/**
+		 * After the shop's email about a request.
+		 *
+		 * @param int  $id   What wk_save_request returned (0: not kept).
+		 * @param bool $sent Whether WordPress could send the email.
+		 */
+		do_action( 'wk_request_mailed', (int) $id, (bool) $sent );
+	}
+
+	/** When a request was neither kept nor emailed: say so, and how to reach the shop instead. */
+	private static function not_sent() {
+		$phone = trim( (string) WK_Settings::get( 'phone' ) );
+		/* translators: %s: phone number */
+		return '' !== $phone ? sprintf( __( 'Sorry, that didn\'t go through. Please call us at %s.', 'wulf-kit' ), $phone ) : __( 'Sorry, that didn\'t go through. Please call us instead.', 'wulf-kit' );
 	}
 
 	public static function wk_book() {
@@ -81,7 +127,13 @@ class WK_Booking {
 		);
 		/* translators: %s: visitor name */
 		$subject = sprintf( __( 'Visit request from %s', 'wulf-kit' ), $d['name'] );
-		self::mail( $subject, $rows, $d['email'], $d['name'] );
+		$piece   = implode( '; ', array_filter( array_merge( array( $d['piece'] ), $d['tray'] ) ) );
+		$id      = self::keep( 'booking', $subject, $rows, array( 'name' => $d['name'], 'email' => $d['email'], 'phone' => $d['phone'], 'piece' => $piece, 'page' => $d['page'] ) );
+		$sent    = self::mail( $subject, $rows, $d['email'], $d['name'] );
+		self::mailed( $id, $sent );
+		if ( ! $id && ! $sent ) {
+			wp_send_json_error( array( 'msg' => self::not_sent() ), 500 );
+		}
 
 		// To the CRM: their own note as the message, the rest as fields (the piece and page have their own).
 		$fields = array();
@@ -97,11 +149,12 @@ class WK_Booking {
 			'phone'   => $d['phone'],
 			'subject' => __( 'Visit request', 'wulf-kit' ),
 			'message' => $d['note'],
-			'piece'   => implode( '; ', array_filter( array_merge( array( $d['piece'] ), $d['tray'] ) ) ),
+			'piece'   => $piece,
 			'page'    => $d['page'],
 			'fields'  => $fields,
 			'kind'    => 'booking',
 		) );
+		$d['inquiry_id'] = $id;
 		do_action( 'wk_booking', $d );
 		wp_send_json_success( array( 'ok' => 1 ) );
 	}
@@ -182,7 +235,7 @@ class WK_Booking {
 		$sent    = wp_mail( $email, $subject, self::quiz_mail( $rings, $answers, $book, $shop ), array( 'Content-Type: text/html; charset=UTF-8', 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $shop ) . ' <' . self::shop_email() . '>' ) );
 		set_transient( $rk, $rn + 1, DAY_IN_SECONDS );
 
-		// To the shop: who asked and what they chose.
+		// To the shop: who asked and what they chose, kept under Inquiries first.
 		$list = implode( '; ', array_map( static function ( $r ) { return $r['n'] . ( $r['id'] ? ' (style ' . $r['id'] . ', ' . $r['m'] . ')' : '' ); }, $rings ) );
 		$rows = array( __( 'Email', 'wulf-kit' ) => $email );
 		foreach ( $answers as $k => $v ) {
@@ -191,7 +244,9 @@ class WK_Booking {
 		$rows[ __( 'Their matches', 'wulf-kit' ) ] = $list;
 		$rows[ __( 'Page', 'wulf-kit' ) ]          = $page;
 		/* translators: %s: visitor email */
-		self::mail( sprintf( __( 'Ring style quiz: matches sent to %s', 'wulf-kit' ), $email ), $rows, $email, '' );
+		$shop_subject = $sent ? sprintf( __( 'Ring style quiz: matches sent to %s', 'wulf-kit' ), $email ) : sprintf( __( 'Ring style quiz: %s (their matches didn\'t send)', 'wulf-kit' ), $email );
+		$id           = self::keep( 'quiz', $shop_subject, $rows, array( 'email' => $email, 'piece' => $list, 'page' => $page ) );
+		self::mailed( $id, self::mail( $shop_subject, $rows, $email, '' ) );
 		self::to_crm( array(
 			'event'   => 'inquiry',
 			'name'    => '',
@@ -203,7 +258,7 @@ class WK_Booking {
 			'fields'  => $answers,
 			'kind'    => 'quiz',
 		) );
-		do_action( 'wk_quiz', array( 'email' => $email, 'answers' => $answers, 'rings' => $rings, 'page' => $page ) );
+		do_action( 'wk_quiz', array( 'email' => $email, 'answers' => $answers, 'rings' => $rings, 'page' => $page, 'inquiry_id' => $id ) );
 		if ( ! $sent ) {
 			wp_send_json_error( array( 'msg' => __( 'Sorry, that email didn\'t send. Please call us instead.', 'wulf-kit' ) ), 500 );
 		}
@@ -274,12 +329,21 @@ class WK_Booking {
 		if ( ! is_email( $email ) ) {
 			wp_send_json_error( array( 'msg' => __( 'Please enter a valid email address.', 'wulf-kit' ) ), 400 );
 		}
-		self::mail( __( 'New newsletter sign-up', 'wulf-kit' ), array( __( 'Email', 'wulf-kit' ) => $email, __( 'Page', 'wulf-kit' ) => esc_url_raw( self::post( 'page' ) ) ), $email, '' );
-		self::to_crm( array( 'event' => 'inquiry', 'name' => '', 'email' => $email, 'phone' => '', 'subject' => __( 'Newsletter sign-up', 'wulf-kit' ), 'message' => __( 'Signed up for the newsletter.', 'wulf-kit' ), 'page' => esc_url_raw( self::post( 'page' ) ), 'kind' => 'newsletter' ) );
-		do_action( 'wk_newsletter', $email );
+		$page    = esc_url_raw( self::post( 'page' ) );
+		$rows    = array( __( 'Email', 'wulf-kit' ) => $email, __( 'Page', 'wulf-kit' ) => $page );
+		$subject = __( 'New newsletter sign-up', 'wulf-kit' );
+		$id      = self::keep( 'newsletter', $subject, $rows, array( 'email' => $email, 'page' => $page ) );
+		$sent    = self::mail( $subject, $rows, $email, '' );
+		self::mailed( $id, $sent );
+		if ( ! $id && ! $sent ) {
+			wp_send_json_error( array( 'msg' => __( 'Sorry, that didn\'t go through. Please try again later.', 'wulf-kit' ) ), 500 );
+		}
+		self::to_crm( array( 'event' => 'inquiry', 'name' => '', 'email' => $email, 'phone' => '', 'subject' => __( 'Newsletter sign-up', 'wulf-kit' ), 'message' => __( 'Signed up for the newsletter.', 'wulf-kit' ), 'page' => $page, 'kind' => 'newsletter' ) );
+		do_action( 'wk_newsletter', $email, $id );
 		wp_send_json_success( array( 'ok' => 1 ) );
 	}
 
+	/** The shop's email about a request; true when WordPress could send it. */
 	private static function mail( $subject, $rows, $reply_email, $reply_name ) {
 		$html = '<table cellpadding="6" style="border-collapse:collapse;font:15px/1.5 Arial,sans-serif">';
 		foreach ( $rows as $k => $v ) {
@@ -302,7 +366,7 @@ class WK_Booking {
 		if ( is_email( $reply_email ) ) {
 			$headers[] = 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $reply_name ) . ' <' . $reply_email . '>';
 		}
-		wp_mail( self::shop_email(), '[' . wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) . '] ' . $subject, $html, $headers );
+		return wp_mail( self::shop_email(), '[' . wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) . '] ' . $subject, $html, $headers );
 	}
 
 	private static function to_crm( $lead ) {

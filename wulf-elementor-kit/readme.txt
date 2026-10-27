@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.28.0
+Stable tag: 1.29.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -544,7 +544,31 @@ The "Book a visit" form and the footer sign-up email you (Wulf Kit > Settings > 
 go to"; empty uses the site admin email). If the OM Catalog plugin is active and "Send to your CRM"
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
+Never only an email (1.29): with the OM Catalog plugin (1.49 or later) every visit request, quiz
+"email me my matches" and newsletter sign-up is first kept under Inquiries in wp-admin, with the
+visit behind it, and then emailed. If the email fails, the request is still there, marked "Not
+emailed", and OM Catalog shows admins a notice. Without OM Catalog, a request whose email fails
+tells the visitor so and gives the phone number, instead of saying it was sent.
+
+Cached pages (1.29): the forms carry a WordPress security token that lasts about a day. When a host
+or cache plugin keeps a page longer, the form now gets a fresh token and sends again by itself; the
+visitor never sees "Please refresh the page and try again". No cache settings are needed for it.
+
+For developers: the wk_save_request filter (0, kind, subject, rows, who) returns the ID of the
+saved request, and wk_request_mailed (ID, sent) runs after the shop's email. wk_booking and wk_quiz
+carry inquiry_id, and wk_newsletter passes it as a second argument.
+
 == Changelog ==
+
+= 1.29.0 =
+* Forms keep working on cached pages: when a page was kept in a cache longer than its security
+  token lasts (about a day), the visit request, quiz and newsletter forms get a fresh token and send
+  again by themselves, instead of asking the visitor to refresh the page (and losing the request).
+* Visit requests, quiz matches and newsletter sign-ups are kept under Inquiries in wp-admin before
+  they're emailed (needs OM Catalog 1.49), so a failed email no longer loses a lead.
+* Honest answers: a request that was neither kept nor emailed tells the visitor and gives the shop's
+  phone number, instead of "sent". The quiz's email to the shop says when the visitor's own matches
+  didn't send.
 
 = 1.28.0 =
 * Spotlight look has two more choices: Original gold spotlight (the first spotlight, exactly as in

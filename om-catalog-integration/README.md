@@ -817,6 +817,31 @@ inquiry is emailed to the address in **Settings > OM Catalog > Inquiries**
 with the piece, chosen options, price shown and page link. Spam is filtered
 with a hidden field, a minimum fill time and a per-visitor hourly limit.
 
+**Never only an email (1.49).** Everything people send from the site is kept
+under **Inquiries** before it's emailed: catalog inquiries, hints, saved
+lists, ring designs from "Email it to me" (kept even when the email to the
+visitor fails, so you can follow up), and, with the Wulf Elementor Kit 1.29,
+its visit requests, ring style quiz matches and newsletter sign-ups, each
+with **Their visit**. An inquiry whose email to the shop didn't go is marked
+**Not emailed** in the list, with the reason when you open it.
+
+**Cached pages (1.49).** The form needs no security token, and its signed
+time stamp no longer expires, so a page a cache keeps for weeks still sends.
+If the site's security keys change while a page sits in a cache, the form
+gets a fresh stamp and sends again by itself (it used to drop the inquiry
+while telling the visitor it was sent).
+
+**When emails fail (1.49).** When WordPress can't send an email (no mail
+server on the host, a wrong SMTP password), admins see a notice in wp-admin:
+how many failed in the last 7 days, the last one and why, and buttons for
+**See inquiries**, **Send a test email** (to the inquiry address) and
+**Dismiss** (it comes back with the next failure). Once an email goes again
+it reads "may be fixed". The usual fix is an SMTP plugin, such as WP Mail
+SMTP, connected to the shop's Google or Microsoft email account. Only
+failures WordPress itself sees are counted: an email the host accepts and
+then drops, or one that lands in spam, looks sent from here, so send a test
+after any change.
+
 **Edit the fields** under **Settings > OM Catalog > Inquiry form fields**:
 add, remove and reorder fields (text, email, phone, paragraph, dropdown,
 radio buttons, checkboxes, single checkbox, date, number), each with its own
@@ -1490,6 +1515,22 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.49.0
+- **Never only an email.** With the Wulf Elementor Kit 1.29, its visit
+  requests, quiz matches and newsletter sign-ups are kept under Inquiries
+  (with Their visit and an "Open the inquiry" link in Insights) before
+  they're emailed. Ring designs from "Email it to me" are kept too, even
+  when the email to the visitor fails.
+- **Not emailed.** An inquiry, hint, saved list, ring design or kit request
+  whose email to the shop failed is marked in the Inquiries list and on
+  its screen, with the reason.
+- **Email failure notice** for admins: how many emails failed in the last 7
+  days, the last error, Send a test email, See inquiries and Dismiss.
+- **Inquiry form on cached pages:** its time stamp no longer expires after
+  2 days, and a stamp the site can't check any more (its keys changed)
+  gets a fresh one and the form sends again by itself. Before, that
+  inquiry was dropped while the visitor saw "Thank you".
 
 ### 1.48.0
 - **Insights: calls and texts in Results.** A new tile in the Results band

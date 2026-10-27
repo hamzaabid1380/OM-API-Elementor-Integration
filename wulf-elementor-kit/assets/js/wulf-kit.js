@@ -393,6 +393,25 @@
 		clearTimeout(toastT); toastT = setTimeout(function () { toastEl.hidden = true; }, 3200);
 	}
 
+	/* Sends one of the kit's forms; resolves with the server's answer (null if it wasn't one). A page kept in
+	   a cache longer than its security token lasts (a day) sends an expired one: the server says so, and the
+	   form gets a fresh token and sends again, once, so the visitor never sees "refresh the page". */
+	function sendForm(fd) {
+		var post = function (body) {
+			return fetch(CFG.ajax, { method: 'POST', body: body, credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.json().catch(function () { return null; }); });
+		};
+		return post(fd).then(function (res) {
+			if (!res || res.success || !res.data || res.data.code !== 'token') return res;
+			var t = new FormData();
+			t.append('action', 'wk_token');
+			return post(t).then(function (tk) {
+				if (!tk || !tk.success || !tk.data || !tk.data.nonce) return res;
+				CFG.nonce = tk.data.nonce; fd.set('nonce', tk.data.nonce);
+				return post(fd);
+			}, function () { return res; });
+		});
+	}
+
 	/* ================= Saved pieces ================= */
 	/* With the OM Catalog plugin's "Saved designs" on, every heart here saves into its list: one list for
 	   the whole site (catalog pages too), opened in its Saved panel. Otherwise the kit keeps its own tray. */
@@ -732,7 +751,7 @@
 		fd.append('piece', bkPiece()); fd.append('source', bkS.source || ''); fd.append('answers', bkS.answers || '');
 		topics.forEach(function (t) { fd.append('topics[]', t); });
 		trayList().forEach(function (t) { fd.append('tray[]', t.name + (t.sub ? ' (' + t.sub + ')' : '')); });
-		fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (res) {
+		sendForm(fd).then(function (res) {
 			if (!res || !res.success) throw new Error((res && res.data && res.data.msg) || '');
 			var lead = { form_type: 'booking', cta_location: bkS.source || 'page', topic: topics.join(', ') };
 			track('generate_lead', lead, ['track', 'Lead']);
@@ -1566,7 +1585,7 @@
 			fd.append('pref', prefV); fd.append('page', location.href);
 			topics.forEach(function (t) { fd.append('topics[]', t); });
 			trayList().forEach(function (t) { fd.append('tray[]', t.name + (t.sub ? ' (' + t.sub + ')' : '')); });
-			fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (res) {
+			sendForm(fd).then(function (res) {
 				if (!res || !res.success) throw new Error((res && res.data && res.data.msg) || '');
 				var first = name.value.trim().split(' ')[0];
 				var msg = String(c.done || '').replace('{name}', esc(first)).replace('{day}', '<b>' + esc(form.elements.day.value) + '</b>').replace('{time}', esc(form.elements.time.value.toLowerCase())).replace('{pref}', esc(prefV.toLowerCase()));
@@ -1800,7 +1819,7 @@
 			fd.append('doc', doc ? doc.getAttribute('data-elementor-id') : ''); fd.append('wid', c.uid || ''); fd.append('page', location.href);
 			ORDER.forEach(function (k) { fd.append(k, A[k] === null ? '' : A[k]); });
 			matches.forEach(function (x) { fd.append('picks[]', x.i); });
-			fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (rs) {
+			sendForm(fd).then(function (rs) {
 				if (!rs || !rs.success) throw new Error((rs && rs.data && rs.data.msg) || '');
 				track('generate_lead', { form_type: 'quiz_email', cta_location: 'quiz' }, ['track', 'Lead']);
 				mf.hidden = true; if (mOpen) mOpen.hidden = true;
@@ -1851,7 +1870,7 @@
 			b.disabled = true;
 			var fd = new FormData();
 			fd.append('action', 'wk_news'); fd.append('nonce', CFG.nonce || ''); fd.append('email', i.value); fd.append('page', location.href); fd.append('website', f.elements.website ? f.elements.website.value : '');
-			fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (res) {
+			sendForm(fd).then(function (res) {
 				if (!res || !res.success) throw new Error((res && res.data && res.data.msg) || '');
 				b.textContent = T.subscribed || 'Subscribed';
 			}).catch(function (er) { b.disabled = false; toast((er && er.message) || T.error || 'Sorry, that didn\'t send.'); });

@@ -15,7 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Spam protection needs no nonce (which would break on cached pages): a
  * hidden honeypot field, a minimum fill time checked against a signed
- * timestamp, and a per-visitor rate limit.
+ * timestamp, and a per-visitor rate limit. The timestamp never expires, so
+ * a page kept in a cache for weeks still sends; one signed with keys the
+ * site no longer has (they were changed) gets a fresh one and the form
+ * sends again by itself.
+ *
+ * The Wulf kit's visit requests, quiz matches and newsletter sign-ups are
+ * kept here too (the wk_save_request filter), so none lives only in email.
  */
 class OM_Inquiry {
 
@@ -35,6 +41,7 @@ class OM_Inquiry {
 
 	private function __construct() {
 		add_action( 'init', array( $this, 'register_post_type' ) );
+		add_filter( 'wk_save_request', array( __CLASS__, 'save_request' ), 10, 5 );
 		add_action( 'wp_ajax_om_inquiry', array( $this, 'handle_submit' ) );
 		add_action( 'wp_ajax_nopriv_om_inquiry', array( $this, 'handle_submit' ) );
 		// Without JavaScript the form posts here and redirects back.
@@ -79,6 +86,11 @@ class OM_Inquiry {
 	public function admin_column( $column, $post_id ) {
 		if ( 'om_contact' === $column ) {
 			echo esc_html( trim( get_post_meta( $post_id, '_om_email', true ) . ' ' . get_post_meta( $post_id, '_om_phone', true ) ) );
+			$why = (string) get_post_meta( $post_id, OM_Mail_Watch::META, true );
+			if ( '' !== $why ) {
+				/* translators: %s: why the email didn't go. */
+				echo '<br /><span style="display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;background:#fcf0f1;color:#8a2424;font-size:12px" title="' . esc_attr( sprintf( __( 'The email to the shop didn\'t send: %s', 'om-catalog' ), $why ) ) . '">' . esc_html__( 'Not emailed', 'om-catalog' ) . '</span>';
+			}
 		} elseif ( 'om_product' === $column ) {
 			$url   = get_post_meta( $post_id, '_om_link', true );
 			$url   = $url ? $url : get_post_meta( $post_id, '_om_url', true );
@@ -100,9 +112,70 @@ class OM_Inquiry {
 		}
 	}
 
+	/**
+	 * A request from the Wulf kit's forms (visit requests, quiz matches, newsletter sign-ups),
+	 * kept here like the catalog's own inquiries, so it never lives only in an email.
+	 *
+	 * @param int    $id      0, or what an earlier callback saved.
+	 * @param string $kind    booking, quiz or newsletter.
+	 * @param string $subject The shop's email subject, e.g. "Visit request from Emma Collins".
+	 * @param array  $rows    The details: label => value.
+	 * @param array  $who     name, email, phone, piece and page.
+	 * @return int The inquiry's ID (0 if it couldn't be saved).
+	 */
+	public static function save_request( $id, $kind, $subject, $rows, $who = array() ) {
+		if ( $id ) {
+			return (int) $id;
+		}
+		$who   = (array) $who;
+		$email = sanitize_email( (string) ( $who['email'] ?? '' ) );
+		$piece = sanitize_text_field( (string) ( $who['piece'] ?? '' ) );
+		$kinds = array(
+			'booking'    => __( 'Visit request', 'om-catalog' ),
+			'quiz'       => __( 'Ring style quiz', 'om-catalog' ),
+			'newsletter' => __( 'Newsletter sign-up', 'om-catalog' ),
+		);
+		/* translators: %s: email address. */
+		$title = 'newsletter' === $kind && '' !== $email ? sprintf( __( 'Newsletter sign-up: %s', 'om-catalog' ), $email ) : (string) $subject;
+		$body  = '';
+		foreach ( (array) $rows as $label => $value ) {
+			$value = trim( sanitize_textarea_field( (string) $value ) );
+			if ( '' !== $value ) {
+				$body .= false !== strpos( $value, "\n" ) ? $label . ":\n" . $value . "\n" : $label . ': ' . $value . "\n";
+			}
+		}
+		$post_id = wp_insert_post(
+			array(
+				'post_type'    => self::POST_TYPE,
+				'post_status'  => 'private',
+				'post_title'   => sanitize_text_field( '' !== trim( $title ) ? $title : ( $kinds[ $kind ] ?? __( 'Website request', 'om-catalog' ) ) ),
+				'post_content' => $body,
+			)
+		);
+		if ( ! $post_id || is_wp_error( $post_id ) ) {
+			return 0;
+		}
+		$phone = sanitize_text_field( (string) ( $who['phone'] ?? '' ) );
+		if ( '' !== $email ) {
+			update_post_meta( $post_id, '_om_email', $email );
+		}
+		if ( '' !== $phone ) {
+			update_post_meta( $post_id, '_om_phone', $phone );
+		}
+		update_post_meta( $post_id, '_om_subject', $kinds[ $kind ] ?? __( 'Website request', 'om-catalog' ) );
+		update_post_meta( $post_id, '_om_kind', sanitize_key( (string) $kind ) );
+		if ( '' !== $piece ) {
+			update_post_meta( $post_id, '_om_title', $piece );
+			update_post_meta( $post_id, '_om_link', esc_url_raw( (string) ( $who['page'] ?? '' ) ) );
+		}
+		// The kit's email to the shop comes next: if it fails, this inquiry is marked "Not emailed".
+		OM_Mail_Watch::about( $post_id );
+		return (int) $post_id;
+	}
+
 	/** A timestamp the form carries, signed so it can't be faked. */
-	private static function stamp() {
-		$t = (string) time();
+	private static function stamp( $time = 0 ) {
+		$t = (string) ( $time ? (int) $time : time() );
 		return $t . '.' . substr( hash_hmac( 'sha256', $t, wp_salt( 'nonce' ) . '|om_inquiry' ), 0, 16 );
 	}
 
@@ -508,9 +581,9 @@ class OM_Inquiry {
 		return '' !== $custom ? $custom : __( 'Thank you! Your inquiry has been sent. We will be in touch soon.', 'om-catalog' );
 	}
 
-	private function fail( $message, $ajax ) {
+	private function fail( $message, $ajax, $extra = array() ) {
 		if ( $ajax ) {
-			wp_send_json_error( array( 'message' => $message ) );
+			wp_send_json_error( array_merge( array( 'message' => $message ), $extra ) );
 		}
 		wp_die( esc_html( $message ), esc_html__( 'Inquiry not sent', 'om-catalog' ), array( 'response' => 400, 'back_link' => true ) );
 	}
@@ -526,14 +599,19 @@ class OM_Inquiry {
 			return $textarea ? sanitize_textarea_field( $value ) : sanitize_text_field( $value );
 		};
 
-		// Honeypot filled or submitted faster than a person could: quietly
-		// pretend success so bots learn nothing.
-		$age = self::stamp_age( $f( 'om_t' ) );
-		if ( '' !== $f( 'om_website' ) || $age < 3 ) {
+		// Honeypot filled, no stamp at all, or submitted faster than a person
+		// could: quietly pretend success so bots learn nothing.
+		$stamp = $f( 'om_t' );
+		$age   = self::stamp_age( $stamp );
+		if ( '' !== $f( 'om_website' ) || ! preg_match( '/^\d{9,11}\.[0-9a-f]{16}$/', $stamp ) || ( $age >= 0 && $age < 3 ) ) {
 			$this->done( $ajax, isset( $_POST['om_ctx_url'] ) && is_scalar( $_POST['om_ctx_url'] ) ? esc_url_raw( wp_unslash( $_POST['om_ctx_url'] ) ) : '' );
 		}
-		if ( $age > DAY_IN_SECONDS * 2 ) {
-			$this->fail( __( 'This form has expired. Please reload the page and try again.', 'om-catalog' ), $ajax );
+		// A stamp signed with keys the site no longer has (they were changed
+		// while the page sat in a cache): the form gets a fresh one, a little
+		// in the past so it isn't "too fast", and sends again by itself.
+		// An old stamp is fine: a page can sit in a cache for weeks.
+		if ( $age < 0 ) {
+			$this->fail( __( 'This form has expired. Please reload the page and try again.', 'om-catalog' ), $ajax, array( 'code' => 'stale', 'stamp' => self::stamp( time() - 5 ) ) );
 		}
 
 		// Which fields this form had: its own signed list, or the site-wide one.
@@ -798,8 +876,10 @@ class OM_Inquiry {
 			$headers[] = 'Reply-To: ' . str_replace( array( "\r", "\n", '<', '>', ',', '"' ), '', $data['name'] ) . ' <' . $data['email'] . '>';
 		}
 		$vars = self::email_vars( $data, $subject );
-		// To the shop (Settings › Emails › New inquiry).
+		// To the shop (Settings › Emails › New inquiry); marked "Not emailed" if it fails.
+		OM_Mail_Watch::about( $post_id && ! is_wp_error( $post_id ) ? (int) $post_id : 0 );
 		OM_Emails::send( 'inquiry_shop', OM_Emails::shop_address(), $vars, self::email_details( $data, $values, false ), (string) $data['link'], $headers );
+		OM_Mail_Watch::about( 0 );
 		// The customer's confirmation, when switched on.
 		if ( is_email( $data['email'] ) ) {
 			OM_Emails::send( 'inquiry_customer', $data['email'], $vars, self::email_details( $data, array(), true ), (string) $data['link'], array( 'Reply-To: ' . OM_Emails::shop_address() ) );
