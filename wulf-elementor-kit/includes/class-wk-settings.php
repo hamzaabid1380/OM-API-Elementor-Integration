@@ -60,7 +60,8 @@ class WK_Settings {
 			'look'          => 'night',
 			'corners'       => 'auto',
 			'mark'          => 'WULF ◆ 1971',
-			// The spotlight on page banners: where (shop pages, every banner, off) and how (dark showroom, warm light).
+			// The spotlight on page banners: where (shop pages, every banner, off) and how (dark showroom, warm light, the
+			// original gold spotlight of 1.26, or none).
 			'spot_where'    => 'shop',
 			'spot_look'     => 'dark',
 			'turn_speed'    => '0.6',
@@ -303,7 +304,7 @@ class WK_Settings {
 			} elseif ( 'spot_where' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( 'shop', 'all', 'off' ), true ) ? (string) $val : $v;
 			} elseif ( 'spot_look' === $k ) {
-				$out[ $k ] = in_array( (string) $val, array( 'dark', 'light' ), true ) ? (string) $val : $v;
+				$out[ $k ] = in_array( (string) $val, array( 'dark', 'light', 'orig', 'none' ), true ) ? (string) $val : $v;
 			} elseif ( 'book_style' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( 'popup', 'drawer' ), true ) ? (string) $val : $v;
 			} elseif ( 'g_rating' === $k ) {
@@ -472,8 +473,8 @@ class WK_Settings {
 					self::field( 'calm_all', __( 'Calmer look everywhere', 'wulf-kit' ), 'check', __( 'Use the quieter style of "Home (simpler)" on every page: fewer boxes and small labels, gold italics only in the hero, slightly larger text.', 'wulf-kit' ) );
 					self::field( 'look', __( 'Look', 'wulf-kit' ), 'select', __( 'Daylight: warm paper and white instead of the dark header, hero and footer, ink buttons, gold kept for small accents, a hallmark stamp in the hero and a fine line in white, yellow and rose gold under the big headlines. One page can choose its own look in Elementor (Page settings › Wulf look); "Home (daylight)" in the page library uses Daylight. To switch the whole site with its homepage in one go, use Wulf Kit › Design sets.', 'wulf-kit' ), array( 'night' => __( 'Night (dark header, hero and footer)', 'wulf-kit' ), 'day' => __( 'Daylight', 'wulf-kit' ) ) );
 					self::field( 'corners', __( 'Corners', 'wulf-kit' ), 'select', __( 'The shape of buttons, cards, fields and frames. Cut corners are cut away like a step-cut diamond and go with the Daylight look (on Night pages they show square); dots, metal swatches and faces stay round either way. Automatic: rounded with the Night look, square with Daylight. Square and cut corners also reach the shop (OM Catalog): its buttons, fields and cards turn square, and with cut corners its product pictures and main buttons are cut too.', 'wulf-kit' ), array( 'auto' => __( 'Automatic', 'wulf-kit' ), 'round' => __( 'Rounded', 'wulf-kit' ), 'square' => __( 'Square', 'wulf-kit' ), 'cut' => __( 'Cut, like a step-cut diamond', 'wulf-kit' ) ) );
-					self::field( 'spot_where', __( 'Spotlight on page banners', 'wulf-kit' ), 'select', __( 'A warm light shining down from a lamp at the top of the page banners, onto the piece when there is one, with a few motes of dust drifting in it. Shop pages: pages that show the OM Catalog\'s catalog or video highlights, and the shop pages of the page library. A banner can choose its own in Elementor (Banner › Picture › Spotlight).', 'wulf-kit' ), array( 'shop' => __( 'Shop pages', 'wulf-kit' ), 'all' => __( 'Every page banner', 'wulf-kit' ), 'off' => __( 'Off', 'wulf-kit' ) ) );
-					self::field( 'spot_look', __( 'Spotlight look', 'wulf-kit' ), 'select', __( 'Dark showroom: the banner turns a warm near-black, with a gold main button, and the light shows best. Warm light: the same light on warm paper, keeping the banner light.', 'wulf-kit' ), array( 'dark' => __( 'Dark showroom', 'wulf-kit' ), 'light' => __( 'Warm light', 'wulf-kit' ) ) );
+					self::field( 'spot_where', __( 'Spotlight on page banners', 'wulf-kit' ), 'select', __( 'A warm light shining down from a lamp at the top of the page banners, onto the piece when there is one, with a few motes of dust drifting in it. Shop pages: pages that show the OM Catalog\'s catalog or video highlights, and the shop pages of the page library. None: plain banners, as before the spotlight. A banner can choose its own in Elementor (Banner › Picture › Spotlight).', 'wulf-kit' ), array( 'shop' => __( 'Shop pages', 'wulf-kit' ), 'all' => __( 'Every page banner', 'wulf-kit' ), 'off' => __( 'None', 'wulf-kit' ) ) );
+					self::field( 'spot_look', __( 'Spotlight look', 'wulf-kit' ), 'select', __( 'Dark showroom: the banner turns a warm near-black, with a gold main button, and the light shows best. Warm light: the same light on warm paper, keeping the banner light. Original gold spotlight: the first one, a bright cone with gold edges over warm paper (a gold beam on a dark banner), a pool of light at its foot and now and then a small glint. None: plain banners.', 'wulf-kit' ), array( 'dark' => __( 'Dark showroom', 'wulf-kit' ), 'light' => __( 'Warm light', 'wulf-kit' ), 'orig' => __( 'Original gold spotlight', 'wulf-kit' ), 'none' => __( 'None (plain banners)', 'wulf-kit' ) ) );
 					self::field( 'mark', __( 'Hallmark stamp', 'wulf-kit' ), 'text', __( 'The small stamp before the hero\'s label in the Daylight look, like the mark inside a ring. Leave empty for none.', 'wulf-kit' ) );
 					self::field( 'turn_speed', __( '360° videos turn', 'wulf-kit' ), 'speed', __( 'How fast the turning ring videos play everywhere on the site.', 'wulf-kit' ) );
 					self::field( 'radius', __( 'Corner radius (px)', 'wulf-kit' ), 'number' );

@@ -96,9 +96,10 @@ class WK_Pagehero_Widget extends WK_Widget {
 				'auto'  => __( 'As in Wulf Kit settings', 'wulf-kit' ),
 				'dark'  => __( 'Dark showroom', 'wulf-kit' ),
 				'light' => __( 'Warm light', 'wulf-kit' ),
-				'off'   => __( 'Off', 'wulf-kit' ),
+				'orig'  => __( 'Original gold spotlight', 'wulf-kit' ),
+				'off'   => __( 'None (plain banner)', 'wulf-kit' ),
 			),
-			'description' => __( 'A warm light shining down from a lamp at the top of the banner, onto the piece when there is one. Dark showroom: the banner turns a warm near-black and the light shows best. Warm light: the same light on warm paper. Wulf Kit › Settings › Spotlight chooses the look and where it shows (shop pages, every banner or none) for the whole site; this banner can choose its own.', 'wulf-kit' ),
+			'description' => __( 'A warm light shining down from a lamp at the top of the banner, onto the piece when there is one. Dark showroom: the banner turns a warm near-black and the light shows best. Warm light: the same light on warm paper. Original gold spotlight: the first one, a bright cone with gold edges and now and then a small glint. Wulf Kit › Settings › Spotlight chooses the look and where it shows (shop pages, every banner or none) for the whole site; this banner can choose its own.', 'wulf-kit' ),
 		) );
 		$this->end_controls_section();
 
@@ -186,19 +187,27 @@ class WK_Pagehero_Widget extends WK_Widget {
 		$spot = (string) ( $s['spot'] ?? 'auto' );
 		if ( 'auto' === $spot || 'on' === $spot ) {
 			$where = (string) WK_Settings::get( 'spot_where', 'shop' );
-			$here  = 'on' === $spot || ( empty( $s['sec_bg_background'] ) && ( 'all' === $where || ( 'shop' === $where && self::shop_here() ) ) );
-			$spot  = $here ? ( 'light' === WK_Settings::get( 'spot_look', 'dark' ) ? 'light' : 'dark' ) : 'off';
+			$look  = (string) WK_Settings::get( 'spot_look', 'dark' );
+			$here  = 'none' !== $look && ( 'on' === $spot || ( empty( $s['sec_bg_background'] ) && ( 'all' === $where || ( 'shop' === $where && self::shop_here() ) ) ) );
+			$spot  = $here ? ( in_array( $look, array( 'light', 'orig' ), true ) ? $look : 'dark' ) : 'off';
 		}
 		$room = 'dark' === $spot;
 		$dark  = $room || 'dark' === ( $s['tone'] ?? '' );
 		$class = $this->sec_class( $room ? array_merge( $s, array( 'tone' => 'white' ) ) : $s, 'pgh' );
 		// Its own class for each kind (the script that keeps text readable takes "dark" off while it measures):
-		// warm light on a light banner, gold light on a dark one, or the dark showroom.
-		$light = 'off' === $spot ? '' : ( $room ? 'spot-room' : ( in_array( 'dark', explode( ' ', $class ), true ) ? 'spot-night' : 'spot-light' ) );
+		// warm light on a light banner, gold light on a dark one, or the dark showroom; the original light has its own.
+		$night = in_array( 'dark', explode( ' ', $class ), true );
+		$light = 'off' === $spot ? '' : ( $room ? 'spot-room' : ( $night ? 'spot-night' : 'spot-light' ) );
+		if ( 'orig' === $spot ) {
+			$light = 'spot-orig ' . ( $night ? 'orig-night' : 'orig-light' );
+		}
 		$class .= ( $room ? ' dark' : '' ) . ( $light ? ' spot ' . $light : '' ) . ( $img ? ' has-media' : ' no-media' ) . ( ! $img && 'center' === $s['align'] ? ' center' : '' );
 		$this->open( $s );
 		echo '<section class="' . esc_attr( $class ) . '"' . $this->anchor_attr( $s ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		if ( 'off' !== $spot ) {
+		if ( 'orig' === $spot ) {
+			// The original light: a glow at the top, a bright cone with gold edges, a pool of light at its foot, glints.
+			echo '<span class="pgh-spot" aria-hidden="true"><span class="po-beam"></span><span class="po-pool"></span>' . str_repeat( '<i></i>', 5 ) . '</span>';
+		} elseif ( 'off' !== $spot ) {
 			// The light on the wall, the beam, the lamp, the dust in the beam, and a fine grain.
 			echo '<span class="pgh-spot" aria-hidden="true"><span class="ps-wall"></span><span class="ps-beam"></span><span class="ps-src"></span><span class="ps-dust">' . str_repeat( '<i></i>', 12 ) . '</span><span class="ps-grain"></span></span>';
 		}

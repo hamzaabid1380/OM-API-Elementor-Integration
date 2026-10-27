@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.27.1
+Stable tag: 1.28.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -284,13 +284,16 @@ turned off motion see the light without the dust.
 Choose it for the whole site in Wulf Kit > Settings > Brand colors and fonts:
 
 * Spotlight on page banners: Shop pages (pages that show the OM Catalog's catalog or video highlights,
-  and the shop pages of the page library), Every page banner, or Off.
+  and the shop pages of the page library), Every page banner, or None.
 * Spotlight look: Dark showroom (the banner turns a warm near-black with a gold main button, where the
-  light looks most natural) or Warm light (the same light on warm paper, keeping the banner light).
+  light looks most natural), Warm light (the same light on warm paper, keeping the banner light),
+  Original gold spotlight (the first spotlight, as in 1.26.0: a bright cone with gold edges over warm
+  paper, a gold beam on a dark banner, a pool of light at its foot and now and then a small glint), or
+  None (plain banners, as before the spotlight).
 
 One banner can choose its own in Elementor (Banner > Picture > Spotlight): As in Wulf Kit settings,
-Dark showroom, Warm light or Off. A banner given a background of its own (Style > Section) keeps the
-spotlight off unless it chooses one there.
+Dark showroom, Warm light, Original gold spotlight or None (plain banner). A banner given a background
+of its own (Style > Section) keeps the spotlight off unless it chooses one there.
 
 == Speed ==
 
@@ -542,6 +545,12 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.28.0 =
+* Spotlight look has two more choices: Original gold spotlight (the first spotlight, exactly as in
+  1.26.0) and None (plain banners). Wulf Kit > Settings > Brand colors and fonts > Spotlight look. One
+  banner can choose its own in Elementor (Banner > Picture > Spotlight), None included.
+* "Spotlight on page banners: Off" is now called None (it works the same).
 
 = 1.27.1 =
 * Header: a dark header with only a light logo picture no longer turns white while a menu is open,
