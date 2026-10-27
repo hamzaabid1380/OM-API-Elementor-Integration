@@ -1037,7 +1037,8 @@
 			var set = function (v, how) {
 				$$('.has-mega', el).forEach(function (o) { if (o !== li) { o.classList.remove('open'); o.querySelector('.nav-a').setAttribute('aria-expanded', 'false'); } });
 				li.classList.toggle('open', v); btn.setAttribute('aria-expanded', String(v)); by = v ? how : null;
-				hd.classList.toggle('mega-on', !!$('.has-mega.open', el));
+				// The bar turns white while a menu is open, except a header that stays dark (its logo is made for dark).
+				hd.classList.toggle('mega-on', c.mode !== 'dark' && !!$('.has-mega.open', el));
 			};
 			li.addEventListener('mouseenter', function () { if (!fine.matches) return; clearTimeout(tOut); var sw = !!$('.has-mega.open', el); tIn = setTimeout(function () { set(true, 'hover'); }, sw ? 0 : 120); });
 			li.addEventListener('mouseleave', function () { if (!fine.matches) return; clearTimeout(tIn); if (by === 'hover') tOut = setTimeout(function () { set(false); }, 250); });

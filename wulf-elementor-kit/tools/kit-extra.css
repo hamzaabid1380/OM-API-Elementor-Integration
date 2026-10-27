@@ -14,11 +14,17 @@
 /* Header search overlay. */
 .wk .hd > .wrap { position: relative; }
 .wk .hd-search { position: absolute; inset: 0 var(--gut); display: flex; align-items: center; gap: 10px; background: inherit; z-index: 3; }
-.wk .hd.searching .hd-search { background: var(--bg); }
+.wk:not(.hd-ink) .hd.searching .hd-search, .wk.hd-ink .hd.searching.solid .hd-search { background: var(--bg); }
 .wk .hd-search[hidden] { display: none; }
 .wk .hd-search input { flex: 1; height: 46px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); font: 500 16px/1 var(--sans); }
 .wk .hd-search input:focus { outline: none; border-color: var(--ink); }
-.wk .hd.searching { background: var(--bg); color: var(--ink); }
+.wk:not(.hd-ink) .hd.searching, .wk.hd-ink .hd.searching.solid { background: var(--bg); color: var(--ink); }
+/* A dark header stays dark while searching: the field covers the menu in the header's own colour, light on dark */
+.wk.hd-ink .hd.searching:not(.solid) > .wrap { background-color: inherit; }
+.wk.hd-ink .hd.searching:not(.solid) .hd-search input { border: 0; border-bottom: 1.5px solid rgba(255, 255, 255, .45); border-radius: 0; background-color: transparent; color: #fff; }
+.wk.hd-ink .hd.searching:not(.solid) .hd-search input:focus { border-bottom-color: var(--gold); }
+.wk.hd-ink .hd.searching:not(.solid) .hd-search input::placeholder { color: rgba(255, 255, 255, .62); }
+.wk.hd-ink .hd.searching:not(.solid) .hd-search .icon-btn { color: #fff; }
 .wk .hd .lg-solid { display: none; }
 .wk .hd.solid .lg-solid, .wk .hd.mega-on .lg-solid, .wk .hd.searching .lg-solid { display: block; }
 .wk .hd.solid .lg-solid + .lg-top, .wk .hd.solid .lg-top:has(+ .lg-solid), .wk .hd.mega-on .lg-top:has(+ .lg-solid) { display: none; }

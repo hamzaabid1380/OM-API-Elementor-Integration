@@ -347,9 +347,12 @@ class WK_Header_Widget extends WK_Widget {
 		$tel   = WK_Settings::tel();
 		$name  = WK_Settings::get( 'name' );
 		$coll  = max( 600, (int) $s['collapse'] );
-		// A dark bar (Look "Always dark", or a dark background chosen for it): the Daylight look keeps it dark.
-		$ink  = 'dark' === $s['mode'] || self::dark( self::color_value( $s, 'top_bg' ) );
-		// Dark at the top with only a light logo picture: it stays dark once scrolled, so the logo never sits on white.
+		// A dark bar (Look "Always dark", a dark background chosen for it, or the Night look's own dark top when
+		// none is chosen): the Daylight look keeps it dark.
+		$top  = self::color_value( $s, 'top_bg' );
+		$ink  = 'dark' === $s['mode'] || self::dark( $top ) || ( 'scroll' === $s['mode'] && '' === $top && ! WK_Plugin::is_day() );
+		// Dark at the top with only a light logo picture: it stays dark once scrolled and while a menu is open, so the
+		// logo never sits on white.
 		$mode = $ink && 'scroll' === $s['mode'] && 'image' === $s['logo_type'] && empty( $s['logo_img2']['url'] ) ? 'dark' : $s['mode'];
 		$this->open( $s, 'wk-hd-' . $s['mode'] . ( $ink ? ' hd-ink' : '' ), array( 'mode' => $mode, 'sticky' => 'yes' === $s['sticky'], 'collapse' => $coll, 'search' => $s['search_url'] ? $s['search_url'] : home_url( '/?s=' ) ) );
 

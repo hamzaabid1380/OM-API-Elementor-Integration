@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.27.0
+Stable tag: 1.27.1
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -93,6 +93,9 @@ Image), "Size the logo by" Height or Width, then set it for computers, and with 
 for tablets and phones. Phones keep a smaller header logo of their own (40px high, or 140px wide)
 until you change it there. A logo taller than the header bar makes the bar grow with it; the bar's
 own height is in Style > Header bar. The footer logo never gets wider than its column.
+A header that is dark at the top with only a light logo picture ("Logo for the dark header") stays
+dark once the page scrolls and while a menu is open, so the logo never sits on white. To have the bar
+turn white then, add a dark version of the logo in "Logo for the white header".
 
 The map in the Visit sections: Wulf Kit > Settings > "Map in the Visit sections" shows the live
 Google map (the real streets and places around the shop, with your pin; visitors can move and zoom
@@ -539,6 +542,14 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.27.1 =
+* Header: a dark header with only a light logo picture no longer turns white while a menu is open,
+  so the logo stays in sight; the menu's panel opens under the dark bar. To have the bar turn white
+  with the menu instead, add a dark logo in Header > Logo > "Logo for the white header".
+* Header: a dark header stays dark while searching, with a light search line over the menu.
+* Header, Night look: a header left on the Night look's own dark top counts as dark too, so with
+  only a light logo picture it stays dark once scrolled and while a menu is open.
 
 = 1.27.0 =
 * The spotlight looks like real light: a small lamp just under the header with a soft glow, a beam
