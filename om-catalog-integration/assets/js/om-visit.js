@@ -3,7 +3,7 @@
  * only. Page views, time on page (while the page is on screen and in use),
  * how far down people scroll, and what they do: the catalog's and the Wulf
  * Kit's own events (om:track / wk:track), options chosen on product pages,
- * filters, and calls, emails, directions and links to other sites.
+ * filters, and calls, texts, emails, directions and links to other sites.
  *
  * An anonymous random ID for the visit (cookie om_sid, 30 minutes) and one
  * for a returning visitor (om_vid), unless switched off. Nothing runs for
@@ -220,8 +220,10 @@
 		if (speed) { ev.l = speed.l; ev.n = speed.n; ev.c = speed.c; ev.b = speed.b; }
 		push(ev);
 	}
+	var pvAt = 0;
 	function pageview() {
 		report();
+		pvAt = Date.now();
 		PV = rid(8);
 		ticks = 0;
 		maxScroll = scrollPct();
@@ -268,6 +270,21 @@
 		lastInput = Date.now();
 	});
 	window.addEventListener('pagehide', function () { report(); flush(); });
+	// Back or Forward to a page the browser kept in memory: it doesn't load again, so its view is counted here
+	// (once, if the visibility change above has just counted it).
+	window.addEventListener('pageshow', function (e) {
+		if (!e.persisted || Date.now() - pvAt < 1000) { return; }
+		if (!cookie('om_sid') && sid) {
+			sid = rid(12);
+			newVisit = true;
+			ctxSent = false;
+			external = false;
+			PV = '';
+		}
+		keep();
+		lastInput = Date.now();
+		pageview();
+	});
 	// A form going out (inquiry, visit request, hint...): send what's waiting first,
 	// so the shop's email about it can tell the whole visit.
 	document.addEventListener('submit', function () { report(); flush(); }, true);
@@ -342,7 +359,16 @@
 		quiz_step: function (p) { return { t: 'quiz', l: 'step', v: parseInt(p.step, 10) || 0, m: short(p.question, 30) + ': ' + short(p.answer, 60) }; },
 		quiz_complete: function (p) { return { t: 'quiz', l: 'complete', m: [p.shape, p.style, p.metal, p.budget].join(' · ').slice(0, 150), i: '' }; },
 		quiz_email_open: function () { return { t: 'quiz', l: 'email_open' }; },
-		studio_open: function () { return { t: 'designer', l: 'open' }; }
+		studio_open: function () { return { t: 'designer', l: 'open' }; },
+		// The booking calendar (SimplyBook) showing, from the kit's booking window or a product page.
+		booking_calendar_view: function (p) { return { t: 'booking', l: 'calendar', m: p.cta_location || p.form_location || '' }; },
+		// The Wulf Kit's "Welcome back" bar (its buttons count as button clicks).
+		welcome_back: function (p) { return { t: 'welcome', l: 'shown', v: p.designs || 0 }; },
+		// The kit's brand films.
+		film_play: function (p) { return { t: 'film', l: 'play', m: short(p.film, 60) }; },
+		film_complete: function (p) { return { t: 'film', l: 'complete', m: short(p.film, 60) }; },
+		film_moment: function (p) { return { t: 'film', l: 'moment', m: short(p.moment, 60) }; },
+		film_chapter: function (p) { return { t: 'film', l: 'chapter', m: short(p.chapter, 60) }; }
 	};
 	function onEvent(e) {
 		var d = e && e.detail;
@@ -371,10 +397,20 @@
 		push({ t: 'option', p: path(), i: x && x.l && x.s ? x.l + '|' + String(x.s).toUpperCase() : '', l: el.name, m: short(el.value, 60) });
 	}, true);
 
-	// Calls, emails, directions and other sites.
+	// Calls, texts, emails, directions and other sites.
 	function where(el) {
 		var w = el.closest('[data-wk]');
 		if (w) { return w.getAttribute('data-wk'); }
+		// The Wulf Kit's bars and windows, which sit outside its sections.
+		var kit = el.closest('.wk-portal');
+		if (kit) {
+			if (el.closest('.actbar')) { return 'phone_bar'; }
+			if (el.closest('.bkpill')) { return 'booking_bar'; }
+			if (el.closest('.wb')) { return 'welcome_back'; }
+			if (el.closest('.bk')) { return 'booking_window'; }
+			if (el.closest('.drawer')) { return 'tray'; }
+			return 'kit';
+		}
 		if (el.closest('.om-product-wrap')) { return 'product'; }
 		if (el.closest('header, .site-header')) { return 'header'; }
 		if (el.closest('footer, .site-footer')) { return 'footer'; }
@@ -387,13 +423,20 @@
 		var text = short((a.textContent || '').replace(/\s+/g, ' ').trim(), 80);
 		// Which of the shop's numbers / addresses, not the link wording.
 		var to = '';
-		try { to = decodeURIComponent(href.replace(/^(tel|mailto):/i, '')).split('?')[0]; } catch (err) { to = ''; }
+		try { to = decodeURIComponent(href.replace(/^(tel|mailto|sms):/i, '')).split(/[?;]/)[0]; } catch (err) { to = ''; }
 		if (/^tel:/i.test(href)) { push({ t: 'call', p: path(), l: short(to.replace(/[^\d+]/g, ''), 20) || text, m: where(a) }); return; }
+		if (/^sms:/i.test(href)) { push({ t: 'text', p: path(), l: short(to.replace(/[^\d+]/g, ''), 20) || text, m: where(a) }); return; }
 		if (/^mailto:/i.test(href)) { push({ t: 'email', p: path(), l: short(to.trim().toLowerCase(), 80) || text, m: where(a) }); return; }
 		if (!/^https?:/i.test(href)) { return; }
 		var h = host(href);
 		if (!h || h === OWN) { return; }
-		if (/^(maps\.google\.|maps\.app\.goo\.gl|goo\.gl$|maps\.apple\.com)/.test(h) || /google\.[a-z.]+\/maps/.test(href)) { push({ t: 'directions', p: path(), l: text, m: where(a) }); return; }
+		if (/^(maps\.google\.|maps\.app\.goo\.gl|goo\.gl$|maps\.apple\.com)/.test(h) || /google\.[a-z.]+\/maps/.test(href)) {
+			// A star rating can link to the shop on Google Maps (its reviews): that isn't asking the way.
+			var said = text + ' ' + (a.getAttribute('aria-label') || '') + ' ' + (a.getAttribute('title') || '');
+			if (/review|rating|★/i.test(said) || a.closest('.as-rate, [data-wk-rating]')) { push({ t: 'outbound', p: path(), l: 'Google reviews', m: where(a) }); return; }
+			push({ t: 'directions', p: path(), l: text, m: where(a) });
+			return;
+		}
 		push({ t: 'outbound', p: path(), l: h, m: where(a) });
 	}, true);
 

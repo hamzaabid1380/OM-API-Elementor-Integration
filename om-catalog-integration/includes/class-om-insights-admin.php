@@ -474,6 +474,8 @@ class OM_Insights_Admin {
 			array( __( 'Designs viewed', 'om-catalog' ), $k['designs'], $b['designs'] ),
 			array( __( 'Saved', 'om-catalog' ), $k['saves'], $b['saves'] ),
 			array( __( 'Leads', 'om-catalog' ), $k['leads'], $b['leads'] ),
+			array( __( 'Visit requests', 'om-catalog' ), $k['bookings'], $b['bookings'] ),
+			array( __( 'Calls and texts', 'om-catalog' ), $k['calls'], $b['calls'] ),
 		);
 		echo '<ul style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0;">';
 		foreach ( $tiles as $t ) {

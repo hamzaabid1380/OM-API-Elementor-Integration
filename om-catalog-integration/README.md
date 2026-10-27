@@ -441,23 +441,29 @@ and the colours set in the Wulf Elementor Kit.
 **The overview, results first (1.44).**
 
 - **Results**: a dark band at the top with the numbers that matter most:
-  leads, visit requests (the leads closest to a sale), the lead rate and
-  the **value asked about** (the listed prices of the designs people asked
-  about, requested or emailed themselves). Each shows its change and what
-  it was. Under them, **what the leads were**: visit requests, inquiries
-  and hints, designs emailed and newsletter sign-ups, as one bar.
+  leads, visit requests (the leads closest to a sale), **calls and texts**
+  (taps on the phone number or the Text button, with the split under the
+  number, 1.48), the lead rate and the **value asked about** (the listed
+  prices of the designs people asked about, requested or emailed
+  themselves). Each shows its change and what it was. Under them, **what
+  the leads were**: visit requests, inquiries and hints, designs emailed
+  and newsletter sign-ups, as one bar.
 - **This month's goals**: set a monthly goal for leads and visit requests
   (Settings) and the band shows how the month is pacing: "50 of 140, on
   pace for 110".
 - **Visits and interest**: visitors, visits, engaged visits (more than a
-  glance), designs viewed, saved and contact taps (calls, emails,
-  directions), each with its change and a small trend line.
+  glance: more than one page, more than 10 seconds, a design opened, a
+  lead, or a tap to call, text, email or get directions), designs viewed,
+  saved, and directions and emails (taps to get directions or on the
+  email address), each with its change and a small trend line.
 - **What stood out**: plain sentences ranked by how much they matter,
   each with a **next step** and a link to the numbers behind it. For
-  example "Phones lag behind computers", "Best leads come from Email",
+  example "Google Maps & Business Profile: 23% fewer visits" (with about
+  how many leads that cost and what to check), "Visit requests: 30%
+  fewer", "Phones lag behind computers", "Best leads come from Email",
   "90 searches found nothing", "Halo Cushion Ring 2: much looked at, never
-  asked about", "Pages are slow on phones", "28 visits reached missing
-  pages", "Many buyers take their time".
+  asked about", "Pages are slow on phones", "Missing pages were opened 28
+  times", "Many buyers take their time". See **No false alarms** below.
 - **The chart**: pick any measure from the menu above it, or click a tile.
   Point at it (or tab to it and use the arrow keys) for each day, the same
   day in the period compared with, and the change. A day, week or month
@@ -473,8 +479,10 @@ The sections:
 - **Leads**: leads by kind over time (stacked columns, visit requests at
   the bottom); kinds of lead; **where leads began** (the source of each
   lead's first visit, of the visit they got in touch on, and the visits
-  that helped along the way); how long they took and how many visits; and
-  every lead with the listed price of the design they asked about.
+  that helped along the way, plus **Not linked to a visit** for leads sent
+  with no visit recorded, so the rows add up to every lead); how long they
+  took and how many visits; and every lead with the listed price of the
+  design they asked about.
 - **Sources**: each source with its share, engaged visits, lead rate (a
   small bar; an asterisk when fewer than 30 visits make it shaky) and the
   leads that began there; websites (l.facebook.com counts as
@@ -494,7 +502,12 @@ The sections:
   good, needs work or poor, for phones and computers; the slowest pages;
   **missing pages** (addresses that showed "page not found" and where
   people came from, so you can add a redirect); every page.
-- **Searches**, **Actions**, **Journeys**, **Live**: as before.
+- **Actions** (1.48 adds): taps on the Text button (and where they were),
+  the kit's "Welcome back" bar shown, brand films played and watched to
+  the end, and the booking calendar opened. Calls, texts and directions
+  show where on the site they were tapped, by the name the kit's widgets
+  have in Elementor ("Call to action", "Booking bar (in the page)").
+- **Searches**, **Journeys**, **Live**: as before.
 - **Funnels**: each step with the period compared with beside it.
 - **Settings**: see below.
 
@@ -507,7 +520,72 @@ are otherwise kept for 3 minutes. Keys for periods: **T** today, **Y**
 yesterday, **W** last 7 days, **M** last 30 days, **Q** last 90 days, **L**
 last 12 months.
 
-A small "Insights: last 7 days" box shows on the WordPress Dashboard.
+A small "Insights: last 7 days" box shows on the WordPress Dashboard (with
+visit requests and calls and texts since 1.48).
+
+**Counting it right (1.48).**
+
+- **Phone apps credited to the right source.** Android tells a site which
+  app a visitor came from, not a website, and those visits used to land
+  in "Other websites" or "Direct". Now the Gmail, Outlook, Yahoo Mail and
+  Samsung Email apps count as **Email**; the Google app and Google Go as
+  **Search**; the Google Maps app as **Google Maps & Business Profile**;
+  Facebook, Messenger, Instagram, Threads, Pinterest, TikTok, X, Reddit,
+  LinkedIn, Snapchat, WhatsApp, Nextdoor and YouTube as **Social media**;
+  ChatGPT, Perplexity, Claude, Gemini and Copilot as **AI assistants**.
+  Other apps count as other websites, never as search.
+- **Facebook and Instagram without a website.** Their apps often open
+  links in their own browser and send no website. A visit like that, or
+  one carrying Facebook's click ID (`fbclid`), now counts as **Social
+  media** instead of Direct. A Facebook or Instagram ad looks the same, so
+  tag ads with `utm_medium=paid_social` (or `cpc`) to see them under
+  **Paid ads**. Links tagged with "maps" (for example
+  `utm_source=google_maps`) count as Maps.
+- **Calls, texts, emails and directions are engagement.** A visit that
+  only tapped the phone number has done the most useful thing a visit can
+  do; it no longer counts as a quick exit.
+- **Every lead** counts only the visits up to the one they got in touch on.
+  **Designs** are counted in full (they stopped at 400 before).
+- **Not linked to a visit**: leads sent from a browser that asks not to be
+  tracked, with tracking blocked, or a calendar booking that couldn't be
+  matched to its visit now show under that name in where leads came from,
+  so the sources add up to every lead.
+- **The Back button**: a page shown again from the browser's memory (Back
+  or Forward on phones) now counts as a page view, and starts a new visit
+  when the old one ran out.
+- **The kit's "Welcome back" bar and brand films** (played, watched to the
+  end, moments and chapters chosen) are recorded, under Actions.
+- **Bookings made in the SimplyBook calendar** count as visit requests (see
+  **Bookings in the calendar** under Settings below).
+
+Visits recorded before 1.48 are sorted again by the same rules once, when
+the plugin updates (only the visits these rules change).
+
+**No false alarms (1.48).** A small shop's numbers move by chance from
+week to week, so **What stood out** now checks each change before it says
+anything:
+
+- A change is shown only when it is bigger than chance would usually
+  make, and big enough to matter: leads need at least 10 across the two
+  periods and a change of 10% or more, visit requests 8 and 15%, calls and
+  texts 20 and 15%. A drop in leads or
+  visit requests that is likely but not yet certain still shows, with "it
+  could still be chance: worth keeping an eye on".
+- **Sources** are compared both by visits and by their share of all
+  visits, allowing for the number of sources checked at once, and a move
+  must be at least 15 visits (or 2% of all visits) and 15%. The biggest
+  losses come first, with about how many leads they cost at that source's
+  usual lead rate and what to check ("Check your Google Business Profile:
+  the website link, your hours, photos and recent posts"). A source that
+  sent visits before and none now is named ("Email: no visits this
+  period").
+- "Best leads come from", "Phones lag behind computers", "Returning visitors
+  are your best prospects", rising designs and "never asked about" need
+  enough visits to tell. "Never asked about" needs a design viewed often
+  enough that about 3 leads would have been usual.
+- **Too early to compare**: when the period compared with starts before
+  Insights began recording, changes aren't shown against it (they used to
+  read "911% more").
 
 **PDF report.** **Report** (next to the period menu) downloads Insights for
 the period, comparison and filters chosen as one branded PDF, results
@@ -526,8 +604,14 @@ first:
   numbers for each day (or hour, week or month) and what each number
   means.
 
-It opens with bookmarks for each part and takes a few seconds; nothing is
-sent anywhere. Untick **Include the names of people who got in touch** for
+**One-page summary (1.48).** **Report** also offers a single page for a
+meeting or the fridge: the results, what the leads were, visits and
+interest, the first things that stood out with their next steps, where
+leads came from (top 5) and the most viewed designs (top 5). The file is
+named `…-insights-summary-…pdf`. The full report is the second link.
+
+The full report opens with bookmarks for each part and takes a few
+seconds; nothing is sent anywhere. Untick **Include the names of people who got in touch** for
 a copy you can share outside the business. The file is named after the
 site and the dates, for example
 `wulf-diamond-jewelers-insights-2026-09-13-to-2026-10-12.pdf`.
@@ -557,6 +641,26 @@ behind each inquiry, measure page speed, how long to keep data, and the
 saved the moment you make it (a tick and "Saved" show). **Delete
 everything** asks you to type DELETE first.
 
+**Bookings in the calendar (1.48).** The SimplyBook calendar runs on
+SimplyBook's own site, so the page can't see a booking finish. To count
+each booking as a visit request:
+
+1. In Insights > Settings, under **Bookings in the calendar**, click **Copy
+   address** (it ends in a private key, so keep it to yourself).
+2. In SimplyBook, open **Custom features**, switch on **API**, then its
+   **Settings**, and paste the address as the **Callback URL** (keep the
+   slash at the end).
+3. Switch on the trigger for **new bookings** and save.
+
+The card then shows when the last booking arrived. SimplyBook sends only
+the booking's number, so these visit requests have no name ("Booked in
+the calendar"); one is tied to its visit when exactly one visit had the
+calendar open in the half hour before. Each booking counts once;
+cancellations, changes and bookings for another SimplyBook company are
+left out. Bookings your team adds in SimplyBook themselves (from a phone
+call, say) may arrive this way too; they show as not linked to a visit.
+The card shows only when a SimplyBook calendar is set up.
+
 **Tips**
 
 - Where visitors are: if the site uses Cloudflare, switch on "Add visitor
@@ -574,13 +678,19 @@ automatic block of every real email) and the Wulf Kit's
 `wk_mail_after_rows` filter. Visits and actions live in two tables,
 `{prefix}om_ins_sessions` and `{prefix}om_ins_events`. The PDF report is
 `admin-post.php?action=om_ins_report` (same period and filter parameters
-as the page, plus `cmp=year` and `names=0|1`; `manage_options` and the
-`om_ins_report` nonce), drawn by `OM_Insights_Pdf` with tFPDF 1.34 (LGPL
+as the page, plus `cmp=year`, `names=0|1` and `one=1` for the one-page
+summary; `manage_options` and the `om_ins_report` nonce), drawn by `OM_Insights_Pdf` with tFPDF 1.34 (LGPL
 2.1, in `lib/tfpdf`) and the fonts in `lib/fonts` (SIL Open Font License).
 It needs PHP's mbstring extension. Page speed is stored per page view in
 the actions table (`lcp`, `inp`, `ttfb` in milliseconds, `cls` x1000 + 1;
 database version 3, added on update) and a "page not found" view has
-`meta = '404'`.
+`meta = '404'`. Database version 4 (1.48) adds `contacts` to the visits
+table (taps to call, text, email or get directions in that visit) and an
+index on the actions table (`type, day, item, sid`) that makes reports
+faster, the full PDF report most of all. SimplyBook's callback is
+`POST /wp-json/om-catalog/v1/calendar-booking/{key}/` (JSON or form data
+with `booking_id`, `company` and `notification_type`; a wrong key gets a
+403). Phone apps are mapped to sources by `OM_Insights::app_channels()`.
 
 ## Analytics
 
@@ -806,6 +916,10 @@ Good to know:
 - **Analytics** (with measuring on): `booking_calendar_view` when a
   calendar has loaded, with `form_location` (product_page, ring_builder,
   diamond, hint_page, assistant, quick_view or page) and the style number.
+- **Insights** (1.48): each booking made in the calendar can count as a
+  visit request. Paste the address from Insights > Settings > **Bookings
+  in the calendar** into SimplyBook's API callback (steps under Insights
+  above).
 
 ## Related & recently viewed products
 
@@ -1376,6 +1490,48 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.48.0
+- **Insights: calls and texts in Results.** A new tile in the Results band
+  (and on the WordPress Dashboard box, with visit requests): taps on the
+  phone number or the Text button, with the split under it. Text taps are
+  recorded for the first time, with where on the site they were tapped,
+  under Actions. "Contact taps" is now **Directions and emails**.
+- **Insights: one-page summary.** **Report** offers a one-page PDF (results,
+  the top findings with next steps, where leads came from, the most viewed
+  designs) beside the full report.
+- **Insights: no false alarms.** What stood out checks every change against
+  chance before saying it, needs enough leads or visits to tell, allows
+  for the number of sources checked at once, and says "Too early to
+  compare" when the period compared with wasn't fully recorded. On flat
+  test data with no real change, a 7-day period used to show "Leads
+  changed" 7 times in 10 and "a source moved" 4 times in 10; now about 1
+  in 8 (mostly marked "could still be chance") and none.
+- **Insights: real drops come first.** New findings for visit requests and
+  for calls and texts; a source that drops is ranked by about how many
+  leads it cost, with what to check for that source; a source that stopped
+  sending visits is named.
+- **Insights: sources.** Visits from phone apps (Gmail, Outlook, the Google
+  app, Google Maps, Facebook, Instagram, ChatGPT and others) count under
+  the right source instead of "Other websites" or "Direct". A Facebook or
+  Instagram visit with no website (their own browser, or an `fbclid`) is
+  Social media. Visits recorded before are sorted again once on update.
+- **Insights: engagement.** A tap to call, text, email or get directions
+  makes a visit engaged.
+- **Insights: counting fixes.** Every lead counts only the visits up to
+  the one they got in touch on; designs are counted in full (they stopped
+  at 400); leads with no visit recorded show as **Not linked to a visit**
+  so sources add up; pages shown again with Back or Forward count; the
+  kit's Welcome back bar and brand films are recorded.
+- **Insights: SimplyBook bookings** count as visit requests through
+  SimplyBook's API callback (Insights > Settings > Bookings in the
+  calendar).
+- **Insights: places by name.** Calls, texts and buttons tapped in the
+  kit's widgets show the widget's name ("Call to action", "Film chapters")
+  instead of its short key.
+- Tables in half-width cards fit at 1280 pixels: number headings may wrap.
+- Database version 4: a `contacts` column on visits and an index on
+  actions, added on update.
 
 ### 1.47.0
 - **Proof under the product page buttons**: a new `om_product_assurance`

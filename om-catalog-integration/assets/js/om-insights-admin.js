@@ -645,6 +645,7 @@
 					btn: $( '[data-om-ins-report-btn]', wrap ),
 					pop: $( '[data-om-ins-report-pop]', wrap ),
 					dl: $( '[data-om-ins-report-dl]', wrap ),
+					dls: $$( '[data-om-ins-report-dl]', wrap ),
 					names: $( '[data-om-ins-report-names]', wrap ),
 			  }
 			: null;
@@ -661,9 +662,12 @@
 		} else {
 			r.names.checked = '0' !== keep( 'local', 'omInsReportNames' );
 		}
-		var u = new URL( r.dl.href, window.location.href );
-		u.searchParams.set( 'names', r.names.checked ? '1' : '0' );
-		r.dl.href = u.href;
+		// Both downloads: the one-page summary and the full report.
+		r.dls.forEach( function ( dl ) {
+			var u = new URL( dl.href, window.location.href );
+			u.searchParams.set( 'names', r.names.checked ? '1' : '0' );
+			dl.href = u.href;
+		} );
 	}
 
 	function openReport() {
@@ -694,16 +698,17 @@
 	 * state meanwhile and a message when it's done or didn't work. (Without
 	 * this script the button is an ordinary download link.)
 	 */
-	function downloadReport( r ) {
+	function downloadReport( r, link ) {
 		if ( reportBusy ) {
 			return;
 		}
-		var href = r.dl.href;
-		var label = $( 'span', r.dl );
+		var dl = link || r.dl;
+		var href = dl.href;
+		var label = $( 'span', dl );
 		var was = label ? label.textContent : '';
 		reportBusy = true;
-		r.dl.classList.add( 'is-busy' );
-		r.dl.setAttribute( 'aria-disabled', 'true' );
+		dl.classList.add( 'is-busy' );
+		dl.setAttribute( 'aria-disabled', 'true' );
 		r.btn.classList.add( 'is-busy' );
 		if ( label ) {
 			label.textContent = i18n.making || was;
@@ -711,8 +716,8 @@
 		announce( i18n.making || '' );
 		function done( ok ) {
 			reportBusy = false;
-			r.dl.classList.remove( 'is-busy' );
-			r.dl.removeAttribute( 'aria-disabled' );
+			dl.classList.remove( 'is-busy' );
+			dl.removeAttribute( 'aria-disabled' );
 			r.btn.classList.remove( 'is-busy' );
 			if ( label ) {
 				label.textContent = was;
@@ -2076,7 +2081,7 @@
 		}
 		if ( plain && ( el = closest( t, 'a[data-om-ins-report-dl]' ) ) ) {
 			e.preventDefault();
-			downloadReport( report() );
+			downloadReport( report(), el );
 			return;
 		}
 		if ( ( el = closest( t, '[data-om-ins-metric]' ) ) ) {

@@ -31,6 +31,7 @@ class OM_Insights_Pdf {
 	private $y     = 0;
 	private $no    = 0;
 	private $names = true;
+	private $one   = false; // The one-page summary (1.48).
 	private $site  = '';
 	private $made  = 0;
 
@@ -53,8 +54,9 @@ class OM_Insights_Pdf {
 		}
 		$r     = new OM_Insights_Report( $req );
 		$names = ! isset( $req['names'] ) || '0' !== (string) $req['names'];
+		$one   = isset( $req['one'] ) && '1' === (string) $req['one'];
 		try {
-			$doc = new self( $r, $names );
+			$doc = new self( $r, $names, $one );
 			$pdf = $doc->build();
 		} catch ( Exception $e ) {
 			wp_die( esc_html__( 'The report couldn\'t be made. Please try again, or choose a shorter period.', 'om-catalog' ), esc_html__( 'Insights report', 'om-catalog' ), array( 'response' => 500, 'back_link' => true ) );
@@ -68,9 +70,10 @@ class OM_Insights_Pdf {
 		exit;
 	}
 
-	public function __construct( OM_Insights_Report $r, $names = true ) {
+	public function __construct( OM_Insights_Report $r, $names = true, $one = false ) {
 		$this->r     = $r;
 		$this->names = (bool) $names;
+		$this->one   = (bool) $one;
 		$this->c     = self::palette();
 		$this->site  = self::site_name();
 		$this->made  = time();
@@ -89,12 +92,17 @@ class OM_Insights_Pdf {
 	/** "wulf-diamond-jewelers-insights-2026-09-13-to-2026-10-12.pdf". */
 	public function filename() {
 		$slug = sanitize_title( $this->site );
-		return ( '' !== $slug ? $slug . '-' : '' ) . 'insights-' . $this->r->from . ( $this->r->from !== $this->r->to ? '-to-' . $this->r->to : '' ) . '.pdf';
+		return ( '' !== $slug ? $slug . '-' : '' ) . 'insights-' . ( $this->one ? 'summary-' : '' ) . $this->r->from . ( $this->r->from !== $this->r->to ? '-to-' . $this->r->to : '' ) . '.pdf';
 	}
 
 	/** The PDF, as a string. */
 	public function build() {
 		self::load();
+		if ( $this->one ) {
+			// One page, from the overview's numbers: drawn once.
+			$this->d = $this->r->summary_data();
+			return $this->render()->Output( 'S' );
+		}
 		$this->d = $this->r->report_data();
 		// Drawn twice: the first time finds the page each part starts on, for the contents on the cover.
 		$this->render();
@@ -127,6 +135,9 @@ class OM_Insights_Pdf {
 		$this->pdf = $pdf;
 
 		$this->cover();
+		if ( $this->one ) {
+			return $pdf;
+		}
 		if ( $this->d['now']['visits'] || $this->d['before']['visits'] ) {
 			// Results first: what stood out and what to do, then the leads; then where the visits came from and what they did.
 			$this->findings_part();
@@ -1073,8 +1084,10 @@ class OM_Insights_Pdf {
 		$p->AddPage();
 		$p->bookmark( __( 'At a glance', 'om-catalog' ), 0 );
 
+		$one  = $this->one;
+		$band = $one ? 172 : 216;
 		$p->fill( $c['night'] );
-		$p->Rect( 0, 0, self::W, 216, 'F' );
+		$p->Rect( 0, 0, self::W, $band, 'F' );
 		$this->mark( self::X, 42, 28, $c['gold'] );
 		list( $big, $small ) = $this->wordmark();
 		$p->font( 'serif', 17 );
@@ -1087,26 +1100,26 @@ class OM_Insights_Pdf {
 		}
 		$p->font( 'sans6', 6.6 );
 		$p->ink( $c['gold'] );
-		$p->put( self::W - self::X, 58, self::upper( __( 'Insights report', 'om-catalog' ) ), 'R', 1.8 );
+		$p->put( self::W - self::X, 58, self::upper( $one ? __( 'One-page summary', 'om-catalog' ) : __( 'Insights report', 'om-catalog' ) ), 'R', 1.8 );
 		$p->font( 'sans', 7.2 );
 		$p->ink( '#a9a59c' );
 		$p->put( self::W - self::X, 70, self::domain(), 'R' );
 
-		$p->font( 'serif', 36 );
+		$p->font( 'serif', $one ? 31 : 36 );
 		$p->ink( '#ffffff' );
-		$p->put( self::X, 138, __( 'Website insights', 'om-catalog' ) );
-		$p->font( 'sans6', 12.5 );
+		$p->put( self::X, $one ? 112 : 138, __( 'Website insights', 'om-catalog' ) );
+		$p->font( 'sans6', $one ? 11.5 : 12.5 );
 		$p->ink( self::mix( $c['gold'], '#ffffff', 0.5 ) );
 		$today = wp_date( 'Y-m-d', $this->made );
-		$p->put( self::X, 164, self::long_period( $r->from, $r->to ) . ( $r->to === $today ? ' (' . __( 'so far', 'om-catalog' ) . ')' : '' ) );
+		$p->put( self::X, $one ? 135 : 164, self::long_period( $r->from, $r->to ) . ( $r->to === $today ? ' (' . __( 'so far', 'om-catalog' ) . ')' : '' ) );
 		$days = $r->span();
 		$p->font( 'sans', 9 );
 		$p->ink( '#b3afa6' );
 		/* translators: 1: number of days, 2: "compared with ..." */
-		$p->put( self::X, 182, sprintf( _n( '%1$s day, %2$s', '%1$s days, %2$s', $days, 'om-catalog' ), self::n( $days ), $this->compared_words() ) );
+		$p->put( self::X, $one ? 152 : 182, sprintf( _n( '%1$s day, %2$s', '%1$s days, %2$s', $days, 'om-catalog' ), self::n( $days ), $this->compared_words() ) );
 		$p->fill( $c['gold_deep'] );
-		$p->Rect( 0, 216, self::W, 1.4, 'F' );
-		$this->y = 238;
+		$p->Rect( 0, $band, self::W, 1.4, 'F' );
+		$this->y = $band + ( $one ? 18 : 22 );
 
 		$filters = $this->filter_words();
 		if ( $filters ) {
@@ -1136,20 +1149,23 @@ class OM_Insights_Pdf {
 			return;
 		}
 		$chart = $this->d['chart'];
-		$tw    = ( $this->cw() - 3 * 10 ) / 4;
+		$tw    = ( $this->cw() - 4 * 8 ) / 5;
 		$th    = 86;
 		$names = OM_Insights_Report::metrics();
-		/* translators: %s: number of leads. */
-		$sub   = $now['valued'] ? sprintf( _n( '%s lead named a design', '%s leads named a design', $now['valued'], 'om-catalog' ), self::n( $now['valued'] ) ) : '';
+		/* translators: %s: number of leads that named a design. */
+		$sub   = $now['valued'] ? sprintf( _n( 'in %s lead', 'in %s leads', $now['valued'], 'om-catalog' ), self::n( $now['valued'] ) ) : '';
+		/* translators: 1: calls, 2: texts. */
+		$taps  = $now['calls'] ? sprintf( __( '%1$s calls · %2$s texts', 'om-catalog' ), self::n( $now['phone'] ), self::n( $now['texts'] ) ) : '';
 		$tiles = array(
 			array( 'leads', '' ),
 			array( 'bookings', '' ),
+			array( 'calls', $taps ),
 			array( 'conv', '' ),
 			array( 'value', $sub ),
 		);
 		foreach ( $tiles as $i => $t ) {
 			$key = $t[0];
-			$x   = self::X + $i * ( $tw + 10 );
+			$x   = self::X + $i * ( $tw + 8 );
 			$dy  = $this->result_tile( $x, $this->y, $tw, $th, $names[ $key ][0], self::metric( $key, $now[ $key ] ), self::change( $now[ $key ], $bef[ $key ] ), self::metric( $key, $bef[ $key ] ), 0 === $i, $t[1] );
 			if ( '' === $t[1] ) {
 				$this->spark( self::whole( $chart, $key ), $x + 11, $dy + 6, $tw - 22, 11, 0 === $i ? $c['gold'] : null );
@@ -1174,7 +1190,7 @@ class OM_Insights_Pdf {
 			'engaged'  => __( 'Engaged visits', 'om-catalog' ),
 			'designs'  => __( 'Designs viewed', 'om-catalog' ),
 			'saves'    => __( 'Saved (hearts)', 'om-catalog' ),
-			'contacts' => __( 'Contact taps', 'om-catalog' ),
+			'contacts' => __( 'Directions', 'om-catalog' ),
 		);
 		$sw = ( $this->cw() - 5 * 8 ) / 6;
 		$i  = 0;
@@ -1183,6 +1199,12 @@ class OM_Insights_Pdf {
 			++$i;
 		}
 		$this->y += 52 + 16;
+
+		// The one-page summary: what stood out with what to do next, then where leads came from and the designs.
+		if ( $one ) {
+			$this->summary_rest( $gh );
+			return;
+		}
 
 		// The first findings, two to a row, as many rows as fit above the contents (the goals are drawn above already).
 		$list = array_values(
@@ -1243,6 +1265,134 @@ class OM_Insights_Pdf {
 			}
 		}
 		$this->contents();
+	}
+
+	/**
+	 * The rest of the one-page summary: what stood out, each with its next step (as many as fit, with room kept
+	 * for the two short lists below when there is enough), then where leads came from and the most viewed designs.
+	 */
+	private function summary_rest( $gh ) {
+		$p     = $this->pdf;
+		$c     = $this->c;
+		$stop  = self::BOTTOM - 6;
+		$lists = 118;
+		$list  = array_values(
+			array_filter(
+				$this->d['findings'] ?? array(),
+				static function ( $f ) use ( $gh ) {
+					return ! $gh || 'goal' !== ( $f['kind'] ?? '' );
+				}
+			)
+		);
+		if ( $list ) {
+			$this->label( __( 'What stood out, and what to do', 'om-catalog' ) );
+			$w     = $this->cw() - 14;
+			$shown = 0;
+			foreach ( $list as $f ) {
+				$p->font( 'sans', 8.2 );
+				$text = $this->wrap( $f['text'], $w );
+				if ( count( $text ) > 2 ) {
+					$text = array( $text[0], $this->fit( $text[1] . ' ' . $text[2], $w ) );
+				}
+				$do = '' !== $f['do'] ? $this->wrap( __( 'Next step:', 'om-catalog' ) . ' ' . $f['do'], $w ) : array();
+				if ( count( $do ) > 2 ) {
+					$do = array( $do[0], $this->fit( $do[1] . ' ' . $do[2], $w ) );
+				}
+				$h = 14 + 10.6 * count( $text ) + 10.6 * count( $do ) + 9;
+				// Room for the lists once three findings are in; the first three always come first.
+				if ( $this->y + $h > $stop - ( $shown >= 3 ? $lists : 0 ) ) {
+					break;
+				}
+				$tone = self::tones()[ $f['tone'] ] ?? self::tones()['info'];
+				$cx   = self::X + 3;
+				$cy   = $this->y + 6;
+				$p->fill( $tone[1] );
+				$p->poly( array( array( $cx, $cy - 3 ), array( $cx + 3, $cy ), array( $cx, $cy + 3 ), array( $cx - 3, $cy ) ), 'f', true );
+				$p->font( 'sans6', 8.9 );
+				$p->ink( $c['ink'] );
+				$p->put( self::X + 14, $this->y + 9, $this->fit( $f['title'], $w ) );
+				$ly = $this->y + 22;
+				$p->font( 'sans', 8.2 );
+				$p->ink( $c['sub'] );
+				foreach ( $text as $line ) {
+					$p->put( self::X + 14, $ly, $line );
+					$ly += 10.6;
+				}
+				$p->ink( $c['gold_ink'] );
+				foreach ( $do as $line ) {
+					$p->put( self::X + 14, $ly, $line );
+					$ly += 10.6;
+				}
+				$this->y += $h;
+				++$shown;
+			}
+			if ( $shown < count( $list ) ) {
+				$p->font( 'sans6', 7.4 );
+				$p->ink( $c['gold_ink'] );
+				/* translators: %s: number of findings. */
+				$p->put( self::X + 14, $this->y + 2, sprintf( __( 'All %s are in Insights and in the full report.', 'om-catalog' ), self::n( count( $list ) ) ) );
+				$this->y += 12;
+			}
+		}
+		if ( $this->y + $lists > $stop ) {
+			return;
+		}
+
+		// Where leads came from (their first visit) and the most viewed designs, side by side.
+		$this->y += 6;
+		$w    = ( $this->cw() - self::GAP ) / 2;
+		$by   = (array) ( $this->d['attr']['by'] ?? array() );
+		uasort(
+			$by,
+			static function ( $a, $b ) {
+				return $b['first'] <=> $a['first'];
+			}
+		);
+		$left = array();
+		foreach ( $by as $key => $n ) {
+			if ( $n['first'] && count( $left ) < 5 ) {
+				$left[] = array( OM_Insights_Report::channel_name( $key ), self::n( $n['first'] ) );
+			}
+		}
+		$right = array();
+		foreach ( array_slice( (array) ( $this->d['designs'] ?? array() ), 0, 5 ) as $r ) {
+			if ( (int) $r['views'] ) {
+				$right[] = array( OM_Insights_Report::design( $r['item'], $r['title'] )['title'], self::n( $r['views'] ) );
+			}
+		}
+		$cols = array(
+			array( __( 'Where leads came from', 'om-catalog' ), __( 'First visit', 'om-catalog' ), $left, __( 'No leads in this period yet.', 'om-catalog' ) ),
+			array( __( 'Most viewed designs', 'om-catalog' ), __( 'Views', 'om-catalog' ), $right, __( 'No designs viewed yet.', 'om-catalog' ) ),
+		);
+		$top = $this->y;
+		foreach ( $cols as $i => $col ) {
+			$x = self::X + $i * ( $w + self::GAP );
+			$y = $top;
+			$p->font( 'sans7', 7 );
+			$p->ink( $c['gold_ink'] );
+			$p->put( $x, $y + 8, self::upper( $col[0] ), 'L', 1.3 );
+			$p->font( 'sans6', 6.8 );
+			$p->ink( $c['sub'] );
+			$p->put( $x + $w, $y + 8, $col[1], 'R' );
+			$y += 16;
+			if ( ! $col[2] ) {
+				$p->font( 'sans', 8.4 );
+				$p->put( $x, $y + 10, $col[3] );
+				continue;
+			}
+			foreach ( $col[2] as $row ) {
+				$p->stroke( $c['line'], 0.6 );
+				$p->Line( $x, $y, $x + $w, $y );
+				$p->font( 'sans', 8.4 );
+				$p->ink( $c['text'] );
+				$p->put( $x, $y + 11, $this->fit( $row[0], $w - 44 ) );
+				$p->font( 'sans6', 8.4 );
+				$p->ink( $c['ink'] );
+				$p->put( $x + $w, $y + 11, $row[1], 'R' );
+				$y += 16;
+			}
+		}
+		$this->y = $top + 16 + 16 * 5;
 	}
 
 	/** "In this report": each part, its page and a link to it, at the foot of the cover (pages from the first drawing). */
@@ -1980,7 +2130,7 @@ class OM_Insights_Pdf {
 				self::pct( (int) $r['converted'], (int) $r['visits'] ),
 			);
 		}
-		$this->sub( __( 'First page of a visit', 'om-catalog' ), __( 'Where visits start. Quick exits: left after one page in under 10 seconds.', 'om-catalog' ), self::table_need( $rows ) );
+		$this->sub( __( 'First page of a visit', 'om-catalog' ), __( 'Where visits start. Quick exits: left after one page in under 10 seconds without opening a design or tapping to call, text, email or get directions.', 'om-catalog' ), self::table_need( $rows ) );
 		$this->table(
 			array(
 				array( __( 'Page', 'om-catalog' ), 220 ),
@@ -2534,6 +2684,7 @@ class OM_Insights_Pdf {
 				array( __( 'Booking window opened', 'om-catalog' ), $sum( 'booking', 'open' ) ),
 				array( __( 'Visit requests sent', 'om-catalog' ), $sum( 'booking', 'request' ) ),
 				array( __( 'Tapped to call', 'om-catalog' ), $sum( 'call' ) ),
+				array( __( 'Tapped to text', 'om-catalog' ), $sum( 'text' ) ),
 				array( __( 'Opened directions', 'om-catalog' ), $sum( 'directions' ) ),
 				array( __( 'Tapped an email address', 'om-catalog' ), $sum( 'email' ) ),
 				array( __( 'Button clicks', 'om-catalog' ), $sum( 'cta' ) ),
@@ -2562,24 +2713,24 @@ class OM_Insights_Pdf {
 			$parts[] = $this->part( $title, $act, $rows, __( 'Nothing yet.', 'om-catalog' ) );
 		}
 
-		// Calls and directions by where on the site they were tapped, and calls by number.
+		// Calls, texts and directions by where on the site they were tapped, and calls by number.
 		$where = array();
-		foreach ( array( 'call' => 0, 'directions' => 1 ) as $type => $col ) {
-			foreach ( $d[ $type ] as $r ) {
+		foreach ( array( 'call' => 0, 'text' => 1, 'directions' => 2 ) as $type => $col ) {
+			foreach ( $d[ $type ] ?? array() as $r ) {
 				$k                   = OM_Insights_Report::place_name( $r['meta'] );
-				$where[ $k ]         = $where[ $k ] ?? array( 0, 0 );
+				$where[ $k ]         = $where[ $k ] ?? array( 0, 0, 0 );
 				$where[ $k ][ $col ] += (int) $r['n'];
 			}
 		}
 		uasort(
 			$where,
 			static function ( $a, $b ) {
-				return ( $b[0] + $b[1] ) <=> ( $a[0] + $a[1] );
+				return array_sum( $b ) <=> array_sum( $a );
 			}
 		);
 		$spots = array();
 		foreach ( $where as $k => $n ) {
-			$spots[] = array( (string) $k, self::n( $n[0] ), self::n( $n[1] ) );
+			$spots[] = array( (string) $k, self::n( $n[0] ), self::n( $n[1] ), self::n( $n[2] ) );
 		}
 		$numbers = array();
 		foreach ( $d['call'] as $r ) {
@@ -2592,15 +2743,15 @@ class OM_Insights_Pdf {
 			$by_number[] = array( (string) $k, self::n( $n ) );
 		}
 		$parts[] = array(
-			__( 'Calls and directions, by place', 'om-catalog' ),
+			__( 'Calls, texts and directions, by place', 'om-catalog' ),
 			function ( $x, $w ) use ( $spots, $by_number ) {
 				$this->table(
-					array( array( __( 'Where', 'om-catalog' ), $w - 104 ), array( __( 'Calls', 'om-catalog' ), 52, 'R' ), array( __( 'Directions', 'om-catalog' ), 52, 'R' ) ),
+					array( array( __( 'Where', 'om-catalog' ), $w - 138 ), array( __( 'Calls', 'om-catalog' ), 40, 'R' ), array( __( 'Texts', 'om-catalog' ), 40, 'R' ), array( __( 'Directions', 'om-catalog' ), 58, 'R' ) ),
 					$spots,
 					array(
 						'x'       => $x,
 						'nobreak' => true,
-						'empty'   => __( 'No calls or directions tapped.', 'om-catalog' ),
+						'empty'   => __( 'No calls, texts or directions tapped.', 'om-catalog' ),
 					)
 				);
 				if ( $by_number ) {
@@ -2893,8 +3044,9 @@ class OM_Insights_Pdf {
 			array( __( 'First visit', 'om-catalog' ), __( 'Where a lead first found you: the source of the first visit this site knows from the same browser. Many people visit several times before getting in touch.', 'om-catalog' ) ),
 			array( __( 'Visitors', 'om-catalog' ), __( 'Different people: each browser counts once, even over several visits.', 'om-catalog' ) ),
 			array( __( 'Visits', 'om-catalog' ), __( 'A visit ends after 30 minutes without any activity.', 'om-catalog' ) ),
-			array( __( 'Engaged visits', 'om-catalog' ), __( 'Visits that did more than glance: more than one page, more than 10 seconds, a design opened or a lead.', 'om-catalog' ) ),
-			array( __( 'Contact taps', 'om-catalog' ), __( 'Taps on the phone number, the email address or directions.', 'om-catalog' ) ),
+			array( __( 'Engaged visits', 'om-catalog' ), __( 'Visits that did more than glance: more than one page, more than 10 seconds, a design opened, a lead, or a tap to call, text, email or get directions.', 'om-catalog' ) ),
+			array( __( 'Calls and texts', 'om-catalog' ), __( 'Taps on the phone number or a Text button: people reaching for the phone. The call or text itself happens off the site, so a tap is not always a call.', 'om-catalog' ) ),
+			array( __( 'Directions', 'om-catalog' ), __( 'Taps to get directions, and on the email address.', 'om-catalog' ) ),
 			array( __( 'Designs viewed', 'om-catalog' ), __( 'Product pages and quick views opened.', 'om-catalog' ) ),
 			array( __( 'Saved (hearts)', 'om-catalog' ), __( 'Designs added to a visitor\'s saved list.', 'om-catalog' ) ),
 			array( __( 'Page speed', 'om-catalog' ), __( 'Measured in visitors\' own browsers (Google\'s Core Web Vitals). Each number is the one 3 in 4 page views beat.', 'om-catalog' ) ),

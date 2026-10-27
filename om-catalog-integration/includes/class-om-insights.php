@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OM_Insights {
 
-	const DB_VERSION   = '3'; // 2: page speed columns (1.44.0); 3: the same, checked before use (1.44.1).
+	const DB_VERSION   = '4'; // 2: page speed columns (1.44.0); 3: the same, checked before use (1.44.1); 4: contact taps per visit, an index by kind and day (1.48.0).
 	const SID_COOKIE   = 'om_sid';
 	const VID_COOKIE   = 'om_vid';
 	const MAX_BATCH    = 40;
@@ -45,6 +45,8 @@ class OM_Insights {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue' ), 5 );
 		add_action( 'wp_ajax_om_v', array( $this, 'collect' ) );
 		add_action( 'wp_ajax_nopriv_om_v', array( $this, 'collect' ) );
+		// The booking calendar (SimplyBook) telling the site about a booking made in it.
+		add_action( 'rest_api_init', array( $this, 'routes' ) );
 		// Leads: this plugin's forms (inquiries, saved lists, ring designs, hints)...
 		add_action( 'om_lead', array( $this, 'on_lead' ), 5 );
 		// ...and the Wulf Elementor Kit's (booking, quiz email, newsletter).
@@ -122,9 +124,12 @@ class OM_Insights {
 			'booking'    => __( 'Booking window', 'om-catalog' ),
 			'cta'        => __( 'Button clicks', 'om-catalog' ),
 			'call'       => __( 'Call clicks', 'om-catalog' ),
+			'text'       => __( 'Text clicks', 'om-catalog' ),
 			'email'      => __( 'Email clicks', 'om-catalog' ),
 			'directions' => __( 'Directions clicks', 'om-catalog' ),
 			'outbound'   => __( 'Links to other sites', 'om-catalog' ),
+			'welcome'    => __( 'Welcome back bar', 'om-catalog' ),
+			'film'       => __( 'Brand films', 'om-catalog' ),
 		);
 	}
 
@@ -191,17 +196,32 @@ class OM_Insights {
 
 	/** Page speed can be kept: the tables have its columns (1.44). */
 	public static function has_speed() {
-		return self::DB_VERSION === get_option( 'om_ins_db' );
+		return (int) get_option( 'om_ins_db' ) >= 3;
+	}
+
+	/** Contact taps are counted on each visit: the visits table has the column (1.48). */
+	public static function has_contacts() {
+		return (int) get_option( 'om_ins_db' ) >= 4;
+	}
+
+	/** Whether a query on the tables works (a column is there). */
+	private static function works( $sql ) {
+		global $wpdb;
+		$quiet = $wpdb->suppress_errors( true );
+		$wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+		$ok = '' === (string) $wpdb->last_error;
+		$wpdb->suppress_errors( $quiet );
+		return $ok;
 	}
 
 	/** Whether the actions table has the page speed columns. */
 	private static function speed_columns() {
-		global $wpdb;
-		$quiet = $wpdb->suppress_errors( true );
-		$wpdb->get_var( 'SELECT lcp + inp + cls + ttfb FROM ' . self::events_table() . ' LIMIT 1' ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
-		$ok = '' === (string) $wpdb->last_error;
-		$wpdb->suppress_errors( $quiet );
-		return $ok;
+		return self::works( 'SELECT lcp + inp + cls + ttfb FROM ' . self::events_table() . ' LIMIT 1' );
+	}
+
+	/** Whether the visits table has the contact taps column. */
+	private static function contacts_column() {
+		return self::works( 'SELECT contacts FROM ' . self::sessions_table() . ' LIMIT 1' );
 	}
 
 	/**
@@ -212,6 +232,7 @@ class OM_Insights {
 	public static function install() {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		$was     = (int) get_option( 'om_ins_db' );
 		$charset = $wpdb->get_charset_collate();
 		$events  = self::events_table();
 		$visits  = self::sessions_table();
@@ -238,6 +259,7 @@ class OM_Insights {
   ttfb smallint(5) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (id),
   KEY day_type (day,type),
+  KEY type_day (type,day,item,sid),
   KEY sid (sid),
   KEY item_type (item,type),
   KEY vid (vid)
@@ -274,6 +296,7 @@ class OM_Insights {
   engaged int(10) unsigned NOT NULL DEFAULT 0,
   products smallint(5) unsigned NOT NULL DEFAULT 0,
   saves smallint(5) unsigned NOT NULL DEFAULT 0,
+  contacts smallint(5) unsigned NOT NULL DEFAULT 0,
   leads tinyint(3) unsigned NOT NULL DEFAULT 0,
   lead_type varchar(16) NOT NULL DEFAULT '',
   lead_name varchar(80) NOT NULL DEFAULT '',
@@ -283,12 +306,44 @@ class OM_Insights {
   KEY vid (vid)
 ) {$charset};"
 		);
-		// The version moves on only once the new columns are really there.
+		// The version moves on only once the new columns are really there (page speed keeps working if only
+		// the newest column is missing; the update is tried again later).
 		if ( ! self::speed_columns() ) {
 			return false;
 		}
+		if ( $was < 3 ) {
+			update_option( 'om_ins_db', '3' );
+		}
+		if ( ! self::contacts_column() ) {
+			return false;
+		}
+		if ( $was < 4 ) {
+			self::upgrade_contacts();
+		}
 		update_option( 'om_ins_db', self::DB_VERSION );
 		return true;
+	}
+
+	/**
+	 * Brings visits kept from before 1.48 up to date, once: the calls, texts, emails and directions tapped on
+	 * each visit (a visit that only tapped Call isn't a quick exit), and the sources read again with 1.48's
+	 * rules (Android apps, the Facebook and Instagram browsers, tags that only contain "maps").
+	 */
+	private static function upgrade_contacts() {
+		global $wpdb;
+		$e = self::events_table();
+		$s = self::sessions_table();
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( "UPDATE {$s} v JOIN (SELECT sid, COUNT(*) AS n FROM {$e} WHERE type IN ('call','text','email','directions') GROUP BY sid) c ON c.sid = v.sid SET v.contacts = LEAST(c.n, 65535)" );
+		$rows = $wpdb->get_results( "SELECT sid, channel, ref_host, utm_source, utm_medium, utm_campaign, browser FROM {$s} WHERE ref_host REGEXP '^(com|org|net|ai)[.]' OR (channel = 'direct' AND browser IN ('Facebook app','Instagram app')) OR (channel = 'maps' AND CONCAT(utm_source, ' ', utm_medium, ' ', utm_campaign) LIKE '%maps%') LIMIT 50000", ARRAY_A );
+		// phpcs:enable
+		$ua = array( 'Facebook app' => 'FBAV', 'Instagram app' => 'Instagram' );
+		foreach ( (array) $rows as $r ) {
+			$now = self::channel( (string) $r['ref_host'], array_filter( array( 'utm_source' => $r['utm_source'], 'utm_medium' => $r['utm_medium'], 'utm_campaign' => $r['utm_campaign'] ) ), $ua[ $r['browser'] ] ?? '' );
+			if ( $now !== $r['channel'] ) {
+				$wpdb->update( $s, array( 'channel' => $now ), array( 'sid' => $r['sid'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			}
+		}
 	}
 
 	/* ---------------------------------------------------------------
@@ -363,7 +418,7 @@ class OM_Insights {
 		$types   = self::client_types();
 		$rows    = array();
 		$engage  = array();
-		$counts  = array( 'pages' => 0, 'products' => 0, 'saves' => 0 );
+		$counts  = array( 'pages' => 0, 'products' => 0, 'saves' => 0, 'contacts' => 0 );
 		$exit    = '';
 		$landing = '';
 		foreach ( array_slice( (array) ( $in['e'] ?? array() ), 0, self::MAX_BATCH ) as $e ) {
@@ -410,6 +465,8 @@ class OM_Insights {
 				++$counts['products'];
 			} elseif ( 'save' === $type ) {
 				++$counts['saves'];
+			} elseif ( in_array( $type, array( 'call', 'text', 'email', 'directions' ), true ) ) {
+				++$counts['contacts'];
 			}
 			$rows[] = $row;
 		}
@@ -430,9 +487,11 @@ class OM_Insights {
 
 		if ( $rows ) {
 			self::insert( $rows );
+			// Calls, texts, emails and directions tapped on the visit (1.48 tables).
+			$taps = self::has_contacts() ? $wpdb->prepare( ', contacts = LEAST(contacts + %d, 65535)', $counts['contacts'] ) : '';
 			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"UPDATE {$visits} SET last = CASE WHEN last < %d THEN %d ELSE last END, pages = pages + %d, events = events + %d, products = products + %d, saves = saves + %d, exit_page = CASE WHEN %s = '' THEN exit_page ELSE %s END WHERE sid = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"UPDATE {$visits} SET last = CASE WHEN last < %d THEN %d ELSE last END, pages = pages + %d, events = events + %d, products = products + %d, saves = saves + %d{$taps}, exit_page = CASE WHEN %s = '' THEN exit_page ELSE %s END WHERE sid = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$now,
 					$now,
 					$counts['pages'],
@@ -497,7 +556,7 @@ class OM_Insights {
 				$ts,
 				$landing,
 				$landing,
-				self::channel( $ref, $keep ),
+				self::channel( $ref, $keep, $ua ),
 				$ref,
 				$keep['utm_source'] ?? '',
 				$keep['utm_medium'] ?? '',
@@ -636,6 +695,115 @@ class OM_Insights {
 
 	public function on_newsletter( $email ) {
 		self::lead( 'newsletter', array( 'name' => (string) $email ) );
+	}
+
+	/* ---------------------------------------------------------------
+	 * Bookings made in the SimplyBook calendar
+	 *
+	 * The calendar runs on SimplyBook's own site inside a frame, so the
+	 * page never sees a booking finish. SimplyBook calls this address
+	 * instead (Custom features > API > Callback URL), with the booking's
+	 * number and no customer details. Each booking becomes a visit
+	 * request; it is tied to the visit only when exactly one visit had
+	 * the calendar open in the half hour before.
+	 * ------------------------------------------------------------- */
+
+	public function routes() {
+		register_rest_route(
+			'om-catalog/v1',
+			'/calendar-booking/(?P<key>[A-Za-z0-9]{24})',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'calendar_booking' ),
+				'permission_callback' => '__return_true', // The secret key in the address is checked below.
+			)
+		);
+	}
+
+	/** The secret part of the calendar's callback address (made the first time it's needed). */
+	public static function calendar_key() {
+		$key = (string) get_option( 'om_ins_cal_key', '' );
+		if ( ! preg_match( '/^[A-Za-z0-9]{24}$/', $key ) ) {
+			$key = wp_generate_password( 24, false, false );
+			update_option( 'om_ins_cal_key', $key, false );
+		}
+		return $key;
+	}
+
+	/** The address to paste into SimplyBook (ending in a slash, as SimplyBook expects). */
+	public static function calendar_url() {
+		return trailingslashit( rest_url( 'om-catalog/v1/calendar-booking/' . self::calendar_key() ) );
+	}
+
+	/** The SimplyBook company login of the calendar set up in Settings ("wulf" for wulf.simplybook.me), if any. */
+	public static function calendar_company() {
+		$setup = class_exists( 'OM_Booking' ) ? OM_Booking::setup() : null;
+		$host  = $setup ? (string) wp_parse_url( (string) ( $setup['config']['url'] ?? '' ), PHP_URL_HOST ) : '';
+		return preg_match( '/^([a-z0-9\-]+)\.simplybook\.[a-z.]+$/i', $host, $m ) ? strtolower( $m[1] ) : '';
+	}
+
+	/** SimplyBook telling us about a booking: a new one becomes a visit request (each booking once). */
+	public function calendar_booking( $request ) {
+		if ( ! hash_equals( self::calendar_key(), (string) $request['key'] ) ) {
+			return new WP_REST_Response( array( 'ok' => false ), 403 );
+		}
+		$in = $request->get_json_params();
+		if ( ! is_array( $in ) || ! $in ) {
+			$in = array_merge( (array) $request->get_query_params(), (array) $request->get_body_params() );
+		}
+		$kind    = strtolower( (string) ( $in['notification_type'] ?? 'create' ) );
+		$id      = substr( preg_replace( '/[^A-Za-z0-9_\-]/', '', (string) ( $in['booking_id'] ?? '' ) ), 0, 40 );
+		$company = strtolower( (string) ( $in['company'] ?? '' ) );
+		$own     = self::calendar_company();
+		if ( ! self::enabled() || 'create' !== $kind || '' === $id || ( '' !== $own && '' !== $company && $company !== $own ) ) {
+			return new WP_REST_Response( array( 'ok' => true ), 200 );
+		}
+		$seen = array_values( array_filter( (array) get_option( 'om_ins_cal_seen', array() ), 'is_string' ) );
+		if ( in_array( $id, $seen, true ) ) {
+			return new WP_REST_Response( array( 'ok' => true ), 200 );
+		}
+		$seen[] = $id;
+		update_option( 'om_ins_cal_seen', array_slice( $seen, -200 ), false );
+		update_option( 'om_ins_cal_last', (string) time(), false );
+		self::calendar_lead( self::calendar_visit() );
+		return new WP_REST_Response( array( 'ok' => true ), 200 );
+	}
+
+	/** The visit behind a calendar booking: the only visit with the calendar open in the last 30 minutes, else none. */
+	private static function calendar_visit() {
+		global $wpdb;
+		$now  = time();
+		$sids = $wpdb->get_col( $wpdb->prepare( 'SELECT DISTINCT sid FROM ' . self::events_table() . " WHERE type = 'booking' AND label = 'calendar' AND day >= %s AND ts >= %d AND sid <> ''", wp_date( 'Y-m-d', $now - DAY_IN_SECONDS ), $now - 30 * MINUTE_IN_SECONDS ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+		return 1 === count( $sids ) ? (string) $sids[0] : '';
+	}
+
+	/** A calendar booking as a visit request, on its visit when there is one. */
+	private static function calendar_lead( $sid ) {
+		global $wpdb;
+		$visits = self::sessions_table();
+		$vid    = '' !== $sid ? (string) $wpdb->get_var( $wpdb->prepare( "SELECT vid FROM {$visits} WHERE sid = %s", $sid ) ) : ''; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$ts     = time();
+		self::insert(
+			array(
+				array(
+					'ts'    => $ts,
+					'day'   => wp_date( 'Y-m-d', $ts ),
+					'hr'    => (int) wp_date( 'G', $ts ),
+					'sid'   => $sid,
+					'vid'   => '' !== $vid ? $vid : $sid,
+					'type'  => 'lead',
+					'page'  => '',
+					'item'  => '',
+					'label' => 'booking',
+					'meta'  => __( 'Booked in the calendar', 'om-catalog' ),
+					'val'   => 0,
+					'pv'    => '',
+				),
+			)
+		);
+		if ( '' !== $sid ) {
+			$wpdb->query( $wpdb->prepare( "UPDATE {$visits} SET leads = CASE WHEN leads < 255 THEN leads + 1 ELSE 255 END, lead_type = CASE WHEN lead_type = '' THEN 'booking' ELSE lead_type END WHERE sid = %s", $sid ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		}
 	}
 
 	/* ---------------------------------------------------------------
@@ -818,6 +986,9 @@ class OM_Insights {
 					break;
 				case 'call':
 					$also['call'] = __( 'tapped to call', 'om-catalog' );
+					break;
+				case 'text':
+					$also['text'] = __( 'tapped to text', 'om-catalog' );
 					break;
 				case 'directions':
 					$also['directions'] = __( 'opened directions', 'om-catalog' );
@@ -1029,24 +1200,76 @@ class OM_Insights {
 		return '' === $ua || (bool) preg_match( '~bot\b|bot/|crawl|spider|slurp|archiver|facebookexternalhit|facebookcatalog|embedly|quora link|outbrain|pinterest/|vkshare|w3c_validator|whatsapp|telegram|skypeuripreview|preview|headless|phantomjs|puppeteer|playwright|selenium|lighthouse|pagespeed|gtmetrix|pingdom|uptime|monitor|statuscake|python|curl/|wget|httpclient|go-http|java/|node-fetch|axios|okhttp|scrapy|semrush|ahrefs|mj12|dotbot|petalbot|bytespider|gptbot|claudebot|anthropic|perplexity|ccbot|amazonbot|applebot|yandex|baiduspider|duckduckbot|bingpreview~i', $ua );
 	}
 
-	/** Search, social, ads, email, AI assistants, Maps / Business Profile, other sites or direct. */
-	public static function channel( $ref, $utm ) {
+	/**
+	 * Android apps that send their own name instead of a website when someone opens a link in them
+	 * (android-app://com.google.android.gm): app => source.
+	 */
+	public static function app_channels() {
+		return array(
+			'com.google.android.googlequicksearchbox' => 'search', // The Google app.
+			'com.google.android.apps.searchlite'      => 'search', // Google Go.
+			'com.google.android.apps.maps'            => 'maps',
+			'com.google.android.gm'                   => 'email',  // Gmail.
+			'com.microsoft.office.outlook'            => 'email',
+			'com.yahoo.mobile.client.android.mail'    => 'email',
+			'com.samsung.android.email.provider'      => 'email',
+			'com.facebook.katana'                     => 'social',
+			'com.facebook.lite'                       => 'social',
+			'com.facebook.orca'                       => 'social', // Messenger.
+			'com.instagram.android'                   => 'social',
+			'com.instagram.barcelona'                 => 'social', // Threads.
+			'com.pinterest'                           => 'social',
+			'com.zhiliaoapp.musically'                => 'social', // TikTok.
+			'com.ss.android.ugc.trill'                => 'social',
+			'com.twitter.android'                     => 'social',
+			'com.reddit.frontpage'                    => 'social',
+			'com.linkedin.android'                    => 'social',
+			'com.snapchat.android'                    => 'social',
+			'com.whatsapp'                            => 'social',
+			'com.nextdoor'                            => 'social',
+			'com.google.android.youtube'              => 'social',
+			'com.openai.chatgpt'                      => 'ai',
+			'ai.perplexity.app.android'               => 'ai',
+			'com.anthropic.claude'                    => 'ai',
+			'com.google.android.apps.bard'            => 'ai',   // Gemini.
+			'com.microsoft.copilot'                   => 'ai',
+		);
+	}
+
+	/**
+	 * Search, social, ads, email, AI assistants, Maps / Business Profile, other sites or direct.
+	 *
+	 * @param string $ref The website (or Android app) that sent the visit.
+	 * @param array  $utm The tags and ad click IDs on the address.
+	 * @param string $ua  The browser's user agent (the Facebook and Instagram apps' own browsers).
+	 */
+	public static function channel( $ref, $utm, $ua = '' ) {
+		$ref  = strtolower( (string) $ref );
 		$src  = strtolower( (string) ( $utm['utm_source'] ?? '' ) );
 		$med  = strtolower( (string) ( $utm['utm_medium'] ?? '' ) );
 		$camp = strtolower( (string) ( $utm['utm_campaign'] ?? '' ) );
 		if ( isset( $utm['gclid'] ) || isset( $utm['gbraid'] ) || isset( $utm['wbraid'] ) || isset( $utm['msclkid'] ) || isset( $utm['ttclid'] ) || preg_match( '/^(cpc|ppc|cpm|cpv|paid|paid[_ -]?(search|social|media)|display|banner|ads?|retargeting)$/', $med ) ) {
 			return 'ads';
 		}
-		if ( preg_match( '/\b(gbp|gmb)\b|google[_ -]?(business|my[_ -]?business|maps)|business[_ -]?profile|maps/', $src . ' ' . $med . ' ' . $camp ) ) {
+		if ( preg_match( '/\b(gbp|gmb)\b|google[_ -]?(business|my[_ -]?business|maps)|business[_ -]?profile|\bmaps\b/', $src . ' ' . $med . ' ' . $camp ) ) {
 			return 'maps';
 		}
 		if ( preg_match( '/e-?mail|newsletter|klaviyo|mailchimp/', $med . ' ' . $src ) ) {
 			return 'email';
 		}
+		// An app on Android (its name, never a website); one we don't know is another site, never a search engine.
+		foreach ( self::app_channels() as $app => $channel ) {
+			if ( $ref === $app || 0 === strpos( $ref, $app . '.' ) ) {
+				return $channel;
+			}
+		}
+		if ( preg_match( '/^(com|org|net)\.[a-z0-9_]+\./', $ref ) ) {
+			return 'referral';
+		}
 		if ( preg_match( '/^(chatgpt\.com|chat\.openai\.com|openai\.com|perplexity\.ai|claude\.ai|gemini\.google\.com|copilot\.microsoft\.com|you\.com|phind\.com|meta\.ai)$/', $ref ) || preg_match( '/^(chatgpt|openai|perplexity|claude|gemini|copilot)/', $src ) ) {
 			return 'ai';
 		}
-		if ( preg_match( '/^(maps\.google\.|google\.[a-z.]+\/maps|maps\.apple\.com)/', $ref ) ) {
+		if ( preg_match( '/^(maps\.google\.[a-z.]+|maps\.app\.goo\.gl|maps\.apple\.com)$/', $ref ) ) {
 			return 'maps';
 		}
 		if ( preg_match( '/(^|\.)(mail\.google|outlook\.live|outlook\.office|mail\.yahoo|mail\.aol)\./', $ref ) ) {
@@ -1056,6 +1279,11 @@ class OM_Insights {
 			return 'search';
 		}
 		if ( preg_match( '/(^|\.)(facebook\.com|fb\.com|fb\.me|messenger\.com|instagram\.com|t\.co|twitter\.com|x\.com|pinterest\.[a-z.]+|pin\.it|tiktok\.com|linkedin\.com|lnkd\.in|youtube\.com|youtu\.be|reddit\.com|threads\.net|snapchat\.com|nextdoor\.com|whatsapp\.com)$/', $ref ) || preg_match( '/^(facebook|fb|instagram|ig|twitter|x|pinterest|tiktok|linkedin|youtube|reddit|threads|nextdoor|social)$/', $src ) ) {
+			return 'social';
+		}
+		// A click from Facebook or Instagram that arrived without a website: its link ID on the address,
+		// or the app's own browser (Facebook, Instagram, TikTok, Pinterest, Snapchat, LinkedIn).
+		if ( '' === $ref && ( isset( $utm['fbclid'] ) || preg_match( '/FBAN|FBAV|FB_IAB|Instagram|musical_ly|BytedanceWebview|Pinterest|Snapchat|LinkedInApp/i', (string) $ua ) ) ) {
 			return 'social';
 		}
 		if ( '' !== $ref ) {
@@ -1211,5 +1439,7 @@ class OM_Insights {
 		global $wpdb;
 		$wpdb->query( 'TRUNCATE TABLE ' . self::events_table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 		$wpdb->query( 'TRUNCATE TABLE ' . self::sessions_table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+		delete_option( 'om_ins_cal_seen' );
+		delete_option( 'om_ins_cal_last' );
 	}
 }

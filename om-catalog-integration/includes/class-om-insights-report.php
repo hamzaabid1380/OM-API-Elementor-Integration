@@ -141,6 +141,7 @@ class OM_Insights_Report {
 		return array(
 			'leads'     => array( __( 'Leads', 'om-catalog' ), 'n' ),
 			'bookings'  => array( __( 'Visit requests', 'om-catalog' ), 'n' ),
+			'calls'     => array( __( 'Calls and texts', 'om-catalog' ), 'n' ),
 			'conv'      => array( __( 'Lead rate', 'om-catalog' ), 'p' ),
 			'value'     => array( __( 'Value asked about', 'om-catalog' ), 'm' ),
 			'visitors'  => array( __( 'Visitors', 'om-catalog' ), 'n' ),
@@ -150,14 +151,14 @@ class OM_Insights_Report {
 			'time'      => array( __( 'Time per visit', 'om-catalog' ), 't' ),
 			'designs'   => array( __( 'Designs viewed', 'om-catalog' ), 'n' ),
 			'saves'     => array( __( 'Saved (hearts)', 'om-catalog' ), 'n' ),
-			'contacts'  => array( __( 'Calls, emails, directions', 'om-catalog' ), 'n' ),
+			'contacts'  => array( __( 'Directions and emails', 'om-catalog' ), 'n' ),
 		);
 	}
 
 	/** The chart's measures in groups (for the menu above the chart): name => keys. */
 	public static function metric_groups() {
 		return array(
-			__( 'Results', 'om-catalog' )  => array( 'leads', 'bookings', 'conv', 'value' ),
+			__( 'Results', 'om-catalog' )  => array( 'leads', 'bookings', 'calls', 'conv', 'value' ),
 			__( 'Visits', 'om-catalog' )   => array( 'visitors', 'visits', 'engaged', 'pageviews', 'time' ),
 			__( 'Interest', 'om-catalog' ) => array( 'designs', 'saves', 'contacts' ),
 		);
@@ -368,6 +369,14 @@ class OM_Insights_Report {
 		return $value;
 	}
 
+	/**
+	 * A visit that left at once: one page, under 10 seconds, no design opened, no lead, and (1.48) no tap to
+	 * call, text, email or get directions, so a visitor who lands and taps Call is not a quick exit.
+	 */
+	private static function quick_sql() {
+		return 'pages <= 1 AND engaged < 10 AND leads = 0 AND products = 0' . ( OM_Insights::has_contacts() ? ' AND contacts = 0' : '' );
+	}
+
 	private static function rows( $sql, $args ) {
 		global $wpdb;
 		return (array) $wpdb->get_results( $args ? $wpdb->prepare( $sql, $args ) : $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
@@ -433,12 +442,12 @@ class OM_Insights_Report {
 			"SELECT COUNT(*) AS visits, COUNT(DISTINCT vid) AS visitors, COALESCE(SUM(pages), 0) AS pages, COALESCE(AVG(engaged), 0) AS engaged,
 				COALESCE(SUM(products), 0) AS products, COALESCE(SUM(saves), 0) AS saves,
 				SUM(CASE WHEN leads > 0 THEN 1 ELSE 0 END) AS converted, SUM(is_new) AS new_visitors,
-				SUM(CASE WHEN pages <= 1 AND engaged < 10 AND leads = 0 AND products = 0 THEN 1 ELSE 0 END) AS quick
+				SUM(CASE WHEN " . self::quick_sql() . " THEN 1 ELSE 0 END) AS quick
 			FROM {$s} WHERE day BETWEEN %s AND %s{$vs}",
 			array_merge( array( $from, $to ), $va )
 		);
 		$a = array();
-		foreach ( self::rows( "SELECT type, COUNT(*) AS n FROM {$e} WHERE day BETWEEN %s AND %s AND type IN ('lead','compare','search','call','email','directions','share'){$es} GROUP BY type", array_merge( array( $from, $to ), $ea ) ) as $r ) {
+		foreach ( self::rows( "SELECT type, COUNT(*) AS n FROM {$e} WHERE day BETWEEN %s AND %s AND type IN ('lead','compare','search','call','text','email','directions','share'){$es} GROUP BY type", array_merge( array( $from, $to ), $ea ) ) as $r ) {
 			$a[ $r['type'] ] = (int) $r['n'];
 		}
 		$visits = (int) ( $v['visits'] ?? 0 );
@@ -459,12 +468,15 @@ class OM_Insights_Report {
 			'quick'      => $visits ? 100 * (int) $v['quick'] / $visits : 0,
 			'compares'   => $a['compare'] ?? 0,
 			'searches'   => $a['search'] ?? 0,
-			'calls'      => $a['call'] ?? 0,
+			// Taps on the phone number or a Text button: people reaching for the phone (the call happens off the site).
+			'calls'      => ( $a['call'] ?? 0 ) + ( $a['text'] ?? 0 ),
+			'phone'      => $a['call'] ?? 0,
+			'texts'      => $a['text'] ?? 0,
 			'directions' => $a['directions'] ?? 0,
 			'shares'     => $a['share'] ?? 0,
 			'emails'     => $a['email'] ?? 0,
-			// Taps that reach the shop away from the site's forms: calls, emails and directions.
-			'contacts'   => ( $a['call'] ?? 0 ) + ( $a['email'] ?? 0 ) + ( $a['directions'] ?? 0 ),
+			// The other taps that reach the shop away from the site's forms: directions and emails.
+			'contacts'   => ( $a['email'] ?? 0 ) + ( $a['directions'] ?? 0 ),
 			// Visits that did more than glance (the opposite of a quick exit).
 			'engaged'    => $visits ? 100 - 100 * (int) $v['quick'] / $visits : 0,
 			'bookings'   => $kinds['booking'] ?? 0,
@@ -543,7 +555,7 @@ class OM_Insights_Report {
 		$buckets = self::buckets( $from, $to, $unit );
 		$n       = count( $buckets );
 		$zero    = array_fill( 0, $n, 0 );
-		$sum     = array( 'visits' => $zero, 'visitors' => $zero, 'pv' => $zero, 'eng' => $zero, 'pr' => $zero, 'sv' => $zero, 'cv' => $zero, 'qk' => $zero, 'leads' => $zero, 'book' => $zero, 'ct' => $zero );
+		$sum     = array( 'visits' => $zero, 'visitors' => $zero, 'pv' => $zero, 'eng' => $zero, 'pr' => $zero, 'sv' => $zero, 'cv' => $zero, 'qk' => $zero, 'leads' => $zero, 'book' => $zero, 'ct' => $zero, 'cl' => $zero );
 		$groups  = array_fill_keys( array_keys( self::lead_groups() ), $zero );
 		$keys    = array();
 		$index   = array();
@@ -571,7 +583,7 @@ class OM_Insights_Report {
 		foreach ( self::rows(
 			"SELECT {$col} AS b, COUNT(*) AS visits, COUNT(DISTINCT vid) AS visitors, COALESCE(SUM(pages), 0) AS pv, COALESCE(SUM(engaged), 0) AS eng,
 				COALESCE(SUM(products), 0) AS pr, COALESCE(SUM(saves), 0) AS sv, SUM(CASE WHEN leads > 0 THEN 1 ELSE 0 END) AS cv,
-				SUM(CASE WHEN pages <= 1 AND engaged < 10 AND leads = 0 AND products = 0 THEN 1 ELSE 0 END) AS qk
+				SUM(CASE WHEN " . self::quick_sql() . " THEN 1 ELSE 0 END) AS qk
 			FROM {$s} WHERE day BETWEEN %s AND %s{$vs} GROUP BY b",
 			array_merge( $keys, array( $from, $to ), $va )
 		) as $r ) {
@@ -593,10 +605,10 @@ class OM_Insights_Report {
 				}
 			}
 		}
-		foreach ( self::rows( "SELECT {$col} AS b, COUNT(*) AS n FROM {$e} WHERE type IN ('call','email','directions') AND day BETWEEN %s AND %s{$es} GROUP BY b", array_merge( $keys, array( $from, $to ), $ea ) ) as $r ) {
+		foreach ( self::rows( "SELECT {$col} AS b, type, COUNT(*) AS n FROM {$e} WHERE type IN ('call','text','email','directions') AND day BETWEEN %s AND %s{$es} GROUP BY b, type", array_merge( $keys, array( $from, $to ), $ea ) ) as $r ) {
 			$i = $index[ (string) $r['b'] ] ?? null;
 			if ( null !== $i ) {
-				$sum['ct'][ $i ] = (int) $r['n'];
+				$sum[ in_array( $r['type'], array( 'call', 'text' ), true ) ? 'cl' : 'ct' ][ $i ] += (int) $r['n'];
 			}
 		}
 		// What the leads were worth: the designs named, at their listed prices.
@@ -623,6 +635,7 @@ class OM_Insights_Report {
 			$m['engaged'][]   = $visits ? round( 100 * ( $visits - $sum['qk'][ $i ] ) / $visits, 1 ) : 0;
 			$m['bookings'][]  = $sum['book'][ $i ];
 			$m['contacts'][]  = $sum['ct'][ $i ];
+			$m['calls'][]     = $sum['cl'][ $i ];
 			$m['value'][]     = (int) round( $sum['val'][ $i ] );
 		}
 		$utc    = new DateTimeZone( 'UTC' );
@@ -789,6 +802,7 @@ class OM_Insights_Report {
 					'actions'    => $this->actions(),
 					'cta'        => $this->clicks( 'cta', 12 ),
 					'call'       => $this->clicks( 'call', 20 ),
+					'text'       => $this->clicks( 'text', 20 ),
 					'directions' => $this->clicks( 'directions', 10 ),
 					'outbound'   => $this->clicks( 'outbound', 10 ),
 					'funnels'    => $this->funnels(),
@@ -812,8 +826,27 @@ class OM_Insights_Report {
 		);
 	}
 
-	/** The address of the PDF report for this period and these filters. */
-	public function report_url( $names = true ) {
+	/** What the one-page summary needs: the overview's numbers (much lighter than report_data()). */
+	public function summary_data() {
+		return $this->cached(
+			'summary',
+			function () {
+				$f = $this->findings_data();
+				return array(
+					'now'      => $f['now'],
+					'before'   => $f['before'],
+					'chart'    => $this->chart( $this->unit() ),
+					'findings' => $this->findings( $f, 12 ),
+					'attr'     => $f['attr'],
+					'designs'  => $f['designs'],
+					'pace'     => $f['pace'],
+				);
+			}
+		);
+	}
+
+	/** The address of the PDF report for this period and these filters ($one: the one-page summary). */
+	public function report_url( $names = true, $one = false ) {
 		$q = array( 'action' => 'om_ins_report', 'range' => $this->range );
 		if ( 'custom' === $this->range ) {
 			$q['from'] = $this->from;
@@ -825,7 +858,10 @@ class OM_Insights_Report {
 		if ( 'year' === $this->cmp ) {
 			$q['cmp'] = 'year';
 		}
-		$q['names']    = $names ? 1 : 0;
+		$q['names'] = $names ? 1 : 0;
+		if ( $one ) {
+			$q['one'] = 1;
+		}
 		$q['_wpnonce'] = wp_create_nonce( 'om_ins_report' );
 		return admin_url( 'admin-post.php' ) . '?' . http_build_query( $q, '', '&', PHP_QUERY_RFC3986 );
 	}
@@ -842,9 +878,10 @@ class OM_Insights_Report {
 		$out .= '<p class="om-ins-pop-t">' . esc_html__( 'PDF report', 'om-catalog' ) . '</p>';
 		$out .= '<p class="om-ins-pop-sub">' . esc_html( $this->period_text() ) . ( $filters ? '<br />' . esc_html( implode( ' · ', $filters ) ) : '' ) . '</p>';
 		/* translators: %s: "the period before" or "the same time last year". */
-		$out .= '<p class="om-ins-pop-note">' . esc_html( sprintf( __( 'Results first, what to do next, then every section of Insights with all its numbers, each compared with %s, in your brand. It takes a few seconds.', 'om-catalog' ), $this->compare_name() ) ) . '</p>';
+		$out .= '<p class="om-ins-pop-note">' . esc_html( sprintf( __( 'One page: the results, calls and texts, visits, and what stood out with what to do next. Full report: every section of Insights with all its numbers. Both compared with %s, in your brand.', 'om-catalog' ), $this->compare_name() ) ) . '</p>';
 		$out .= '<label class="om-ins-check"><input type="checkbox" checked data-om-ins-report-names /><span>' . esc_html__( 'Include the names of people who got in touch', 'om-catalog' ) . '</span></label>';
-		$out .= '<a class="om-ins-btn primary om-ins-report-dl" href="' . esc_url( $this->report_url( true ) ) . '" data-om-ins-report-dl>' . self::icon( 'download' ) . '<span>' . esc_html__( 'Download PDF', 'om-catalog' ) . '</span></a>';
+		$out .= '<a class="om-ins-btn primary om-ins-report-dl" href="' . esc_url( $this->report_url( true, true ) ) . '" data-om-ins-report-dl>' . self::icon( 'download' ) . '<span>' . esc_html__( 'One-page summary', 'om-catalog' ) . '</span></a>';
+		$out .= '<a class="om-ins-btn om-ins-report-dl is-full" href="' . esc_url( $this->report_url( true ) ) . '" data-om-ins-report-dl>' . self::icon( 'download' ) . '<span>' . esc_html__( 'Full report', 'om-catalog' ) . '</span></a>';
 		return $out . '</div></div>';
 	}
 
@@ -870,7 +907,7 @@ class OM_Insights_Report {
 		return self::rows(
 			"SELECT {$column} AS k, COUNT(*) AS visits, COUNT(DISTINCT vid) AS visitors, SUM(CASE WHEN leads > 0 THEN 1 ELSE 0 END) AS converted,
 				COALESCE(AVG(pages), 0) AS pages, COALESCE(AVG(engaged), 0) AS engaged,
-				SUM(CASE WHEN pages <= 1 AND engaged < 10 AND leads = 0 AND products = 0 THEN 1 ELSE 0 END) AS quick
+				SUM(CASE WHEN " . self::quick_sql() . " THEN 1 ELSE 0 END) AS quick
 			FROM {$s} WHERE day BETWEEN %s AND %s {$where}{$vs} GROUP BY {$column} ORDER BY visits DESC LIMIT %d",
 			array_merge( array( $from, $to ), $va, array( $limit ) )
 		);
@@ -919,7 +956,7 @@ class OM_Insights_Report {
 			array_merge( array( $this->from, $this->to ), $ea, array( $limit ) )
 		);
 		$entries = array();
-		foreach ( self::rows( "SELECT landing AS k, COUNT(*) AS n, SUM(CASE WHEN pages <= 1 AND engaged < 10 AND leads = 0 AND products = 0 THEN 1 ELSE 0 END) AS quick, SUM(CASE WHEN leads > 0 THEN 1 ELSE 0 END) AS converted FROM {$s} WHERE day BETWEEN %s AND %s{$vs} GROUP BY landing", array_merge( array( $this->from, $this->to ), $va ) ) as $r ) {
+		foreach ( self::rows( "SELECT landing AS k, COUNT(*) AS n, SUM(CASE WHEN " . self::quick_sql() . " THEN 1 ELSE 0 END) AS quick, SUM(CASE WHEN leads > 0 THEN 1 ELSE 0 END) AS converted FROM {$s} WHERE day BETWEEN %s AND %s{$vs} GROUP BY landing", array_merge( array( $this->from, $this->to ), $va ) ) as $r ) {
 			$entries[ $r['k'] ] = $r;
 		}
 		$exits = array();
@@ -979,6 +1016,18 @@ class OM_Insights_Report {
 		}
 		unset( $r );
 		return $rows;
+	}
+
+	/** How many different designs were seen, and how many leads named one (hints apart), however many there are. */
+	public function design_counts() {
+		$e = OM_Insights::events_table();
+		list( $es, $ea ) = $this->escope( $this->from, $this->to );
+		$r = self::row(
+			"SELECT COUNT(DISTINCT CASE WHEN type = 'view' THEN item END) AS seen, SUM(CASE WHEN type = 'lead' AND label <> 'hint' THEN 1 ELSE 0 END) AS asked
+			FROM {$e} WHERE day BETWEEN %s AND %s AND item <> '' AND type IN ('view','lead'){$es}",
+			array_merge( array( $this->from, $this->to ), $ea )
+		);
+		return array( 'seen' => (int) ( $r['seen'] ?? 0 ), 'asked' => (int) ( $r['asked'] ?? 0 ) );
 	}
 
 	public function lines() {
@@ -1056,7 +1105,7 @@ class OM_Insights_Report {
 		$out = array();
 		foreach ( self::rows(
 			"SELECT type, label, COUNT(*) AS n, COUNT(DISTINCT sid) AS visits FROM {$e}
-			WHERE day BETWEEN %s AND %s AND type IN ('save','compare','share','option','builder','diamond','designer','hint','assistant','quiz','booking','call','email','directions','outbound','cta','search','filter','view'){$es}
+			WHERE day BETWEEN %s AND %s AND type IN ('save','compare','share','option','builder','diamond','designer','hint','assistant','quiz','booking','call','text','email','directions','outbound','cta','search','filter','view','welcome','film'){$es}
 			GROUP BY type, label",
 			array_merge( array( $this->from, $this->to ), $ea )
 		) as $r ) {
@@ -1172,19 +1221,26 @@ class OM_Insights_Report {
 			FROM {$e} e LEFT JOIN {$s} v ON v.sid = e.sid WHERE e.type = 'lead' AND e.day BETWEEN %s AND %s{$es} ORDER BY e.ts DESC LIMIT %d",
 			array_merge( array( $this->from, $this->to ), $ea, array( $limit ) )
 		);
-		// First visit of each lead's visitor (for "days to decide").
-		$vids  = array_values( array_unique( array_filter( wp_list_pluck( $rows, 'vid' ) ) ) );
-		$first = array();
+		// Each lead's visitor's visits (for "days to decide" and how many visits it took, up to the lead only).
+		$vids   = array_values( array_unique( array_filter( wp_list_pluck( $rows, 'vid' ) ) ) );
+		$starts = array();
 		foreach ( array_chunk( $vids, 200 ) as $chunk ) {
 			$place = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
-			foreach ( self::rows( 'SELECT vid, MIN(started) AS first, COUNT(*) AS visits FROM ' . $s . " WHERE vid IN ({$place}) GROUP BY vid", $chunk ) as $r ) {
-				$first[ $r['vid'] ] = $r;
+			foreach ( self::rows( 'SELECT vid, started FROM ' . $s . " WHERE vid IN ({$place}) ORDER BY started", $chunk ) as $r ) {
+				$starts[ $r['vid'] ][] = (int) $r['started'];
 			}
 		}
 		$titles = $this->page_titles( wp_list_pluck( $rows, 'landing' ), gmdate( 'Y-m-d', strtotime( $this->from . ' 12:00:00' ) - DAY_IN_SECONDS ), $this->to );
 		foreach ( $rows as &$r ) {
-			$r['first']         = (int) ( $first[ $r['vid'] ]['first'] ?? 0 );
-			$r['visits']        = (int) ( $first[ $r['vid'] ]['visits'] ?? 0 );
+			$at = (int) $r['ts'];
+			$up = array_filter(
+				$starts[ $r['vid'] ] ?? array(),
+				static function ( $t ) use ( $at ) {
+					return $t <= $at;
+				}
+			);
+			$r['first']         = $up ? (int) min( $up ) : 0;
+			$r['visits']        = count( $up );
 			$r['landing_title'] = $titles[ (string) $r['landing'] ] ?? '';
 		}
 		unset( $r );
@@ -1357,7 +1413,17 @@ class OM_Insights_Report {
 				return ( $b['last'] + $b['first'] ) <=> ( $a['last'] + $a['first'] );
 			}
 		);
+		// Leads with no visit behind them (a browser that asks not to be tracked, tracking blocked, a calendar
+		// booking that couldn't be matched to its visit): a source of their own, so the sources add up to every lead.
+		$unlinked = 0;
+		if ( ! $this->filters ) {
+			$unlinked = (int) ( self::row( "SELECT COUNT(*) AS n FROM {$e} e LEFT JOIN {$s} v ON v.sid = e.sid WHERE e.type = 'lead' AND e.day BETWEEN %s AND %s AND v.sid IS NULL", array( $this->from, $this->to ) )['n'] ?? 0 );
+			if ( $unlinked ) {
+				$by['none'] = array( 'last' => $unlinked, 'first' => $unlinked, 'helped' => 0 );
+			}
+		}
 		return array(
+			'unlinked' => $unlinked,
 			'by'     => $by,
 			'days'   => $days,
 			'visits' => $visits,
@@ -1465,7 +1531,8 @@ class OM_Insights_Report {
 		foreach ( array_keys( $now + $was ) as $item ) {
 			$a = $now[ $item ][0] ?? 0;
 			$b = $was[ $item ][0] ?? 0;
-			if ( max( $a, $b ) >= 8 && $a !== $b ) {
+			// A real move, not chance (1.48): at least 5 views apart and rarely that far apart by chance.
+			if ( max( $a, $b ) >= 8 && abs( $a - $b ) >= 5 && self::chance_counts( $a, $b ) < 0.05 ) {
 				$list[] = array( 'item' => $item, 'title' => $now[ $item ][1] ?? ( $was[ $item ][1] ?? '' ), 'now' => $a, 'before' => $b, 'diff' => $a - $b );
 			}
 		}
@@ -1493,7 +1560,7 @@ class OM_Insights_Report {
 		list( $vs, $va ) = $this->vscope( $this->from, $this->to );
 		$args  = array_merge( array( $this->from, $this->to ), $va );
 		$kinds = array();
-		foreach ( self::rows( "SELECT is_new, COUNT(*) AS visits, COUNT(DISTINCT vid) AS visitors, SUM(CASE WHEN leads > 0 THEN 1 ELSE 0 END) AS converted, COALESCE(AVG(engaged), 0) AS engaged, COALESCE(AVG(pages), 0) AS pages, SUM(CASE WHEN pages <= 1 AND engaged < 10 AND leads = 0 AND products = 0 THEN 1 ELSE 0 END) AS quick FROM {$s} WHERE day BETWEEN %s AND %s{$vs} GROUP BY is_new", $args ) as $r ) {
+		foreach ( self::rows( "SELECT is_new, COUNT(*) AS visits, COUNT(DISTINCT vid) AS visitors, SUM(CASE WHEN leads > 0 THEN 1 ELSE 0 END) AS converted, COALESCE(AVG(engaged), 0) AS engaged, COALESCE(AVG(pages), 0) AS pages, SUM(CASE WHEN " . self::quick_sql() . " THEN 1 ELSE 0 END) AS quick FROM {$s} WHERE day BETWEEN %s AND %s{$vs} GROUP BY is_new", $args ) as $r ) {
 			$kinds[ (int) $r['is_new'] ? 'new' : 'returning' ] = $r;
 		}
 		$freq = array_fill_keys( array( '1', '2', '3', '5' ), 0 );
@@ -1756,9 +1823,11 @@ class OM_Insights_Report {
 				return array(
 					'now'      => $this->kpis( $this->from, $this->to ),
 					'before'   => $this->kpis( $pf, $pt ),
+					'first'    => self::first_day(),
 					'chan'     => $this->by_visit( 'channel', 12 ),
 					'chan_b'   => $this->by_visit( 'channel', 12, '', $pf, $pt ),
 					'devices'  => $this->by_visit( 'device', 3 ),
+					'touch'    => $this->touch_by_device(),
 					'designs'  => $this->products( 60 ),
 					'zero'     => $search['zero'],
 					'landing'  => $this->by_visit( 'landing', 15 ),
@@ -1771,6 +1840,24 @@ class OM_Insights_Report {
 					'heat'     => $this->heat(),
 				);
 			}
+		);
+	}
+
+	/** The first day Insights has visits for (empty when there are none). */
+	public static function first_day() {
+		global $wpdb;
+		return (string) $wpdb->get_var( 'SELECT MIN(day) FROM ' . OM_Insights::sessions_table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+	}
+
+	/** Visits on each device, and how many got in touch: sent a form, or tapped to call or text. */
+	public function touch_by_device() {
+		$s = OM_Insights::sessions_table();
+		$e = OM_Insights::events_table();
+		list( $vs, $va ) = $this->vscope( $this->from, $this->to );
+		return self::rows(
+			"SELECT device AS k, COUNT(*) AS visits, SUM(CASE WHEN leads > 0 OR sid IN (SELECT sid FROM {$e} WHERE type IN ('call','text') AND day BETWEEN %s AND %s) THEN 1 ELSE 0 END) AS touched
+			FROM {$s} WHERE day BETWEEN %s AND %s{$vs} GROUP BY device",
+			array_merge( array( $this->from, $this->to, $this->from, $this->to ), $va )
 		);
 	}
 
@@ -1801,9 +1888,106 @@ class OM_Insights_Report {
 		return $advice[ $key ] ?? '';
 	}
 
+	/* ---------- Telling a real change from chance (1.48) ---------- */
+
+	/** The standard normal distribution: the chance of a value below $z (Abramowitz and Stegun 7.1.26). */
+	private static function phi( $z ) {
+		$x = abs( (float) $z ) / M_SQRT2;
+		$t = 1 / ( 1 + 0.3275911 * $x );
+		$e = 1 - ( ( ( ( ( 1.061405429 * $t - 1.453152027 ) * $t ) + 1.421413741 ) * $t - 0.284496736 ) * $t + 0.254829592 ) * $t * exp( -$x * $x );
+		return $z >= 0 ? ( 1 + $e ) / 2 : ( 1 - $e ) / 2;
+	}
+
+	/**
+	 * How likely two counts from stretches of the same length would be this far apart by chance alone
+	 * (two-sided): if nothing changed, each one fell in either stretch with even odds. Exact up to 400.
+	 */
+	public static function chance_counts( $a, $b ) {
+		$a = max( 0, (int) round( (float) $a ) );
+		$b = max( 0, (int) round( (float) $b ) );
+		$n = $a + $b;
+		if ( 0 === $n || $a === $b ) {
+			return 1.0;
+		}
+		if ( $n <= 400 ) {
+			$log = -$n * log( 2 );
+			$sum = 0.0;
+			for ( $i = 0; $i <= min( $a, $b ); $i++ ) {
+				if ( $i > 0 ) {
+					$log += log( ( $n - $i + 1 ) / $i );
+				}
+				$sum += exp( $log );
+			}
+			return min( 1.0, 2 * $sum );
+		}
+		return min( 1.0, 2 * ( 1 - self::phi( ( abs( $a - $b ) - 1 ) / sqrt( $n ) ) ) );
+	}
+
+	/** How likely two shares ($x1 of $n1, $x2 of $n2) would be this far apart by chance alone (two-sided). */
+	public static function chance_rates( $x1, $n1, $x2, $n2 ) {
+		if ( $n1 <= 0 || $n2 <= 0 ) {
+			return 1.0;
+		}
+		$p = ( $x1 + $x2 ) / ( $n1 + $n2 );
+		if ( $p <= 0 || $p >= 1 ) {
+			return 1.0;
+		}
+		$z = abs( $x1 / $n1 - $x2 / $n2 ) / sqrt( $p * ( 1 - $p ) * ( 1 / $n1 + 1 / $n2 ) );
+		return min( 1.0, 2 * ( 1 - self::phi( $z ) ) );
+	}
+
+	/** How likely as few as $x (or fewer) when $expect is usual (one-sided, Poisson). */
+	public static function chance_below( $x, $expect ) {
+		$x = (int) $x;
+		if ( $expect <= 0 ) {
+			return 1.0;
+		}
+		if ( $expect > 300 ) {
+			return self::phi( ( $x + 0.5 - $expect ) / sqrt( $expect ) );
+		}
+		$term = exp( -$expect );
+		$sum  = $term;
+		for ( $i = 1; $i <= $x; $i++ ) {
+			$term *= $expect / $i;
+			$sum  += $term;
+		}
+		return min( 1.0, $sum );
+	}
+
+	/** How likely as many as $x (or more) when $expect is usual (one-sided, Poisson). */
+	public static function chance_above( $x, $expect ) {
+		return (int) $x <= 0 ? 1.0 : max( 0.0, 1 - self::chance_below( (int) $x - 1, $expect ) );
+	}
+
+	/** The line added to a change that may still be chance. */
+	private static function maybe_words() {
+		return __( 'With numbers this small it could still be chance: worth keeping an eye on.', 'om-catalog' );
+	}
+
+	/** What to check when a source sends fewer visitors (or none). */
+	private static function drop_advice( $key, $none = false ) {
+		$advice = array(
+			'maps'     => __( 'Check your Google Business Profile: the website link (tagged utm_source=gbp), your hours, photos and recent posts.', 'om-catalog' ),
+			'search'   => __( 'Check that your main pages still show on Google (Search Console) and that none was unpublished or renamed.', 'om-catalog' ),
+			'ads'      => __( 'Check that your ads are running and the budget hasn\'t run out.', 'om-catalog' ),
+			'social'   => __( 'Fewer posts, or a promotion that ended? Post the designs people look at most.', 'om-catalog' ),
+			'email'    => __( 'Did an email go out this period, and do its links reach the site?', 'om-catalog' ),
+			'referral' => __( 'A website that used to link to you may have moved or removed the link.', 'om-catalog' ),
+			'campaign' => __( 'Check that your tagged links (QR codes, cards, flyers) still open the site.', 'om-catalog' ),
+		);
+		if ( isset( $advice[ $key ] ) ) {
+			return $advice[ $key ];
+		}
+		return $none ? __( 'Check the links and posts that used to bring these visits.', 'om-catalog' ) : __( 'If nothing changed on your side (a post, an ad, your Business Profile), it may be the season.', 'om-catalog' );
+	}
+
 	/**
 	 * Findings, most important first: [ tone (good, watch, idea, info), title, text, do, href, link, score, kind ('goal' for the month's goals) ].
 	 * $d: the numbers from findings_data().
+	 *
+	 * A change is only called one when chance alone would rarely explain it (1.48): fewer than 1 in 20 times,
+	 * or, for a fall in leads or visit requests, fewer than 1 in 5 (said so in the text); and only against a
+	 * period Insights fully recorded.
 	 */
 	public function findings( $d, $max = 8 ) {
 		$out  = array();
@@ -1819,39 +2003,106 @@ class OM_Insights_Report {
 		$rate = static function ( $conv, $visits ) {
 			return $visits ? self::pct( $conv, $visits ) : '0%';
 		};
+		$sure  = 0.05;
+		$maybe = 0.2;
 
 		// Today isn't over: against a whole day before, every count looks like a fall, so changes are left out.
 		$whole = ! ( 1 === $this->span() && $this->to === wp_date( 'Y-m-d' ) );
-
-		// Leads, and visit requests, against the period compared with.
-		if ( $whole && $b['leads'] >= 5 && abs( $k['leads'] - $b['leads'] ) / $b['leads'] >= 0.1 ) {
-			$up = $k['leads'] > $b['leads'];
+		// Nor against a period Insights hadn't recorded yet (or has deleted): "911% more" would only mean that.
+		list( $pf ) = $this->previous();
+		$first      = (string) ( $d['first'] ?? '' );
+		$known      = '' !== $first && $pf >= $first;
+		if ( $whole && ! $known && $k['visits'] ) {
 			$add(
-				$up ? 'good' : 'watch',
-				100 + min( 50, 50 * abs( $k['leads'] - $b['leads'] ) / $b['leads'] ),
-				/* translators: %s: change, e.g. "31% more". */
-				sprintf( __( 'Leads: %s', 'om-catalog' ), self::more_less( $k['leads'], $b['leads'] ) ),
-				/* translators: 1: leads, 2: leads before, 3: "the period before", 4: visit requests, 5: visit requests before. */
-				sprintf( __( '%1$s leads, against %2$s %3$s. Visit requests: %4$s (%5$s).', 'om-catalog' ), $n( $k['leads'] ), $n( $b['leads'] ), $was, $n( $k['bookings'] ), $n( $b['bookings'] ) ),
-				$up ? '' : __( 'Look at the sources below: which one sent fewer people, and is the booking button easy to find?', 'om-catalog' ),
-				$this->url( array( 'tab' => 'leads' ) ),
-				__( 'See leads', 'om-catalog' )
+				'info',
+				60,
+				__( 'Too early to compare', 'om-catalog' ),
+				'' !== $first
+					/* translators: 1: date, 2: "the period before" or "the same time last year". */
+					? sprintf( __( 'Insights has visits from %1$s on, so %2$s isn\'t fully recorded and changes against it aren\'t shown yet.', 'om-catalog' ), wp_date( 'M j, Y', strtotime( $first . ' 12:00:00' ) ), $was )
+					: __( 'There is nothing recorded to compare with yet.', 'om-catalog' ),
+				__( 'Choose a shorter period, or wait until there is a full period to compare with.', 'om-catalog' )
 			);
-		} elseif ( $k['leads'] > 0 && ! $b['leads'] ) {
+		}
+		$whole = $whole && $known;
+
+		// Leads, against the period compared with.
+		if ( $whole && $b['leads'] > 0 && $k['leads'] + $b['leads'] >= 10 ) {
+			$chg = ( $k['leads'] - $b['leads'] ) / $b['leads'];
+			$p   = self::chance_counts( $k['leads'], $b['leads'] );
+			$up  = $chg > 0;
+			if ( abs( $chg ) >= 0.1 && ( $p < $sure || ( ! $up && $p < $maybe ) ) ) {
+				$add(
+					$up ? 'good' : 'watch',
+					( $p < $sure ? 100 : 70 ) + min( 50, 50 * abs( $chg ) ),
+					/* translators: %s: change, e.g. "31% more". */
+					sprintf( __( 'Leads: %s', 'om-catalog' ), self::more_less( $k['leads'], $b['leads'] ) ),
+					/* translators: 1: leads, 2: leads before, 3: "the period before", 4: visit requests, 5: visit requests before. */
+					sprintf( __( '%1$s leads, against %2$s %3$s. Visit requests: %4$s (%5$s).', 'om-catalog' ), $n( $k['leads'] ), $n( $b['leads'] ), $was, $n( $k['bookings'] ), $n( $b['bookings'] ) ) . ( $p < $sure ? '' : ' ' . self::maybe_words() ),
+					$up ? '' : __( 'Look at the sources below: which one sent fewer people, and is the booking button easy to find?', 'om-catalog' ),
+					$this->url( array( 'tab' => 'leads' ) ),
+					__( 'See leads', 'om-catalog' )
+				);
+			}
+		} elseif ( $whole && $k['leads'] > 0 && ! $b['leads'] ) {
 			/* translators: %s: number of leads. */
 			$add( 'good', 90, __( 'First leads', 'om-catalog' ), sprintf( _n( '%s lead this period.', '%s leads this period.', $k['leads'], 'om-catalog' ), $n( $k['leads'] ) ), '', $this->url( array( 'tab' => 'leads' ) ), __( 'See leads', 'om-catalog' ) );
 		}
-		if ( $whole && $b['conv'] > 0 && $k['visits'] >= 200 && abs( $k['conv'] - $b['conv'] ) / $b['conv'] >= 0.15 ) {
-			$up = $k['conv'] > $b['conv'];
-			$add(
-				$up ? 'good' : 'watch',
-				62,
-				/* translators: %s: lead rate. */
-				sprintf( __( 'Lead rate %s', 'om-catalog' ), self::pct( $k['conv'], 100 ) ),
-				/* translators: 1: leads per 100 visits, 2: before, 3: "the period before". */
-				sprintf( __( 'Of every 100 visits, %1$s ended in a lead, against %2$s %3$s.', 'om-catalog' ), number_format_i18n( $k['conv'], 1 ), number_format_i18n( $b['conv'], 1 ), $was ),
-				$up ? '' : __( 'More people came but fewer got in touch: check that the busiest first pages lead somewhere.', 'om-catalog' )
-			);
+
+		// Visit requests on their own: the leads closest to a sale (they can fall while sign-ups rise).
+		if ( $whole && $b['bookings'] > 0 && $k['bookings'] + $b['bookings'] >= 8 ) {
+			$chg = ( $k['bookings'] - $b['bookings'] ) / $b['bookings'];
+			$p   = self::chance_counts( $k['bookings'], $b['bookings'] );
+			$up  = $chg > 0;
+			if ( abs( $chg ) >= 0.15 && ( $p < $sure || ( ! $up && $p < $maybe ) ) ) {
+				$add(
+					$up ? 'good' : 'watch',
+					( $p < $sure ? 98 : 74 ) + min( 40, 40 * abs( $chg ) ),
+					/* translators: %s: change, e.g. "31% more". */
+					sprintf( __( 'Visit requests: %s', 'om-catalog' ), self::more_less( $k['bookings'], $b['bookings'] ) ),
+					/* translators: 1: visit requests, 2: before, 3: "the period before". */
+					sprintf( __( '%1$s requests to visit the showroom, against %2$s %3$s: the leads closest to a sale.', 'om-catalog' ), $n( $k['bookings'] ), $n( $b['bookings'] ), $was ) . ( $p < $sure ? '' : ' ' . self::maybe_words() ),
+					$up ? '' : __( 'Try a "Book" button and the booking window on a phone yourself, and put "Book a visit" on the most viewed designs.', 'om-catalog' ),
+					$this->url( array( 'tab' => 'leads' ) ),
+					__( 'See leads', 'om-catalog' )
+				);
+			}
+		}
+
+		// Calls and texts: the other way people get in touch.
+		if ( $whole && $b['calls'] > 0 && $k['calls'] + $b['calls'] >= 20 ) {
+			$chg = ( $k['calls'] - $b['calls'] ) / $b['calls'];
+			if ( abs( $chg ) >= 0.15 && self::chance_counts( $k['calls'], $b['calls'] ) < $sure ) {
+				$up = $chg > 0;
+				$add(
+					$up ? 'good' : 'watch',
+					66 + min( 20, 20 * abs( $chg ) ),
+					/* translators: %s: change, e.g. "31% more". */
+					sprintf( __( 'Calls and texts: %s', 'om-catalog' ), self::more_less( $k['calls'], $b['calls'] ) ),
+					/* translators: 1: taps, 2: before, 3: "the period before". */
+					sprintf( __( '%1$s taps to call or text, against %2$s %3$s.', 'om-catalog' ), $n( $k['calls'] ), $n( $b['calls'] ), $was ),
+					$up ? '' : __( 'Check on a phone that the number and the Text button work, and that your Google Business Profile shows the right number.', 'om-catalog' ),
+					$this->url( array( 'tab' => 'actions' ) ),
+					__( 'See calls and texts', 'om-catalog' )
+				);
+			}
+		}
+
+		// The lead rate.
+		if ( $whole && $k['visits'] >= 200 && $b['visits'] >= 200 && $b['conv'] > 0 && $k['converted'] + $b['converted'] >= 15 ) {
+			$chg = ( $k['conv'] - $b['conv'] ) / $b['conv'];
+			if ( abs( $chg ) >= 0.15 && self::chance_rates( $k['converted'], $k['visits'], $b['converted'], $b['visits'] ) < $sure / 2 ) {
+				$up = $chg > 0;
+				$add(
+					$up ? 'good' : 'watch',
+					62,
+					/* translators: %s: lead rate. */
+					sprintf( __( 'Lead rate %s', 'om-catalog' ), self::pct( $k['conv'], 100 ) ),
+					/* translators: 1: leads per 100 visits, 2: before, 3: "the period before". */
+					sprintf( __( 'Of every 100 visits, %1$s ended in a lead, against %2$s %3$s.', 'om-catalog' ), number_format_i18n( $k['conv'], 1 ), number_format_i18n( $b['conv'], 1 ), $was ),
+					$up ? '' : ( $k['visits'] > $b['visits'] ? __( 'More people came but fewer got in touch: check that the busiest first pages lead somewhere.', 'om-catalog' ) : __( 'Fewer of the visits got in touch: check that the "Book" buttons and forms work on a phone, and that the busiest first pages lead somewhere.', 'om-catalog' ) )
+				);
+			}
 		}
 
 		// The month's goals.
@@ -1877,47 +2128,94 @@ class OM_Insights_Report {
 			}
 		}
 
-		// Sources that moved.
+		// Sources that moved: judged by the leads they bring, not only by percent, and sources that stopped.
+		$now_by = array();
+		foreach ( $d['chan'] as $r ) {
+			$now_by[ $r['k'] ] = $r;
+		}
 		$before = array();
 		foreach ( $d['chan_b'] as $r ) {
 			$before[ $r['k'] ] = $r;
 		}
+		$all   = max( (int) $k['visits'], (int) $b['visits'] );
+		$base  = $k['visits'] ? (int) $k['converted'] / (int) $k['visits'] : 0;
+		$keys  = $whole ? array_unique( array_merge( array_keys( $now_by ), array_keys( $before ) ) ) : array();
+		// Every source is a separate test, so each must pass a stricter bar; and a busy week lifts every source
+		// at once, so its share of the visits must have moved too.
+		$bar   = $sure / max( 1, count( $keys ) );
 		$moves = array();
-		foreach ( $whole ? $d['chan'] : array() as $r ) {
-			$p    = (int) ( $before[ $r['k'] ]['visits'] ?? 0 );
-			$diff = (int) $r['visits'] - $p;
-			if ( $p >= 15 && abs( $diff ) >= 15 && abs( $diff ) / $p >= 0.25 ) {
-				$moves[] = array( $r, $p, $diff );
+		foreach ( $keys as $key ) {
+			$a    = (int) ( $now_by[ $key ]['visits'] ?? 0 );
+			$p    = (int) ( $before[ $key ]['visits'] ?? 0 );
+			$diff = $a - $p;
+			if ( max( $a, $p ) < 15 || abs( $diff ) < max( 15, 0.02 * $all ) || ( $p > 0 && abs( $diff ) / $p < 0.15 ) || self::chance_counts( $a, $p ) >= $bar || self::chance_rates( $a, max( 1, (int) $k['visits'] ), $p, max( 1, (int) $b['visits'] ) ) >= $bar ) {
+				continue;
 			}
+			// The leads it brings: its own lead rate when it has enough visits to tell, else the site's.
+			$src     = $diff < 0 ? ( $before[ $key ] ?? null ) : ( $now_by[ $key ] ?? null );
+			$r8      = $src && (int) $src['visits'] >= 100 ? (int) $src['converted'] / (int) $src['visits'] : $base;
+			$moves[] = array( (string) $key, $a, $p, $diff, abs( $diff ) * $r8 );
 		}
-		usort( $moves, static function ( $x, $y ) { return abs( $y[2] ) <=> abs( $x[2] ); } );
+		usort(
+			$moves,
+			static function ( $x, $y ) {
+				return array( $y[4], abs( $y[3] ) ) <=> array( $x[4], abs( $x[3] ) );
+			}
+		);
 		foreach ( array_slice( $moves, 0, 2 ) as $m ) {
-			list( $r, $p, $diff ) = $m;
-			$name = self::channel_name( $r['k'] );
+			list( $key, $a, $p, $diff, $impact ) = $m;
+			$name = self::channel_name( $key );
+			if ( 0 === $a ) {
+				$add(
+					'watch',
+					80 + min( 15, 3 * $impact ),
+					/* translators: %s: source. */
+					sprintf( __( '%s: no visits this period', 'om-catalog' ), $name ),
+					/* translators: 1: visits, 2: "the period before". */
+					sprintf( __( '%1$s visits came this way %2$s, none this period.', 'om-catalog' ), $n( $p ), $was ),
+					self::drop_advice( $key, true ),
+					$this->url( array( 'tab' => 'sources' ) ),
+					__( 'See sources', 'om-catalog' )
+				);
+				continue;
+			}
+			/* translators: 1: visits, 2: visits before, 3: "the period before", 4: leads. */
+			$text = sprintf( __( '%1$s visits against %2$s %3$s, and %4$s of them became leads.', 'om-catalog' ), $n( $a ), $n( $p ), $was, $n( $now_by[ $key ]['converted'] ?? 0 ) );
+			$lost = (int) round( $impact );
+			if ( $diff < 0 && $lost >= 1 ) {
+				/* translators: %s: number of leads. */
+				$text .= ' ' . sprintf( _n( 'At its usual lead rate that is about %s lead fewer.', 'At its usual lead rate that is about %s leads fewer.', $lost, 'om-catalog' ), $n( $lost ) );
+			}
 			$add(
 				$diff > 0 ? 'good' : 'watch',
-				45 + min( 15, 15 * abs( $diff ) / $p ) + min( 10, abs( $diff ) / 12 ),
+				50 + min( 15, 15 * abs( $diff ) / max( 1, $p ) ) + min( 25, 5 * $impact ),
 				/* translators: 1: source, 2: change. */
-				sprintf( __( '%1$s: %2$s visits', 'om-catalog' ), $name, self::more_less( (int) $r['visits'], $p ) ),
-				/* translators: 1: visits, 2: visits before, 3: "the period before", 4: leads. */
-				sprintf( __( '%1$s visits against %2$s %3$s, and %4$s of them became leads.', 'om-catalog' ), $n( $r['visits'] ), $n( $p ), $was, $n( $r['converted'] ) ),
-				$diff > 0 ? '' : __( 'If nothing changed on your side (a post, an ad, your Business Profile), it may be the season.', 'om-catalog' ),
-				$this->filter_url( 'channel', $r['k'] ),
+				sprintf( __( '%1$s: %2$s visits', 'om-catalog' ), $name, self::more_less( $a, $p ) ),
+				$text,
+				$diff > 0 ? '' : self::drop_advice( $key ),
+				$this->filter_url( 'channel', $key ),
 				__( 'See these visits', 'om-catalog' )
 			);
 		}
 
-		// The source that brings buyers, and a big one that doesn't.
-		$overall = $k['visits'] ? $k['converted'] / $k['visits'] : 0;
-		$best    = null;
-		$weak    = null;
+		// The source that brings buyers, and a big one that doesn't, each against the other sources.
+		$best = null;
+		$weak = null;
+		$bar  = $sure / max( 1, count( $d['chan'] ) );
 		foreach ( $d['chan'] as $r ) {
-			$v  = (int) $r['visits'];
-			$cr = $v ? (int) $r['converted'] / $v : 0;
-			if ( $v >= 40 && (int) $r['converted'] >= 3 && $overall > 0 && $cr >= 1.5 * $overall && ( ! $best || $cr > $best[1] ) ) {
+			$v      = (int) $r['visits'];
+			$x      = (int) $r['converted'];
+			$others = (int) $k['visits'] - $v;
+			$theirs = $others > 0 ? ( (int) $k['converted'] - $x ) / $others : 0;
+			if ( ! $v || $theirs <= 0 ) {
+				continue;
+			}
+			$expect = $v * $theirs;
+			$cr     = $x / $v;
+			if ( $v >= 40 && $x >= 5 && $cr >= 1.5 * $theirs && self::chance_above( $x, $expect ) < $bar && ( ! $best || $cr > $best[1] ) ) {
 				$best = array( $r, $cr );
 			}
-			if ( $v >= 150 && $overall > 0 && $cr <= 0.5 * $overall && ( ! $weak || $v > (int) $weak[0]['visits'] ) ) {
+			if ( $v >= 150 && $expect >= 6 && $cr <= 0.5 * $theirs && self::chance_below( $x, $expect ) < $bar && ( ! $weak || $v > (int) $weak[0]['visits'] ) ) {
 				$weak = array( $r, $cr );
 			}
 		}
@@ -1948,21 +2246,23 @@ class OM_Insights_Report {
 			);
 		}
 
-		// Phones against computers.
+		// Phones against computers: getting in touch counts a call or a text (how phones get in touch) as well as a form.
 		$dev = array();
-		foreach ( $d['devices'] as $r ) {
+		foreach ( (array) ( $d['touch'] ?? array() ) as $r ) {
 			$dev[ $r['k'] ] = $r;
 		}
 		if ( isset( $dev['phone'], $dev['desktop'] ) && (int) $dev['phone']['visits'] >= 80 && (int) $dev['desktop']['visits'] >= 80 ) {
-			$pr = (int) $dev['phone']['converted'] / (int) $dev['phone']['visits'];
-			$cr = (int) $dev['desktop']['converted'] / (int) $dev['desktop']['visits'];
-			if ( $cr > 0 && $pr < 0.65 * $cr ) {
+			$px = (int) $dev['phone']['touched'];
+			$pv = (int) $dev['phone']['visits'];
+			$cx = (int) $dev['desktop']['touched'];
+			$cv = (int) $dev['desktop']['visits'];
+			if ( $cx > 0 && $px + $cx >= 15 && $px / $pv < 0.65 * $cx / $cv && self::chance_rates( $px, $pv, $cx, $cv ) < $sure ) {
 				$add(
 					'watch',
 					57,
 					__( 'Phones lag behind computers', 'om-catalog' ),
-					/* translators: 1: share of visits on phones, 2: phone lead rate, 3: computer lead rate. */
-					sprintf( __( '%1$s of visits are on phones, but they become leads at %2$s against %3$s on computers.', 'om-catalog' ), self::pct( (int) $dev['phone']['visits'], $k['visits'], 0 ), $rate( $dev['phone']['converted'], $dev['phone']['visits'] ), $rate( $dev['desktop']['converted'], $dev['desktop']['visits'] ) ),
+					/* translators: 1: share of visits on phones, 2: phone rate, 3: computer rate. */
+					sprintf( __( '%1$s of visits are on phones, but %2$s of phone visits got in touch (a form, a call or a text) against %3$s on computers.', 'om-catalog' ), self::pct( $pv, $k['visits'], 0 ), $rate( $px, $pv ), $rate( $cx, $cv ) ),
 					__( 'Try booking and asking about a ring on a phone yourself; keep the call button in reach.', 'om-catalog' ),
 					$this->filter_url( 'device', 'phone' ),
 					__( 'See phone visits', 'om-catalog' )
@@ -1991,17 +2291,24 @@ class OM_Insights_Report {
 			}
 		}
 
-		// Popular, never asked about.
+		// Popular, never asked about: only when this many visits would normally have brought a question.
+		$asked = 0;
+		$seen  = 0;
 		foreach ( $d['designs'] as $r ) {
-			if ( (int) $r['viewers'] >= 25 && 0 === (int) $r['leads'] ) {
+			$asked += (int) $r['leads'];
+			$seen  += (int) $r['viewers'];
+		}
+		$per = $seen ? $asked / $seen : 0;
+		foreach ( $d['designs'] as $r ) {
+			if ( (int) $r['viewers'] >= 25 && 0 === (int) $r['leads'] && (int) $r['viewers'] * $per >= 3 ) {
 				$name = self::design( $r['item'], $r['title'] )['title'];
 				$add(
 					'idea',
 					44 + min( 16, (int) $r['viewers'] / 12 ),
 					/* translators: %s: design. */
 					sprintf( __( '%s: much looked at, never asked about', 'om-catalog' ), $name ),
-					/* translators: 1: views, 2: people, 3: saves. */
-					sprintf( __( 'Viewed %1$s times by %2$s people and saved %3$s times, but nobody got in touch about it.', 'om-catalog' ), $n( $r['views'] ), $n( $r['viewers'] ), $n( $r['saves'] ) ),
+					/* translators: 1: views, 2: visits, 3: saves. */
+					sprintf( __( 'Viewed %1$s times in %2$s visits and saved %3$s times, but nobody got in touch about it.', 'om-catalog' ), $n( $r['views'] ), $n( $r['viewers'] ), $n( $r['saves'] ) ),
 					__( 'Check its photos and price, and make "Book a viewing" stand out on it.', 'om-catalog' ),
 					$this->filter_url( 'item', $r['item'] ),
 					__( 'See who viewed it', 'om-catalog' )
@@ -2045,7 +2352,7 @@ class OM_Insights_Report {
 				/* translators: %s: page. */
 				sprintf( __( '%s loses people at once', 'om-catalog' ), $title ),
 				/* translators: 1: share, 2: visits. */
-				sprintf( __( '%1$s of the %2$s visits that start there leave within 10 seconds without doing anything.', 'om-catalog' ), self::pct( (int) $lose['quick'], (int) $lose['visits'], 0 ), $n( $lose['visits'] ) ),
+				sprintf( __( '%1$s of the %2$s visits that start there leave within 10 seconds without opening a design, sending a form or tapping to call or text.', 'om-catalog' ), self::pct( (int) $lose['quick'], (int) $lose['visits'], 0 ), $n( $lose['visits'] ) ),
 				__( 'Make the top of that page say what it offers and what to do next.', 'om-catalog' ),
 				$this->filter_url( 'landing', $lose['k'] ),
 				__( 'See these visits', 'om-catalog' )
@@ -2061,8 +2368,8 @@ class OM_Insights_Report {
 			$add(
 				'watch',
 				41 + min( 15, $missing / 3 ),
-				/* translators: %s: visits. */
-				sprintf( _n( '%s visit reached a missing page', '%s visits reached missing pages', $missing, 'om-catalog' ), $n( $missing ) ),
+				/* translators: %s: times. */
+				sprintf( _n( 'A missing page was opened %s time', 'Missing pages were opened %s times', $missing, 'om-catalog' ), $n( $missing ) ),
 				$typed
 					/* translators: 1: address, 2: times. */
 					? sprintf( __( 'Most often %1$s (%2$s times, mostly from an old bookmark or a typed address).', 'om-catalog' ), $top['page'], $n( $top['n'] ) )
@@ -2076,7 +2383,7 @@ class OM_Insights_Report {
 
 		// A design on the rise.
 		$rise = $whole ? ( $d['movers'][0][0] ?? null ) : null;
-		if ( $rise && $rise['now'] >= 15 && $rise['before'] > 0 && $rise['diff'] / $rise['before'] >= 0.5 ) {
+		if ( $rise && $rise['now'] >= 15 && $rise['before'] > 0 && $rise['diff'] / $rise['before'] >= 0.5 && self::chance_counts( $rise['now'], $rise['before'] ) < $sure / 50 ) {
 			$name = self::design( $rise['item'], $rise['title'] )['title'];
 			$add(
 				'info',
@@ -2091,9 +2398,9 @@ class OM_Insights_Report {
 			);
 		}
 
-		// Buyers take time; where their journeys start.
+		// Buyers take time; where their journeys start (from enough leads to tell).
 		$a = $d['attr'];
-		if ( $a['total'] >= 10 ) {
+		if ( $a['total'] >= 20 ) {
 			if ( $a['back'] / $a['total'] >= 0.3 ) {
 				$add(
 					'info',
@@ -2107,7 +2414,7 @@ class OM_Insights_Report {
 				);
 			}
 			foreach ( $a['by'] as $key => $c ) {
-				if ( $c['first'] >= $c['last'] + 3 && $c['first'] >= 1.5 * max( 1, $c['last'] ) ) {
+				if ( 'none' !== $key && $c['first'] >= 5 && $c['first'] >= $c['last'] + 3 && $c['first'] >= 1.5 * max( 1, $c['last'] ) ) {
 					$add(
 						'info',
 						33,
@@ -2127,10 +2434,10 @@ class OM_Insights_Report {
 		// Returning visitors.
 		$new = $d['audience']['kinds']['new'] ?? null;
 		$ret = $d['audience']['kinds']['returning'] ?? null;
-		if ( $new && $ret && (int) $ret['visits'] >= 60 && (int) $new['visits'] >= 60 ) {
+		if ( $new && $ret && (int) $ret['visits'] >= 60 && (int) $new['visits'] >= 60 && (int) $new['converted'] + (int) $ret['converted'] >= 15 ) {
 			$nr = (int) $new['converted'] / (int) $new['visits'];
 			$rr = (int) $ret['converted'] / (int) $ret['visits'];
-			if ( $nr > 0 && $rr >= 1.5 * $nr ) {
+			if ( $nr > 0 && $rr >= 1.5 * $nr && self::chance_rates( (int) $ret['converted'], (int) $ret['visits'], (int) $new['converted'], (int) $new['visits'] ) < $sure ) {
 				$add(
 					'info',
 					28,
@@ -2159,7 +2466,7 @@ class OM_Insights_Report {
 			);
 		}
 
-		// The busiest time.
+		// The busiest time (from enough visits to tell).
 		$best = array( 0, 0, 0 );
 		foreach ( (array) $d['heat'] as $dow => $hours ) {
 			foreach ( (array) $hours as $hr => $v ) {
@@ -2168,7 +2475,7 @@ class OM_Insights_Report {
 				}
 			}
 		}
-		if ( $best[2] > 0 ) {
+		if ( $best[2] > 0 && $k['visits'] >= 200 ) {
 			$utc  = new DateTimeZone( 'UTC' );
 			$days = array( __( 'Sundays', 'om-catalog' ), __( 'Mondays', 'om-catalog' ), __( 'Tuesdays', 'om-catalog' ), __( 'Wednesdays', 'om-catalog' ), __( 'Thursdays', 'om-catalog' ), __( 'Fridays', 'om-catalog' ), __( 'Saturdays', 'om-catalog' ) );
 			$add(
@@ -2274,11 +2581,19 @@ class OM_Insights_Report {
 	 * ------------------------------------------------------------- */
 
 	public static function channel_name( $key ) {
+		if ( 'none' === (string) $key ) {
+			return __( 'Not linked to a visit', 'om-catalog' );
+		}
 		return OM_Insights::channels()[ $key ] ?? ( '' === (string) $key ? __( 'Unknown', 'om-catalog' ) : (string) $key );
 	}
 
+	/** Why a lead has no visit behind it. */
+	public static function unlinked_words() {
+		return __( 'Leads sent with no visit recorded: from a browser that asks not to be tracked, with tracking blocked, or a calendar booking that couldn\'t be matched to its visit.', 'om-catalog' );
+	}
+
 	public static function channel_icon( $key ) {
-		$icons = array( 'search' => 'search', 'maps' => 'pin', 'direct' => 'direct', 'social' => 'social', 'ads' => 'ads', 'email' => 'mail', 'ai' => 'sparkle', 'referral' => 'link', 'campaign' => 'tag' );
+		$icons = array( 'search' => 'search', 'maps' => 'pin', 'direct' => 'direct', 'social' => 'social', 'ads' => 'ads', 'email' => 'mail', 'ai' => 'sparkle', 'referral' => 'link', 'campaign' => 'tag', 'none' => 'help' );
 		return $icons[ $key ] ?? 'globe';
 	}
 
@@ -2396,12 +2711,38 @@ class OM_Insights_Report {
 			'footer'              => __( 'Footer', 'om-catalog' ),
 			'phone_bar'           => __( 'Phone bar', 'om-catalog' ),
 			'booking_bar_desktop' => __( 'Booking bar (computers)', 'om-catalog' ),
+			'booking_bar'         => __( 'Booking bar (computers)', 'om-catalog' ),
+			'booking_window'      => __( 'Booking window', 'om-catalog' ),
+			'welcome_back'        => __( '"Welcome back" bar', 'om-catalog' ),
+			'pagehero'            => __( 'Page banner', 'om-catalog' ),
+			'kit'                 => __( 'Wulf Kit bar', 'om-catalog' ),
 			'tray'                => __( 'Saved tray', 'om-catalog' ),
 			'page'                => __( 'In the page', 'om-catalog' ),
 			'product'             => __( 'Product page', 'om-catalog' ),
 			'visit'               => __( 'Visit section', 'om-catalog' ),
+			'visit_form'          => __( 'Visit section', 'om-catalog' ),
 			'quiz'                => __( 'Ring style quiz', 'om-catalog' ),
 			'hint'                => __( 'Hint page', 'om-catalog' ),
+			'link'                => __( 'A booking link (?book=1)', 'om-catalog' ),
+			// Wulf Kit widgets, by the name they have in Elementor.
+			'announce'            => __( 'Announcement bar', 'om-catalog' ),
+			'bookbar'             => __( 'Booking bar (in the page)', 'om-catalog' ),
+			'craft'               => __( 'Ring builds itself', 'om-catalog' ),
+			'cta'                 => __( 'Call to action', 'om-catalog' ),
+			'faq'                 => __( 'Questions (FAQ)', 'om-catalog' ),
+			'film'                => __( 'Cinematic film', 'om-catalog' ),
+			'filmtabs'            => __( 'Film chapters', 'om-catalog' ),
+			'fourcs'              => __( 'The 4Cs', 'om-catalog' ),
+			'help'                => __( 'Help circles', 'om-catalog' ),
+			'paths'               => __( '"What brings you in?"', 'om-catalog' ),
+			'posts'               => __( 'Journal', 'om-catalog' ),
+			'products'            => __( 'Product row', 'om-catalog' ),
+			'prose'               => __( 'Text block', 'om-catalog' ),
+			'reel'                => __( 'Brand film', 'om-catalog' ),
+			'split'               => __( 'Text and picture', 'om-catalog' ),
+			'story'               => __( 'Our story', 'om-catalog' ),
+			'studio'              => __( 'Ring studio', 'om-catalog' ),
+			'tiles'               => __( 'Collection tiles', 'om-catalog' ),
 		);
 		if ( '' === (string) $key ) {
 			return __( 'Not recorded', 'om-catalog' );
@@ -2445,7 +2786,7 @@ class OM_Insights_Report {
 			'assistant' => array( 'open' => __( 'Opened the jeweller assistant', 'om-catalog' ), 'message' => __( 'Asked the assistant a question', 'om-catalog' ), 'starter' => __( 'Saw the assistant\'s starter question', 'om-catalog' ) ),
 			'hint'      => array( 'open' => __( 'Opened the "Drop a hint" form', 'om-catalog' ), 'sent' => __( 'Sent a hint', 'om-catalog' ), 'page_view' => __( 'Opened a hint page', 'om-catalog' ), 'page_book' => __( 'Tapped Book a viewing on a hint page', 'om-catalog' ), 'page_ask' => __( 'Tapped Ask about it on a hint page', 'om-catalog' ) ),
 			'quiz'      => array( 'start' => __( 'Started the ring style quiz', 'om-catalog' ), 'step' => __( 'Answered a quiz question', 'om-catalog' ), 'complete' => __( 'Finished the quiz', 'om-catalog' ), 'email_open' => __( 'Opened "Email me my matches"', 'om-catalog' ) ),
-			'booking'   => array( 'open' => __( 'Opened the booking window', 'om-catalog' ), 'step' => __( 'Went on in the booking window', 'om-catalog' ), 'request' => __( 'Sent a visit request', 'om-catalog' ) ),
+			'booking'   => array( 'open' => __( 'Opened the booking window', 'om-catalog' ), 'step' => __( 'Went on in the booking window', 'om-catalog' ), 'request' => __( 'Sent a visit request', 'om-catalog' ), 'calendar' => __( 'Opened the booking calendar', 'om-catalog' ) ),
 			'diamond'   => array( 'guide' => __( 'Used "Help me choose" (diamonds)', 'om-catalog' ), 'guide_pick' => __( 'Picked a suggested diamond', 'om-catalog' ), 'compare_add' => __( 'Added a diamond to compare', 'om-catalog' ), 'compare_view' => __( 'Opened the diamond comparison', 'om-catalog' ), 'true_size' => __( 'Opened the true size viewer', 'om-catalog' ) ),
 			'designer'  => array( 'open' => __( 'Opened the ring designer', 'om-catalog' ) ),
 		);
@@ -2466,6 +2807,12 @@ class OM_Insights_Report {
 				return OM_Insights::option_name( $label );
 			case 'call':
 				return __( 'Tapped to call', 'om-catalog' );
+			case 'text':
+				return __( 'Tapped to text', 'om-catalog' );
+			case 'welcome':
+				return __( 'Saw the "Welcome back" bar', 'om-catalog' );
+			case 'film':
+				return 'complete' === $label ? __( 'Watched the brand film to the end', 'om-catalog' ) : ( 'play' === $label ? __( 'Played the brand film', 'om-catalog' ) : __( 'Watched the brand film', 'om-catalog' ) );
 			case 'email':
 				return __( 'Tapped an email address', 'om-catalog' );
 			case 'directions':
@@ -2707,10 +3054,11 @@ class OM_Insights_Report {
 			'value'     => __( 'The listed prices of the designs people asked about, requested or emailed themselves.', 'om-catalog' ),
 			'visitors'  => __( 'Different people (each browser counts once).', 'om-catalog' ),
 			'visits'    => __( 'Times someone came to the site. A visit ends after 30 minutes without activity.', 'om-catalog' ),
-			'engaged'   => __( 'Visits that did more than glance: more than one page, more than 10 seconds, a design opened or a lead.', 'om-catalog' ),
+			'engaged'   => __( 'Visits that did more than glance: more than one page, more than 10 seconds, a design opened, a lead, or a tap to call, text, email or get directions.', 'om-catalog' ),
 			'designs'   => __( 'Product pages and quick views opened.', 'om-catalog' ),
 			'saves'     => __( 'Designs saved with the heart.', 'om-catalog' ),
-			'contacts'  => __( 'Taps on the phone number, the email address or directions. The call or email itself happens off the site.', 'om-catalog' ),
+			'calls'     => __( 'Taps on the phone number or the Text button: people reaching for the phone. The call or text itself happens off the site.', 'om-catalog' ),
+			'contacts'  => __( 'Taps to get directions or on the email address. The trip or email itself happens off the site.', 'om-catalog' ),
 			'time'      => __( 'Average time actively on the site, screen on and in use.', 'om-catalog' ),
 			'pageviews' => __( 'Pages opened, all visits together.', 'om-catalog' ),
 		);
@@ -2727,9 +3075,9 @@ class OM_Insights_Report {
 	}
 
 	/**
-	 * The results band at the top of the overview: leads, visit requests, lead
-	 * rate and the value of the designs asked about; what the leads were; the
-	 * month's goals.
+	 * The results band at the top of the overview: leads, visit requests, calls
+	 * and texts, lead rate and the value of the designs asked about; what the
+	 * leads were; the month's goals.
 	 */
 	private function hero( $k, $b ) {
 		$h     = self::hints();
@@ -2739,6 +3087,10 @@ class OM_Insights_Report {
 		$out  .= '<div class="om-ins-hero2-tiles">';
 		$out  .= $this->tile( array( 'key' => 'leads', 'label' => $names['leads'][0], 'now' => $k['leads'], 'before' => $b['leads'], 'hint' => $h['leads'] ), true, 'is-hero is-lead' );
 		$out  .= $this->tile( array( 'key' => 'bookings', 'label' => $names['bookings'][0], 'now' => $k['bookings'], 'before' => $b['bookings'], 'hint' => $h['bookings'] ), true, 'is-hero' );
+		// Calls and texts: for a shop, the other way people get in touch (taps; the call itself happens off the site).
+		/* translators: 1: calls, 2: texts. */
+		$sub   = $k['calls'] ? sprintf( __( '%1$s calls · %2$s texts', 'om-catalog' ), number_format_i18n( $k['phone'] ), number_format_i18n( $k['texts'] ) ) : '';
+		$out  .= $this->tile( array( 'key' => 'calls', 'label' => $names['calls'][0], 'now' => $k['calls'], 'before' => $b['calls'], 'hint' => $h['calls'], 'sub' => $sub ), true, 'is-hero' );
 		$out  .= $this->tile( array( 'key' => 'conv', 'label' => $names['conv'][0], 'now' => $k['conv'], 'before' => $b['conv'], 'hint' => $h['conv'] ), true, 'is-hero' );
 		/* translators: %s: number of leads. */
 		$sub   = $k['valued'] ? sprintf( _n( '%s lead named a design', '%s leads named a design', $k['valued'], 'om-catalog' ), number_format_i18n( $k['valued'] ) ) : '';
@@ -3530,12 +3882,13 @@ class OM_Insights_Report {
 				return $b[ $key ] <=> $a[ $key ];
 			}
 		);
-		$total = max( 1, (int) $attr['total'] );
+		$total = max( 1, (int) $attr['total'] + (int) ( $attr['unlinked'] ?? 0 ) );
 		$rows  = array();
 		foreach ( $list as $channel => $c ) {
 			if ( ! $c[ $key ] ) {
 				continue;
 			}
+			$none   = 'none' === $channel;
 			$rows[] = array(
 				'label'  => self::channel_name( $channel ),
 				'icon'   => self::channel_icon( $channel ),
@@ -3543,8 +3896,8 @@ class OM_Insights_Report {
 				'show'   => self::compact( $c[ $key ] ),
 				'share'  => $c[ $key ] / $total,
 				/* translators: 1: leads that first came this way, 2: leads whose own visit came this way, 3: leads it helped along. */
-				'tip'    => sprintf( __( 'First visit: %1$s · Visit they got in touch on: %2$s · Helped along: %3$s', 'om-catalog' ), number_format_i18n( $c['first'] ), number_format_i18n( $c['last'] ), number_format_i18n( $c['helped'] ) ),
-				'filter' => array( 'channel', $channel ),
+				'tip'    => $none ? self::unlinked_words() : sprintf( __( 'First visit: %1$s · Visit they got in touch on: %2$s · Helped along: %3$s', 'om-catalog' ), number_format_i18n( $c['first'] ), number_format_i18n( $c['last'] ), number_format_i18n( $c['helped'] ) ),
+				'filter' => $none ? null : array( 'channel', $channel ),
 			);
 		}
 		return $rows;
@@ -3718,8 +4071,9 @@ class OM_Insights_Report {
 		$a     = $f['attr'];
 		$rows  = array();
 		foreach ( $a['by'] as $channel => $c ) {
+			$name   = self::icon( self::channel_icon( $channel ), 'om-ins-cell-i' ) . esc_html( self::channel_name( $channel ) );
 			$rows[] = array(
-				$this->filter_cell( 'channel', $channel, self::icon( self::channel_icon( $channel ), 'om-ins-cell-i' ) . esc_html( self::channel_name( $channel ) ) ),
+				'none' === $channel ? '<span class="om-ins-cell-link is-plain" title="' . esc_attr( self::unlinked_words() ) . '">' . $name . '</span>' : $this->filter_cell( 'channel', $channel, $name ),
 				self::n( $c['first'] ),
 				self::n( $c['last'] ),
 				self::n( $c['helped'] ),
@@ -4051,6 +4405,7 @@ class OM_Insights_Report {
 			function () {
 				return array(
 					'products' => $this->products( 400 ),
+					'counts'   => $this->design_counts(),
 					'lines'    => $this->lines(),
 					'options'  => $this->options(),
 					'pairs'    => $this->compare_groups(),
@@ -4066,12 +4421,9 @@ class OM_Insights_Report {
 		}
 		$k     = $f['now'];
 		$b     = $f['before'];
-		$asked = 0;
-		$kinds = 0;
-		foreach ( $data['products'] as $r ) {
-			$asked += (int) $r['leads'];
-			$kinds += (int) $r['views'] > 0 ? 1 : 0;
-		}
+		// Counted over every design (the list above stops at 400).
+		$asked = (int) ( $data['counts']['asked'] ?? 0 );
+		$kinds = (int) ( $data['counts']['seen'] ?? 0 );
 		$out  = $this->stats(
 			array(
 				array( 'key' => 'designs', 'label' => __( 'Designs viewed', 'om-catalog' ), 'now' => $k['designs'], 'before' => $b['designs'], 'hint' => self::hints()['designs'] ),
@@ -4239,6 +4591,7 @@ class OM_Insights_Report {
 					'all'        => $this->actions(),
 					'cta'        => $this->clicks( 'cta', 25 ),
 					'call'       => $this->clicks( 'call', 20 ),
+					'text'       => $this->clicks( 'text', 20 ),
 					'directions' => $this->clicks( 'directions', 10 ),
 					'outbound'   => $this->clicks( 'outbound', 15 ),
 				);
@@ -4280,6 +4633,7 @@ class OM_Insights_Report {
 					array( __( 'Booking window opened', 'om-catalog' ), $sum( 'booking', 'open' ), 'calendar' ),
 					array( __( 'Visit requests sent', 'om-catalog' ), $sum( 'booking', 'request' ), 'check' ),
 					array( __( 'Tapped to call', 'om-catalog' ), $sum( 'call' ), 'phone' ),
+					array( __( 'Tapped to text', 'om-catalog' ), $sum( 'text' ), 'mail' ),
 					array( __( 'Opened directions', 'om-catalog' ), $sum( 'directions' ), 'pin' ),
 					array( __( 'Tapped an email address', 'om-catalog' ), $sum( 'email' ), 'mail' ),
 					array( __( 'Button clicks', 'om-catalog' ), $sum( 'cta' ), 'actions' ),
@@ -4299,6 +4653,10 @@ class OM_Insights_Report {
 					array( __( 'Hint pages opened', 'om-catalog' ), $sum( 'hint', 'page_view' ), 'eye' ),
 					array( __( 'Diamond help used', 'om-catalog' ), $sum( 'diamond', 'guide' ), 'designs' ),
 					array( __( 'True size viewer', 'om-catalog' ), $sum( 'diamond', 'true_size' ), 'eye' ),
+					array( __( '"Welcome back" bar shown', 'om-catalog' ), $sum( 'welcome', 'shown' ), 'refresh' ),
+					array( __( 'Brand film played', 'om-catalog' ), $sum( 'film', 'play' ), 'eye' ),
+					array( __( 'Brand film watched to the end', 'om-catalog' ), $sum( 'film', 'complete' ), 'check' ),
+					array( __( 'Booking calendar opened', 'om-catalog' ), $sum( 'booking', 'calendar' ), 'calendar' ),
 				),
 			),
 		);
@@ -4346,6 +4704,7 @@ class OM_Insights_Report {
 			null,
 			__( 'The call itself happens off the site.', 'om-catalog' )
 		);
+		$out   .= $this->panel( 'tx', __( 'Texts tapped', 'om-catalog' ), array( array( 'label' => '', 'head' => array( __( 'Where they tapped', 'om-catalog' ), __( 'Taps', 'om-catalog' ) ), 'rows' => $ranked( $data['text'], $where, 'pin' ), 'empty' => __( 'None yet.', 'om-catalog' ) ) ), null, __( 'The text itself is written in the phone\'s own app.', 'om-catalog' ) );
 		$out   .= $this->panel( 'di', __( 'Directions opened', 'om-catalog' ), array( array( 'label' => '', 'head' => array( __( 'Where they tapped', 'om-catalog' ), __( 'Taps', 'om-catalog' ) ), 'rows' => $ranked( $data['directions'], $where, 'pin' ), 'empty' => __( 'None yet.', 'om-catalog' ) ) ) );
 		$out   .= $this->panel( 'ob', __( 'Links to other sites', 'om-catalog' ), array( array( 'label' => '', 'head' => array( __( 'Site', 'om-catalog' ), __( 'Clicks', 'om-catalog' ) ), 'rows' => $ranked( $data['outbound'], static function ( $r ) { return (string) $r['label']; }, 'globe' ), 'empty' => __( 'None yet.', 'om-catalog' ) ) ) );
 		return $out . '</div>';
@@ -4461,6 +4820,14 @@ class OM_Insights_Report {
 		$gform  = $field( 'om_ins_goal', __( 'Leads', 'om-catalog' ), __( 'Every form sent: visit requests, inquiries, hints, emails and sign-ups. 0: no goal.', 'om-catalog' ), $goals['leads'] );
 		$gform .= $field( 'om_ins_goal_v', __( 'Visit requests', 'om-catalog' ), __( 'Requests to visit the showroom. 0: no goal.', 'om-catalog' ), $goals['visits'] );
 		$out   .= self::card( __( 'Monthly goals', 'om-catalog' ), $gform, array( 'sub' => __( 'The overview and the Leads tab show how this month is pacing against them.', 'om-catalog' ) ) );
+
+		// Bookings made in the SimplyBook calendar (when one is set up): SimplyBook tells the site about each.
+		if ( class_exists( 'OM_Booking' ) && OM_Booking::setup() ) {
+			$last = (int) get_option( 'om_ins_cal_last', 0 );
+			$cal  = '<p class="om-ins-lead">' . esc_html__( 'The calendar runs on SimplyBook\'s own site, so the page can\'t see a booking finish. To count each booking as a visit request, paste this address in SimplyBook: Custom features › API (turn it on) › Settings › Callback URL, and switch on the trigger for new bookings. SimplyBook sends only the booking\'s number, so these requests have no name; one is tied to its visit when just one visit had the calendar open in the half hour before.', 'om-catalog' ) . '</p>';
+			$cal .= '<figure class="om-ins-quote"><blockquote data-om-ins-copytext>' . esc_html( OM_Insights::calendar_url() ) . '</blockquote><figcaption><span>' . esc_html( $last ? sprintf( /* translators: %s: date and time. */ __( 'Last booking received %s', 'om-catalog' ), wp_date( 'M j, Y \a\t g:i a', $last ) ) : __( 'No booking received yet', 'om-catalog' ) ) . '</span><button type="button" class="om-ins-btn" data-om-ins-copy>' . self::icon( 'copy' ) . esc_html__( 'Copy address', 'om-catalog' ) . '</button></figcaption></figure>';
+			$out .= self::card( __( 'Bookings in the calendar', 'om-catalog' ), $cal, array( 'sub' => __( 'SimplyBook bookings counted as visit requests.', 'om-catalog' ) ) );
+		}
 
 		$since = $t['first'] ? wp_date( 'M j, Y', strtotime( $t['first'] . ' 12:00:00' ) ) : '–';
 		$data  = '<div class="om-ins-figures"><div><b>' . esc_html( number_format_i18n( $t['visits'] ) ) . '</b><span>' . esc_html__( 'visits', 'om-catalog' ) . '</span></div><div><b>' . esc_html( number_format_i18n( $t['events'] ) ) . '</b><span>' . esc_html__( 'recorded actions', 'om-catalog' ) . '</span></div><div><b>' . esc_html( $since ) . '</b><span>' . esc_html__( 'first visit kept', 'om-catalog' ) . '</span></div></div>';
@@ -4617,6 +4984,7 @@ class OM_Insights_Report {
 					$info = self::place_name( $ev['meta'] );
 					break;
 				case 'call':
+				case 'text':
 					$what .= ' ' . self::phone( $ev['label'] );
 					$info  = self::place_name( $ev['meta'] );
 					break;

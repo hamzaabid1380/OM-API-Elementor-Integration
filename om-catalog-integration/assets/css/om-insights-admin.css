@@ -612,6 +612,16 @@ body.toplevel_page_om-insights #wpcontent {
 	min-height: 40px;
 }
 
+.om-ins .om-ins-report-dl + .om-ins-report-dl {
+	margin-top: 8px;
+}
+
+/* The full report under the one-page summary: the lighter button, its turning ring in ink. */
+.om-ins-report-dl.is-full.is-busy::before {
+	border-color: rgba(15, 18, 23, 0.2);
+	border-top-color: var(--oi-ink);
+}
+
 .om-ins .om-ins-report-dl.is-busy {
 	cursor: progress;
 	opacity: 0.9;
@@ -1532,6 +1542,13 @@ a.om-ins-row-name:hover .om-ins-row-t {
 	white-space: nowrap;
 }
 
+/* In a half-width card a number column's heading may wrap, so the table fits. */
+.om-ins-grid .om-ins-table thead th.num,
+.om-ins .om-ins-grid .om-ins-table th.num .om-ins-sort {
+	white-space: normal;
+	text-align: inherit;
+}
+
 .om-ins-table tbody th {
 	color: var(--oi-ink);
 	font-weight: 550;
@@ -1608,8 +1625,8 @@ th.num .om-ins-sort::before {
 	text-decoration: none;
 }
 
-.om-ins-cell-link:hover .om-ins-dname,
-.om-ins-cell-link:hover {
+.om-ins-cell-link:not(.is-plain):hover .om-ins-dname,
+.om-ins-cell-link:not(.is-plain):hover {
 	text-decoration: underline;
 	text-decoration-color: rgba(15, 18, 23, 0.3);
 	text-underline-offset: 3px;
@@ -2879,9 +2896,24 @@ a.om-ins-person:hover {
 
 .om-ins-hero2-tiles {
 	display: grid;
-	grid-template-columns: repeat(4, minmax(0, 1fr));
+	grid-template-columns: repeat(5, minmax(0, 1fr));
 	gap: 10px;
 	margin: 16px 0 0;
+}
+
+/* Five results (1.48: calls and texts): on narrower screens leads and visit requests take the first row, wider. */
+@media (max-width: 1360px) {
+	.om-ins-hero2-tiles {
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+	}
+
+	.om-ins-hero2-tiles > :nth-child(-n + 2) {
+		grid-column: span 3;
+	}
+
+	.om-ins-hero2-tiles > :nth-child(n + 3) {
+		grid-column: span 2;
+	}
 }
 
 .om-ins-hero2-t {
@@ -3844,6 +3876,14 @@ a.om-ins-person:hover {
 	.om-ins-hero2-tiles,
 	.om-ins-vitals {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.om-ins-hero2-tiles > :nth-child(n) {
+		grid-column: auto;
+	}
+
+	.om-ins-hero2-tiles > :first-child {
+		grid-column: 1 / -1;
 	}
 }
 
