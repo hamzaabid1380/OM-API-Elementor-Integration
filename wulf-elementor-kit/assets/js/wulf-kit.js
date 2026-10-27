@@ -2103,6 +2103,7 @@
 			applyHours(el);
 			$$('.pv[data-autoplay]', el).forEach(function (box) { new IntersectionObserver(function (es) { playIn(box, es[0].isIntersecting); }, { threshold: 0.35 }).observe(box); });
 			$$('[data-steprows]', el).forEach(stepRows);
+			$$('.pgh.spot.has-media', el).forEach(spotOnPiece);
 			$$('video[data-lazy]', el).forEach(function (v) { v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true }); new IntersectionObserver(function (es) { if (es[0].isIntersecting) { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (!reduce) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } } else v.pause(); }, { rootMargin: '250px 0px' }).observe(v); });
 			var fn = INIT[el.dataset.wk];
 			if (fn) { try { fn(el, cfgOf(el)); } catch (e) { if (window.console) console.error('[wulf-kit]', el.dataset.wk, e); } }
@@ -2121,6 +2122,16 @@
 	function designerLinks() {
 		if (!CFG.designer || document.getElementById('studio') || document.body.classList.contains('elementor-editor-active')) return;
 		$$('a[href$="#studio"]').forEach(function (a) { if (a.getAttribute('href') === '#studio' || (a.host === location.host && a.pathname === location.pathname)) a.href = CFG.designer; });
+	}
+
+	// A banner's spotlight shines onto its piece (the light is centred without the script).
+	function spotOnPiece(sec) {
+		var fig = $('.pgh-case, .pgh-media', sec);
+		if (!fig || sec.__spot) return;
+		sec.__spot = 1;
+		var place = function () { var a = sec.getBoundingClientRect(), b = fig.getBoundingClientRect(); if (a.width && b.width) sec.style.setProperty('--spot-x', Math.round(b.left - a.left + b.width / 2) + 'px'); };
+		place();
+		if ('ResizeObserver' in window) new ResizeObserver(place).observe(sec); else addEventListener('resize', place);
 	}
 
 	/* ================= Step-cut lines around a frame (Daylight with cut corners) =================

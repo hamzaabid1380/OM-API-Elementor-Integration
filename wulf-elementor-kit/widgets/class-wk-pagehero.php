@@ -87,6 +87,19 @@ class WK_Pagehero_Widget extends WK_Widget {
 		) );
 		$this->add_control( 'cap', array( 'label' => __( 'Caption (optional)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'condition' => array( 'media!' => 'none' ) ) );
 		$this->add_control( 'cap_link', array( 'label' => __( 'Caption link', 'wulf-kit' ), 'type' => Controls_Manager::URL, 'condition' => array( 'media!' => 'none' ) ) );
+		$this->add_control( 'spot', array(
+			'label'       => __( 'Spotlight', 'wulf-kit' ),
+			'type'        => Controls_Manager::SELECT,
+			'default'     => 'auto',
+			'separator'   => 'before',
+			'options'     => array(
+				'auto' => __( 'Automatic: on shop pages', 'wulf-kit' ),
+				'on'   => __( 'On', 'wulf-kit' ),
+				'dark' => __( 'On, in a dark showroom', 'wulf-kit' ),
+				'off'  => __( 'Off', 'wulf-kit' ),
+			),
+			'description' => __( 'A warm gold light shining down from the top of the banner, onto the piece when there is one. Automatic: on pages that show the OM Catalog\'s catalog or video highlights, and the shop pages of the page library. "Dark showroom" turns the banner dark, with the light in gold.', 'wulf-kit' ),
+		) );
 		$this->end_controls_section();
 
 		$this->style_section( '.pgh' );
@@ -139,6 +152,24 @@ class WK_Pagehero_Widget extends WK_Widget {
 		$this->text_style( 'cap', __( 'Caption', 'wulf-kit' ), '.pgh-cap', '.pgh-cap a:hover' );
 	}
 
+	/**
+	 * A page that sells: one of the page library's shop pages, or a page showing OM Catalog's catalog or
+	 * video highlights (its widgets or the [om_catalog] shortcode).
+	 */
+	private static function shop_here() {
+		static $memo = array();
+		$id = (int) get_the_ID();
+		if ( ! $id ) {
+			return false;
+		}
+		if ( ! isset( $memo[ $id ] ) ) {
+			$key         = (string) get_post_meta( $id, WK_Pages::META, true );
+			$lib         = WK_Pages::catalog();
+			$memo[ $id ] = ( isset( $lib[ $key ] ) && 'shop' === $lib[ $key ][2] ) || (bool) preg_match( '/"widgetType":"om_(?:catalog|reels)_widget"|\[om_catalog\b/', (string) get_post_meta( $id, '_elementor_data', true ) );
+		}
+		return $memo[ $id ];
+	}
+
 	protected function render() {
 		$s   = $this->get_settings_for_display();
 		$img = '';
@@ -150,10 +181,22 @@ class WK_Pagehero_Widget extends WK_Widget {
 		if ( 'day' === ( $s['media_look'] ?? 'all' ) && ! WK_Plugin::is_day() ) {
 			$img = '';
 		}
-		$dark  = 'dark' === ( $s['tone'] ?? '' );
-		$class = $this->sec_class( $s, 'pgh' ) . ( $img ? ' has-media' : ' no-media' ) . ( ! $img && 'center' === $s['align'] ? ' center' : '' );
+		// The spotlight: on shop pages unless switched off; the dark showroom makes the banner dark in any look.
+		$spot = (string) ( $s['spot'] ?? 'auto' );
+		$spot = 'auto' === $spot ? ( self::shop_here() && empty( $s['sec_bg_background'] ) ? 'on' : 'off' ) : $spot; // A background of your own keeps it off unless switched on.
+		$room = 'dark' === $spot;
+		$dark  = $room || 'dark' === ( $s['tone'] ?? '' );
+		$class = $this->sec_class( $room ? array_merge( $s, array( 'tone' => 'white' ) ) : $s, 'pgh' );
+		// Its own class for each kind (the script that keeps text readable takes "dark" off while it measures):
+		// warm light on a light banner, gold light on a dark one, or the dark showroom.
+		$light = 'off' === $spot ? '' : ( $room ? 'spot-room' : ( in_array( 'dark', explode( ' ', $class ), true ) ? 'spot-night' : 'spot-light' ) );
+		$class .= ( $room ? ' dark' : '' ) . ( $light ? ' spot ' . $light : '' ) . ( $img ? ' has-media' : ' no-media' ) . ( ! $img && 'center' === $s['align'] ? ' center' : '' );
 		$this->open( $s );
-		echo '<section class="' . esc_attr( $class ) . '"' . $this->anchor_attr( $s ) . '><div class="wrap pgh-grid"><div class="pgh-copy">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<section class="' . esc_attr( $class ) . '"' . $this->anchor_attr( $s ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		if ( 'off' !== $spot ) {
+			echo '<span class="pgh-spot" aria-hidden="true"><span class="ps-beam"></span><span class="ps-pool"></span><i></i><i></i><i></i><i></i><i></i></span>';
+		}
+		echo '<div class="wrap pgh-grid"><div class="pgh-copy">';
 		if ( 'yes' === $s['crumbs'] ) {
 			$last = $s['crumb_last'] ? $s['crumb_last'] : get_the_title();
 			echo '<nav class="crumbs" aria-label="' . esc_attr__( 'Breadcrumb', 'wulf-kit' ) . '"><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'wulf-kit' ) . '</a>';
@@ -215,7 +258,8 @@ class WK_Pagehero_Widget extends WK_Widget {
 		// first screen. A banner with its own short points keeps those instead of the promises.
 		$strip = $this->assure( $s, array( 'cls' => 'as-strip', 'promises' => ! $s['trust'] ) );
 		if ( '' !== $strip ) {
-			$tone = array( 'ivory' => 'ivory', 'dark' => WK_Plugin::is_day() ? 'is-light' : 'dark' )[ $s['tone'] ?? '' ] ?? '';
+			$tone = $room ? 'dark' : ( array( 'ivory' => 'ivory', 'dark' => WK_Plugin::is_day() ? 'is-light' : 'dark' )[ $s['tone'] ?? '' ] ?? '' );
+			$tone = trim( $tone . ( $light ? ' ' . $light : '' ) );
 			echo '<div class="pgh-strip' . ( $tone ? ' ' . esc_attr( $tone ) : '' ) . '"><div class="wrap">' . $strip . '</div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
 		}
 		$this->close();

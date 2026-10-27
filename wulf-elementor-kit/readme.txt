@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.25.0
+Stable tag: 1.26.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -269,6 +269,20 @@ financing, free consultations, since 1971. Build it, replace the terms in [brack
 (they are examples, not your policies) and remove any promise you don't offer, then publish: from
 then on the promises row ends with "Our promises", linking to it.
 
+== Spotlight on shop pages ==
+
+Page banners on the pages that sell get a spotlight: a warm gold light shining down from the top of the
+banner, as onto a showcase. On a light banner it is a bright cone with soft gold edges over warm paper,
+with a pool of light at its foot; on a dark banner it is a gold beam. When the banner has a piece, the
+light lands on it. It turns on once as the page opens, and now and then a small glint sparkles in it
+(visitors who've turned off motion see it still, without glints). Nothing on the page moves.
+
+It is on automatically on pages that show the OM Catalog's catalog or video highlights, and on the shop
+pages of the page library. Each banner can choose in Elementor (Banner > Picture > Spotlight):
+Automatic, On, "On, in a dark showroom" (the banner turns dark, with the light in gold and a gold main
+button) or Off. A banner given a background of its own in Style > Section keeps the spotlight off unless
+it is switched on.
+
 == Speed ==
 
 The first screen comes first: the hero's turning film waits until the page has loaded (its still
@@ -519,6 +533,13 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.26.0 =
+* Spotlight on shop pages: page banners on pages that show the OM Catalog's catalog or video highlights
+  (and the page library's shop pages) get a warm gold light shining down from the top, onto the piece
+  when there is one. Banner > Picture > Spotlight: Automatic, On, "On, in a dark showroom", or Off.
+* More space between a banner's rating-and-promises strip and the video highlights or catalog below it
+  (it sat almost on top of them).
 
 = 1.25.0 =
 * Reviews and promises by the Book buttons: your Google rating, one short review that matches what
