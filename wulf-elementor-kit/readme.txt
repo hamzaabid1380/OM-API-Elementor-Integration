@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.23.0
+Stable tag: 1.24.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -453,6 +453,29 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.24.0 =
+* Dark header, Daylight look: a header set to "Always dark" (Header > Behavior > Look), or given a
+  dark background in its Style tab, now stays dark as designed. It gets a fine gold line under the
+  bar, and its button is black with a fine light outline that follows the cut corners and turns white
+  on hover. Colours set in the header's own Style tab still win. A header that is dark at the top
+  with a light logo picture and no second "scrolled" logo stays dark once scrolled too, so the logo
+  never sits on white.
+* Header, Daylight look: once the page scrolls, the bar trims a little and casts a soft shadow (it
+  moves rather than changes size, so nothing below it jumps).
+* Page banners, Daylight look on computers: the whole banner fits the first screen of a laptop (less
+  space around it, and the picture case never taller than the window allows), the piece is larger in
+  its case, and the case's step-cut lines open out as the banner appears. Visitors who've turned off
+  motion see it still.
+* Product photos: the piece is the same size (90% of the frame) and centred in every frame: product
+  cards, category tiles, journal cards, page banners and split sections. Category tile pictures sat
+  7% off-centre (a photo filling its tile was cut off at the right and bottom), journal pictures the
+  other way.
+* No small gold text left on light backgrounds in the Daylight look: links in text are ink with a
+  gold underline; the small labels in the quiz, the booking window and the showcase are ink; step
+  numbers are grey; the WULF ◆ 1971 hallmark is ink in a gold frame; icons use the heading gold.
+* Opening hours: a time never breaks across two lines ("10 am – 6 pm" broke after the dash in
+  narrow columns); the day name wraps instead.
 
 = 1.23.0 =
 * Outlined buttons with cut corners: the outline now runs along the cut. A border used to stop where

@@ -297,6 +297,49 @@ class WK_Header_Widget extends WK_Widget {
 		return '<div class="mega" id="' . esc_attr( 'wk-mega-' . $this->get_id() . '-' . $n ) . '"><div class="wrap mega-grid" style="--cols:' . (int) max( 1, $count ) . '">' . $cols . '</div></div>';
 	}
 
+	/** A colour setting's value, or the global colour it points to (Elementor › Site settings). */
+	private static function color_value( $s, $key ) {
+		if ( ! empty( $s[ $key ] ) ) {
+			return (string) $s[ $key ];
+		}
+		$ref = (string) ( $s['__globals__'][ $key ] ?? '' );
+		if ( ! preg_match( '/[?&]id=([\w-]+)/', $ref, $m ) || ! class_exists( '\Elementor\Plugin' ) ) {
+			return '';
+		}
+		$kit = \Elementor\Plugin::$instance->kits_manager->get_active_kit_for_frontend();
+		foreach ( array( 'system_colors', 'custom_colors' ) as $group ) {
+			foreach ( (array) ( $kit ? $kit->get_settings_for_display( $group ) : array() ) as $c ) {
+				if ( ( $c['_id'] ?? '' ) === $m[1] ) {
+					return (string) ( $c['color'] ?? '' );
+				}
+			}
+		}
+		return '';
+	}
+
+	/** Dark enough for white text on it (an opaque colour as Elementor saves it: #hex or rgb()). */
+	private static function dark( $c ) {
+		$c = strtolower( trim( (string) $c ) );
+		if ( preg_match( '/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/', $c, $m ) ) {
+			$h = strlen( $m[1] ) <= 4 ? preg_replace( '/(.)/', '$1$1', $m[1] ) : $m[1];
+			$v = array( hexdec( substr( $h, 0, 2 ) ), hexdec( substr( $h, 2, 2 ) ), hexdec( substr( $h, 4, 2 ) ), strlen( $h ) > 6 ? hexdec( substr( $h, 6, 2 ) ) / 255 : 1 );
+		} elseif ( preg_match( '/^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,\/]+([\d.]+%?))?/', $c, $m ) ) {
+			$a = isset( $m[4] ) ? ( '%' === substr( $m[4], -1 ) ? (float) $m[4] / 100 : (float) $m[4] ) : 1;
+			$v = array( (float) $m[1], (float) $m[2], (float) $m[3], $a );
+		} else {
+			return false;
+		}
+		if ( $v[3] < .5 ) {
+			return false;
+		}
+		$l = 0;
+		foreach ( array( .2126, .7152, .0722 ) as $i => $w ) {
+			$x  = $v[ $i ] / 255;
+			$l += $w * ( $x <= .03928 ? $x / 12.92 : pow( ( $x + .055 ) / 1.055, 2.4 ) );
+		}
+		return $l < .18;
+	}
+
 	protected function render() {
 		$s     = $this->get_settings_for_display();
 		$tree  = $this->menu_tree( $s['menu'] );
@@ -304,7 +347,11 @@ class WK_Header_Widget extends WK_Widget {
 		$tel   = WK_Settings::tel();
 		$name  = WK_Settings::get( 'name' );
 		$coll  = max( 600, (int) $s['collapse'] );
-		$this->open( $s, 'wk-hd-' . $s['mode'], array( 'mode' => $s['mode'], 'sticky' => 'yes' === $s['sticky'], 'collapse' => $coll, 'search' => $s['search_url'] ? $s['search_url'] : home_url( '/?s=' ) ) );
+		// A dark bar (Look "Always dark", or a dark background chosen for it): the Daylight look keeps it dark.
+		$ink  = 'dark' === $s['mode'] || self::dark( self::color_value( $s, 'top_bg' ) );
+		// Dark at the top with only a light logo picture: it stays dark once scrolled, so the logo never sits on white.
+		$mode = $ink && 'scroll' === $s['mode'] && 'image' === $s['logo_type'] && empty( $s['logo_img2']['url'] ) ? 'dark' : $s['mode'];
+		$this->open( $s, 'wk-hd-' . $s['mode'] . ( $ink ? ' hd-ink' : '' ), array( 'mode' => $mode, 'sticky' => 'yes' === $s['sticky'], 'collapse' => $coll, 'search' => $s['search_url'] ? $s['search_url'] : home_url( '/?s=' ) ) );
 
 		// Logo.
 		$logo_href = self::link_attrs( $s['logo_link'], home_url( '/' ) );

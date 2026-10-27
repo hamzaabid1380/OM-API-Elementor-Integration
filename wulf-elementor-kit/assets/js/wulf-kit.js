@@ -955,6 +955,7 @@
 		}
 		var onScroll = function () {
 			if (!el.isConnected) return;
+			hd.classList.toggle('is-scrolled', window.scrollY > 40); // the Daylight look trims the bar a little
 			if (c.mode === 'light') { hd.classList.add('solid'); return; }
 			if (c.mode === 'dark') return;
 			// Over the cinematic film the header stays dark, in the film's own black.
