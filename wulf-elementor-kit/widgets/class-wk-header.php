@@ -175,13 +175,14 @@ class WK_Header_Widget extends WK_Widget {
 		$this->add_group_control( Group_Control_Typography::get_type(), array( 'name' => 'mega_typo', 'selector' => '{{WRAPPER}} .wk .mega-list a' ) );
 		$this->end_controls_section();
 
-		$this->button_style( 'cta', __( 'Button', 'wulf-kit' ), '.btn-book' );
+		// The repeated classes outweigh the kit's own header button colours (each look sets its own), so these settings win.
+		$this->button_style( 'cta', __( 'Button', 'wulf-kit' ), '.hd.hd .btn-book.btn-book.btn-book' );
 
 		$this->start_controls_section( 's_cta_solid', array( 'label' => __( 'Button once scrolled', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE ) );
-		$this->color( 'cta_s_color', __( 'Text color', 'wulf-kit' ), '.hd.solid .btn-book, {{WRAPPER}} .wk .hd.mega-on .btn-book' );
-		$this->color( 'cta_s_bg', __( 'Background', 'wulf-kit' ), '.hd.solid .btn-book, {{WRAPPER}} .wk .hd.mega-on .btn-book', 'background-color' );
-		$this->color( 'cta_s_hcolor', __( 'Hover text color', 'wulf-kit' ), '.hd.solid .btn-book:hover, {{WRAPPER}} .wk .hd.mega-on .btn-book:hover' );
-		$this->color( 'cta_s_hbg', __( 'Hover background', 'wulf-kit' ), '.hd.solid .btn-book:hover, {{WRAPPER}} .wk .hd.mega-on .btn-book:hover', 'background-color' );
+		$this->color( 'cta_s_color', __( 'Text color', 'wulf-kit' ), '.hd.solid .btn-book.btn-book.btn-book, {{WRAPPER}} .wk .hd.mega-on .btn-book.btn-book.btn-book' );
+		$this->color( 'cta_s_bg', __( 'Background', 'wulf-kit' ), '.hd.solid .btn-book.btn-book.btn-book, {{WRAPPER}} .wk .hd.mega-on .btn-book.btn-book.btn-book', 'background-color' );
+		$this->color( 'cta_s_hcolor', __( 'Hover text color', 'wulf-kit' ), '.hd.solid .btn-book.btn-book.btn-book:hover, {{WRAPPER}} .wk .hd.mega-on .btn-book.btn-book.btn-book:hover' );
+		$this->color( 'cta_s_hbg', __( 'Hover background', 'wulf-kit' ), '.hd.solid .btn-book.btn-book.btn-book:hover, {{WRAPPER}} .wk .hd.mega-on .btn-book.btn-book.btn-book:hover', 'background-color' );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 's_icons', array( 'label' => __( 'Icon buttons & badge', 'wulf-kit' ), 'tab' => Controls_Manager::TAB_STYLE ) );

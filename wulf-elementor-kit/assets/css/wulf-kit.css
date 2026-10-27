@@ -1187,8 +1187,9 @@ body.wk-calm .wk.wk .split .eyebrow { color: var(--sub); }
    On a dark section every colour flips (text, lines, links, buttons). Light "cards" inside a dark
    section (product photos, white boxes) keep the light-scheme colours. The script switches a section
    to dark automatically when its background is dark, or follows Section › Text colors. */
+.wk { --gold-hd: #a8823c; }
 .wk { --ink-l: var(--ink); --text-l: var(--text); --sub-l: var(--sub); --line-l: var(--line); --field-l: var(--field); --gold-ink-l: var(--gold-ink); }
-.wk.wk .dark { --ink: #fff; --text: #e3e6eb; --sub: var(--sub-night); --line: var(--line-night); --field: rgba(255, 255, 255, .45); --gold-ink: var(--gold); color: var(--text); }
+.wk.wk .dark { --ink: #fff; --text: #e3e6eb; --sub: var(--sub-night); --line: var(--line-night); --field: rgba(255, 255, 255, .45); --gold-ink: var(--gold); --gold-hd: var(--gold); color: var(--text); }
 .wk.wk .dark :is(.wk-isl, .spot-ring, .spot-pick button, .sc-thumbs button, .alts button, .seg button[aria-selected="true"], .spot-metals button:not([aria-checked="true"])) { --ink: var(--ink-l); --text: var(--text-l); --sub: var(--sub-l); --line: var(--line-l); --field: var(--field-l); --gold-ink: var(--gold-ink-l); color: var(--text); }
 .wk.wk .dark .wk-isl.wk-isl :is(.h1, .h2, .h3, .link) { color: var(--ink); }
 /* Buttons that are "ink" on light become white on dark, and back again inside light cards. */
@@ -1225,8 +1226,10 @@ body.wk-calm .wk.wk .split .eyebrow { color: var(--sub); }
 }
 
 /* Sections designed dark (4Cs, call to action) placed on a light background, or set to "Dark text" */
-/* Gold words on light sections and light page banners use the deep gold (the pale one is too faint on white). */
-.wk.wk :where(.sec:not(.dark):not(.hero), .pgh:not(.dark)) .gold-em { color: var(--gold-ink); }
+/* Gold words on light sections and light page banners: the heading gold (the pale one is too faint on white, the
+   gold for small text reads brown at this size). */
+.wk.wk :where(.sec:not(.dark):not(.hero), .pgh:not(.dark)) .gold-em { color: var(--gold-hd); }
+.wk.wk :where(.sec:not(.dark):not(.hero), .pgh:not(.dark)) .h3 .gold-em { color: var(--gold-ink); } /* small titles: the gold for small text */
 .wk.wk :is(.is-light, .txt-dark) .btn-gold { background: var(--ink); border-color: var(--ink); color: #fff; }
 .wk.wk :is(.is-light, .txt-dark) .btn-gold:hover { background: #2a2f38; border-color: #2a2f38; color: #fff; }
 .wk.wk :is(.is-light, .txt-dark) .btn-ghost { border-color: var(--ink); color: var(--ink); }
@@ -2155,7 +2158,8 @@ body.wk-cut :is(.om-btn--solid, .om-builder-btn, .om-sticky-cta, .om-inquiry-sub
 body.wk-day .wk { --paper: #f6f3ee; --paper-2: #eee9e1; --line: #e4ded4; --tint: rgba(122, 91, 36, .075); --tint-2: rgba(122, 91, 36, .14); --wg: #c6cbd2; --yg: #c9a45f; --rg: #d29a83; }
 body.wk-day .wk.wk :focus-visible { outline-color: var(--ink); }
 /* One flourish per title: the starred words in gold italics. */
-body.wk-day .wk.wk .gold-em, body.wk-day .wk.wk .hero .gold-em { font-style: italic; font-weight: 300; color: var(--gold-ink); }
+body.wk-day .wk.wk .gold-em, body.wk-day .wk.wk .hero .gold-em { font-style: italic; font-weight: 300; color: var(--gold-hd); }
+body.wk-day .wk.wk .h3 .gold-em { color: var(--gold-ink); }
 body.wk-day .wk.wk .dark .gold-em { color: var(--gold); }
 body.wk-day .wk.wk .sec.ivory { background-color: var(--paper); }
 
@@ -2371,6 +2375,11 @@ body.wk-cut .wk.wk :is(.sc-tag, .status, .map-tag, .pgh-cap, .qz-why li, .bk-sum
 body.wk-cut .wk.wk :is(.opt, .seg, .seg button, .om-ask-tabs, .om-ask-tab, .faq-list .pm, .qz-picks button, .qz-back, .spot-metals button, .sc-arr, .save, .spot-save, .alts button, .spot-pick button, .hero-media .sc-thumbs button, .qz-ph .qz-pic, .qz-alt-img, .spc-img, .tray-card .thumbs div, .bkbar select, .field input, .field select, .field textarea, .qz-mail input, .dr-mail-row input, .hd-search input, .sheet-search input) { --c: 7px; }
 body.wk-cut .wk.wk :is(.btn, .bkpill, .actbar a:not(.ab-ic), .news input, .sc .feat .path-go, .sc .wide .path-go, .path-ic, .v-ic, .qz-opt, .shape-opts .opt, .bk .bk-topics .opt, .bk-day) { --c: 10px; }
 body.wk-cut .wk.wk .btn.btn-sm { --c: 8px; }
+/* An outlined button: a border stops where its corner is cut away, so the outline is drawn along the cut, in the
+   colour its Elementor style sets (--bd, given with the border colour). */
+body.wk-cut .wk.wk .btn { position: relative; }
+body.wk-cut .wk.wk .btn::before { content: ""; position: absolute; inset: -1.5px; pointer-events: none; background-color: var(--bd, transparent);
+	clip-path: polygon(evenodd, var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c), var(--c) 0, calc(var(--c) + .62px) 1.5px, 1.5px calc(var(--c) + .62px), 1.5px calc(100% - var(--c) - .62px), calc(var(--c) + .62px) calc(100% - 1.5px), calc(100% - var(--c) - .62px) calc(100% - 1.5px), calc(100% - 1.5px) calc(100% - var(--c) - .62px), calc(100% - 1.5px) calc(var(--c) + .62px), calc(100% - var(--c) - .62px) 1.5px, calc(var(--c) + .62px) 1.5px); }
 body.wk-cut .wk.wk :is(.spot-cards button, .vs-badge, .tray-card, .dr-mail, .dr-mail-open, .toast, .qz-alts button, .qz-mail, .bk-ctx, .bk-sum, .mega-shapes a, .card .slot, .st-tease-img) { --c: 12px; }
 body.wk-cut .wk.wk :is(.path, .sc .path, .bkbar, .faq-help, .box, .after, .tl-img, .st-tease, .tile, .svc, .vals li, .rev, .tip, .post .slot, .lists.boxed > div, .mega-feature, .preview .main) { --c: 16px; }
 body.wk-cut .wk.wk :is(.qz-card, .studio-card, .spot-ring, .vs-media img, .split-media, .pgh-media, .st-photo, .cr-frame, .cta-media, .cta-card .cta-box, .bk.pop .bk-panel, .viz, .reel-stage) { --c: 24px; }
@@ -2403,10 +2412,14 @@ body.wk-square .wk.wk .vs-media::before { border-color: var(--yg); }
 body.wk-day .wk { --sec: clamp(58px, 6.6vw, 95px); }
 
 /* ---------- Titles: a chapter label above, the title on the left, its intro and link on the right ---------- */
-body.wk-day .wk.wk .shead .eyebrow { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 14px; font: 700 11.5px/1.2 var(--sans); letter-spacing: .2em; color: var(--gold-ink); }
-body.wk-day .wk.wk .shead .eyebrow::before { content: ""; flex: none; width: 7px; height: 7px; border: 1.5px solid currentColor; }
-body.wk-day.wk-cut .wk.wk .shead .eyebrow::before { width: 10px; height: 10px; border: 0; background-color: currentColor; clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); }
-body.wk-day .wk.wk .dark .shead .eyebrow { color: var(--gold); }
+/* The labels above headings: ink, with the gold mark (small gold text reads brown on light paper). */
+body.wk-day .wk.wk :is(.shead, .pgh, .split, .cta-box, .ps-intro) .eyebrow { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 14px; font: 700 11.5px/1.2 var(--sans); letter-spacing: .2em; color: var(--text); }
+body.wk-day .wk.wk :is(.shead, .pgh, .split, .cta-box, .ps-intro) .eyebrow::before { content: ""; flex: none; width: 7px; height: 7px; border: 1.5px solid currentColor; color: var(--gold-hd); }
+body.wk-day.wk-cut .wk.wk :is(.shead, .pgh, .split, .cta-box, .ps-intro) .eyebrow::before { width: 10px; height: 10px; border: 0; background-color: currentColor; clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); }
+body.wk-day .wk.wk .dark :is(.shead, .pgh, .split, .cta-box, .ps-intro) .eyebrow, body.wk-day .wk.wk .pgh.dark .eyebrow { color: var(--gold); }
+/* On a page banner the label sits on its own line, a set distance above the title. */
+body.wk-day .wk.wk .pgh .eyebrow { display: flex; width: fit-content; margin-bottom: 18px; }
+body.wk-day .wk.wk .pgh.center .eyebrow { margin-inline: auto; }
 body.wk-day .wk.wk .shead .h2 { margin-top: 0; letter-spacing: -.015em; }
 body.wk-day .wk.wk .shead.sh-split { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-items: end; gap: 14px clamp(32px, 6vw, 110px); }
 body.wk-day .wk.wk .shead.sh-split > div { max-width: none; min-width: 0; }

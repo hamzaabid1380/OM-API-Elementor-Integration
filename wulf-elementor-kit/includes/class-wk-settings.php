@@ -52,6 +52,7 @@ class WK_Settings {
 			'c_gold'        => '#d6b97f',
 			'c_gold_deep'   => '#b8955a',
 			'c_gold_ink'    => '#7a5b24',
+			'c_gold_hd'     => '#a8823c',
 			'font_serif'    => 'Fraunces',
 			'font_sans'     => 'Manrope',
 			'google_fonts'  => '1',
@@ -423,7 +424,8 @@ class WK_Settings {
 					<?php
 					self::field( 'c_gold', __( 'Gold (accent)', 'wulf-kit' ), 'color' );
 					self::field( 'c_gold_deep', __( 'Deep gold (lines, active)', 'wulf-kit' ), 'color' );
-					self::field( 'c_gold_ink', __( 'Gold text on light', 'wulf-kit' ), 'color' );
+					self::field( 'c_gold_ink', __( 'Gold text on light', 'wulf-kit' ), 'color', __( 'Small gold text and links on light backgrounds; dark enough to read at a small size.', 'wulf-kit' ) );
+					self::field( 'c_gold_hd', __( 'Gold words in headings', 'wulf-kit' ), 'color', __( 'The gold *words* in titles on light backgrounds. Large text can be a brighter gold and still read well.', 'wulf-kit' ) );
 					self::field( 'c_ink', __( 'Ink (headings, dark buttons)', 'wulf-kit' ), 'color' );
 					self::field( 'c_text', __( 'Body text', 'wulf-kit' ), 'color' );
 					self::field( 'c_sub', __( 'Secondary text', 'wulf-kit' ), 'color' );

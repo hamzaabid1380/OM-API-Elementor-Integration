@@ -258,7 +258,7 @@ abstract class WK_Widget extends Widget_Base {
 			$this->start_controls_tab( $id . '_tab_' . $st, array( 'label' => $st_label ) );
 			$this->add_control( $id . '_' . $st . '_color', array( 'label' => __( 'Text color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk ' . $s => 'color: {{VALUE}};' ) ) );
 			$this->add_control( $id . '_' . $st . '_bg', array( 'label' => __( 'Background', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk ' . $s => 'background-color: {{VALUE}};' ) ) );
-			$this->add_control( $id . '_' . $st . '_bc', array( 'label' => __( 'Border color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk ' . $s => 'border-color: {{VALUE}};' ) ) );
+			$this->add_control( $id . '_' . $st . '_bc', array( 'label' => __( 'Border color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk ' . $s => 'border-color: {{VALUE}}; --bd: {{VALUE}};' ) ) );
 			$this->add_group_control( Group_Control_Box_Shadow::get_type(), array( 'name' => $id . '_' . $st . '_sh', 'selector' => '{{WRAPPER}} .wk ' . $s ) );
 			$this->end_controls_tab();
 		}
@@ -302,7 +302,7 @@ abstract class WK_Widget extends Widget_Base {
 			$s = 'h' === $st ? $sel . ':hover' : $sel;
 			$this->start_controls_tab( $id . '_tab_' . $st, array( 'label' => $st_label ) );
 			$this->add_control( $id . '_' . $st . '_bg', array( 'label' => __( 'Background', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk ' . $s => 'background-color: {{VALUE}};' ) ) );
-			$this->add_control( $id . '_' . $st . '_bc', array( 'label' => __( 'Border color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk ' . $s => 'border-color: {{VALUE}};' ) ) );
+			$this->add_control( $id . '_' . $st . '_bc', array( 'label' => __( 'Border color', 'wulf-kit' ), 'type' => Controls_Manager::COLOR, 'selectors' => array( '{{WRAPPER}} .wk ' . $s => 'border-color: {{VALUE}}; --bd: {{VALUE}};' ) ) );
 			$this->add_group_control( Group_Control_Box_Shadow::get_type(), array( 'name' => $id . '_' . $st . '_sh', 'selector' => '{{WRAPPER}} .wk ' . $s ) );
 			if ( 'h' === $st ) {
 				$this->add_control( $id . '_lift', array(

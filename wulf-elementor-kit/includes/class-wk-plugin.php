@@ -227,7 +227,7 @@ class WK_Plugin {
 	/** Brand settings as CSS variables on every kit wrapper. */
 	public static function brand_css() {
 		$s   = WK_Settings::all();
-		$map = array( 'bg' => 'c_bg', 'ivory' => 'c_ivory', 'line' => 'c_line', 'ink' => 'c_ink', 'text' => 'c_text', 'sub' => 'c_sub', 'night' => 'c_night', 'gold' => 'c_gold', 'gold-deep' => 'c_gold_deep', 'gold-ink' => 'c_gold_ink' );
+		$map = array( 'bg' => 'c_bg', 'ivory' => 'c_ivory', 'line' => 'c_line', 'ink' => 'c_ink', 'text' => 'c_text', 'sub' => 'c_sub', 'night' => 'c_night', 'gold' => 'c_gold', 'gold-deep' => 'c_gold_deep', 'gold-ink' => 'c_gold_ink', 'gold-hd' => 'c_gold_hd' );
 		$css = '';
 		foreach ( $map as $var => $key ) {
 			$css .= '--' . $var . ':' . $s[ $key ] . ';';

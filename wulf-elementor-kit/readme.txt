@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.22.0
+Stable tag: 1.23.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -453,6 +453,20 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.23.0 =
+* Outlined buttons with cut corners: the outline now runs along the cut. A border used to stop where
+  each corner was cut away, so an outlined button (the header's, with a border colour set in its
+  Style tab) looked broken at its four corners.
+* The header button's colour settings (Header > Style > Button, and Button once scrolled) now take
+  effect in both looks. The kit's own header button colours outweighed them before, so a colour set
+  there didn't show.
+* Gold in headings, Daylight look: the gold words in titles use the new heading gold (#a8823c, Wulf
+  Kit > Settings > Brand colors > "Gold words in headings") instead of the dark gold made for small
+  text, which read brown. The labels above titles (section heads, page banners, split sections, call
+  to action boxes) are now ink with the gold mark before them, with 18px to the title on page
+  banners. Small titles keep the readable gold for small text, and dark sections keep the champagne
+  gold. Gold words on light banners in the Night look use the heading gold too.
 
 = 1.22.0 =
 * Visit sections show the live Google map by default: the real streets and places around the shop
