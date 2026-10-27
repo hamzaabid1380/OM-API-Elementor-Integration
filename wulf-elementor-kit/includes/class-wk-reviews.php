@@ -60,6 +60,109 @@ class WK_Reviews {
 		return '' !== self::shortcode_tag( $raw ) ? $raw : '';
 	}
 
+	/**
+	 * The rating to show beside the Book buttons, the hero and "Why Wulf": the numbers typed into
+	 * Settings, else the live Google rating (Featurable or the Google key), else the rating Widgets for
+	 * Google Reviews by Trustindex keeps for its widget. Null when none of them has one.
+	 *
+	 * @return array|null { rating, count, url, from: typed | featurable | places | trustindex }
+	 */
+	public static function summary() {
+		static $out = false;
+		if ( false !== $out ) {
+			return $out;
+		}
+		$s     = WK_Settings::all();
+		$typed = (float) str_replace( ',', '.', (string) $s['g_rating'] );
+		$count = (int) preg_replace( '/\D+/', '', (string) $s['g_count'] );
+		$found = null;
+		if ( $typed >= 1 && $typed <= 5 && $count > 0 ) {
+			$found = array( 'rating' => $typed, 'count' => $count, 'url' => '', 'from' => 'typed' );
+		} else {
+			$g = self::google();
+			if ( $g && $g['rating'] > 0 && $g['count'] > 0 ) {
+				$found = array( 'rating' => (float) $g['rating'], 'count' => (int) $g['count'], 'url' => (string) $g['url'], 'from' => (string) ( $g['src'] ?? 'featurable' ) );
+			} else {
+				$found = self::trustindex();
+			}
+		}
+		if ( $found ) {
+			// The link to the reviews: Settings, else Google's own (Places), else the directions link.
+			$link         = trim( (string) $s['g_url'] );
+			$found['url'] = '' !== $link ? $link : ( '' !== $found['url'] ? $found['url'] : (string) $s['maps_url'] );
+		}
+		$out = $found;
+		return $out;
+	}
+
+	/**
+	 * The rating and count Widgets for Google Reviews by Trustindex keeps with its connected Google
+	 * profile (its "page details"), or null when it has none.
+	 */
+	private static function trustindex() {
+		$d = get_option( 'trustindex-google-page-details' );
+		if ( ! is_array( $d ) ) {
+			return null;
+		}
+		$rating = (float) str_replace( ',', '.', (string) ( $d['rating_score'] ?? '' ) );
+		$count  = (int) ( $d['rating_number'] ?? 0 );
+		if ( $rating < 1 || $rating > 5 || $count < 1 ) {
+			return null;
+		}
+		return array( 'rating' => $rating, 'count' => $count, 'url' => '', 'from' => 'trustindex' );
+	}
+
+	/**
+	 * Written 5-star reviews to quote from: the live Google ones (Featurable or the Google key), else
+	 * the ones Trustindex keeps for its widget. Each: { author, text }.
+	 */
+	public static function quotable() {
+		$g = self::google();
+		if ( $g && ! empty( $g['reviews'] ) ) {
+			$out = array();
+			foreach ( $g['reviews'] as $r ) {
+				if ( (int) $r['rating'] >= 5 ) {
+					$out[] = array( 'author' => (string) $r['author'], 'text' => (string) $r['text'] );
+				}
+			}
+			return $out;
+		}
+		return self::trustindex_reviews();
+	}
+
+	/**
+	 * The reviews Trustindex keeps in its own table (the ones its widget shows; hidden ones left out),
+	 * remembered for six hours. Empty when the plugin isn't there or keeps them differently.
+	 */
+	private static function trustindex_reviews() {
+		$cached = get_transient( 'wk_ti_reviews' );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		global $wpdb;
+		$out   = array();
+		$table = $wpdb->prefix . 'trustindex_google_reviews';
+		$quiet = $wpdb->suppress_errors( true );
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) === $table ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$cols = (array) $wpdb->get_col( "SHOW COLUMNS FROM `{$table}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			if ( in_array( 'text', $cols, true ) && in_array( 'rating', $cols, true ) ) {
+				$sql  = 'SELECT ' . ( in_array( 'user', $cols, true ) ? '`user`' : "''" ) . ' AS author, `text` FROM `' . $table . '` WHERE `rating` >= 5'
+					. ( in_array( 'hidden', $cols, true ) ? ' AND ( `hidden` IS NULL OR `hidden` = 0 )' : '' )
+					. ( in_array( 'date', $cols, true ) ? ' ORDER BY `date` DESC' : '' ) . ' LIMIT 40';
+				$rows = (array) $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+				foreach ( $rows as $r ) {
+					$text = self::clean( $r['text'] ?? '' );
+					if ( '' !== $text ) {
+						$out[] = array( 'author' => (string) ( $r['author'] ?? '' ), 'text' => $text );
+					}
+				}
+			}
+		}
+		$wpdb->suppress_errors( $quiet );
+		set_transient( 'wk_ti_reviews', $out, 6 * HOUR_IN_SECONDS );
+		return $out;
+	}
+
 	/** Where reviews come from: [ 'featurable', widget ID ], [ 'places', Place ID ] or null. */
 	private static function source( $s = null ) {
 		$s   = is_array( $s ) ? $s : WK_Settings::all();
@@ -116,6 +219,7 @@ class WK_Reviews {
 
 	/** Ask again on the next page view (after the settings change). */
 	public static function forget( $settings = null ) {
+		delete_transient( 'wk_ti_reviews' );
 		$src = self::source( $settings );
 		if ( $src ) {
 			delete_transient( self::cache_key( $src ) );

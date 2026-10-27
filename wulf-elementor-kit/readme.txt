@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.24.0
+Stable tag: 1.25.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -163,9 +163,18 @@ points are on its right. With square corners the case gets fine gold corner mark
 three step-cut lines ripple out around it like the facets of an emerald cut. The booking bar rests on
 the case's bottom edge as a white card (Booking bar > "Rest on the section above"); on phones it shows
 one button per topic, and a tap opens the booking window with that topic chosen ("Phones: one tap per
-topic"). Then "What brings you in?", the ring style quiz, "Since 1971", how a visit works, the ring
-designer, questions and booking, the backgrounds alternating paper and white. Build it next to your
-homepage, compare, and "Go live" with the one you like.
+topic"). Then one story in seven sections: "What brings you in?", what customers say (your reviews
+plugin's widget when one is set in Settings > Google reviews), the ring style quiz, "Since 1971", how
+a visit works, and booking with the map, the backgrounds alternating paper and white. "Design your
+ring" goes to the ring builder, and the common questions live on the Free Consultation page. Build it
+next to your homepage, compare, and "Go live" with the one you like.
+
+A homepage built from an earlier version keeps its sections: to tighten it, either build "Home
+(daylight)" again (Pages & templates: tick it, "Build a fresh copy", check the draft, then "Go live";
+edits you made to the old one are not carried over), or edit it in Elementor: delete the ring
+designer ("Now, make it yours") and the questions ("Before you visit"), drag a "Wulf · Reviews"
+widget in under "What brings you in?", and set the backgrounds to alternate (Section > Background).
+Its "Design your ring" buttons then go to the ring builder by themselves.
 
 "Since 1971" is the page's one dark chapter: The Suitcase beside your story, its years lighting up
 under it as it plays, "Watch our story" with sound, the promise "Honest advice, and never a rushed
@@ -217,6 +226,56 @@ On computers a slim booking bar stays at the bottom of the screen after the firs
 "Book a free consultation", the phone number). It steps aside near the booking form and the footer,
 and a visitor can close it. Turn it off in Settings > "Booking button on computers".
 
+On phones the bar at the bottom shows Call, Book and Directions. Fill in Settings > "Text messages go
+to" with a number that can receive texts (for example your business texting number) and it shows
+Call, Text and Book instead: a tap opens the visitor's messages app, addressed to you. Measured:
+click_to_text.
+
+== Reviews and promises by the Book buttons ==
+
+Where visitors decide, a short line of proof: your Google rating ("4.9 from 712 Google reviews", with
+stars, linked to your reviews), one short review that matches what they are booking, and your
+promises (GIA-certified jewelers, free cleaning and inspection…). It shows:
+
+* in the booking window: on the showroom picture of the popup on computers, above the buttons on
+  phones and in the side panel. The review follows the topic a visitor picks (Engagement ring,
+  Repair, Selling…), or the kind of jewelry they are asking about;
+* under the visit form's button;
+* in a slim strip along the foot of page banners (the banner itself still fits a laptop's first
+  screen), and under the buttons of call-to-action sections, with a review;
+* on product pages, under the buttons, with a review about that kind of jewelry (OM Catalog 1.47 or
+  later). When Settings > OM Catalog's "Trust line under the price" is filled in, product pages keep
+  that and leave the kit's promises out, so they are never said twice.
+
+Set it up once in Wulf Kit > Settings > Reviews and promises by the Book buttons:
+
+1. The rating: type your Google rating and number of reviews, or leave both empty to use live
+   numbers: from Featurable or your Google key (Google reviews, below), or the ones Widgets for
+   Google Reviews by Trustindex keeps for its widget. A line at the top of the settings says what
+   shows now and where it comes from; if it says nothing is found while Trustindex shows your
+   rating, type the numbers in.
+2. Short reviews: one per line, "what it is about | the customer's words | their name". Real
+   reviews only (shortened is fine). With "Quote your Google reviews" on, the first sentence or two
+   of your 5-star reviews are added (from Featurable, your Google key, or the reviews Trustindex
+   keeps), matched to topics by their words.
+3. Your promises: one per line, three or four short ones. Each gets a small icon from its words.
+
+Nothing shows until there is a rating or promises. Banners, call-to-action sections and Visit forms
+each have a switch for it in Elementor ("Rating and promises under the buttons").
+
+The Our Promises page (Pages & templates > Main pages) explains every promise in full: certified
+diamonds, free cleaning and inspection, in-house repairs, warranty, upgrades, buyback and selling,
+financing, free consultations, since 1971. Build it, replace the terms in [brackets] with your own
+(they are examples, not your policies) and remove any promise you don't offer, then publish: from
+then on the promises row ends with "Our promises", linking to it.
+
+== Speed ==
+
+The first screen comes first: the hero's turning film waits until the page has loaded (its still
+picture is fetched first and shows meanwhile), the map, the SimplyBook calendar and the films further
+down load only as they come near the screen, and browsers connect to Google Fonts early. A reviews
+plugin's widget (like Trustindex) loads its own files the way that plugin decides.
+
 == Ring style quiz ==
 
 Four picture questions (diamond shape, setting, metal, budget), then three rings from the catalog
@@ -262,6 +321,13 @@ generate_lead with form_type tray_email.
 
 Either way, the booking request lists the saved pieces. Turn saving off altogether with Wulf Kit >
 Settings > "Saved pieces tray".
+
+Welcome back: visitors who return (half an hour or more after their last page view) with saved
+designs see a slim reminder at the bottom of their first page: the pictures, "Welcome back · Your 3
+saved designs · View" and "Book a viewing" (phones: "Your 3 saved designs" and the button). It shows
+once per visit, closing it hides it for a week, and it sits above the booking bar and the phone bar.
+"Book a viewing" opens the booking window with the saved designs. Measured: welcome_back when it
+shows. Turn it off in Settings > "Welcome back".
 
 == Drop a hint ==
 
@@ -453,6 +519,26 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.25.0 =
+* Reviews and promises by the Book buttons: your Google rating, one short review that matches what
+  a visitor is booking, and your promises, in the booking window, under the visit form's button, in
+  a slim strip along page banners, under call-to-action buttons and on product pages (OM Catalog
+  1.47). Set up once in Settings > Reviews and promises by the Book buttons. The rating can be typed
+  in, or comes live from Featurable, your Google key or Widgets for Google Reviews by Trustindex;
+  the hero, "Why Wulf" and the film trust lines use the same rating.
+* New page: Our Promises (Pages & templates), every promise in full, with the terms for you to
+  confirm in [brackets]. Once it's published the promises row links to it.
+* Welcome back: returning visitors with saved designs get a slim reminder with their pictures,
+  View and "Book a viewing". Once per visit; closing it rests it for a week.
+* Phone bar: Call, Text and Book when Settings has a number for texts.
+* Home (daylight): one story in seven sections. What customers say now follows "What brings you
+  in?"; the ring designer and the questions are left out (the ring builder and the Free
+  Consultation page have them). "Design your ring" links go to the ring builder on any page without
+  a ring designer section.
+* Faster first screen: the hero's film waits for the page to load while its still shows (fetched
+  first), and browsers connect to Google Fonts early.
+* No rating row on the Thank You and Page not found banners.
 
 = 1.24.0 =
 * Dark header, Daylight look: a header set to "Always dark" (Header > Behavior > Look), or given a

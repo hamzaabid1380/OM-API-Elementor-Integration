@@ -57,6 +57,7 @@ class WK_Plugin {
 		WK_Settings::init();
 		WK_Booking::init();
 		WK_Schema::init();
+		WK_Proof::init();
 		WK_Templates::init();
 		WK_Sets::init();
 		add_action( 'plugins_loaded', array( $this, 'boot' ), 20 );
@@ -86,6 +87,8 @@ class WK_Plugin {
 		// The OM Catalog plugin (its pages, pop-ups and hint page) wears the kit's ink and fonts.
 		add_filter( 'om_catalog_style_tokens', array( $this, 'om_brand' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'om_fonts' ), 30 );
+		// Google Fonts: connect early, so the headings' font arrives with the first screen.
+		add_filter( 'wp_resource_hints', array( $this, 'font_hints' ), 10, 2 );
 		// A "main" landmark around the content of Elementor full-width and canvas pages: screen readers
 		// jump to it, and Hello Elementor's "Skip to content" link lands on it.
 		foreach ( array( 'header-footer', 'canvas' ) as $tpl ) {
@@ -273,6 +276,12 @@ class WK_Plugin {
 		);
 	}
 
+	/** The ring designer: OM Catalog's ring builder page, else the library's Ring Builder page. */
+	public static function designer_url() {
+		$url = function_exists( 'om_builder_url' ) ? (string) om_builder_url() : '';
+		return '' !== $url ? $url : WK_Pages::url( 'ring-builder' );
+	}
+
 	public static function js_config() {
 		$s = WK_Settings::all();
 		return array(
@@ -283,6 +292,7 @@ class WK_Plugin {
 			'phone'    => $s['phone'],
 			'turn'     => (float) ( $s['turn_speed'] ? $s['turn_speed'] : 0.6 ),
 			'tel'      => WK_Settings::tel(),
+			'sms'      => WK_Settings::sms(),
 			'maps'     => $s['maps_url'],
 			'book'     => $s['book_url'] ? $s['book_url'] : '#visit',
 			'tray'     => (bool) $s['tray'],
@@ -292,13 +302,19 @@ class WK_Plugin {
 			'trayMail' => (bool) $s['tray'] && ! self::om_saved() && class_exists( 'OM_Saved' ) && '0' !== get_option( 'om_saved_email', '1' ),
 			'actbar'   => (bool) $s['actbar'],
 			'pill'     => (bool) $s['book_pill'],
-			'act'      => array( $s['act_call'], $s['act_book'], $s['act_dir'] ),
+			'act'      => array( $s['act_call'], $s['act_book'], $s['act_dir'], $s['act_text'] ),
+			'welcome'  => (bool) $s['welcome'],
+			// "Design your ring" links to a ring designer section (#studio) go here on pages without one.
+			'designer' => self::designer_url(),
+			// The rating, short reviews and promises for the booking window.
+			'proof'    => WK_Proof::for_js(),
 			'panel'    => (bool) $s['book_panel'] && ( '' === (string) $s['book_url'] || '#' === substr( (string) $s['book_url'], 0, 1 ) ),
 			'track'    => (bool) $s['track'],
 			'bk'       => array(
 				'title'  => $s['book_title'],
 				'sub'    => $s['book_sub'],
-				'topics' => WK_Settings::book_topics(),
+				// [ topic, what to bring, what it's about (for matching a short review) ].
+				'topics' => array_map( static function ( $t ) { return array( $t[0], $t[1], WK_Proof::key( $t[0] ) ); }, WK_Settings::book_topics() ),
 				'done'   => $s['book_done'],
 				'name'   => $s['name'],
 				'addr'   => $s['address'],
@@ -393,6 +409,12 @@ class WK_Plugin {
 				'bkCalTitle' => __( 'Visit to %s (we\'ll confirm the time)', 'wulf-kit' ),
 				'bkFlexDay'  => __( 'a day that suits you', 'wulf-kit' ),
 				'filmParts'  => __( 'Parts of the film', 'wulf-kit' ),
+				'wbHi'       => __( 'Welcome back', 'wulf-kit' ),
+				'wbOne'      => __( 'Your saved design', 'wulf-kit' ),
+				/* translators: %d: number of saved designs (2 or more) */
+				'wbMany'     => __( 'Your %d saved designs', 'wulf-kit' ),
+				'wbView'     => __( 'View', 'wulf-kit' ),
+				'wbBook'     => __( 'Book a viewing', 'wulf-kit' ),
 			),
 		);
 	}
@@ -462,6 +484,14 @@ class WK_Plugin {
 			$t['body_font'] = '"' . $clean( $s['font_sans'] ) . '", system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
 		}
 		return $t;
+	}
+
+	public function font_hints( $urls, $type ) {
+		if ( 'preconnect' === $type && wp_style_is( 'wulf-kit-fonts', 'enqueued' ) ) {
+			$urls[] = 'https://fonts.googleapis.com';
+			$urls[] = array( 'href' => 'https://fonts.gstatic.com', 'crossorigin' );
+		}
+		return $urls;
 	}
 
 	/** Catalog pages without any kit section still load the kit's fonts. */

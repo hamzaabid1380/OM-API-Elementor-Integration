@@ -61,7 +61,7 @@ class WK_Hero_Widget extends WK_Widget {
 		$r = new Repeater();
 		$r->add_control( 'icon', array( 'label' => __( 'Icon', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'clock', 'options' => WK_Icons::options() ) );
 		$r->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
-		$this->add_control( 'g_rating', array( 'label' => __( 'Live Google rating in the trust line', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'Shows "4.9 · 120 Google reviews" first, once Google reviews are set up in Wulf Kit › Settings (a free Featurable widget ID, or your own Google key and Place ID). Nothing shows until then.', 'wulf-kit' ) ) );
+		$this->add_control( 'g_rating', array( 'label' => __( 'Live Google rating in the trust line', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'Shows "4.9 · 120 Google reviews" first, once Wulf Kit › Settings has a rating: typed in (Reviews and promises by the Book buttons), live from Featurable or your Google key, or from Widgets for Google Reviews by Trustindex. Nothing shows until then.', 'wulf-kit' ) ) );
 		$this->add_control( 'trust', array(
 			'label'       => __( 'Trust points', 'wulf-kit' ),
 			'type'        => Controls_Manager::REPEATER,
@@ -235,13 +235,15 @@ class WK_Hero_Widget extends WK_Widget {
 
 		echo '<div class="hero-media slot">';
 		if ( 'products' === $s['media'] && $items ) {
+			echo ! $mini ? $this->first_still( $items ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in first_still().
 			echo '<div class="sc-stage">';
 			foreach ( $items as $i => $p ) {
 				$m   = $p['media'][ $p['m'] ];
 				$alt = $p['n'];
 				if ( $m['v'] ) {
-					// With the small phone ring, the big film waits for the script, which only loads it where the showcase shows.
-					$src = 0 === $i && ! $mini ? ' src="' . esc_url( $m['v'] ) . '" autoplay preload="auto"' : ' data-src="' . esc_url( $m['v'] ) . '" preload="none"' . ( 0 === $i ? ' data-first' : '' );
+					// Every film waits for the script: the first starts once the page has loaded (its still shows
+					// meanwhile), and only where the showcase shows (phones with the small ring skip it).
+					$src = ' data-src="' . esc_url( $m['v'] ) . '" preload="none"' . ( 0 === $i ? ' data-first' : '' );
 					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><video muted loop playsinline' . $src . ( $m['poster'] ? ' poster="' . esc_url( $m['poster'] ) . '"' : '' ) . ' aria-label="' . esc_attr( $alt ) . '"></video></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				} else {
 					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><img src="' . esc_url( $m['poster'] ? $m['poster'] : $p['img'] ) . '" alt="' . esc_attr( $alt ) . '"></figure>';
@@ -271,9 +273,20 @@ class WK_Hero_Widget extends WK_Widget {
 		$this->close();
 	}
 
+	/**
+	 * The first piece's still is what the first screen shows while its film waits for the page to load:
+	 * fetched first, ahead of everything else.
+	 */
+	private function first_still( $items ) {
+		$p = $items[0] ?? null;
+		$m = $p ? ( $p['media'][ $p['m'] ] ?? array() ) : array();
+		$u = ! empty( $m['v'] ) && ! empty( $m['poster'] ) ? $m['poster'] : '';
+		return $u ? '<link rel="preload" as="image" href="' . esc_url( $u ) . '" fetchpriority="high">' : '';
+	}
+
 	/** The trust points, with the live Google rating first once reviews are set up. */
 	private function trust_list( $s ) {
-		$g = 'yes' === ( $s['g_rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
+		$g = 'yes' === ( $s['g_rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::summary() : null;
 		if ( ! $s['trust'] && ! $g ) {
 			return '';
 		}
@@ -331,11 +344,12 @@ class WK_Hero_Widget extends WK_Widget {
 		// Middle: the case. The step-cut lines (cut corners) sit outside it, so they are not clipped by its cut.
 		echo '<div class="vt-case"><span class="steprows" data-steprows aria-hidden="true"></span><div class="hero-media slot">';
 		if ( 'products' === $s['media'] && $items ) {
+			echo $this->first_still( $items ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in first_still().
 			echo '<div class="sc-stage">';
 			foreach ( $items as $i => $p ) {
 				$m = $p['media'][ $p['m'] ];
 				if ( $m['v'] ) {
-					$src = 0 === $i ? ' src="' . esc_url( $m['v'] ) . '" autoplay preload="auto"' : ' data-src="' . esc_url( $m['v'] ) . '" preload="none"';
+					$src = ' data-src="' . esc_url( $m['v'] ) . '" preload="none"' . ( 0 === $i ? ' data-first' : '' );
 					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><video muted loop playsinline' . $src . ( $m['poster'] ? ' poster="' . esc_url( $m['poster'] ) . '"' : '' ) . ' aria-label="' . esc_attr( $p['n'] ) . '"></video></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				} else {
 					echo '<figure class="sc-item pr' . ( $i ? '' : ' is-on' ) . '"' . ( $i ? ' aria-hidden="true"' : '' ) . '><img src="' . esc_url( $m['poster'] ? $m['poster'] : $p['img'] ) . '" alt="' . esc_attr( $p['n'] ) . '"></figure>';

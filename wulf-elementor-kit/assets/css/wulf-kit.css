@@ -2692,3 +2692,112 @@ body.wk-day .wk.wk .pgh-case .pgh-media > img { animation: wk-piece-in 1.1s cubi
 /* ---------- Reviews from another plugin (its shortcode): its widget under the section's title ---------- */
 /* .wk-foreign: the kit's base styles stay out (see kit-reset.css and scope-css.py); the plugin's own look applies. */
 .wk.wk .rev-plugin { min-width: 0; }
+
+/* ================= Reviews and promises by the Book buttons (Wulf Kit › Settings) =================
+   The Google rating, one short review and the promises, where visitors decide: under a banner's or a call
+   to action's buttons, under the visit form's button, in the booking window and on product pages. Quiet:
+   small type under a fine line, one row each. */
+.wk.wk .assure { display: grid; justify-items: start; gap: 12px; max-width: 620px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.wk.wk .assure[hidden] { display: none; }
+.wk.wk .as-rate { display: flex; align-items: center; gap: 10px; margin: 0; font: 500 14px/1.4 var(--sans); color: var(--sub); }
+.wk.wk .as-rate a { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.wk.wk .as-rate a:hover > span:last-child { text-decoration: underline; text-decoration-color: var(--gold-hd); text-underline-offset: 3px; }
+.wk.wk .as-rate b { font-weight: 700; color: var(--ink); }
+.wk.wk .as-stars { position: relative; flex: none; display: block; width: 80px; height: 15px; }
+.wk.wk .as-stars > span { position: absolute; top: 0; bottom: 0; left: 0; display: block; overflow: hidden; }
+.wk.wk .as-stars > span:first-child { right: 0; color: var(--line); }
+.wk.wk .as-stars > span:last-child { width: var(--r, 100%); color: var(--gold-hd); }
+.wk.wk .as-stars svg { display: block; width: 80px; max-width: none; height: 15px; fill: currentColor; }
+.wk.wk .as-quote { margin: 0; padding: 0; }
+.wk.wk .as-quote blockquote { margin: 0; padding: 0; border: 0; background: none; quotes: "\201C" "\201D"; }
+.wk.wk .as-quote p { margin: 0; font: italic 400 16.5px/1.5 var(--serif); color: var(--text); }
+.wk.wk .as-quote p::before { content: open-quote; }
+.wk.wk .as-quote p::after { content: close-quote; }
+.wk.wk .as-quote figcaption { margin-top: 6px; font: 700 12.5px/1.3 var(--sans); letter-spacing: .02em; color: var(--sub); }
+.wk.wk .as-prom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin: 0; padding: 0; list-style: none; }
+.wk.wk .as-prom li { display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 0; font: 600 13.5px/1.3 var(--sans); color: var(--text); }
+.wk.wk .as-prom svg { flex: none; width: 17px; height: 17px; color: var(--gold-hd); }
+.wk.wk .as-more a { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-color: var(--gold-hd); text-underline-offset: 4px; }
+.wk.wk .as-more a:hover { text-decoration-thickness: 2px; }
+.wk.wk .as-prom .as-more svg { width: 15px; height: 15px; color: currentColor; }
+/* Page banners: one slim strip along the banner's foot (the banner itself keeps fitting the first screen) */
+.wk.wk .pgh-strip { border-top: 1px solid var(--line); }
+.wk.wk .pgh-strip:not(.ivory):not(.dark):not(.is-light) { border-bottom: 1px solid var(--line); }
+body.wk-day :where(.wk.wk .pgh-strip.is-light) { background-color: var(--paper); } /* where the banner's paper gradient ends */
+.wk.wk .pgh-strip .wrap { padding-block: 14px; }
+.wk.wk .assure.as-strip { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 28px; max-width: none; margin: 0; padding: 0; border: 0; }
+.wk.wk .as-strip .as-prom { display: contents; }
+/* Phones: the banner strip's promises two by two, with the rating and "Our promises" across; in the
+   narrower visit form and booking window they stay one per line, centred. */
+@media (max-width: 600px) {
+	.wk.wk .assure.as-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; justify-items: start; }
+	.wk.wk .as-strip :is(.as-rate, .as-more) { grid-column: 1 / -1; justify-self: center; }
+	.wk.wk .as-strip .as-prom li { align-items: flex-start; }
+	.wk.wk .as-strip .as-prom li svg { margin-top: 1px; }
+	.wk.wk .as-prom li { font-size: 13px; }
+	.wk.wk :is(.as-form, .bk-proof) .as-prom { gap: 7px 16px; }
+}
+/* Centred sections, and the visit form (its button spans the form) */
+.wk.wk .cta-center .assure, .wk.wk .assure.as-form { justify-items: center; margin-inline: auto; text-align: center; }
+.wk.wk .cta-center .as-prom, .wk.wk .as-form .as-prom { justify-content: center; }
+.wk.wk .assure.as-form { max-width: none; margin-top: 0; padding-top: 16px; }
+.wk.wk .as-form .as-prom { gap: 6px 16px; }
+.wk.wk .as-form .as-prom li { font-size: 13px; }
+/* Booking window: under the steps on phones and in the side panel; on the showroom picture of a wide popup */
+.wk.wk .bk-proof { justify-items: center; max-width: none; margin: 0; padding-top: 14px; text-align: center; }
+.wk.wk .bk-proof .as-prom { justify-content: center; gap: 6px 16px; }
+.wk.wk .bk-proof .as-quote p { font-size: 15.5px; }
+@media (min-width: 900px) { .wk.wk .bk.pop .bk-proof { display: none; } }
+.wk.wk .bk .as-more { display: none; } /* no leaving the booking halfway */
+.wk.wk .assure.as-dark { gap: 10px; max-width: none; margin-top: 12px; padding-top: 14px; border-top-color: rgba(255, 255, 255, .2); }
+.wk.wk .as-dark .as-rate { color: rgba(255, 255, 255, .86); }
+.wk.wk .as-dark .as-rate b { color: #fff; }
+.wk.wk .as-dark .as-stars > span:first-child { color: rgba(255, 255, 255, .3); }
+.wk.wk .as-dark .as-stars > span:last-child { color: var(--gold); }
+.wk.wk .as-dark .as-quote p { font-size: 16px; color: #fff; }
+.wk.wk .as-dark .as-quote figcaption { color: rgba(255, 255, 255, .75); }
+/* Product pages (OM Catalog): under the buttons */
+.wk.wk-assure { margin-top: 18px; background: none; }
+.wk.wk-assure .assure { margin-top: 0; }
+
+/* ================= Welcome back: the saved designs, for visitors who return ================= */
+.wk.wk .wb { position: fixed; left: 20px; bottom: 20px; z-index: 67; display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 40px); padding: 8px 8px 8px 10px; border: 1px solid var(--line); border-radius: 16px; background-color: #fff; color: var(--text); box-shadow: 0 24px 50px -22px rgba(15, 18, 23, .45); opacity: 0; transform: translateY(calc(100% + 40px)); transition: transform .45s cubic-bezier(.2, .7, .2, 1), opacity .3s ease, bottom .3s ease; }
+.wk.wk .wb.on { opacity: 1; transform: none; }
+.wk.wk .wb-view { display: flex; align-items: center; gap: 12px; min-width: 0; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.wk.wk .wb-thumbs { display: flex; flex: none; }
+.wk.wk .wb-thumbs > span { display: grid; place-items: center; width: 44px; height: 44px; margin-left: -12px; overflow: hidden; border: 2px solid #fff; border-radius: 10px; background-color: var(--ivory); box-shadow: 0 0 0 1px var(--line); color: var(--gold-hd); }
+.wk.wk .wb-thumbs > span:first-child { margin-left: 0; }
+.wk.wk .wb-thumbs img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transform: scale(1.35); }
+.wk.wk .wb-thumbs svg { width: 20px; height: 20px; }
+.wk.wk .wb-txt { display: grid; gap: 2px; min-width: 0; font: 500 14px/1.3 var(--sans); }
+.wk.wk .wb-txt b { font: 400 17px/1.15 var(--serif); color: var(--ink); }
+.wk.wk .wb-sub { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--sub); }
+.wk.wk .wb-v { font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-color: var(--gold-hd); text-underline-offset: 3px; }
+.wk.wk .wb-view:hover .wb-v { text-decoration-thickness: 2px; }
+.wk.wk .wb .wb-book { flex: none; min-height: 42px; padding: 0 16px; font-size: 14px; white-space: nowrap; }
+.wk.wk .wb-x { display: grid; place-items: center; flex: none; width: 36px; height: 36px; margin: 0 0 0 -6px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--sub); cursor: pointer; }
+.wk.wk .wb-x:hover { background-color: var(--ivory); color: var(--ink); }
+.wk.wk .wb-x svg { width: 16px; height: 16px; }
+body.wk-pill-on .wk.wk .wb { bottom: 92px; }
+body.wk-modal-open .wk.wk .wb { display: none; }
+body.wk-square .wk.wk .wb, body.wk-cut .wk.wk .wb, body.wk-square .wk.wk .wb-thumbs > span, body.wk-cut .wk.wk .wb-thumbs > span { border-radius: 2px; }
+/* Phones: "Your 3 saved designs" beside the pictures (the whole of it opens the list), then the button */
+@media (max-width: 860px) {
+	.wk.wk .wb { left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); max-width: none; gap: 8px; padding: 8px; }
+	body.wk-bar-on .wk.wk .wb { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+	.wk.wk .wb-view { flex: 1; gap: 10px; }
+	.wk.wk .wb-thumbs > span { width: 40px; height: 40px; margin-left: -16px; }
+	.wk.wk .wb-thumbs > span:nth-child(n+3) { display: none; }
+	.wk.wk .wb-txt b, .wk.wk .wb-dot { display: none; }
+	.wk.wk .wb-sub { overflow: visible; white-space: normal; font: 700 14px/1.25 var(--sans); color: var(--ink); }
+	.wk.wk .wb-v { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+	.wk.wk .wb .wb-book { min-height: 42px; padding: 0 14px; font-size: 13.5px; }
+}
+@media (prefers-reduced-motion: reduce) { .wk.wk .wb { transition: none; } }
+
+/* ================= Phone bar with a Text button: Call · Text · Book ================= */
+@media (max-width: 860px) {
+	.wk.wk .actbar.has-text { display: flex; }
+	.wk.wk .actbar.has-text a.ab-ic { flex: none; }
+	.wk.wk .actbar.has-text a.main { flex: 1 1 auto; min-width: 0; }
+}

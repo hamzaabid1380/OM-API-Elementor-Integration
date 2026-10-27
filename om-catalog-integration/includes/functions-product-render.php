@@ -180,6 +180,13 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			$hint_html     = '';
 		}
 	}
+	// Proof right under the buttons, from other plugins (the Wulf kit: the shop's Google rating, a
+	// short review about this kind of jewelry, its promises). Without buttons it follows the price.
+	$assure_html = $args['compact'] ? '' : (string) apply_filters( 'om_product_assurance', '', $product_line, $style_number );
+	if ( '' !== $assure_html && '' !== $buttons_html ) {
+		$buttons_html .= $assure_html;
+		$assure_html   = '';
+	}
 
 	// Ring builder button: only for the builder's product lines, when a
 	// builder page is set. Carries a diamond the customer already chose.
@@ -336,6 +343,7 @@ function om_render_product_detail( $product, $product_line, $style_number, $args
 			}
 			// No buttons on this page: the hint line follows the price.
 			echo $hint_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in OM_Hint::button().
+			echo $assure_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped by the plugin that adds it.
 			if ( $inquiry_top && ( 'price' === $buttons_position || '' === $buttons_html ) ) {
 				echo $inquiry_html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in the renderer.
 				$inquiry_html = '';

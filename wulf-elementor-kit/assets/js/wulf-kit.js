@@ -26,6 +26,8 @@
 		var r = film.getBoundingClientRect();
 		return document.documentElement.classList.contains('film-on') ? r.top < -innerHeight * 0.35 || r.bottom < edge : r.bottom < edge;
 	};
+	// After the page has loaded (pictures, styles, fonts): for films that must not slow the first screen.
+	var afterLoad = function (fn) { if (document.readyState === 'complete') setTimeout(fn, 0); else addEventListener('load', function () { setTimeout(fn, 0); }, { once: true }); };
 	/* Is a part of the cinematic film under this line of the screen? */
 	var overFilm = function (y) {
 		return $$('.wk-film .film-act').some(function (a) { var r = a.getBoundingClientRect(); return r.top < y + 2 && r.bottom > y; });
@@ -342,7 +344,8 @@
 		portal.innerHTML = '<div class="toast" role="status" hidden></div>' +
 			(CFG.tray && !SV ? '<div class="drawer" role="dialog" aria-modal="true" aria-labelledby="wk-drawer-h" hidden><div class="dr-panel"><div class="dr-head"><h2 class="h3" id="wk-drawer-h">' + esc(T.trayTitle || 'Your tray') + '<span class="dr-count"></span></h2><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div><p class="dr-sub">' + esc(T.traySub || '') + '</p><div class="dr-body"><ul class="dr-list"></ul>' + mail + '<div class="dr-empty"><p>' + esc(T.trayEmpty || '') + '</p></div></div><div class="dr-foot" hidden><a class="btn btn-ink" href="' + esc(CFG.book || '#visit') + '" data-dr-book>' + esc(T.trayBook || 'Book to see them in person') + ' ' + icon('arr', 'arr') + '</a><button class="btn btn-line" type="button" data-dr-keep>' + esc(T.trayKeep || 'Keep browsing') + '</button><p class="fine">' + esc(T.trayNote || '') + '</p></div></div></div>' : '') +
 			// Call and Directions as round icons either side, so the booking button has room for its full words.
-			(CFG.actbar ? '<nav class="actbar" aria-label="Quick actions" data-om-ai-lift>' + (CFG.tel ? '<a class="ab-ic" href="' + esc(CFG.tel) + '" title="' + esc(a[0]) + '">' + icon('phone') + '<span class="sr">' + esc(a[0]) + '</span></a>' : '') + '<a class="main" href="' + esc(CFG.book || '#visit') + '">' + esc(a[1]) + '<span class="count" data-count hidden>0</span></a>' + (CFG.maps ? '<a class="ab-ic" href="' + esc(CFG.maps) + '" target="_blank" rel="noopener" title="' + esc(a[2]) + '">' + icon('dir') + '<span class="sr">' + esc(a[2]) + '</span></a>' : '') + '</nav>' : '') +
+			// With a number for texts: Call and Text on the left, then the booking button (Directions stays in the Visit section).
+			(CFG.actbar ? '<nav class="actbar' + (CFG.sms ? ' has-text' : '') + '" aria-label="Quick actions" data-om-ai-lift>' + (CFG.tel ? '<a class="ab-ic" href="' + esc(CFG.tel) + '" title="' + esc(a[0]) + '">' + icon('phone') + '<span class="sr">' + esc(a[0]) + '</span></a>' : '') + (CFG.sms ? '<a class="ab-ic" href="' + esc(CFG.sms) + '" title="' + esc(a[3] || 'Text') + '">' + icon('chat') + '<span class="sr">' + esc(a[3] || 'Text') + '</span></a>' : '') + '<a class="main" href="' + esc(CFG.book || '#visit') + '">' + esc(a[1]) + '<span class="count" data-count hidden>0</span></a>' + (CFG.maps && !CFG.sms ? '<a class="ab-ic" href="' + esc(CFG.maps) + '" target="_blank" rel="noopener" title="' + esc(a[2]) + '">' + icon('dir') + '<span class="sr">' + esc(a[2]) + '</span></a>' : '') + '</nav>' : '') +
 			// Computers: a slim booking bar that stays on screen after the first screen.
 			(CFG.pill ? '<div class="bkpill" role="region" aria-label="' + esc(a[1]) + '" data-om-ai-lift><span class="bp-status" data-wk-status><i></i><span data-status-text></span></span><a class="btn btn-gold bp-book" href="' + esc(CFG.book || '#visit') + '">' + esc(a[1]) + ' ' + icon('arr', 'arr') + '</a>' + (CFG.tel && CFG.phone ? '<a class="bp-call" href="' + esc(CFG.tel) + '">' + icon('phone') + esc(CFG.phone) + '</a>' : '') + '<button class="bp-x" type="button" aria-label="' + esc(T.hide || 'Hide') + '">' + icon('close') + '</button></div>' : '');
 		document.body.appendChild(portal);
@@ -357,6 +360,7 @@
 				var vis = false;
 				if (book) { var r = book.getBoundingClientRect(); vis = r.top < innerHeight && r.bottom > 0; }
 				bar.classList.toggle('on', past && !vis);
+				document.body.classList.toggle('wk-bar-on', past && !vis && bar.getClientRects().length > 0);
 			};
 			addEventListener('scroll', onScroll, { passive: true }); onScroll();
 		}
@@ -604,12 +608,13 @@
 		if (DEBUG && window.console) window.console.info('[Wulf event] ' + name + (sent.length ? ' → ' + sent.join(', ') : ' (no GA4 / GTM / Meta pixel on this page)'), params);
 	}
 	// Where a click came from, for reports: the section's widget ("hero", "spotlight", "header"…).
-	var where = function (n) { var w = n.closest('.wk[data-wk]'); return w ? w.dataset.wk : (n.closest('.actbar') ? 'phone_bar' : (n.closest('.bkpill') ? 'booking_bar_desktop' : (n.closest('.drawer') ? 'tray' : 'page'))); };
+	var where = function (n) { var w = n.closest('.wk[data-wk]'); return w ? w.dataset.wk : (n.closest('.actbar') ? 'phone_bar' : (n.closest('.bkpill') ? 'booking_bar_desktop' : (n.closest('.drawer') ? 'tray' : (n.closest('.wb') ? 'welcome_back' : 'page')))); };
 	document.addEventListener('click', function (e) {
 		var a = e.target.closest('a[href]');
 		if (!a || !a.closest('.wk') || a.closest('.bk')) return;
 		var href = a.getAttribute('href') || '', txt = (a.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
 		if (/^tel:/.test(href)) track('click_to_call', { cta_location: where(a), link_url: href }, ['trackCustom', 'ClickToCall']);
+		else if (/^sms:/.test(href)) track('click_to_text', { cta_location: where(a) }, ['trackCustom', 'ClickToText']);
 		else if (CFG.maps && href === CFG.maps) track('get_directions', { cta_location: where(a) }, ['trackCustom', 'GetDirections']);
 		else if (a.classList.contains('btn') || a.closest('.actbar') || a.closest('[data-wk="paths"]')) track('cta_click', { cta_text: txt, cta_location: where(a), link_url: href });
 	}, true);
@@ -748,6 +753,25 @@
 			err.textContent = (er && er.message) || T.error || 'Sorry, that didn\'t send. Please call us instead.'; err.hidden = false;
 		});
 	}
+	// Where visitors decide: the Google rating, one short review about what they chose (else one about
+	// anything) and the promises, from Wulf Kit › Settings › Reviews and promises by the Book buttons.
+	var PROOF = CFG.proof || null;
+	function proofQuote(keys) {
+		var q = (PROOF && PROOF.q) || [], i;
+		for (i = 0; i < q.length; i++) if (q[i].k && keys.indexOf(q[i].k) >= 0) return q[i];
+		for (i = 0; i < q.length; i++) if (!q[i].k) return q[i];
+		return keys.length ? null : q[0] || null;
+	}
+	// The topics ticked, else the kind of jewelry being asked about (its catalog link). Wide popups show it
+	// on the showroom picture (whose points are the promises), otherwise it sits under the buttons.
+	function bkProof() {
+		if (!PROOF || !bk || !bkS) return;
+		var keys = $$('[data-bk-topic][aria-pressed=true]', bk).map(function (b) { return b.dataset.bkKey; }).filter(Boolean);
+		if (!keys.length && bkS.line) keys = [{ 'engagement-rings': 'engagement', 'wedding-bands': 'wedding' }[bkS.line] || ''].filter(Boolean);
+		var q = proofQuote(keys);
+		var html = (PROOF.rate || '') + (q ? '<figure class="as-quote"><blockquote><p>' + esc(q.t) + '</p></blockquote>' + (q.a ? '<figcaption>' + esc(q.a) + '</figcaption>' : '') + '</figure>' : '');
+		$$('[data-bk-proof]', bk).forEach(function (box) { var h = html + (box.hasAttribute('data-prom') ? PROOF.prom || '' : ''); box.innerHTML = h; box.hidden = !h; });
+	}
 	// The SimplyBook calendar (OM Catalog › Inquiries): on its own, or beside the steps as two tabs.
 	var CAL = BK.cal || null;
 	function bkCalParts(steps) {
@@ -773,14 +797,15 @@
 		var aside = pop ? '<aside class="bk-aside">' + (BK.img ? '<img src="' + esc(BK.img) + '" alt="" loading="lazy" decoding="async">' : '') + '<div class="bk-aside-in">' +
 			(BK.name ? '<p class="bk-aside-n">' + esc(BK.name) + '</p>' : '') + (BK.addr ? '<p class="bk-aside-a">' + icon('pin') + esc(BK.addr) + '</p>' : '') +
 			'<p class="bk-aside-s" data-wk-status><i></i><span data-status-text></span></p>' +
-			((BK.points || []).length ? '<ul class="bk-pts">' + BK.points.map(function (x) { return '<li>' + icon('check') + esc(x) + '</li>'; }).join('') + '</ul>' : '') + '</div></aside>' : '';
+			((BK.points || []).length ? '<ul class="bk-pts">' + BK.points.map(function (x) { return '<li>' + icon('check') + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+			(PROOF ? '<div class="assure as-dark" data-bk-proof hidden></div>' : '') + '</div></aside>' : '';
 		var head = '<div class="bk-head"><div><p class="bk-eye">' + esc(T.bkEyebrow || 'Free consultation') + '</p><h2 class="h3" id="wk-bk-h">' + esc(BK.title || 'Book your free consultation') + '</h2>' + (BK.sub ? '<p class="bk-sub">' + esc(BK.sub) + '</p>' : '') + '</div><button class="icon-btn" type="button" data-close aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button></div>';
 		var steps = '<div class="bk-prog" aria-hidden="true"><span></span></div>' +
 			'<form class="bk-form" novalidate>' +
 			'<p class="bk-count" data-bk-count aria-live="polite"></p>' +
 			'<div class="bk-ctx" data-bk-ctx hidden></div>' +
 			'<fieldset class="bk-step" data-step="1"><legend class="h3">' + esc(T.bkQ1 || '') + '</legend><p class="bk-hint">' + esc(T.bkQ1s || '') + '</p><div class="bk-topics">' +
-				(BK.topics || []).map(function (t) { return '<button class="opt" type="button" aria-pressed="false" data-bk-topic="' + esc(t[0]) + '"><span class="bk-ti">' + icon(bkIcon(t[0])) + '</span><span>' + esc(t[0]) + '</span></button>'; }).join('') + '</div></fieldset>' +
+				(BK.topics || []).map(function (t) { return '<button class="opt" type="button" aria-pressed="false" data-bk-topic="' + esc(t[0]) + '" data-bk-key="' + esc(t[2] || '') + '"><span class="bk-ti">' + icon(bkIcon(t[0])) + '</span><span>' + esc(t[0]) + '</span></button>'; }).join('') + '</div></fieldset>' +
 			'<fieldset class="bk-step" data-step="2" hidden><legend class="h3">' + esc(T.bkQ2 || '') + '</legend><p class="bk-hint">' + esc(T.bkQ2s || '') + '</p>' +
 				'<p class="lbl" id="wk-bk-dl">' + esc(T.bkDay || 'Day') + '</p><div class="bk-days" role="radiogroup" aria-labelledby="wk-bk-dl" data-bk-days></div>' +
 				'<p class="lbl" id="wk-bk-tl">' + esc(T.bkTime || 'Time of day') + '</p><div class="bk-times" role="radiogroup" aria-labelledby="wk-bk-tl" data-bk-times></div>' +
@@ -795,6 +820,7 @@
 				'<input type="text" name="website" tabindex="-1" autocomplete="off" class="sr" aria-hidden="true"></fieldset>' +
 			'<p class="err" data-bk-err role="alert" hidden></p>' +
 			(tel ? '<p class="bk-call">' + fmt(esc(T.bkOrCall || 'Prefer to talk? Call %s'), tel) + '</p>' : '') +
+			(PROOF ? '<div class="assure bk-proof" data-bk-proof data-prom hidden></div>' : '') +
 			'<div class="bk-nav"><button class="btn btn-line" type="button" data-bk-back>' + icon('left') + '<span>' + esc(T.bkBack || 'Back') + '</span></button><button class="btn btn-gold" type="submit" data-bk-next></button></div>' +
 			'</form><div class="bk-done" data-bk-done hidden tabindex="-1"></div>';
 		bk.innerHTML = '<div class="bk-panel">' + aside + '<div class="bk-main">' + head + (CAL ? bkCalParts(steps) : steps) + '</div></div>';
@@ -804,7 +830,7 @@
 		bk.addEventListener('click', function (e) {
 			if (e.target === bk || e.target.closest('[data-close]')) return bookClose();
 			var t = e.target.closest('[data-bk-topic]');
-			if (t) return t.setAttribute('aria-pressed', String(t.getAttribute('aria-pressed') !== 'true'));
+			if (t) { t.setAttribute('aria-pressed', String(t.getAttribute('aria-pressed') !== 'true')); bkProof(); return; }
 			var d = e.target.closest('[data-d]');
 			if (d) {
 				bkRadio(d.parentNode, d); $('[data-bk-dayerr]', bk).hidden = true;
@@ -852,6 +878,8 @@
 		bkS = { step: 1, day: null, time: null, piece: opts.piece || null, answers: opts.answers || '', source: opts.source || '' };
 		var known = opts.topic && BRING.hasOwnProperty(opts.topic);
 		$$('[data-bk-topic]', bk).forEach(function (b) { b.setAttribute('aria-pressed', String(!!known && b.dataset.bkTopic === opts.topic)); });
+		bkS.line = opts.piece && opts.piece.url ? (catalogOf(opts.piece.url) || {}).l || '' : '';
+		bkProof();
 		var items = [];
 		if (bkS.piece && bkS.piece.name) items.push(bkS.piece);
 		trayList().forEach(function (t) { if (!items.some(function (x) { return (x.key && x.key === t.key) || x.name === t.name; })) items.push(t); });
@@ -891,6 +919,44 @@
 		if (bkFrom && bkFrom.focus && document.contains(bkFrom)) bkFrom.focus({ preventScroll: true });
 	}
 	window.wkBook = bookOpen;
+
+	/* ================= Welcome back: a slim reminder of the saved designs ================= */
+	// From a second visit on (half an hour or more after the last page view), once per visit: their
+	// pictures, View and Book a viewing. Closing it rests it for a week. Fixed at the bottom, so nothing moves.
+	function welcomeBack() {
+		if (!CFG.welcome || !CFG.tray || document.body.classList.contains('elementor-editor-active')) return;
+		var now = Date.now(), last = 0, rest = 0, shown = false;
+		try {
+			last = +localStorage.getItem('wkLastSeen') || 0; rest = +localStorage.getItem('wkWbRest') || 0;
+			localStorage.setItem('wkLastSeen', String(now));
+			shown = sessionStorage.getItem('wkWb') === '1';
+		} catch (e) { return; }
+		if (shown || !last || now - last < 30 * 60 * 1000 || now < rest) return;
+		setTimeout(function () {
+			var list = trayList(), n = list.length;
+			if (!n || document.body.classList.contains('wk-modal-open')) return;
+			try { sessionStorage.setItem('wkWb', '1'); } catch (e) {}
+			var wb = document.createElement('div');
+			wb.className = 'wb'; wb.setAttribute('role', 'region'); wb.setAttribute('aria-label', T.wbHi || 'Welcome back'); wb.setAttribute('data-om-ai-lift', '');
+			// The pictures and words open the saved list; the button books.
+			wb.innerHTML = '<button class="wb-view" type="button"><span class="wb-thumbs" aria-hidden="true">' + list.slice(0, 3).map(function (t) { return '<span>' + (t.img ? '<img src="' + esc(t.img) + '" alt="" decoding="async">' : icon('gem')) + '</span>'; }).join('') + '</span>' +
+				'<span class="wb-txt"><b>' + esc(T.wbHi || 'Welcome back') + '</b><span class="wb-sub"><span class="wb-n">' + esc(n === 1 ? (T.wbOne || 'Your saved design') : fmt(T.wbMany || 'Your %d saved designs', n)) + '</span><span class="wb-dot" aria-hidden="true"> · </span><span class="wb-v">' + esc(T.wbView || 'View') + '</span></span></span></button>' +
+				'<a class="btn btn-ink wb-book" href="' + esc(CFG.book || '#visit') + '">' + esc(T.wbBook || 'Book a viewing') + '</a>' +
+				'<button class="wb-x" type="button" aria-label="' + esc(T.close || 'Close') + '">' + icon('close') + '</button>';
+			ensurePortal().appendChild(wb);
+			var hide = function () { wb.classList.remove('on'); setTimeout(function () { wb.remove(); }, reduce ? 0 : 400); };
+			$('.wb-x', wb).addEventListener('click', function () { try { localStorage.setItem('wkWbRest', String(Date.now() + 7 * 24 * 3600 * 1000)); } catch (e) {} hide(); });
+			$('.wb-view', wb).addEventListener('click', function () { hide(); track('cta_click', { cta_text: T.wbView || 'View', cta_location: 'welcome_back' }); openDrawer(); });
+			$('.wb-book', wb).addEventListener('click', function (e) {
+				hide();
+				if (!CFG.panel) return;
+				e.preventDefault();
+				bookOpen({ source: 'welcome_back' });
+			});
+			requestAnimationFrame(function () { requestAnimationFrame(function () { wb.classList.add('on'); }); });
+			track('welcome_back', { designs: n });
+		}, 1400);
+	}
 	document.addEventListener('om-ask:change', function (e) {
 		if (bk && bk.contains(e.target) && e.detail && e.detail.tab === 'form' && bkS) track('booking_step', { step: bkS.step, cta_location: bkS.source || 'page' });
 	});
@@ -1016,10 +1082,11 @@
 		var items = c.items || [], media = $('.hero-media', el), stage = $('.sc-stage', el), sweep = $('.sweep', el), cap = $('.sc-cap', el);
 		var shown = function (n) { return !!(n && n.getClientRects().length); };
 		// Phones with the small ring: only the film that is actually on screen loads.
+		// Both wait for the page to finish loading (their stills show meanwhile), so the first screen comes up first.
 		var mini = $('.hero-mini', el), mv = mini && mini.querySelector('video');
-		if (mv && shown(mini) && !reduce) { mv.src = mv.dataset.src; var mp = mv.play(); if (mp && mp.then) mp.then(function () { mini.classList.add('playing'); }, function () {}); }
+		if (mv && shown(mini) && !reduce) afterLoad(function () { if (!mv.getAttribute('src')) mv.src = mv.dataset.src; var mp = mv.play(); if (mp && mp.then) mp.then(function () { mini.classList.add('playing'); }, function () {}); });
 		var first = $('video[data-first]', el);
-		if (first && shown(media)) { first.src = first.dataset.src; if (!reduce) { var fp = first.play(); if (fp && fp.catch) fp.catch(function () {}); } }
+		if (first && shown(media)) afterLoad(function () { if (!first.getAttribute('src')) first.src = first.dataset.src; if (!reduce) { var fp = first.play(); if (fp && fp.catch) fp.catch(function () {}); } });
 		if (!stage || items.length < 2) { if (c.sweep) setTimeout(function () { sweepRun(sweep); }, 650); return; }
 		var figs = $$('.sc-item', stage), btns = $$('.sc-thumbs button', el), vids = figs.map(function (f) { return f.querySelector('video'); });
 		if (reduce && vids[0]) { vids[0].removeAttribute('autoplay'); vids[0].pause(); }
@@ -2042,11 +2109,18 @@
 		});
 		if (document.querySelector('.wk[data-wk]') || CFG.actbar) ensurePortal();
 		reveal(root);
+		if (root === document && !boot.once) { boot.once = true; designerLinks(); welcomeBack(); }
 		if (root === document && CFG.panel && !boot.opened && (/[?&]book=1\b/.test(location.search) || location.hash === '#book')) {
 			boot.opened = true;
 			var qt0 = ''; try { qt0 = new URLSearchParams(location.search).get('topic') || ''; } catch (e) {}
 			bookOpen({ topic: qt0, source: 'link' });
 		}
+	}
+
+	// "Design your ring" links to a ring designer section (#studio) that this page doesn't have go to the ring builder.
+	function designerLinks() {
+		if (!CFG.designer || document.getElementById('studio') || document.body.classList.contains('elementor-editor-active')) return;
+		$$('a[href$="#studio"]').forEach(function (a) { if (a.getAttribute('href') === '#studio' || (a.host === location.host && a.pathname === location.pathname)) a.href = CFG.designer; });
 	}
 
 	/* ================= Step-cut lines around a frame (Daylight with cut corners) =================

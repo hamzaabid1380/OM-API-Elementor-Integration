@@ -39,6 +39,8 @@ class WK_Pagehero_Widget extends WK_Widget {
 		$this->button_fields( 'b2', __( 'Second button', 'wulf-kit' ), '', '' );
 		$this->add_control( 'call_line', array( 'label' => __( '"Or call…" line with open status', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ) );
 		$this->add_control( 'call_text', array( 'label' => __( 'Starts with', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Or call', 'wulf-kit' ), 'condition' => array( 'call_line' => 'yes' ) ) );
+		$this->assure_control();
+		$this->add_control( 'assure_note', array( 'type' => Controls_Manager::RAW_HTML, 'raw' => esc_html__( 'Shown in a slim strip along the foot of the banner, so the banner still fits the first screen.', 'wulf-kit' ), 'content_classes' => 'elementor-descriptor', 'condition' => array( 'assure' => 'yes' ) ) );
 		$r = new Repeater();
 		$r->add_control( 'icon', array( 'label' => __( 'Icon', 'wulf-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'check', 'options' => WK_Icons::options() ) );
 		$r->add_control( 'text', array( 'label' => __( 'Text', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '' ) );
@@ -209,6 +211,13 @@ class WK_Pagehero_Widget extends WK_Widget {
 			echo '</figure>' . ( $day ? '</div>' : '' );
 		}
 		echo '</div></section>';
+		// The rating and promises in a slim strip along the banner's foot, so the banner itself keeps fitting the
+		// first screen. A banner with its own short points keeps those instead of the promises.
+		$strip = $this->assure( $s, array( 'cls' => 'as-strip', 'promises' => ! $s['trust'] ) );
+		if ( '' !== $strip ) {
+			$tone = array( 'ivory' => 'ivory', 'dark' => WK_Plugin::is_day() ? 'is-light' : 'dark' )[ $s['tone'] ?? '' ] ?? '';
+			echo '<div class="pgh-strip' . ( $tone ? ' ' . esc_attr( $tone ) : '' ) . '"><div class="wrap">' . $strip . '</div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
+		}
 		$this->close();
 	}
 }

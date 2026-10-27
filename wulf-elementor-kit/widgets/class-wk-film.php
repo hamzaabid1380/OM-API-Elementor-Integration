@@ -239,7 +239,7 @@ class WK_Film_Widget extends WK_Widget {
 			if ( 'yes' === ( $s['o_call'] ?? '' ) && $phone ) {
 				$more .= '<p class="hero-call">' . esc_html( $s['o_call_text'] ?? '' ) . ' <a href="' . esc_attr( WK_Settings::tel() ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>';
 			}
-			$g     = 'yes' === ( $s['o_rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
+			$g     = 'yes' === ( $s['o_rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::summary() : null;
 			$trust = '';
 			if ( $g && ! empty( $g['count'] ) ) {
 				/* translators: 1: rating like 4.9, 2: number of reviews */

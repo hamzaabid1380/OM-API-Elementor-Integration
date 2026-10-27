@@ -105,7 +105,7 @@ class WK_Values_Widget extends WK_Widget {
 		if ( 'yes' !== ( $s['rating_on'] ?? '' ) ) {
 			return '';
 		}
-		$g      = class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
+		$g      = class_exists( 'WK_Reviews' ) ? WK_Reviews::summary() : null;
 		$rating = $g ? number_format_i18n( $g['rating'], 1 ) : (string) $s['rating'];
 		$label  = (string) $s['rating_label'];
 		$label  = $g ? str_replace( array( '{count}', '[N]' ), number_format_i18n( $g['count'] ), $label ) : str_replace( '{count}', '[N]', $label );

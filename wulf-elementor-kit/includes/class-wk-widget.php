@@ -134,6 +134,23 @@ abstract class WK_Widget extends Widget_Base {
 		}
 	}
 
+	/** The switch for the rating, a short review and the promises under a section's buttons (WK_Proof). */
+	protected function assure_control( $quote = false ) {
+		$this->add_control( 'assure', array(
+			'label'        => $quote ? __( 'Rating, a short review and promises under the buttons', 'wulf-kit' ) : __( 'Rating and promises under the buttons', 'wulf-kit' ),
+			'type'         => Controls_Manager::SWITCHER,
+			'default'      => 'yes',
+			'return_value' => 'yes',
+			'separator'    => 'before',
+			'description'  => __( 'From Wulf Kit › Settings › Reviews and promises by the Book buttons, where they are typed in once for the whole site. Nothing shows until there is a rating or promises there.', 'wulf-kit' ),
+		) );
+	}
+
+	/** The rating, review and promises block for a section (empty when switched off or nothing is set). */
+	protected function assure( $s, $o = array() ) {
+		return 'yes' === ( $s['assure'] ?? 'yes' ) && class_exists( 'WK_Proof' ) ? WK_Proof::html( $o ) : '';
+	}
+
 	/* ================================================================
 	 * Style controls
 	 * ============================================================== */

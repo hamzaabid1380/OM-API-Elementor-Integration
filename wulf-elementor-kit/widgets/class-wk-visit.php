@@ -88,6 +88,7 @@ class WK_Visit_Widget extends WK_Widget {
 		$this->add_control( 'f_btn', array( 'label' => __( 'Send button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Request my visit', 'wulf-kit' ) ) );
 		$this->add_control( 'f_done', array( 'label' => __( 'Thank-you message', 'wulf-kit' ), 'type' => Controls_Manager::TEXTAREA, 'rows' => 3, 'default' => __( 'We\'ll confirm your visit on {day} ({time}) by {pref} within one business day.', 'wulf-kit' ), 'description' => __( '{name}, {day}, {time} and {pref} are filled in.', 'wulf-kit' ) ) );
 		$this->add_control( 'f_fine', array( 'label' => __( 'Small print under the button', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'label_block' => true ) );
+		$this->assure_control();
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'c_after', array( 'label' => __( 'After you book', 'wulf-kit' ) ) );
@@ -236,6 +237,7 @@ class WK_Visit_Widget extends WK_Widget {
 			echo '<input type="text" name="website" tabindex="-1" autocomplete="off" class="sr" aria-hidden="true">';
 			echo '<button class="btn btn-ink" type="submit">' . esc_html( $s['f_btn'] ) . ' ' . WK_Icons::svg( 'arr', 'arr' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo '<p class="err" data-form-err hidden></p>';
+			echo $this->assure( $s, array( 'cls' => 'as-form' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
 			if ( $s['f_fine'] ) {
 				echo '<p class="fine" style="text-align:center">' . esc_html( $s['f_fine'] ) . '</p>';
 			}

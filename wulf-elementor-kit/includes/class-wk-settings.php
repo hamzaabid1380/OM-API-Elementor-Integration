@@ -70,6 +70,11 @@ class WK_Settings {
 			'act_call'      => 'Call',
 			'act_book'      => 'Book a free consultation',
 			'act_dir'       => 'Directions',
+			'act_text'      => 'Text',
+			// A number that takes text messages: the phone bar then shows Call · Text · Book.
+			'sms'           => '',
+			// Returning visitors with saved designs get a slim reminder.
+			'welcome'       => '1',
 			'book_url'      => '#visit',
 			'book_panel'    => '1',
 			'book_style'    => 'popup',
@@ -80,6 +85,15 @@ class WK_Settings {
 			'book_topics'   => "Engagement ring | Any inspiration photos you love\nWedding bands | Your engagement ring, so we can match it\nCustom design | Sketches, photos or a family stone\nRepair | The piece that needs work\nAppraisal | The piece and any grading reports\nSelling | The pieces you want to sell and a photo ID\nFinancing | A photo ID",
 			'book_done'     => 'We\'ll confirm your visit on {day} ({time}) by {pref} within one business day.',
 			'track'         => '1',
+			// Next to the Book buttons: the rating, a short matching review, the promises.
+			'assure'        => '1',
+			'g_rating'      => '',
+			'g_count'       => '',
+			'g_url'         => 'https://share.google/ZIKvRTnr9JcbLdgex',
+			'g_quotes'      => '',
+			'g_live_quotes' => '1',
+			'promises'      => "GIA-certified jewelers\nFree cleaning & inspection\nRepairs done in-house\nIndependent since 1971",
+			'promises_url'  => '',
 			'to_om_leads'   => '1',
 			'header_tpl'    => '',
 			'footer_tpl'    => '',
@@ -139,6 +153,12 @@ class WK_Settings {
 			$d = '1' . $d;
 		}
 		return $d ? 'tel:+' . $d : '';
+	}
+
+	/** The number for texts as an "sms:" link, or '' when none is set. */
+	public static function sms() {
+		$t = self::tel( (string) self::get( 'sms' ) );
+		return '' === trim( (string) self::get( 'sms' ) ) || '' === $t ? '' : 'sms:' . substr( $t, 4 );
 	}
 
 	/** Hours as [day => [openHour, closeHour]] (null when closed), for the script. */
@@ -261,13 +281,13 @@ class WK_Settings {
 			$val = $in[ $k ] ?? '';
 			if ( 0 === strpos( $k, 'c_' ) ) {
 				$out[ $k ] = sanitize_hex_color( $val ) ? sanitize_hex_color( $val ) : $v;
-			} elseif ( in_array( $k, array( 'maps_url', 'om_media', 'book_img', 'film_motion', 'film_suitcase', 'store_img' ), true ) ) {
+			} elseif ( in_array( $k, array( 'maps_url', 'om_media', 'book_img', 'film_motion', 'film_suitcase', 'store_img', 'g_url', 'promises_url' ), true ) ) {
 				$out[ $k ] = esc_url_raw( $val );
 			} elseif ( 'email' === $k ) {
 				$out[ $k ] = sanitize_email( $val );
 			} elseif ( 'turn_speed' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( '0.5', '0.6', '0.75', '1' ), true ) ? (string) $val : $v;
-			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'book_pill', 'assistant_home', 'to_om_leads', 'calm_all', 'book_panel', 'track', 'schema' ), true ) ) {
+			} elseif ( in_array( $k, array( 'google_fonts', 'tray', 'actbar', 'book_pill', 'assistant_home', 'to_om_leads', 'calm_all', 'book_panel', 'track', 'schema', 'assure', 'g_live_quotes', 'welcome' ), true ) ) {
 				$out[ $k ] = empty( $val ) ? '' : '1';
 			} elseif ( 'visit_map' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( 'google', 'drawn', 'none' ), true ) ? (string) $val : $v;
@@ -279,7 +299,13 @@ class WK_Settings {
 				$out[ $k ] = in_array( (string) $val, array( 'auto', 'round', 'square', 'cut' ), true ) ? (string) $val : $v;
 			} elseif ( 'book_style' === $k ) {
 				$out[ $k ] = in_array( (string) $val, array( 'popup', 'drawer' ), true ) ? (string) $val : $v;
-			} elseif ( in_array( $k, array( 'book_topics', 'book_points' ), true ) ) {
+			} elseif ( 'g_rating' === $k ) {
+				$r         = (float) str_replace( ',', '.', (string) $val );
+				$out[ $k ] = $r >= 1 && $r <= 5 ? (string) round( $r, 1 ) : '';
+			} elseif ( 'g_count' === $k ) {
+				$n         = (int) preg_replace( '/\D+/', '', (string) $val );
+				$out[ $k ] = $n > 0 ? (string) $n : '';
+			} elseif ( in_array( $k, array( 'book_topics', 'book_points', 'g_quotes', 'promises' ), true ) ) {
 				$out[ $k ] = sanitize_textarea_field( $val );
 			} elseif ( 'profiles' === $k ) {
 				$out[ $k ] = implode( "\n", WK_Schema::profiles( is_scalar( $val ) ? (string) $val : '' ) );
@@ -453,11 +479,14 @@ class WK_Settings {
 					self::field( 'footer_tpl', __( 'Site footer', 'wulf-kit' ), 'template', __( 'Shown at the bottom of every page instead of the theme footer.', 'wulf-kit' ) );
 					self::field( 'tray', __( 'Saved pieces tray', 'wulf-kit' ), 'check', __( 'Visitors can save pieces with the heart and bring them to their visit. With the OM Catalog plugin\'s Saved designs on (Settings › OM Catalog › Look & feel), the hearts save into its list, the same one as on catalog pages, and the header button opens its Saved panel.', 'wulf-kit' ) );
 					self::field( 'actbar', __( 'Phone action bar', 'wulf-kit' ), 'check', __( 'Call / Book / Directions bar at the bottom of the screen on phones.', 'wulf-kit' ) );
+					self::field( 'sms', __( 'Text messages go to', 'wulf-kit' ), 'text', __( 'Optional. A number that can receive text messages, like your business texting number. Filled in, the phone bar shows Call · Text · Book (a tap opens the visitor\'s messages app, addressed to you). Empty, it shows Call · Book · Directions.', 'wulf-kit' ) );
 					self::field( 'book_pill', __( 'Booking button on computers', 'wulf-kit' ), 'check', __( 'After the first screen, a slim bar at the bottom with today\'s hours, "Book a free consultation" and your phone number. It steps aside near the booking form and the footer, and visitors can close it.', 'wulf-kit' ) );
+					self::field( 'welcome', __( 'Welcome back', 'wulf-kit' ), 'check', __( 'Visitors who come back with saved designs see a slim reminder at the bottom of the screen: "Welcome back · Your 3 saved designs", with their pictures, View and Book a viewing. Once per visit, from a second visit on; closing it hides it for a week.', 'wulf-kit' ) );
 					self::field( 'assistant_home', __( 'Jeweller assistant on the homepage', 'wulf-kit' ), 'check', __( 'Shows the "Ask our jeweller" chat from the OM Catalog plugin on your homepage (and on homepage versions from the page library), with its starter question. The chat itself is switched on and set up in Settings › OM Catalog › AI assistant.', 'wulf-kit' ) );
 					self::field( 'act_call', __( 'Action bar: call label', 'wulf-kit' ) );
 					self::field( 'act_book', __( 'Action bar: book label', 'wulf-kit' ) );
 					self::field( 'act_dir', __( 'Action bar: directions label', 'wulf-kit' ) );
+					self::field( 'act_text', __( 'Action bar: text label', 'wulf-kit' ) );
 					self::field( 'book_url', __( 'Booking link', 'wulf-kit' ), 'text', __( 'Where "Book a free consultation" buttons go. Leave it as #visit: buttons then jump to the visit form on the same page, or open the Free Consultation page\'s form when the page has none. Or paste any full link.', 'wulf-kit' ) );
 					?>
 				</table>
@@ -484,6 +513,25 @@ class WK_Settings {
 					self::field( 'book_topics', __( 'Topics', 'wulf-kit' ), 'textarea', __( 'One per line. After a | you can add what to bring, shown on the thank-you screen. For example: <code>Repair | The piece that needs work</code>', 'wulf-kit' ) );
 					self::field( 'book_done', __( 'Thank-you message', 'wulf-kit' ), 'text', __( '{name}, {day}, {time} and {pref} are filled in.', 'wulf-kit' ) );
 					self::field( 'track', __( 'Measure clicks and bookings', 'wulf-kit' ), 'check', __( 'Send button clicks, booking steps and booking requests to the Google Analytics, Google Tag Manager or Meta pixel already on your site. Nothing is sent when none is installed. Add <code>?wk_debug_events=1</code> to any page address to see them in the browser console.', 'wulf-kit' ) );
+					?>
+				</table>
+
+				<h2 id="wk-proof"><?php esc_html_e( 'Reviews and promises by the Book buttons', 'wulf-kit' ); ?></h2>
+				<p style="max-width: 820px;"><?php esc_html_e( 'Where visitors decide, a short line of proof: your Google rating, one short review that matches what they are booking, and your promises. It shows in the booking window, under the visit form\'s button, in a slim strip along page banners, under the buttons of call-to-action sections, and on product pages (with OM Catalog 1.47 or later). A section can turn it off in Elementor.', 'wulf-kit' ); ?></p>
+				<?php
+				$wk_proof = WK_Proof::status();
+				echo '<div class="notice notice-' . ( 'ok' === $wk_proof['state'] ? 'success' : 'warning' ) . ' inline"><p>' . esc_html( $wk_proof['text'] ) . '</p></div>';
+				?>
+				<table class="form-table" role="presentation">
+					<?php
+					self::field( 'assure', __( 'Show by the Book buttons', 'wulf-kit' ), 'check', __( 'The rating, a short matching review and your promises', 'wulf-kit' ) );
+					self::field( 'g_rating', __( 'Google rating', 'wulf-kit' ), 'text', __( 'Optional, like 4.9. Filled in with the number of reviews below, these show exactly as typed. Leave both empty to use live numbers: from Featurable or your Google key (Google reviews, below), or the ones Widgets for Google Reviews by Trustindex keeps for its widget.', 'wulf-kit' ) );
+					self::field( 'g_count', __( 'Number of Google reviews', 'wulf-kit' ), 'text', __( 'Optional, like 712.', 'wulf-kit' ) );
+					self::field( 'g_url', __( 'Link to your Google reviews', 'wulf-kit' ), 'url', __( 'Where the rating links to (a new tab). Empty uses the directions link.', 'wulf-kit' ) );
+					self::field( 'g_quotes', __( 'Short reviews', 'wulf-kit' ), 'textarea', __( 'Optional. One per line: what it is about | the customer\'s words | their name. For example: <code>Engagement ring | They showed us every diamond side by side and never rushed us. | Sarah M.</code> Real reviews only; shortening them is fine. The booking window shows the one that matches the topic a visitor picks (Engagement ring, Repair, Selling…), product pages one about that kind of jewelry; a review with nothing before the first | suits any page.', 'wulf-kit' ), array( 'rows' => 5 ) );
+					self::field( 'g_live_quotes', __( 'Quote your Google reviews', 'wulf-kit' ), 'check', __( 'Also use the first sentence or two of your 5-star Google reviews (from Featurable, your Google key or Trustindex), matched to topics by their words', 'wulf-kit' ) );
+					self::field( 'promises', __( 'Your promises', 'wulf-kit' ), 'textarea', __( 'One per line; three or four short ones read best. Only promises every customer gets. Each gets a small icon from its words (certified, cleaning, repair, warranty, upgrade, since…). The Our Promises page in the page library explains them in full.', 'wulf-kit' ), array( 'rows' => 5 ) );
+					self::field( 'promises_url', __( 'Promises page', 'wulf-kit' ), 'url', __( 'Where "Our promises" at the end of the row links to. Empty uses the Our Promises page from Wulf Kit › Page library once it is published (nothing links there before).', 'wulf-kit' ) );
 					?>
 				</table>
 

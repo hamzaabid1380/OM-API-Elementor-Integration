@@ -167,6 +167,13 @@ In the **OM Single Product** widget (Content tab > Price & Buttons):
 The Style tab's **Buttons** section covers typography, padding, height,
 width, corner radius, border, icon size/spacing and normal/hover colours.
 
+Right under the buttons, other plugins can add a line of proof through the
+`om_product_assurance` filter (markup; it receives the product line and
+style number). The Wulf Elementor Kit (1.25 or later) uses it for the shop's
+Google rating, a short review about that kind of jewelry and its promises
+(Wulf Kit > Settings > Reviews and promises by the Book buttons). Without
+buttons it follows the price; quick views leave it out.
+
 ## Search, sorting and card prices
 
 Every catalog grid has a **search box** (names, style numbers and carat
@@ -1369,6 +1376,14 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.47.0
+- **Proof under the product page buttons**: a new `om_product_assurance`
+  filter lets other plugins add a line right under the buttons (or after
+  the price when there are none). The Wulf kit 1.25 shows the shop's
+  Google rating, a short review about that kind of jewelry and its
+  promises there; when the "Trust line under the price" is filled in, the
+  kit leaves its promises out so they aren't said twice.
 
 ### 1.46.1
 - **Accessibility**: product pages and the "Drop a hint" page now have a

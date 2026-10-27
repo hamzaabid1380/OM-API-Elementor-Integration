@@ -300,7 +300,7 @@ class WK_Reel_Widget extends WK_Widget {
 			$out .= '<p class="hero-call">' . esc_html( $s['call_text'] ?? '' ) . ' <a href="' . esc_attr( WK_Settings::tel() ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>';
 		}
 		$trust = '';
-		$g     = 'yes' === ( $s['rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::google() : null;
+		$g     = 'yes' === ( $s['rating'] ?? '' ) && class_exists( 'WK_Reviews' ) ? WK_Reviews::summary() : null;
 		if ( $g && ! empty( $g['count'] ) ) {
 			/* translators: 1: rating like 4.9, 2: number of reviews */
 			$txt   = sprintf( _n( '%1$s · %2$s Google review', '%1$s · %2$s Google reviews', $g['count'], 'wulf-kit' ), number_format_i18n( $g['rating'], 1 ), number_format_i18n( $g['count'] ) );

@@ -32,6 +32,7 @@ class WK_Cta_Widget extends WK_Widget {
 		$this->add_control( 'b2_maps', array( 'label' => __( 'Second button opens Google Maps', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => __( 'Uses the directions link from Wulf Kit settings.', 'wulf-kit' ) ) );
 		$this->add_control( 'call_line', array( 'label' => __( 'Phone line with open status', 'wulf-kit' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ) );
 		$this->add_control( 'phone', array( 'label' => __( 'Phone (optional)', 'wulf-kit' ), 'type' => Controls_Manager::TEXT, 'default' => '', 'description' => __( 'Empty uses the main phone from settings.', 'wulf-kit' ), 'condition' => array( 'call_line' => 'yes' ) ) );
+		$this->assure_control( true );
 		$this->add_control( 'layout', array(
 			'label'     => __( 'Layout', 'wulf-kit' ),
 			'type'      => Controls_Manager::SELECT,
@@ -108,6 +109,7 @@ class WK_Cta_Widget extends WK_Widget {
 		if ( 'yes' === $s['call_line'] && $phone ) {
 			echo '<p class="cta-call">' . WK_Icons::svg( 'phone' ) . '<a href="' . esc_attr( WK_Settings::tel( $phone ) ) . '">' . esc_html( $phone ) . '</a> · <span data-status-text></span></p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
+		echo $this->assure( $s, array( 'quote' => true, 'topic' => (string) ( $s['b1_topic'] ?? '' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
 		echo '</div>';
 		if ( $stage ) {
 			// The piece sits in a soft pool of light, with a thin ring and a spark circling it.

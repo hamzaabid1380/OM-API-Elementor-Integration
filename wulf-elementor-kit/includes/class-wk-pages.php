@@ -35,12 +35,13 @@ class WK_Pages {
 		return array(
 			'home'                        => array( __( 'Home', 'wulf-kit' ), 'home', 'main', __( 'The full homepage: showcase, categories, ring studio, story, 4Cs, services, visit.', 'wulf-kit' ) ),
 			'home-conversion'             => array( __( 'Home (conversion)', 'wulf-kit' ), 'home-conversion', 'main', __( 'The homepage built to turn visitors into booked visits: one clear promise, a booking bar right under it, "What brings you in?" choices that each lead somewhere, a ring style quiz that ends in three matching rings, the 360° spotlight and favorites, why Wulf, how a visit works, the ring designer, common questions, and booking. Each section is a showcase with one clear next step, and every "Book" button opens the booking popup.', 'wulf-kit' ) ),
-			'home-daylight'               => array( __( 'Home (daylight)', 'wulf-kit' ), 'home-daylight', 'main', __( 'The conversion homepage in the Daylight look: warm paper and white, ink buttons, gold kept for small accents. The first screen is a display case: the headline above, the turning piece large in the middle, the words and buttons on its left, the piece\'s name and the other pieces on its right, and the booking bar resting on its edge (phones: one tap per topic). Then "What brings you in?", the ring style quiz, "Since 1971" (The Suitcase beside your story, signed by Cullen: the one dark chapter), how a visit works, the ring designer, questions and booking. Square corners get fine gold corner marks on the case; cut corners, step-cut lines around it. Wulf Kit › Settings › Corners, or this page\'s own setting in Elementor (the cog › Wulf look).', 'wulf-kit' ) ),
+			'home-daylight'               => array( __( 'Home (daylight)', 'wulf-kit' ), 'home-daylight', 'main', __( 'The conversion homepage in the Daylight look, told as one story in seven sections: warm paper and white, ink buttons, gold kept for small accents. The first screen is a display case: the headline above, the turning piece large in the middle, the words and buttons on its left, the piece\'s name and the other pieces on its right, and the booking bar resting on its edge (phones: one tap per topic). Then "What brings you in?", what customers say (your reviews plugin\'s widget when one is set in Wulf Kit › Settings), the ring style quiz, "Since 1971" (The Suitcase beside your story, signed by Cullen: the one dark chapter), how a visit works, and booking with the map. "Design your ring" goes to the ring builder; the common questions live on the Free Consultation page. Square corners get fine gold corner marks on the case; cut corners, step-cut lines around it. Wulf Kit › Settings › Corners, or this page\'s own setting in Elementor (the cog › Wulf look).', 'wulf-kit' ) ),
 			'home-cinematic'              => array( __( 'Home (cinematic)', 'wulf-kit' ), 'home-cinematic', 'main', __( 'The conversion homepage told as a 3D film: a ring and a real-looking diamond, drawn live in the browser, build themselves as visitors scroll. The film comes in three parts between the conversion sections (the opening with the booking buttons, the shapes and metals, the hidden details and your story since 1971), with the booking bar, "What brings you in?", the ring style quiz, favorites, why Wulf, how a visit works, the ring designer, questions and booking in between. Phones get a lighter version, and a still picture shows wherever 3D cannot run.', 'wulf-kit' ) ),
 			'home-film'                   => array( __( 'Home (brand film)', 'wulf-kit' ), 'home-film', 'main', __( 'The homepage told with your two films. The first screen plays the brand film\'s highlights beside the headline, with "Watch our film" (with sound). Then the booking bar, "What brings you in?", the film in five chapters (shapes, ring styles, the ring builder, custom design and fine jewelry, each with its next step), the 360° favorites, The Suitcase beside your story since 1971 with its years lighting up as it plays, why Wulf, questions and booking.', 'wulf-kit' ) ),
 			'home-simple'                 => array( __( 'Home (simpler)', 'wulf-kit' ), 'home-simple', 'main', __( 'A calmer homepage with a few big moments: the 360° spotlight, the ring that builds itself, the ring designer and the 4Cs. Fewer boxes and labels. Build it next to Home, compare, and "Go live" with the one you like.', 'wulf-kit' ) ),
 			'about-us'                    => array( __( 'About', 'wulf-kit' ), 'about-us', 'main', __( 'Your story since 1971, Cullen, concierge service, values, reviews, visit.', 'wulf-kit' ) ),
 			'contact-us'                  => array( __( 'Free Consultation', 'wulf-kit' ), 'contact-us', 'main', __( 'Contact and booking form, map, hours, common questions.', 'wulf-kit' ) ),
+			'our-promises'                => array( __( 'Our Promises', 'wulf-kit' ), 'our-promises', 'main', __( 'Everything you stand behind in one place: certified diamonds, free cleaning and inspection, in-house repairs, warranty, upgrades, buyback and selling, financing, free consultations. The terms in [brackets] are yours to confirm or change before you publish it; once published, the promises row by the Book buttons links here.', 'wulf-kit' ) ),
 			'blog'                        => array( __( 'Blog', 'wulf-kit' ), 'blog', 'main', __( 'Your latest blog posts.', 'wulf-kit' ) ),
 			'thank-you'                   => array( __( 'Thank You', 'wulf-kit' ), 'thank-you', 'main', __( 'Shown after someone books an appointment.', 'wulf-kit' ) ),
 			'404-2'                       => array( __( 'Page not found', 'wulf-kit' ), '404-2', 'main', __( 'A friendly "we couldn\'t find that page" with links to the main sections.', 'wulf-kit' ) ),
@@ -391,13 +392,15 @@ class WK_Pages {
 				);
 
 			case 'home-daylight':
-				// The conversion page in the Daylight look, built around the first screen: the hero is a display
-				// case (the headline above, the piece large in the middle, the words beside it; the "Or call" line
-				// is already in the top bar) and the booking bar rests on its edge (phones: one tap per topic).
-				// "Since 1971", the story with The Suitcase, is the one dark chapter, in place of the values.
-				// No favorites row: the hero, the quiz and the ring designer already show the rings.
-				// Titles carry a few words in gold italics; backgrounds alternate paper and white.
-				$b = array();
+				// The conversion page in the Daylight look, told as one story in seven sections: the display case
+				// with the booking bar on its edge, the choices, what customers say, the ring style quiz, "Since 1971"
+				// (the one dark chapter, in place of the values), how a visit works, and booking with the map.
+				// Left out, as they repeat what is already here: the favorites row (the hero and the quiz show the
+				// rings), the ring designer ("Design your ring" goes to the ring builder) and the questions (they
+				// live on the Free Consultation page). Titles carry a few words in gold italics; backgrounds
+				// alternate paper and white.
+				$designer = WK_Plugin::designer_url();
+				$b        = array();
 				foreach ( self::blocks( 'home-conversion' ) as $block ) {
 					list( $w, $set ) = $block;
 					switch ( $w ) {
@@ -405,6 +408,7 @@ class WK_Pages {
 							$set['layout']     = 'vitrine';
 							$set['call_line']  = '';
 							$set['case_label'] = __( 'Featured piece', 'wulf-kit' );
+							$set['b2_link']    = array( 'url' => $designer );
 							unset( $set['m_first'], $set['m_mini'] );
 							break;
 						case 'bookbar':
@@ -414,9 +418,15 @@ class WK_Pages {
 						case 'paths':
 							$set['tone']  = 'white';
 							$set['title'] = __( 'What brings you *in?*', 'wulf-kit' );
-							break;
+							if ( class_exists( 'WK_Paths_Widget' ) ) {
+								$set['items'] = WK_Paths_Widget::default_items( $designer );
+							}
+							$b[] = array( $w, $set );
+							// What customers say, right after the choices (a reviews plugin's widget when one is set).
+							$b[] = self::reviews( array( 'title' => __( 'What our customers *say.*', 'wulf-kit' ) ) );
+							continue 2;
 						case 'quiz':
-							$set['tone'] = 'ivory';
+							$set['tone'] = 'white';
 							break;
 						case 'spotlight':
 							continue 2;
@@ -424,21 +434,15 @@ class WK_Pages {
 							$b[] = self::chapter_1971();
 							continue 2;
 						case 'steps':
-							$set['tone']      = 'white';
+							$set['tone']      = 'ivory';
 							$set['title']     = __( 'Three easy steps, *no pressure.*', 'wulf-kit' );
 							$set['img_phone'] = 'side';
 							break;
 						case 'studio':
-							$set['tone']    = 'ivory';
-							$set['title']   = __( 'Now, make it *yours.*', 'wulf-kit' );
-							$set['go_text'] = __( 'Choose a diamond', 'wulf-kit' );
-							break;
 						case 'faq':
-							$set['tone']  = 'white';
-							$set['title'] = __( 'Before you *visit.*', 'wulf-kit' );
-							break;
+							continue 2;
 						case 'visit':
-							$set['tone']  = 'ivory';
+							$set['tone']  = 'white';
 							$set['title'] = __( 'Our Crown Point *showroom.*', 'wulf-kit' );
 							break;
 					}
@@ -552,15 +556,33 @@ class WK_Pages {
 					self::faq( __( 'Before you visit.', 'wulf-kit' ), self::visit_questions() ),
 				);
 
+			case 'our-promises':
+				// Built as a draft: the [bracketed] terms are the shop's to confirm before it goes live.
+				return array(
+					self::banner( __( 'Our promises', 'wulf-kit' ), __( 'Everything we *stand behind.*', 'wulf-kit' ), __( 'In one place and in plain words: what you can count on when you buy, repair or sell with us. Questions about any of it? Ask us at the showroom.', 'wulf-kit' ), array( 'tone' => 'ivory', 'media' => 'none', 'assure' => '' ) ),
+					self::lists( __( 'In full', 'wulf-kit' ), __( 'Our promises, *in writing.*', 'wulf-kit' ), array(
+						self::group( __( 'Certified diamonds', 'wulf-kit' ), '', __( '[Every center diamond of 0.50 ct and up] comes with a grading report from [GIA or IGI]. You see the report before you decide, and it stays with your piece.', 'wulf-kit' ), 'cert' ),
+						self::group( __( 'Free cleaning & inspection', 'wulf-kit' ), '', __( 'Bring your jewelry in any time we are open: we clean it and check the prongs and settings while you wait, free. [For pieces bought here, and from anywhere else.]', 'wulf-kit' ), 'spark' ),
+						self::group( __( 'Repairs done in-house', 'wulf-kit' ), '', __( 'Sizing, prongs, chains and stones are handled by our own goldsmiths in Crown Point, not shipped away. Any brand, bought anywhere. [Most repairs are ready in X business days.]', 'wulf-kit' ), 'tool' ),
+						self::group( __( 'Warranty', 'wulf-kit' ), '', __( '[What your warranty covers (for example manufacturing defects), for how long (for example for life), and what keeps it valid (for example an inspection every six months).]', 'wulf-kit' ), 'shield' ),
+						self::group( __( 'Diamond upgrades', 'wulf-kit' ), '', __( '[Your upgrade policy, for example: trade in a diamond bought here toward a larger one and receive its full purchase price as credit.]', 'wulf-kit' ), 'gem' ),
+						self::group( __( 'Buyback and selling', 'wulf-kit' ), '', __( '[Your buyback terms for pieces bought here, if you offer one.] We also buy gold, silver, platinum, diamonds and coins: evaluated in front of you, with no pressure to accept.', 'wulf-kit' ), 'cash' ),
+						self::group( __( 'Financing', 'wulf-kit' ), '', __( '12 months same-as-cash financing, on approved credit. [Your financing partner and how to apply.]', 'wulf-kit' ), 'calendar' ),
+						self::group( __( 'Free consultations', 'wulf-kit' ), '', __( 'Free and with no obligation, booked ahead or as a walk-in. Book ahead and we will have a private table and the pieces you like ready.', 'wulf-kit' ), 'check' ),
+						self::group( __( 'Independent since 1971', 'wulf-kit' ), '', __( 'A local, independent jeweler for over fifty years: honest advice, and never a rushed decision.', 'wulf-kit' ), 'clock' ),
+					), array( 'tone' => 'white', 'rule' => '', 'boxed' => 'yes', 'marker' => 'none' ) ),
+					self::cta( __( 'Questions?', 'wulf-kit' ), __( 'Ask us *in person.*', 'wulf-kit' ), __( 'We are happy to walk you through any of these at the showroom, with no obligation.', 'wulf-kit' ), array( 'assure' => '' ) ),
+				);
+
 			case 'thank-you':
 				return array(
-					self::banner( '', __( 'Thank you for *booking*.', 'wulf-kit' ), __( 'You will receive an email with your appointment details. We look forward to seeing you!', 'wulf-kit' ), array( 'tone' => 'ivory', 'media' => 'none', 'align' => 'center', 'crumbs' => '', 'call_line' => 'yes', 'call_text' => __( 'Questions before then? Call', 'wulf-kit' ), 'b1_text' => __( 'Back to the homepage', 'wulf-kit' ), 'b1_link' => self::link( 'home' ), 'b2_text' => __( 'Browse engagement rings', 'wulf-kit' ), 'b2_link' => self::link( 'engagement-rings' ) ) ),
+					self::banner( '', __( 'Thank you for *booking*.', 'wulf-kit' ), __( 'You will receive an email with your appointment details. We look forward to seeing you!', 'wulf-kit' ), array( 'tone' => 'ivory', 'media' => 'none', 'align' => 'center', 'crumbs' => '', 'call_line' => 'yes', 'call_text' => __( 'Questions before then? Call', 'wulf-kit' ), 'assure' => '', 'b1_text' => __( 'Back to the homepage', 'wulf-kit' ), 'b1_link' => self::link( 'home' ), 'b2_text' => __( 'Browse engagement rings', 'wulf-kit' ), 'b2_link' => self::link( 'engagement-rings' ) ) ),
 					array( 'help', array() ),
 				);
 
 			case '404-2':
 				return array(
-					self::banner( __( 'Page not found', 'wulf-kit' ), __( 'We couldn\'t find *that page*.', 'wulf-kit' ), __( 'It may have moved. Try one of these, or give us a call and we\'ll point you in the right direction.', 'wulf-kit' ), array( 'tone' => 'ivory', 'media' => 'none', 'align' => 'center', 'crumbs' => '', 'b1_text' => __( 'Go to the homepage', 'wulf-kit' ), 'b1_link' => self::link( 'home' ), 'b2_text' => __( 'Browse the catalog', 'wulf-kit' ), 'b2_link' => self::link( 'catalogue' ) ) ),
+					self::banner( __( 'Page not found', 'wulf-kit' ), __( 'We couldn\'t find *that page*.', 'wulf-kit' ), __( 'It may have moved. Try one of these, or give us a call and we\'ll point you in the right direction.', 'wulf-kit' ), array( 'tone' => 'ivory', 'media' => 'none', 'align' => 'center', 'crumbs' => '', 'assure' => '', 'b1_text' => __( 'Go to the homepage', 'wulf-kit' ), 'b1_link' => self::link( 'home' ), 'b2_text' => __( 'Browse the catalog', 'wulf-kit' ), 'b2_link' => self::link( 'catalogue' ) ) ),
 					array( 'help', array() ),
 				);
 

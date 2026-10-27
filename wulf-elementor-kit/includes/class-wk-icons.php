@@ -38,6 +38,8 @@ class WK_Icons {
 		'star'   => array( '0 0 24 24', '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z" fill="currentColor"/>' ),
 		'dir'    => array( '0 0 24 24', '<path d="M12 2.5 21.5 12 12 21.5 2.5 12Zm-2.5 12V11h5V9l3 3-3 3v-2h-3v1.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' ),
 		'mail'   => array( '0 0 24 24', '<g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6.5L20.5 7"/></g>' ),
+		// A text message (the phone bar's "Text" button).
+		'chat'   => array( '0 0 24 24', '<g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M5 4.5h14A1.5 1.5 0 0 1 20.5 6v9.5A1.5 1.5 0 0 1 19 17h-8.5L6 20.5V17H5a1.5 1.5 0 0 1-1.5-1.5V6A1.5 1.5 0 0 1 5 4.5Z"/><path d="M8 9.5h8M8 12.5h5"/></g>' ),
 		'calendar' => array( '0 0 24 24', '<g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></g>' ),
 		'shield' => array( '0 0 24 24', '<path d="M12 3 5 6v5c0 4.5 3 8.4 7 10 4-1.6 7-5.5 7-10V6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' ),
 		// Film controls (play, pause): filled, so they read at small sizes.
@@ -55,7 +57,7 @@ class WK_Icons {
 			'gem' => __( 'Diamond', 'wulf-kit' ), 'gift' => __( 'Gift', 'wulf-kit' ), 'pencil' => __( 'Pencil', 'wulf-kit' ),
 			'tool' => __( 'Repair tool', 'wulf-kit' ), 'cash' => __( 'Cash', 'wulf-kit' ), 'cert' => __( 'Certificate', 'wulf-kit' ),
 			'clock' => __( 'Clock', 'wulf-kit' ), 'spark' => __( 'Sparkle', 'wulf-kit' ), 'heart' => __( 'Heart', 'wulf-kit' ),
-			'pin' => __( 'Map pin', 'wulf-kit' ), 'phone' => __( 'Phone', 'wulf-kit' ), 'mail' => __( 'Email', 'wulf-kit' ),
+			'pin' => __( 'Map pin', 'wulf-kit' ), 'phone' => __( 'Phone', 'wulf-kit' ), 'mail' => __( 'Email', 'wulf-kit' ), 'chat' => __( 'Text message', 'wulf-kit' ),
 			'calendar' => __( 'Calendar', 'wulf-kit' ), 'shield' => __( 'Shield', 'wulf-kit' ), 'star' => __( 'Star', 'wulf-kit' ),
 			'check' => __( 'Check', 'wulf-kit' ), 'bulb' => __( 'Light bulb', 'wulf-kit' ), 'search' => __( 'Search', 'wulf-kit' ),
 			'mono' => __( 'Wulf monogram', 'wulf-kit' ), 'none' => __( 'No icon', 'wulf-kit' ),
