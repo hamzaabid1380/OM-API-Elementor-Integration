@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.26.0
+Stable tag: 1.27.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -269,19 +269,25 @@ financing, free consultations, since 1971. Build it, replace the terms in [brack
 (they are examples, not your policies) and remove any promise you don't offer, then publish: from
 then on the promises row ends with "Our promises", linking to it.
 
-== Spotlight on shop pages ==
+== Spotlight on page banners ==
 
-Page banners on the pages that sell get a spotlight: a warm gold light shining down from the top of the
-banner, as onto a showcase. On a light banner it is a bright cone with soft gold edges over warm paper,
-with a pool of light at its foot; on a dark banner it is a gold beam. When the banner has a piece, the
-light lands on it. It turns on once as the page opens, and now and then a small glint sparkles in it
-(visitors who've turned off motion see it still, without glints). Nothing on the page moves.
+Page banners can have a spotlight, like a showroom downlight: a small bright lamp just under the
+header with a soft glow, a beam that is brightest by the lamp and fades and softens as it spreads, the
+light it throws on the wall behind the words and on the floor, and a few motes of dust drifting slowly
+in it. When the banner has a piece, the light lands on it and its case looks lit by the lamp. The light
+comes on once as the page opens; the dust rests while the banner is off screen, and visitors who've
+turned off motion see the light without the dust.
 
-It is on automatically on pages that show the OM Catalog's catalog or video highlights, and on the shop
-pages of the page library. Each banner can choose in Elementor (Banner > Picture > Spotlight):
-Automatic, On, "On, in a dark showroom" (the banner turns dark, with the light in gold and a gold main
-button) or Off. A banner given a background of its own in Style > Section keeps the spotlight off unless
-it is switched on.
+Choose it for the whole site in Wulf Kit > Settings > Brand colors and fonts:
+
+* Spotlight on page banners: Shop pages (pages that show the OM Catalog's catalog or video highlights,
+  and the shop pages of the page library), Every page banner, or Off.
+* Spotlight look: Dark showroom (the banner turns a warm near-black with a gold main button, where the
+  light looks most natural) or Warm light (the same light on warm paper, keeping the banner light).
+
+One banner can choose its own in Elementor (Banner > Picture > Spotlight): As in Wulf Kit settings,
+Dark showroom, Warm light or Off. A banner given a background of its own (Style > Section) keeps the
+spotlight off unless it chooses one there.
 
 == Speed ==
 
@@ -533,6 +539,16 @@ go to"; empty uses the site admin email). If the OM Catalog plugin is active and
 is ticked, they are also passed to its lead sending (GoHighLevel / webhook).
 
 == Changelog ==
+
+= 1.27.0 =
+* The spotlight looks like real light: a small lamp just under the header with a soft glow, a beam
+  that fades and softens as it spreads, light on the wall behind the words and on the floor, dust
+  drifting in the beam (resting while the banner is off screen), and a fine grain so the dark never
+  shows bands. A piece's case in the dark showroom looks lit by the lamp.
+* Choose the spotlight for the whole site: Settings > Spotlight on page banners (Shop pages, Every page
+  banner, Off) and Spotlight look (Dark showroom, now the default, or Warm light). Banners can still
+  choose their own.
+* The dark showroom is warm near-black, with a matching strip of rating and promises under it.
 
 = 1.26.0 =
 * Spotlight on shop pages: page banners on pages that show the OM Catalog's catalog or video highlights

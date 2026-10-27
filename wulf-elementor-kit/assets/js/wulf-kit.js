@@ -2104,6 +2104,7 @@
 			$$('.pv[data-autoplay]', el).forEach(function (box) { new IntersectionObserver(function (es) { playIn(box, es[0].isIntersecting); }, { threshold: 0.35 }).observe(box); });
 			$$('[data-steprows]', el).forEach(stepRows);
 			$$('.pgh.spot.has-media', el).forEach(spotOnPiece);
+			$$('.pgh.spot', el).forEach(spotRest);
 			$$('video[data-lazy]', el).forEach(function (v) { v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true }); new IntersectionObserver(function (es) { if (es[0].isIntersecting) { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (!reduce) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } } else v.pause(); }, { rootMargin: '250px 0px' }).observe(v); });
 			var fn = INIT[el.dataset.wk];
 			if (fn) { try { fn(el, cfgOf(el)); } catch (e) { if (window.console) console.error('[wulf-kit]', el.dataset.wk, e); } }
@@ -2132,6 +2133,13 @@
 		var place = function () { var a = sec.getBoundingClientRect(), b = fig.getBoundingClientRect(); if (a.width && b.width) sec.style.setProperty('--spot-x', Math.round(b.left - a.left + b.width / 2) + 'px'); };
 		place();
 		if ('ResizeObserver' in window) new ResizeObserver(place).observe(sec); else addEventListener('resize', place);
+	}
+
+	// The dust in a spotlight stops drifting while the banner is off screen.
+	function spotRest(sec) {
+		if (sec.__rest || !('IntersectionObserver' in window)) return;
+		sec.__rest = 1;
+		new IntersectionObserver(function (es) { sec.classList.toggle('spot-idle', !es[0].isIntersecting); }).observe(sec);
 	}
 
 	/* ================= Step-cut lines around a frame (Daylight with cut corners) =================

@@ -93,12 +93,12 @@ class WK_Pagehero_Widget extends WK_Widget {
 			'default'     => 'auto',
 			'separator'   => 'before',
 			'options'     => array(
-				'auto' => __( 'Automatic: on shop pages', 'wulf-kit' ),
-				'on'   => __( 'On', 'wulf-kit' ),
-				'dark' => __( 'On, in a dark showroom', 'wulf-kit' ),
-				'off'  => __( 'Off', 'wulf-kit' ),
+				'auto'  => __( 'As in Wulf Kit settings', 'wulf-kit' ),
+				'dark'  => __( 'Dark showroom', 'wulf-kit' ),
+				'light' => __( 'Warm light', 'wulf-kit' ),
+				'off'   => __( 'Off', 'wulf-kit' ),
 			),
-			'description' => __( 'A warm gold light shining down from the top of the banner, onto the piece when there is one. Automatic: on pages that show the OM Catalog\'s catalog or video highlights, and the shop pages of the page library. "Dark showroom" turns the banner dark, with the light in gold.', 'wulf-kit' ),
+			'description' => __( 'A warm light shining down from a lamp at the top of the banner, onto the piece when there is one. Dark showroom: the banner turns a warm near-black and the light shows best. Warm light: the same light on warm paper. Wulf Kit › Settings › Spotlight chooses the look and where it shows (shop pages, every banner or none) for the whole site; this banner can choose its own.', 'wulf-kit' ),
 		) );
 		$this->end_controls_section();
 
@@ -181,9 +181,14 @@ class WK_Pagehero_Widget extends WK_Widget {
 		if ( 'day' === ( $s['media_look'] ?? 'all' ) && ! WK_Plugin::is_day() ) {
 			$img = '';
 		}
-		// The spotlight: on shop pages unless switched off; the dark showroom makes the banner dark in any look.
+		// The spotlight: where and how Settings says, unless this banner chooses (1.26's "On" follows the site's look).
+		// The dark showroom makes the banner dark in any look; a background of your own keeps it off unless chosen here.
 		$spot = (string) ( $s['spot'] ?? 'auto' );
-		$spot = 'auto' === $spot ? ( self::shop_here() && empty( $s['sec_bg_background'] ) ? 'on' : 'off' ) : $spot; // A background of your own keeps it off unless switched on.
+		if ( 'auto' === $spot || 'on' === $spot ) {
+			$where = (string) WK_Settings::get( 'spot_where', 'shop' );
+			$here  = 'on' === $spot || ( empty( $s['sec_bg_background'] ) && ( 'all' === $where || ( 'shop' === $where && self::shop_here() ) ) );
+			$spot  = $here ? ( 'light' === WK_Settings::get( 'spot_look', 'dark' ) ? 'light' : 'dark' ) : 'off';
+		}
 		$room = 'dark' === $spot;
 		$dark  = $room || 'dark' === ( $s['tone'] ?? '' );
 		$class = $this->sec_class( $room ? array_merge( $s, array( 'tone' => 'white' ) ) : $s, 'pgh' );
@@ -194,7 +199,8 @@ class WK_Pagehero_Widget extends WK_Widget {
 		$this->open( $s );
 		echo '<section class="' . esc_attr( $class ) . '"' . $this->anchor_attr( $s ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		if ( 'off' !== $spot ) {
-			echo '<span class="pgh-spot" aria-hidden="true"><span class="ps-beam"></span><span class="ps-pool"></span><i></i><i></i><i></i><i></i><i></i></span>';
+			// The light on the wall, the beam, the lamp, the dust in the beam, and a fine grain.
+			echo '<span class="pgh-spot" aria-hidden="true"><span class="ps-wall"></span><span class="ps-beam"></span><span class="ps-src"></span><span class="ps-dust">' . str_repeat( '<i></i>', 12 ) . '</span><span class="ps-grain"></span></span>';
 		}
 		echo '<div class="wrap pgh-grid"><div class="pgh-copy">';
 		if ( 'yes' === $s['crumbs'] ) {
