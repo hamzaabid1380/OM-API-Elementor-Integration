@@ -84,6 +84,8 @@ class WK_Plugin {
 		// "Ask our jeweller" (OM Catalog plugin) on the homepage and its library versions.
 		add_filter( 'om_assistant_is_home', array( $this, 'assistant_is_home' ) );
 		add_filter( 'om_assistant_show_here', array( $this, 'assistant_show_here' ) );
+		// ...and wears the Wulf mark, name and US spelling (its own settings still win).
+		add_filter( 'om_assistant_brand', array( $this, 'assistant_brand' ) );
 		// The OM Catalog plugin (its pages, pop-ups and hint page) wears the kit's ink and fonts.
 		add_filter( 'om_catalog_style_tokens', array( $this, 'om_brand' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'om_fonts' ), 30 );
@@ -454,6 +456,19 @@ class WK_Plugin {
 
 	public function assistant_show_here( $show ) {
 		return $show || ( WK_Settings::get( 'assistant_home' ) && class_exists( 'WK_Pages' ) && WK_Pages::current_is_home() );
+	}
+
+	/**
+	 * OM Catalog's chat: the logo's diamond W instead of a sparkle, the business name over the chat and
+	 * "Ask our jeweler" on its button. Whatever is filled in under its Settings › AI assistant still wins.
+	 */
+	public function assistant_brand( $brand ) {
+		$brand = is_array( $brand ) ? $brand : array();
+		return $brand + array(
+			'mark'     => WK_Icons::svg( 'wulf' ),
+			'name'     => (string) WK_Settings::get( 'name' ),
+			'launcher' => __( 'Ask our jeweler', 'wulf-kit' ),
+		);
 	}
 
 	/**

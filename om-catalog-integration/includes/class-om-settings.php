@@ -177,7 +177,7 @@ class OM_Settings {
 		register_setting( 'om_catalog_settings', 'om_ai_color', array( 'sanitize_callback' => static function ( $v ) { return (string) sanitize_hex_color( (string) $v ); } ) );
 		register_setting( 'om_catalog_settings', 'om_ai_accent', array( 'sanitize_callback' => static function ( $v ) { return (string) sanitize_hex_color( (string) $v ); } ) );
 		register_setting( 'om_catalog_settings', 'om_ai_subtitle', array( 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( 'om_catalog_settings', 'om_ai_launcher_icon', array( 'sanitize_callback' => static function ( $v ) { return 'logo' === $v ? 'logo' : 'spark'; } ) );
+		register_setting( 'om_catalog_settings', 'om_ai_launcher_icon', array( 'sanitize_callback' => static function ( $v ) { return in_array( $v, array( 'logo', 'sparkle' ), true ) ? $v : 'spark'; } ) );
 		foreach ( array( 'om_ai_src_details', 'om_ai_src_diamonds', 'om_ai_src_site', 'om_ai_prices' ) as $flag ) {
 			register_setting( 'om_catalog_settings', $flag, array( 'sanitize_callback' => array( $this, 'sanitize_flag' ) ) );
 		}
@@ -1136,12 +1136,16 @@ class OM_Settings {
 						<td>
 							<input type="url" id="om_ai_logo" name="om_ai_logo" value="<?php echo esc_attr( get_option( 'om_ai_logo', '' ) ); ?>" class="regular-text" placeholder="https://…/logo-mark.png" />
 							<button type="button" class="button" data-om-media="#om_ai_logo">Choose image</button>
-							<p class="description">Your logo or monogram, shown round in the chat header (a square image works best). Empty = a sparkle.</p>
+							<?php $om_ai_brand = OM_Assistant::brand(); $om_ai_has_mark = '' !== trim( (string) ( $om_ai_brand['mark'] ?? '' ) ); ?>
+							<p class="description">Your logo or monogram, shown round in the chat header (a square image works best). Empty = <?php echo $om_ai_has_mark ? 'your brand mark from your theme kit' : 'a sparkle'; ?>.</p>
 							<p style="margin:10px 0 0"><label>Main colour <input type="text" name="om_ai_color" value="<?php echo esc_attr( get_option( 'om_ai_color', '' ) ); ?>" class="om-color-field" placeholder="<?php echo esc_attr( get_option( 'om_color_primary', '#00111C' ) ); ?>" /></label>
 							<label style="margin-left:14px">Accent <input type="text" name="om_ai_accent" value="<?php echo esc_attr( get_option( 'om_ai_accent', '' ) ); ?>" class="om-color-field" placeholder="#E8CF98" /></label></p>
-							<p class="description">Main = the header, the button and the visitor's messages (empty = your site colour). Accent = the sparkle and small details.</p>
+							<p class="description">Main = the header, the button and the visitor's messages (empty = your site colour). Accent = the icon and small details.</p>
 							<p style="margin:10px 0 0"><label>Button icon <select name="om_ai_launcher_icon">
-								<option value="spark" <?php selected( get_option( 'om_ai_launcher_icon', 'spark' ), 'spark' ); ?>>Sparkle</option>
+								<option value="spark" <?php selected( get_option( 'om_ai_launcher_icon', 'spark' ), 'spark' ); ?>><?php echo $om_ai_has_mark ? 'Your brand mark (from your theme kit)' : 'Sparkle'; ?></option>
+								<?php if ( $om_ai_has_mark || 'sparkle' === get_option( 'om_ai_launcher_icon', 'spark' ) ) : ?>
+								<option value="sparkle" <?php selected( get_option( 'om_ai_launcher_icon', 'spark' ), 'sparkle' ); ?>>Sparkle</option>
+								<?php endif; ?>
 								<option value="logo" <?php selected( get_option( 'om_ai_launcher_icon', 'spark' ), 'logo' ); ?>>Your logo</option>
 							</select></label>
 							<label style="margin-left:14px">Line under the name <input type="text" name="om_ai_subtitle" value="<?php echo esc_attr( get_option( 'om_ai_subtitle', '' ) ); ?>" class="regular-text" style="width:240px" placeholder="Usually replies in seconds" /></label></p>
@@ -1150,9 +1154,10 @@ class OM_Settings {
 					<tr>
 						<th><label for="om_ai_name">Name &amp; texts</label></th>
 						<td>
-							<input type="text" id="om_ai_name" name="om_ai_name" value="<?php echo esc_attr( get_option( 'om_ai_name', '' ) ); ?>" class="regular-text" placeholder="Jewellery assistant" />
-							<p class="description">Its name in the chat.</p>
-							<input type="text" name="om_ai_launcher" value="<?php echo esc_attr( get_option( 'om_ai_launcher', '' ) ); ?>" class="regular-text" placeholder="Ask our jeweller" aria-label="Button text" style="margin-top:8px" />
+							<?php $om_ai_brand_name = trim( wp_strip_all_tags( (string) ( $om_ai_brand['name'] ?? '' ) ) ); $om_ai_brand_btn = trim( wp_strip_all_tags( (string) ( $om_ai_brand['launcher'] ?? '' ) ) ); ?>
+							<input type="text" id="om_ai_name" name="om_ai_name" value="<?php echo esc_attr( get_option( 'om_ai_name', '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr( '' !== $om_ai_brand_name ? $om_ai_brand_name : 'Jewellery assistant' ); ?>" />
+							<p class="description">Its name in the chat.<?php echo '' !== $om_ai_brand_name ? ' Empty = your shop\'s name (from your theme kit).' : ''; ?></p>
+							<input type="text" name="om_ai_launcher" value="<?php echo esc_attr( get_option( 'om_ai_launcher', '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr( '' !== $om_ai_brand_btn ? $om_ai_brand_btn : 'Ask our jeweller' ); ?>" aria-label="Button text" style="margin-top:8px" />
 							<p class="description">The button that opens the chat.</p>
 							<textarea name="om_ai_greeting" rows="3" class="large-text" aria-label="Greeting" style="margin-top:8px" placeholder="<?php echo esc_attr( OM_Assistant::front_config() ? OM_Assistant::front_config()['greeting'] : 'Hi! I’m here to help you find the perfect piece…' ); ?>"><?php echo esc_textarea( get_option( 'om_ai_greeting', '' ) ); ?></textarea>
 							<p class="description">The first message. Empty = the text shown.</p>

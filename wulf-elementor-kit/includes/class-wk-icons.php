@@ -12,6 +12,8 @@ class WK_Icons {
 	/** name => [viewBox, inner markup] */
 	const ICONS = array(
 		'mono'   => array( '0 0 32 32', '<g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M3 11 9.5 4h13L29 11 16 29Z"/><path d="M3 11h26"/><path d="m10 14 3 8 3-6 3 6 3-8"/></g>' ),
+		// The logo's mark: a diamond around a serif W (the chat button and header wear it).
+		'wulf'   => array( '0 0 32 32', '<path d="M6.8 4.2H25.2L30.2 11.2 16 28.4 1.8 11.2Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6.9 8.5H9.5L12.93 16.06L15.8 8.5H16.9L12.35 20.5ZM15.1 8.5H17.7L20.57 16.06L24 8.5H25.1L19.65 20.5ZM6 8.5h4.4v.75H6ZM14.5 8.5h3.8v.75h-3.8ZM23.2 8.5h2.8v.75h-2.8Z" fill="currentColor"/>' ),
 		'arr'    => array( '0 0 24 24', '<path d="M4 12h15m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' ),
 		'left'   => array( '0 0 24 24', '<path d="M20 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' ),
 		'chev'   => array( '0 0 24 24', '<path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' ),
@@ -60,7 +62,7 @@ class WK_Icons {
 			'pin' => __( 'Map pin', 'wulf-kit' ), 'phone' => __( 'Phone', 'wulf-kit' ), 'mail' => __( 'Email', 'wulf-kit' ), 'chat' => __( 'Text message', 'wulf-kit' ),
 			'calendar' => __( 'Calendar', 'wulf-kit' ), 'shield' => __( 'Shield', 'wulf-kit' ), 'star' => __( 'Star', 'wulf-kit' ),
 			'check' => __( 'Check', 'wulf-kit' ), 'bulb' => __( 'Light bulb', 'wulf-kit' ), 'search' => __( 'Search', 'wulf-kit' ),
-			'mono' => __( 'Wulf monogram', 'wulf-kit' ), 'none' => __( 'No icon', 'wulf-kit' ),
+			'mono' => __( 'Wulf monogram', 'wulf-kit' ), 'wulf' => __( 'Wulf diamond W', 'wulf-kit' ), 'none' => __( 'No icon', 'wulf-kit' ),
 		);
 		return $labels;
 	}

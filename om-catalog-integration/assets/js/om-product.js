@@ -4308,7 +4308,7 @@
 	window.addEventListener('resize', aiQueuePlace);
 
 	function aiBuild() {
-		ai = $('<div class="om-ai' + (cfg.refined ? ' om-refined' : '') + (AI.side === 'left' ? ' om-ai--left' : '') + '"></div>');
+		ai = $('<div class="om-ai' + (cfg.refined ? ' om-refined' : '') + (AI.side === 'left' ? ' om-ai--left' : '') + (AI.mark ? ' om-ai--mark' : '') + '"></div>');
 		var $launch = $('<button type="button" class="om-ai-launch" aria-haspopup="dialog" aria-expanded="false"><span class="om-ai-spark" aria-hidden="true"></span><span class="om-ai-launch-text"></span></button>');
 		$launch.find('.om-ai-launch-text').text(AI.launcher);
 		var $panel = $('<div class="om-ai-panel" role="dialog" aria-modal="false" aria-labelledby="om-ai-title" hidden>'

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Overnight Mountings Catalog Integration
  * Description: Pulls live product & diamond data from the Overnight Mountings Product Catalog API and displays it on the WordPress site via shortcodes and Elementor widgets. Includes an admin settings page for credentials, pricing markup, and brand colors/fonts.
- * Version: 1.49.0
+ * Version: 1.50.0
  * Author: Wulf Diamond Jewelers / Carpe Diem
  * Text Domain: om-catalog
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'OM_CATALOG_VERSION', '1.49.0' );
+define( 'OM_CATALOG_VERSION', '1.50.0' );
 define( 'OM_CATALOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_CATALOG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -322,13 +322,17 @@ function om_catalog_enqueue_assets() {
 	$heading_font = $tokens['heading_font'];
 	$body_font    = $tokens['body_font'];
 
+	// The chat's icon: the shop's mark from its theme or kit, in place of the sparkle.
+	$ai_mark = OM_Assistant::enabled() ? OM_Assistant::mark_css() : '';
+
 	$css_vars = ":root{
 		--om-color-primary: {$primary};
 		--om-color-accent: {$accent};
 		--om-color-background: {$background};
 		--om-color-text: {$text};
 		--om-font-heading: {$heading_font};
-		--om-font-body: {$body_font};
+		--om-font-body: {$body_font};" . ( '' !== $ai_mark ? "
+		--om-ai-mark: {$ai_mark};" : '' ) . "
 	}";
 	wp_add_inline_style( 'om-catalog-css', $css_vars . om_catalog_look_css() );
 

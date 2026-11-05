@@ -2,7 +2,7 @@
 Requires at least: 6.2
 Requires PHP: 7.4
 Requires Plugins: elementor
-Stable tag: 1.29.0
+Stable tag: 1.30.0
 
 The Wulf Diamond Jewelers website as Elementor widgets: every section, the site header and footer,
 and every page of wulfdiamondjewelers.com as a ready-made template you can pick and build.
@@ -558,7 +558,21 @@ For developers: the wk_save_request filter (0, kind, subject, rows, who) returns
 saved request, and wk_request_mailed (ID, sent) runs after the shop's email. wk_booking and wk_quiz
 carry inquiry_id, and wk_newsletter passes it as a second argument.
 
+== Ask our jeweler (OM Catalog chat) ==
+
+With OM Catalog 1.50 or later, its chat wears the Wulf brand: the logo's diamond W on its button and
+in the chat's header (instead of a sparkle), the business name (Wulf Kit > Settings > Business name)
+over the chat, and "Ask our jeweler" on its button. Whatever is filled in under Settings > OM Catalog >
+AI assistant still wins: Look > Button icon (Your brand mark, Sparkle or Your logo) and Name & texts.
+The diamond W is also in the icon lists of the kit's widgets ("Wulf diamond W").
+
 == Changelog ==
+
+= 1.30.0 =
+* "Ask our jeweler" (OM Catalog 1.50) wears the Wulf brand: the logo's diamond W instead of the
+  sparkle on its button and in the chat's header, "Wulf Diamond Jewelers" over the chat, and US
+  spelling on the button. OM Catalog's own settings still win where filled in.
+* New icon: "Wulf diamond W", the logo's mark, in the widgets' icon lists.
 
 = 1.29.0 =
 * Forms keep working on cached pages: when a page was kept in a cache longer than its security

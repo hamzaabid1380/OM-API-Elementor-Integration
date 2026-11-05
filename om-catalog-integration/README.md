@@ -744,7 +744,12 @@ OM Catalog > AI assistant**.
 
 **Branding** (*Look*): your logo or monogram (round, in the chat header and
 optionally on the button), main and accent colours, and the line under its
-name.
+name. A theme or kit can give the chat the shop's own mark, name and button
+text with the `om_assistant_brand` filter (`mark`: SVG in one colour, `name`,
+`launcher`); the Wulf Elementor Kit 1.30 does (the logo's diamond W, the
+business name and "Ask our jeweler"). *Button icon* then offers **Your brand
+mark** (the default), **Sparkle** or **Your logo**, and anything filled in
+under *Name & texts* still wins (1.50).
 
 - **Providers:** OpenRouter (free models work — list several and each is
   tried in turn if one is busy), Google Gemini, or Anthropic Claude
@@ -1515,6 +1520,22 @@ webhook or both; emails and the Inquiries list carry on as before.
   the setup.
 
 ## Changelog
+
+### 1.50.0
+- **Chat questions stay readable on hover.** The starter bubble's question
+  and its suggested questions kept no text colour of their own on hover,
+  focus or tap, so Elementor's Site Settings (Buttons > Hover) or the
+  theme turned their text white on a white bubble. They now stay dark on a
+  soft cream, and ignore the site's button capitals and letter spacing, as
+  the questions inside the chat do.
+- **The chat wears your brand.** A theme or kit can give it the shop's mark
+  (shown instead of the sparkle on the button, in the chat's header and on
+  the ring builder's chat button), name over the chat and button text, with
+  the `om_assistant_brand` filter. The Wulf Elementor Kit 1.30 gives the
+  logo's diamond W, "Wulf Diamond Jewelers" and "Ask our jeweler". Settings
+  > AI assistant > Look > Button icon: Your brand mark, Sparkle or Your
+  logo; Name & texts still win when filled in. Without a brand, nothing
+  changes.
 
 ### 1.49.0
 - **Never only an email.** With the Wulf Elementor Kit 1.29, its visit

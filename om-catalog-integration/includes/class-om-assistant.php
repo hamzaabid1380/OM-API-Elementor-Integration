@@ -72,6 +72,40 @@ class OM_Assistant {
 		return '' !== $name ? $name : __( 'Jewellery assistant', 'om-catalog' );
 	}
 
+	/**
+	 * The shop's own look for the chat, from its theme or kit (filter "om_assistant_brand"):
+	 * 'mark' (SVG markup in one colour, shown instead of the sparkle), 'name' (the chat's title)
+	 * and 'launcher' (the button's text). Settings › AI assistant still win where filled in.
+	 */
+	public static function brand() {
+		$brand = apply_filters( 'om_assistant_brand', array() );
+		return is_array( $brand ) ? $brand : array();
+	}
+
+	/** The title over the chat: its name from Settings, else the shop's name from the brand, else the default name. */
+	public static function title() {
+		$brand = trim( wp_strip_all_tags( (string) ( self::brand()['name'] ?? '' ) ) );
+		return '' === trim( (string) get_option( 'om_ai_name', '' ) ) && '' !== $brand ? $brand : self::name();
+	}
+
+	/**
+	 * The brand's mark as a CSS image for the icon's mask ('' = none, or the sparkle is chosen in Settings).
+	 * Percent-encoded, so it is safe inside the CSS string.
+	 */
+	public static function mark_css() {
+		if ( 'sparkle' === get_option( 'om_ai_launcher_icon', 'spark' ) ) {
+			return '';
+		}
+		$svg = trim( (string) ( self::brand()['mark'] ?? '' ) );
+		if ( 0 !== strpos( $svg, '<svg' ) || false !== stripos( $svg, '<script' ) || strlen( $svg ) > 8000 ) {
+			return '';
+		}
+		if ( false === strpos( $svg, 'xmlns=' ) ) {
+			$svg = '<svg xmlns="http://www.w3.org/2000/svg"' . substr( $svg, 4 );
+		}
+		return 'url("data:image/svg+xml,' . rawurlencode( $svg ) . '")';
+	}
+
 	public static function openrouter_models() {
 		$raw = (string) get_option( 'om_ai_models_openrouter', '' );
 		if ( '' === trim( $raw ) ) {
@@ -135,9 +169,13 @@ class OM_Assistant {
 			);
 		}
 		$greeting = trim( (string) get_option( 'om_ai_greeting', '' ) );
+		$launcher = trim( (string) get_option( 'om_ai_launcher', '' ) );
+		if ( '' === $launcher ) {
+			$launcher = trim( wp_strip_all_tags( (string) ( self::brand()['launcher'] ?? '' ) ) );
+		}
 		return array(
-			'name'     => self::name(),
-			'launcher' => trim( (string) get_option( 'om_ai_launcher', '' ) ) ?: __( 'Ask our jeweller', 'om-catalog' ),
+			'name'     => self::title(),
+			'launcher' => '' !== $launcher ? $launcher : __( 'Ask our jeweller', 'om-catalog' ),
 			'greeting' => '' !== $greeting ? $greeting : __( 'Hi! I’m here to help you find the perfect piece. Tell me what you have in mind — a style, a shape, a budget or the occasion — and I’ll suggest designs you’ll love.', 'om-catalog' ),
 			'chips'    => array_slice( $chips, 0, 6 ),
 			'note'     => __( 'AI assistant — it can make mistakes, and our team confirms every detail. Please don’t share personal details here.', 'om-catalog' ),
@@ -150,6 +188,8 @@ class OM_Assistant {
 			// Branding: logo (round, in the header / button), colours, subtitle.
 			'logo'     => (string) get_option( 'om_ai_logo', '' ),
 			'icon'     => 'logo' === get_option( 'om_ai_launcher_icon', 'spark' ) && '' !== (string) get_option( 'om_ai_logo', '' ) ? 'logo' : 'spark',
+			// The shop's mark in place of the sparkle (the page's CSS carries it as --om-ai-mark).
+			'mark'     => '' !== self::mark_css(),
 			'color'    => (string) get_option( 'om_ai_color', '' ),
 			'accent'   => (string) get_option( 'om_ai_accent', '' ),
 			'sub'      => trim( (string) get_option( 'om_ai_subtitle', '' ) ),

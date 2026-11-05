@@ -11299,13 +11299,14 @@ html body .om-ai {
 	font-family: var(--om-font-body, Inter, sans-serif);
 }
 
+/* The chat's icon: the shop's mark when its theme or kit gives one (--om-ai-mark), else a sparkle. */
 html body .om-ai-spark {
 	display: inline-block;
 	width: 20px;
 	height: 20px;
 	background: currentColor;
-	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 2l2 5.6L18.6 10 13 12l-2 5.6L9 12 3.4 10 9 7.6zM18.5 14l1 2.6 2.5 1-2.5 1-1 2.4-1-2.4-2.5-1 2.5-1z'/%3E%3C/svg%3E") center / contain no-repeat;
-	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 2l2 5.6L18.6 10 13 12l-2 5.6L9 12 3.4 10 9 7.6zM18.5 14l1 2.6 2.5 1-2.5 1-1 2.4-1-2.4-2.5-1 2.5-1z'/%3E%3C/svg%3E") center / contain no-repeat;
+	-webkit-mask: var(--om-ai-mark, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 2l2 5.6L18.6 10 13 12l-2 5.6L9 12 3.4 10 9 7.6zM18.5 14l1 2.6 2.5 1-2.5 1-1 2.4-1-2.4-2.5-1 2.5-1z'/%3E%3C/svg%3E")) center / contain no-repeat;
+	mask: var(--om-ai-mark, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 2l2 5.6L18.6 10 13 12l-2 5.6L9 12 3.4 10 9 7.6zM18.5 14l1 2.6 2.5 1-2.5 1-1 2.4-1-2.4-2.5-1 2.5-1z'/%3E%3C/svg%3E")) center / contain no-repeat;
 }
 
 /* Launcher */
@@ -11409,7 +11410,7 @@ html body .om-ai-starter::after {
 }
 .om-ai-starter .om-ai-starter-x:hover { background: rgba(0, 17, 28, 0.06); color: var(--om-ai-ink, #0f1217); }
 html body .om-ai-starter-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.om-ai-starter :is(.om-ai-starter-t, .om-ai-starter-chip) { white-space: normal; overflow-wrap: break-word; height: auto; min-height: 0; }
+.om-ai-starter :is(.om-ai-starter-t, .om-ai-starter-chip) { white-space: normal; overflow-wrap: break-word; height: auto; min-height: 0; text-transform: none; letter-spacing: normal; text-shadow: none; }
 .om-ai-starter .om-ai-starter-chip {
 	margin: 0;
 	padding: 8px 12px;
@@ -11426,6 +11427,11 @@ html body .om-ai-starter-chips { display: flex; flex-wrap: wrap; gap: 6px; margi
 	transition: border-color 0.2s, background 0.2s;
 }
 .om-ai-starter .om-ai-starter-chip:hover { border-color: var(--om-ai-ink, #0f1217); background: rgba(0, 17, 28, 0.03); }
+/* Hover, focus and tap keep the text dark. Elementor's Site Settings (Buttons › Hover) and themes
+   colour every button's text on hover, often white, which left the questions white on white. */
+.om-ai-starter .om-ai-starter-chip.om-ai-starter-chip:is(:hover, :focus, :focus-visible, :active) { border-color: var(--om-ai-ink, #0f1217); background: #f6f3ee; color: var(--om-ai-ink, #0f1217); box-shadow: none; text-decoration: none; }
+.om-ai-starter .om-ai-starter-t.om-ai-starter-t:is(:hover, :focus, :focus-visible, :active) { background: none; color: var(--om-ai-ink, #0f1217); box-shadow: none; text-decoration: none; }
+.om-ai-starter .om-ai-starter-x.om-ai-starter-x:is(:hover, :focus, :focus-visible, :active) { background: rgba(0, 17, 28, 0.06); color: var(--om-ai-ink, #0f1217); box-shadow: none; }
 .om-ai-starter :is(.om-ai-starter-t, .om-ai-starter-chip, .om-ai-starter-x):focus-visible { outline: 2px solid var(--om-ai-ink, #0f1217); outline-offset: 2px; }
 .om-ai.is-open .om-ai-starter { display: none; }
 .om-ai.om-ai--left .om-ai-starter { right: auto; left: var(--om-ai-x, 20px); transform-origin: bottom left; }
@@ -11639,6 +11645,8 @@ html body .om-ai-chips {
 	font-size: 12.5px;
 	line-height: 1.3;
 	text-align: left;
+	text-transform: none;
+	letter-spacing: normal;
 	cursor: pointer;
 }
 
@@ -11989,6 +11997,9 @@ html p.om-intro-reels-title { margin: 0 0 14px; }
 .om-ai .om-ai-launch .om-ai-spark,
 html body .om-ai-avatar { color: var(--om-ai-accent, #e8cf98); }
 .om-ai .om-ai-icon-btn.om-ai-icon-btn:focus-visible { outline-color: var(--om-ai-accent, #e8cf98); }
+
+/* The shop's mark (from its theme or kit) is wider than the sparkle: a little larger in the header. */
+.om-ai.om-ai--mark .om-ai-avatar .om-ai-spark { width: 24px; height: 24px; }
 
 /* The shop's logo, round: header avatar and (optionally) the button. */
 .om-ai-avatar.has-logo { overflow: hidden; background: #fff; box-shadow: 0 0 0 2px var(--om-ai-accent, #e8cf98); }
